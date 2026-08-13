@@ -1,0 +1,187 @@
+import { chromium } from "playwright";
+
+const BASE = "http://localhost:3000";
+const rand = Math.random().toString(36).slice(2, 8);
+const results = [];
+
+function log(name, ok, extra = "") {
+  results.push({ name, ok, extra });
+  console.log(`${ok ? "PASS" : "FAIL"} - ${name} ${extra}`);
+}
+
+const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+
+// --- Flow 1: signup, journal entry, logout ---------------------------------
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  const email = `user-${rand}@example.com`;
+
+  await page.goto(`${BASE}/signup`);
+  await page.fill("#name", "Test User");
+  await page.fill("#email", email);
+  await page.fill("#password", "password123");
+  await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  log("signup redirects to /journal", page.url() === `${BASE}/journal`);
+
+  const promptVisible = await page.locator("text=today's prompt").first().isVisible().catch(() => false);
+  log("journal dashboard shows prompt heading", promptVisible);
+
+  await page.fill("textarea[name=content]", "This is my first journal entry via e2e test.");
+  await page.click('button:has-text("Save entry")');
+  await page.waitForSelector("text=Entry saved.", { timeout: 10000 });
+  log("journal entry saves", true);
+
+  await page.goto(`${BASE}/journal/history`);
+  const entryVisible = await page.locator("text=This is my first journal entry").first().isVisible().catch(() => false);
+  log("entry appears in history", entryVisible);
+
+  await page.click('button:has-text("Log out")');
+  await page.waitForURL(`${BASE}/`, { timeout: 10000 });
+  log("logout redirects home", true);
+
+  await ctx.close();
+}
+
+// --- Flow 2: guest shop -> cart -> checkout -> instapay ref -----------------
+let orderUrl = "";
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/shop`);
+  await page.click("text=80 Days of Self-Love");
+  await page.waitForURL(/\/shop\/80-days-of-self-love/);
+  await page.click('button:has-text("Add to cart")');
+  const addedVisible = await page.locator("text=Added to cart").first().isVisible().catch(() => false);
+  log("add to cart shows confirmation", addedVisible);
+  await page.waitForTimeout(300);
+
+  await page.goto(`${BASE}/cart`);
+  await page.waitForLoadState("networkidle");
+  const cartHasItem = await page.locator("text=80 Days of Self-Love").first().isVisible().catch(() => false);
+  log("cart shows item", cartHasItem);
+
+  await page.click('button:has-text("Checkout")');
+  await page.waitForURL(`${BASE}/checkout`, { timeout: 10000 });
+
+  await page.fill("#guestName", "Guest Buyer");
+  await page.fill("#guestEmail", `guest-${rand}@example.com`);
+  await page.fill("#guestPhone", "+201000000000");
+  const shippingVisible = await page.locator("#shippingAddress").isVisible().catch(() => false);
+  log("checkout shows shipping field for physical item", shippingVisible);
+  if (shippingVisible) {
+    await page.fill("#shippingAddress", "123 Test St, Cairo, Egypt");
+  }
+
+  await page.click('button:has-text("Continue to payment")');
+  await page.waitForURL(/\/orders\//, { timeout: 10000 });
+  orderUrl = page.url();
+  log("order created, redirected to order page", true, orderUrl);
+
+  const instapayVisible = await page.locator("text=Pay via InstaPay").first().isVisible().catch(() => false);
+  log("order page shows InstaPay instructions", instapayVisible);
+
+  await page.fill("#paymentRef", "TESTREF12345");
+  await page.click('button:has-text("submit reference")');
+  await page.waitForSelector("text=Payment reference received", { timeout: 10000 });
+  log("payment reference submission succeeds", true);
+
+  await ctx.close();
+}
+
+// --- Flow 3: counseling booking ---------------------------------------------
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/counseling`);
+  await page.click("text=Karla Meleka");
+  await page.waitForURL(/\/counseling\/karla-meleka/);
+
+  await page.fill("#name", "Booking Test");
+  await page.fill("#email", `booking-${rand}@example.com`);
+  await page.fill("#phone", "+201000000001");
+  await page.fill("#preferredDate", "2026-09-01");
+  await page.fill("#preferredTime", "14:00");
+  await page.click('button:has-text("Request session")');
+  await page.waitForSelector("text=Request received", { timeout: 10000 });
+  log("booking request submission succeeds", true);
+
+  await ctx.close();
+}
+
+// --- Flow 4: workshop inquiry + contact form ---------------------------------
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/workshops`);
+  await page.fill("#organizationName", "Test Corp");
+  await page.fill("#contactName", "HR Person");
+  await page.fill("#email", `hr-${rand}@example.com`);
+  await page.fill("#phone", "+201000000002");
+  await page.click('button:has-text("Request a quote")');
+  await page.waitForSelector("text=Request received", { timeout: 10000 });
+  log("workshop inquiry submission succeeds", true);
+
+  await page.goto(`${BASE}/contact`);
+  await page.fill("#name", "Contact Test");
+  await page.fill("#email", `contact-${rand}@example.com`);
+  await page.fill("#subject", "Question");
+  await page.fill("#message", "Just testing the contact form end to end.");
+  await page.click('button:has-text("Send message")');
+  await page.waitForSelector("text=Message sent", { timeout: 10000 });
+  log("contact form submission succeeds", true);
+
+  await ctx.close();
+}
+
+// --- Flow 5: admin login and review everything ------------------------------
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/login`);
+  await page.fill("#email", "admin@letitout.app");
+  await page.fill("#password", "letitout-admin-dev");
+  await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/admin`, { timeout: 10000 });
+  log("admin login redirects to /admin", true);
+
+  await page.goto(`${BASE}/admin/orders`);
+  const orderInAdmin = await page.locator("text=Guest Buyer").first().isVisible().catch(() => false);
+  log("order visible in admin", orderInAdmin);
+
+  await page.goto(`${BASE}/admin/bookings`);
+  const bookingInAdmin = await page.locator("text=Booking Test").first().isVisible().catch(() => false);
+  log("booking visible in admin", bookingInAdmin);
+
+  await page.goto(`${BASE}/admin/workshops`);
+  const workshopInAdmin = await page.locator("text=Test Corp").first().isVisible().catch(() => false);
+  log("workshop inquiry visible in admin", workshopInAdmin);
+
+  await page.goto(`${BASE}/admin/messages`);
+  const messageInAdmin = await page.locator("text=Contact Test").first().isVisible().catch(() => false);
+  log("contact message visible in admin", messageInAdmin);
+
+  // update an order status
+  await page.goto(`${BASE}/admin/orders`);
+  const select = page.locator("select[name=status]").first();
+  await select.selectOption("CONFIRMED");
+  await page.locator('button:has-text("Update")').first().click();
+  await page.waitForTimeout(1000);
+  log("admin can update order status", true);
+
+  await ctx.close();
+}
+
+await browser.close();
+
+const failed = results.filter((r) => !r.ok);
+console.log(`\n${results.length - failed.length}/${results.length} checks passed.`);
+if (failed.length > 0) {
+  console.log("FAILED:", failed.map((f) => f.name));
+  process.exit(1);
+}

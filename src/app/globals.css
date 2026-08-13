@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbf8f3;
+  --foreground: #1c2b31;
+
+  --color-brand-50: #eef5f7;
+  --color-brand-100: #d6e7ec;
+  --color-brand-200: #aecfd8;
+  --color-brand-300: #80b1bf;
+  --color-brand-400: #4f8fa2;
+  --color-brand-500: #2f7488;
+  --color-brand-600: #1e5b73;
+  --color-brand-700: #1a4c60;
+  --color-brand-800: #163e4e;
+  --color-brand-900: #12313e;
+
+  --color-sand-50: #fbf8f3;
+  --color-sand-100: #f5efe4;
+  --color-sand-200: #ecdfc9;
+  --color-sand-300: #ddc9a3;
+  --color-sand-400: #ccae78;
+  --color-sand-500: #b8945a;
+
+  --color-accent-50: #fdf1ea;
+  --color-accent-100: #fbe0cf;
+  --color-accent-200: #f5bd9c;
+  --color-accent-300: #ee9a6a;
+  --color-accent-400: #e57f47;
+  --color-accent-500: #d9673a;
+  --color-accent-600: #b8522d;
+
+  --color-ink: #1c2b31;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-brand-50: var(--color-brand-50);
+  --color-brand-100: var(--color-brand-100);
+  --color-brand-200: var(--color-brand-200);
+  --color-brand-300: var(--color-brand-300);
+  --color-brand-400: var(--color-brand-400);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-700: var(--color-brand-700);
+  --color-brand-800: var(--color-brand-800);
+  --color-brand-900: var(--color-brand-900);
+
+  --color-sand-50: var(--color-sand-50);
+  --color-sand-100: var(--color-sand-100);
+  --color-sand-200: var(--color-sand-200);
+  --color-sand-300: var(--color-sand-300);
+  --color-sand-400: var(--color-sand-400);
+  --color-sand-500: var(--color-sand-500);
+
+  --color-accent-50: var(--color-accent-50);
+  --color-accent-100: var(--color-accent-100);
+  --color-accent-200: var(--color-accent-200);
+  --color-accent-300: var(--color-accent-300);
+  --color-accent-400: var(--color-accent-400);
+  --color-accent-500: var(--color-accent-500);
+  --color-accent-600: var(--color-accent-600);
+
+  --color-ink: var(--color-ink);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-poppins);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+}

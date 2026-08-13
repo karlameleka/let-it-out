@@ -1,0 +1,96 @@
+"use server";
+
+import { z } from "zod";
+import bcrypt from "bcryptjs";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/db";
+import { createSession, destroySession } from "@/lib/session";
+
+const signupSchema = z.object({
+  name: z.string().trim().min(2, "Please enter your name."),
+  email: z.string().trim().email("Please enter a valid email."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Please enter a valid email."),
+  password: z.string().min(1, "Please enter your password."),
+});
+
+export type AuthFormState = { error?: string } | undefined;
+
+export async function signupAction(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = signupSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const { name, email, password } = parsed.data;
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    return { error: "An account with this email already exists." };
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await prisma.user.create({
+    data: { name, email, passwordHash },
+  });
+
+  await createSession({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  });
+
+  redirect("/journal");
+}
+
+export async function loginAction(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const { email, password } = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    return { error: "Incorrect email or password." };
+  }
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) {
+    return { error: "Incorrect email or password." };
+  }
+
+  await createSession({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  });
+
+  redirect(user.role === "ADMIN" ? "/admin" : "/journal");
+}
+
+export async function logoutAction() {
+  await destroySession();
+  redirect("/");
+}
