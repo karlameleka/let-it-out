@@ -21,22 +21,18 @@ export default function AddToCartForm({
   title: string;
   variants: Variant[];
 }) {
-  const [formatId, setFormatId] = useState(
-    variants.find((v) => v.format === "PHYSICAL")?.id ?? variants[0].id,
-  );
+  const variant = variants[0];
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
   const router = useRouter();
 
-  const selected = variants.find((v) => v.id === formatId)!;
-
   function handleAdd() {
     addItem({
-      productVariantId: selected.id,
+      productVariantId: variant.id,
       productSlug,
       title,
-      format: selected.format,
-      priceEGP: selected.priceEGP,
+      format: variant.format,
+      priceEGP: variant.priceEGP,
       coverImageUrl: null,
     });
     setAdded(true);
@@ -44,35 +40,22 @@ export default function AddToCartForm({
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="mb-2 text-sm font-medium text-ink/80">Format</p>
-        <div className="flex gap-2">
-          {variants.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => {
-                setFormatId(v.id);
-                setAdded(false);
-              }}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                v.id === formatId
-                  ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-brand-200 text-ink/70 hover:border-brand-400"
-              }`}
-            >
-              {v.format === "PHYSICAL" ? "Physical" : "Ebook"} · {formatEGP(v.priceEGP)}
-            </button>
-          ))}
-        </div>
-      </div>
+      <p className="font-display text-2xl font-semibold text-brand-900">
+        {formatEGP(variant.priceEGP)}
+      </p>
 
       <div className="flex flex-wrap gap-3">
-        <Button type="button" onClick={handleAdd}>
-          Add to cart
-        </Button>
-        <Button type="button" variant="outline" onClick={() => { handleAdd(); router.push("/cart"); }}>
+        <Button
+          type="button"
+          onClick={() => {
+            handleAdd();
+            router.push("/cart");
+          }}
+        >
           Buy now
+        </Button>
+        <Button type="button" variant="outline" onClick={handleAdd}>
+          Add to cart
         </Button>
       </div>
 

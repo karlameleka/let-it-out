@@ -5,12 +5,22 @@ async function main() {
   // --- Counselors -----------------------------------------------------
   const counselors = [
     {
+      slug: "verna-awad",
+      name: "Verna Awad",
+      credentials: "Lead Psychologist",
+      bio: "Verna Awad is a clinical psychologist holding an MSc in Clinical Psychology from the University of Gibraltar. She has been working with adults since 2020, supporting people through stress, burnout, emotional dysregulation, and the quiet exhaustion that builds when we stop prioritizing ourselves. Her work is grounded in CBT and DBT, and she is currently in advanced training in psychosexual therapy. She believes that self-awareness is the foundation of any real change — and that the tools we build in therapy are the ones we carry into every area of life.",
+      specialties: ["Stress & Burnout", "Emotional Dysregulation", "CBT", "DBT", "Psychosexual Therapy"],
+      sortOrder: 0,
+      active: true,
+    },
+    {
       slug: "karla-meleka",
       name: "Karla Meleka",
       credentials: "Psychologist, MSc (Liverpool John Moores University)",
       bio: "Karla Meleka is a compassionate psychologist with dual degrees in Psychology from the British University in Egypt and London South Bank University. She holds an MSc from Liverpool John Moores University. Passionate about adult mental health, she uses evidence-based therapies like CBT and DBT combined with a holistic approach to help clients manage depression, anxiety, and general psychological distress. Karla focuses on empowering clients with practical tools and resilience to achieve lasting well-being through an empathetic, client-centered approach.",
       specialties: ["Depression", "Anxiety", "CBT", "DBT", "Adult Mental Health"],
-      sortOrder: 0,
+      sortOrder: 1,
+      active: true,
     },
     {
       slug: "lora-samuel",
@@ -18,15 +28,9 @@ async function main() {
       credentials: "Psychotherapist & Trainer, MSc Clinical Psychology (British University in Egypt)",
       bio: "Lora Samuel is a psychotherapist and trainer. She earned her bachelor's degree in basic and applied psychology in 2020 and her master's degree in clinical psychology in 2025 from the British University in Egypt, where her thesis focused on creating and implementing a self-help self-compassion training program. From 2020-2025, she taught at the psychology department of the British University in Egypt, mentoring students on a personal and professional level. She delivers workshops on topics including personality and behavior, guilt and shame, perfectionism, self-compassion, emotional regulation, and effective communication. Lora is passionate about helping individuals and teams build healthier relationships with themselves and others, believing that emotional awareness, self-compassion, and healthy relationships are essential foundations for wellbeing and meaningful change.",
       specialties: ["Self-Compassion", "Perfectionism", "Emotional Regulation", "Communication", "Workshops & Training"],
-      sortOrder: 1,
-    },
-    {
-      slug: "verna-awad",
-      name: "Verna Awad",
-      credentials: "Clinical Psychologist, MSc Clinical Psychology (University of Gibraltar)",
-      bio: "Verna Awad is a clinical psychologist holding an MSc in Clinical Psychology from the University of Gibraltar. She has been working with adults since 2020, supporting people through stress, burnout, emotional dysregulation, and the quiet exhaustion that builds when we stop prioritizing ourselves. Her work is grounded in CBT and DBT, and she is currently in advanced training in psychosexual therapy. She believes that self-awareness is the foundation of any real change — and that the tools we build in therapy are the ones we carry into every area of life.",
-      specialties: ["Stress & Burnout", "Emotional Dysregulation", "CBT", "DBT", "Psychosexual Therapy"],
       sortOrder: 2,
+      // Hidden for now, at Let It Out's request — flip back to true to re-show.
+      active: false,
     },
   ];
 
@@ -39,9 +43,7 @@ async function main() {
   }
 
   // --- Products (guided journals) --------------------------------------
-  // NOTE: physical prices are the real prices provided by Let It Out.
-  // Ebook prices are a placeholder (30% off physical) pending confirmation —
-  // update in this seed file once real ebook pricing is set.
+  // Physical only for now — ebook format removed at Let It Out's request.
   const products = [
     {
       slug: "80-days-of-self-love",
@@ -52,7 +54,6 @@ async function main() {
       sortOrder: 0,
       variants: [
         { format: "PHYSICAL" as const, priceEGP: 1000, sku: "LIO-J-80SL-PHY" },
-        { format: "EBOOK" as const, priceEGP: 700, sku: "LIO-J-80SL-EBK" },
       ],
     },
     {
@@ -64,7 +65,6 @@ async function main() {
       sortOrder: 1,
       variants: [
         { format: "PHYSICAL" as const, priceEGP: 800, sku: "LIO-J-30MF-PHY" },
-        { format: "EBOOK" as const, priceEGP: 550, sku: "LIO-J-30MF-EBK" },
       ],
     },
   ];
@@ -83,6 +83,18 @@ async function main() {
         update: { priceEGP: v.priceEGP, sku: v.sku },
         create: { productId: product.id, format: v.format, priceEGP: v.priceEGP, sku: v.sku },
       });
+    }
+
+    // Drop any variant format no longer in this product's list (e.g. the
+    // now-removed ebook format). Best-effort: a variant referenced by an
+    // existing order can't be deleted, so failures here are logged, not fatal.
+    const keepFormats = variants.map((v) => v.format);
+    try {
+      await prisma.productVariant.deleteMany({
+        where: { productId: product.id, format: { notIn: keepFormats } },
+      });
+    } catch (err) {
+      console.warn(`[seed] Could not remove stale variants for ${p.slug}:`, err);
     }
   }
 

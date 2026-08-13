@@ -35,7 +35,7 @@ export default async function JournalPage() {
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="relative -rotate-1 rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
+          <div className="relative rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
               {prompt?.category ?? "Reflection"}
             </p>

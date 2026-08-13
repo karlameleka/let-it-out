@@ -49,7 +49,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
   await ctx.close();
 }
 
-// --- Flow 2: guest shop -> cart -> checkout -> instapay ref -----------------
+// --- Flow 2: guest "Buy now" (skip cart) -> checkout -> COD order -----------
 let orderUrl = "";
 {
   const ctx = await browser.newContext();
@@ -58,18 +58,20 @@ let orderUrl = "";
   await page.goto(`${BASE}/shop`);
   await page.click("text=80 Days of Self-Love");
   await page.waitForURL(/\/shop\/80-days-of-self-love/);
-  await page.click('button:has-text("Add to cart")');
-  const addedVisible = await page.locator("text=Added to cart").first().isVisible().catch(() => false);
-  log("add to cart shows confirmation", addedVisible);
-  await page.waitForTimeout(300);
 
-  await page.goto(`${BASE}/cart`);
-  await page.waitForLoadState("networkidle");
+  const priceVisible = await page.locator("text=EGP 1,000").first().isVisible().catch(() => false);
+  log("product page shows single price, no ebook option", priceVisible);
+
+  await page.click('button:has-text("Buy now")');
+  await page.waitForURL(`${BASE}/cart`, { timeout: 10000 });
   const cartHasItem = await page.locator("text=80 Days of Self-Love").first().isVisible().catch(() => false);
-  log("cart shows item", cartHasItem);
+  log("buy now adds item and redirects to cart", cartHasItem);
 
   await page.click('button:has-text("Checkout")');
   await page.waitForURL(`${BASE}/checkout`, { timeout: 10000 });
+
+  const instapayOptionGone = !(await page.locator("text=InstaPay").first().isVisible().catch(() => false));
+  log("checkout has no InstaPay option", instapayOptionGone);
 
   await page.fill("#guestName", "Guest Buyer");
   await page.fill("#guestEmail", `guest-${rand}@example.com`);
@@ -80,23 +82,18 @@ let orderUrl = "";
     await page.fill("#shippingAddress", "123 Test St, Cairo, Egypt");
   }
 
-  await page.click('button:has-text("Continue to payment")');
+  await page.click('button:has-text("Place order")');
   await page.waitForURL(/\/orders\//, { timeout: 10000 });
   orderUrl = page.url();
   log("order created, redirected to order page", true, orderUrl);
 
-  const instapayVisible = await page.locator("text=Pay via InstaPay").first().isVisible().catch(() => false);
-  log("order page shows InstaPay instructions", instapayVisible);
-
-  await page.fill("#paymentRef", "TESTREF12345");
-  await page.click('button:has-text("submit reference")');
-  await page.waitForSelector("text=Payment reference received", { timeout: 10000 });
-  log("payment reference submission succeeds", true);
+  const codVisible = await page.locator("text=Cash on Delivery").first().isVisible().catch(() => false);
+  log("order page shows Cash on Delivery confirmation", codVisible);
 
   await ctx.close();
 }
 
-// --- Flow 2b: guest shop -> cash on delivery order --------------------------
+// --- Flow 2b: guest shop -> add to cart -> checkout -> COD order ------------
 {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
@@ -113,15 +110,36 @@ let orderUrl = "";
   await page.fill("#guestPhone", "+201000000003");
   await page.fill("#shippingAddress", "456 Test Ave, Giza, Egypt");
 
-  await page.click('button:has-text("Cash on Delivery")');
   await page.click('button:has-text("Place order")');
   await page.waitForURL(/\/orders\//, { timeout: 10000 });
 
   const codVisible = await page.locator("text=Cash on Delivery").first().isVisible().catch(() => false);
   log("COD order page shows Cash on Delivery confirmation", codVisible);
 
-  const instapayNotVisible = !(await page.locator("text=Pay via InstaPay").first().isVisible().catch(() => false));
-  log("COD order page does not show InstaPay instructions", instapayNotVisible);
+  await ctx.close();
+}
+
+// --- Flow 2c: workshop notify popup ------------------------------------------
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/`);
+  await page.evaluate(() => window.localStorage.removeItem("lio_workshop_popup_seen"));
+  await page.reload();
+  await page.waitForTimeout(6500);
+
+  const popupVisible = await page.locator("text=Don't miss our next workshop").first().isVisible().catch(() => false);
+  log("workshop notify popup appears", popupVisible);
+
+  if (popupVisible) {
+    await page.fill('input[name=email]', `workshop-fan-${rand}@example.com`);
+    await page.click('button:has-text("Notify me")');
+    await page.waitForSelector("text=You're on the list", { timeout: 10000 });
+    log("workshop notify signup succeeds", true);
+  } else {
+    log("workshop notify signup succeeds", false, "(popup never appeared)");
+  }
 
   await ctx.close();
 }
@@ -203,6 +221,10 @@ let orderUrl = "";
   await page.goto(`${BASE}/admin/messages`);
   const messageInAdmin = await page.locator("text=Contact Test").first().isVisible().catch(() => false);
   log("contact message visible in admin", messageInAdmin);
+
+  await page.goto(`${BASE}/admin/workshop-signups`);
+  const workshopSignupInAdmin = await page.locator(`text=workshop-fan-${rand}@example.com`).first().isVisible().catch(() => false);
+  log("workshop notify signup visible in admin", workshopSignupInAdmin);
 
   // update an order status
   await page.goto(`${BASE}/admin/orders`);

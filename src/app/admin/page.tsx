@@ -2,11 +2,12 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 export default async function AdminOverviewPage() {
-  const [pendingOrders, newBookings, newInquiries, messages] = await Promise.all([
+  const [pendingOrders, newBookings, newInquiries, messages, workshopSignups] = await Promise.all([
     prisma.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_SUBMITTED"] } } }),
     prisma.bookingRequest.count({ where: { status: "PENDING" } }),
     prisma.workshopInquiry.count({ where: { status: "NEW" } }),
     prisma.contactMessage.count(),
+    prisma.workshopInterestSignup.count(),
   ]);
 
   const cards = [
@@ -14,6 +15,7 @@ export default async function AdminOverviewPage() {
     { href: "/admin/bookings", label: "Pending booking requests", value: newBookings },
     { href: "/admin/workshops", label: "New workshop inquiries", value: newInquiries },
     { href: "/admin/messages", label: "Contact messages", value: messages },
+    { href: "/admin/workshop-signups", label: "Workshop notify signups", value: workshopSignups },
   ];
 
   return (

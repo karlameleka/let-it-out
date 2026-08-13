@@ -9,15 +9,14 @@ import { formatEGP } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Guided Journals",
-  description:
-    "CBT-informed guided journals from Let It Out, available as physical books or ebooks.",
+  description: "CBT-informed guided journals from Let It Out.",
 };
 
 export default async function ShopPage() {
   const products = await prisma.product.findMany({
     where: { active: true },
     orderBy: { sortOrder: "asc" },
-    include: { variants: true },
+    include: { variants: { where: { format: "PHYSICAL" } } },
   });
 
   return (
@@ -35,7 +34,7 @@ export default async function ShopPage() {
           <p className="mt-5 max-w-2xl text-lg text-ink/70">
             Built on a Cognitive-Behavioral Therapy approach to help you
             build healthier relationships with yourself and those around
-            you. Available as a physical journal or an ebook.
+            you.
           </p>
         </Container>
       </section>
@@ -46,19 +45,13 @@ export default async function ShopPage() {
         <Container>
           <SectionHeading eyebrow="Shop" title="Our journals" />
           <div className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
-            {products.map((p, i) => {
-              const prices = p.variants.map((v) => v.priceEGP);
-              const min = Math.min(...prices);
-              const max = Math.max(...prices);
+            {products.map((p) => {
+              const price = Math.min(...p.variants.map((v) => v.priceEGP));
               const photo = PRODUCT_PHOTOS[p.slug];
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group">
                   {photo && (
-                    <div
-                      className={`relative mx-auto aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl shadow-[0_18px_30px_-14px_rgba(18,53,67,0.35)] transition-transform duration-300 group-hover:-translate-y-1.5 ${
-                        i % 2 === 0 ? "-rotate-2 group-hover:rotate-0" : "rotate-2 group-hover:rotate-0"
-                      }`}
-                    >
+                    <div className="relative mx-auto aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl shadow-[0_18px_30px_-14px_rgba(18,53,67,0.35)] transition-transform duration-300 group-hover:-translate-y-1.5">
                       <Image
                         src={photo}
                         alt={`${p.title} guided journal`}
@@ -75,11 +68,10 @@ export default async function ShopPage() {
                     {p.description}
                   </p>
                   <p className="mt-2 text-center text-sm font-medium text-brand-700">
-                    {min === max ? formatEGP(min) : `${formatEGP(min)} – ${formatEGP(max)}`}
-                    <span className="ml-2 text-ink/50">· physical or ebook</span>
+                    {formatEGP(price)}
                   </p>
                   <p className="mt-1 text-center text-xs text-ink/50">
-                    Pay via InstaPay or Cash on Delivery
+                    Cash on Delivery
                   </p>
                 </Link>
               );

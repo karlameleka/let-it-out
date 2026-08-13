@@ -5,12 +5,10 @@ import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
 import WorkshopInquiryForm from "./inquiry-form";
 
 export const metadata: Metadata = {
-  title: "Corporate & Community Wellbeing Workshops",
+  title: "Trainings and Workshops",
   description:
     "Interactive, evidence-based workshops designed to enhance wellbeing for employees, teams, students, and parents.",
 };
-
-const ROTATIONS = ["-rotate-1", "rotate-1", "-rotate-1", "rotate-1", "-rotate-1", "rotate-1", "-rotate-1"];
 
 export default function WorkshopsPage() {
   return (
@@ -18,7 +16,7 @@ export default function WorkshopsPage() {
       <section className="relative overflow-hidden bg-brand-50 py-16 sm:py-20">
         <DoodleField />
         <Container className="relative">
-          <Ribbon>Corporate &amp; community wellbeing</Ribbon>
+          <Ribbon>Trainings and Workshops</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
             Workshops built for{" "}
             <span className="mark-swash italic text-brand-700">
@@ -43,7 +41,7 @@ export default function WorkshopsPage() {
             {WORKSHOP_TOPICS.map((topic, i) => (
               <div
                 key={topic.slug}
-                className={`group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:rotate-0 hover:border-brand-300 hover:shadow-md ${ROTATIONS[i % ROTATIONS.length]}`}
+                className="group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md"
               >
                 <span className="font-display text-2xl font-semibold text-brand-200">
                   {String(i + 1).padStart(2, "0")}

@@ -13,7 +13,7 @@ export default function SignupPage() {
       <div className="relative hidden items-center justify-center overflow-hidden bg-brand-800 p-12 text-white md:flex">
         <DoodleField />
         <div className="relative max-w-sm">
-          <Logo variant="icon-white" height={72} className="rotate-3" />
+          <Logo variant="icon-white" height={72} />
           <p className="mt-8 font-display text-2xl italic leading-snug">
             &ldquo;A self-exploration journey, with you every step of the
             way.&rdquo;

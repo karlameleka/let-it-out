@@ -11,8 +11,6 @@ const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
 const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
-type PaymentMethod = "INSTAPAY" | "CASH_ON_DELIVERY";
-
 export default function CheckoutPage() {
   const { items, subtotalEGP, clear } = useCart();
   const router = useRouter();
@@ -20,7 +18,6 @@ export default function CheckoutPage() {
   const [pending, setPending] = useState(false);
 
   const needsShipping = items.some((i) => i.format === "PHYSICAL");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("INSTAPAY");
 
   if (items.length === 0) {
     return (
@@ -40,7 +37,7 @@ export default function CheckoutPage() {
       guestEmail: String(formData.get("guestEmail") || ""),
       guestPhone: String(formData.get("guestPhone") || ""),
       shippingAddress: String(formData.get("shippingAddress") || ""),
-      paymentMethod,
+      paymentMethod: "CASH_ON_DELIVERY",
     });
     setPending(false);
 
@@ -78,44 +75,22 @@ export default function CheckoutPage() {
               <div>
                 <label className={labelClass} htmlFor="shippingAddress">Shipping address</label>
                 <textarea id="shippingAddress" name="shippingAddress" rows={3} required className={inputClass} />
-                <p className="mt-1 text-xs text-ink/50">
-                  Required — your cart includes a physical journal.
-                </p>
               </div>
             )}
           </div>
 
-          <div>
-            <p className={labelClass}>Payment method</p>
-            <div className="space-y-2">
-              <PaymentOption
-                label="InstaPay"
-                description="Pay via InstaPay link, then submit your transaction reference."
-                selected={paymentMethod === "INSTAPAY"}
-                onSelect={() => setPaymentMethod("INSTAPAY")}
-              />
-              <PaymentOption
-                label="Cash on Delivery"
-                description={
-                  needsShipping
-                    ? "Pay in cash when your journal is delivered to you."
-                    : "Only available for orders that include a physical journal."
-                }
-                selected={paymentMethod === "CASH_ON_DELIVERY"}
-                disabled={!needsShipping}
-                onSelect={() => setPaymentMethod("CASH_ON_DELIVERY")}
-              />
-            </div>
+          <div className="rounded-xl border-2 border-brand-100 bg-brand-50 p-4">
+            <p className="text-sm font-semibold text-brand-800">Cash on Delivery</p>
+            <p className="mt-1 text-sm text-ink/60">
+              No payment needed now — pay in cash when your journal is
+              delivered to you.
+            </p>
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <Button type="submit" disabled={pending} className="w-full">
-            {pending
-              ? "Placing order…"
-              : paymentMethod === "CASH_ON_DELIVERY"
-                ? "Place order"
-                : "Continue to payment"}
+            {pending ? "Placing order…" : "Place order"}
           </Button>
         </form>
 
@@ -125,7 +100,7 @@ export default function CheckoutPage() {
             {items.map((item) => (
               <li key={item.productVariantId} className="flex justify-between text-sm">
                 <span className="text-ink/70">
-                  {item.title} ({item.format === "PHYSICAL" ? "Physical" : "Ebook"}) × {item.quantity}
+                  {item.title} × {item.quantity}
                 </span>
                 <span className="font-medium">{formatEGP(item.priceEGP * item.quantity)}</span>
               </li>
@@ -138,42 +113,5 @@ export default function CheckoutPage() {
         </div>
       </div>
     </Container>
-  );
-}
-
-function PaymentOption({
-  label,
-  description,
-  selected,
-  disabled,
-  onSelect,
-}: {
-  label: string;
-  description: string;
-  selected: boolean;
-  disabled?: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={disabled}
-      className={`flex w-full items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        selected ? "border-brand-600 bg-brand-50" : "border-brand-100 hover:border-brand-300"
-      }`}
-    >
-      <span
-        className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-          selected ? "border-brand-600" : "border-brand-300"
-        }`}
-      >
-        {selected && <span className="h-2 w-2 rounded-full bg-brand-600" />}
-      </span>
-      <span>
-        <span className="block text-sm font-semibold text-ink">{label}</span>
-        <span className="block text-xs text-ink/60">{description}</span>
-      </span>
-    </button>
   );
 }

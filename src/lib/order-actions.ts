@@ -88,7 +88,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   });
 
   const itemsSummary = orderItemsData
-    .map((i) => `${i.titleSnapshot} (${i.formatSnapshot === "PHYSICAL" ? "Physical" : "Ebook"}) x${i.quantity}`)
+    .map((i) => `${i.titleSnapshot} x${i.quantity}`)
     .join("\n");
 
   await sendSupportNotification({

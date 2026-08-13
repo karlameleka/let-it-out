@@ -13,7 +13,7 @@ export default function LoginPage() {
       <div className="relative hidden items-center justify-center overflow-hidden bg-brand-800 p-12 text-white md:flex">
         <DoodleField />
         <div className="relative max-w-sm">
-          <Logo variant="icon-white" height={72} className="-rotate-3" />
+          <Logo variant="icon-white" height={72} />
           <p className="mt-8 font-display text-2xl italic leading-snug">
             &ldquo;Let it out. One page at a time.&rdquo;
           </p>

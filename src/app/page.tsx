@@ -13,7 +13,7 @@ export default async function HomePage() {
     prisma.product.findMany({
       where: { active: true },
       orderBy: { sortOrder: "asc" },
-      include: { variants: true },
+      include: { variants: { where: { format: "PHYSICAL" } } },
     }),
   ]);
 
@@ -46,7 +46,7 @@ export default async function HomePage() {
           </div>
 
           <div className="relative mx-auto hidden w-full max-w-sm lg:block">
-            <div className="absolute -left-6 top-4 -rotate-6 rounded-2xl border border-brand-200 bg-white p-4 shadow-lg">
+            <div className="absolute -left-6 top-4 rounded-2xl border border-brand-200 bg-white p-4 shadow-lg">
               <p className="font-display text-sm italic text-brand-800">
                 &ldquo;What is one thing your body did for you today that you
                 didn&apos;t thank it for?&rdquo;
@@ -55,7 +55,7 @@ export default async function HomePage() {
                 Today&apos;s prompt
               </p>
             </div>
-            <div className="ml-16 mt-24 rotate-3 rounded-2xl bg-brand-700 p-6 text-white shadow-xl">
+            <div className="ml-16 mt-24 rounded-2xl bg-brand-700 p-6 text-white shadow-xl">
               <Logo variant="icon-white" height={64} />
               <p className="mt-4 font-display text-lg italic">
                 Let it out. One page at a time.
@@ -81,22 +81,19 @@ export default async function HomePage() {
               href="/counseling"
               title="Individual Online Counseling"
               description="One-on-one sessions with specialized psychotherapists using CBT, ACT, and DBT frameworks, personalized to you."
-              rotate="-rotate-1"
             />
             <ServiceCard
               index="02"
               href="/workshops"
-              title="Corporate Wellbeing Workshops"
-              description="Interactive, evidence-based sessions designed to enhance employee wellbeing — from stress management to mental health first-aid."
-              rotate="rotate-1"
+              title="Trainings and Workshops"
+              description="Interactive, evidence-based sessions designed to enhance employee wellbeing — from stress-management to mental health first-aid."
               offset
             />
             <ServiceCard
               index="03"
               href="/shop"
               title="Guided Journals & Digital Resources"
-              description="Practical, CBT-informed self-help journals to help you build a healthier relationship with yourself, in print or ebook."
-              rotate="-rotate-1"
+              description="Practical, CBT-informed self-help journals to help you build a healthier relationship with yourself."
             />
           </div>
         </Container>
@@ -110,25 +107,25 @@ export default async function HomePage() {
           alt=""
           width={852}
           height={829}
-          className="pointer-events-none absolute -bottom-20 -left-16 h-72 w-72 -rotate-12 opacity-[0.06]"
+          className="pointer-events-none absolute -bottom-20 -left-16 h-72 w-72 opacity-[0.06]"
         />
         <Container className="relative grid items-center gap-10 md:grid-cols-2">
           <div>
             <Ribbon tone="dark">Our story</Ribbon>
             <h2 className="mt-4 font-display text-3xl font-semibold sm:text-4xl">
-              Founded to make quality mental health care feel reachable.
+              Founded to make quality mental health care reachable.
             </h2>
             <p className="mt-5 text-brand-50/85">
-              Founded by psychologist and trainer Karla Meleka, Let It Out
+              Founded by Egyptian psychologist Karla Meleka, Let It Out
               delivers professional mental health support tailored to your
-              community&apos;s needs — reducing stigma, one step at a time.
+              community&apos;s needs, reducing stigma, one mind at a time.
             </p>
             <ButtonLink href="/about" variant="bright" className="mt-7">
               Read our story
             </ButtonLink>
           </div>
           <div className="flex justify-center">
-            <Logo variant="icon-white" height={200} className="rotate-3 drop-shadow-xl" />
+            <Logo variant="icon-white" height={200} className="drop-shadow-xl" />
           </div>
         </Container>
       </section>
@@ -142,13 +139,11 @@ export default async function HomePage() {
             description="Every session is led by a licensed, specialized psychotherapist."
           />
           <div className="mt-14 grid gap-6 sm:grid-cols-3">
-            {counselors.map((c, i) => (
+            {counselors.map((c) => (
               <Link
                 key={c.id}
                 href={`/counseling/${c.slug}`}
-                className={`group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md ${
-                  i % 2 === 0 ? "-rotate-1 hover:rotate-0" : "rotate-1 hover:rotate-0"
-                }`}
+                className="group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md"
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700">
                   {c.name.split(" ").map((n) => n[0]).join("")}
@@ -173,14 +168,14 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Guided journals"
             title="Self-help tools you can hold onto"
-            description="CBT-informed guided journals, available as physical books or ebooks."
+            description="CBT-informed guided journals, paid on delivery."
           />
           <div className="mt-14 grid gap-10 sm:grid-cols-2">
-            {products.map((p, i) => {
-              const cheapest = Math.min(...p.variants.map((v) => v.priceEGP));
+            {products.map((p) => {
+              const price = Math.min(...p.variants.map((v) => v.priceEGP));
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group flex items-center gap-6">
-                  <div className={`relative w-32 shrink-0 overflow-hidden rounded-xl shadow-md transition-transform group-hover:-translate-y-1 ${i % 2 === 0 ? "-rotate-2 group-hover:rotate-0" : "rotate-2 group-hover:rotate-0"}`}>
+                  <div className="relative w-32 shrink-0 overflow-hidden rounded-xl shadow-md transition-transform group-hover:-translate-y-1">
                     {PRODUCT_PHOTOS[p.slug] ? (
                       <div className="relative aspect-[4/5] w-full">
                         <Image
@@ -200,7 +195,7 @@ export default async function HomePage() {
                       {p.title}
                     </h3>
                     <p className="mt-1 text-sm text-ink/60">
-                      From {formatEGP(cheapest)}
+                      {formatEGP(price)}
                     </p>
                     <p className="mt-2 text-sm font-medium text-brand-600 link-grow w-fit">
                       Shop now &rarr;
@@ -241,20 +236,18 @@ function ServiceCard({
   href,
   title,
   description,
-  rotate,
   offset,
 }: {
   index: string;
   href: string;
   title: string;
   description: string;
-  rotate: string;
   offset?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`group relative flex flex-col rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1.5 hover:rotate-0 hover:border-brand-300 hover:shadow-lg ${rotate} ${offset ? "sm:mt-8" : ""}`}
+      className={`group relative flex flex-col rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1.5 hover:border-brand-300 hover:shadow-lg ${offset ? "sm:mt-8" : ""}`}
     >
       <span className="font-display text-4xl font-semibold text-brand-100 transition-colors group-hover:text-brand-200">
         {index}

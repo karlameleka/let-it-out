@@ -25,7 +25,7 @@ export default async function ProductPage({
   const { slug } = await params;
   const product = await prisma.product.findUnique({
     where: { slug },
-    include: { variants: { orderBy: { format: "asc" } } },
+    include: { variants: { where: { format: "PHYSICAL" } } },
   });
   if (!product || !product.active) notFound();
 
@@ -34,7 +34,7 @@ export default async function ProductPage({
   return (
     <section className="py-16 sm:py-20">
       <Container className="grid gap-12 md:grid-cols-2">
-        <div className="mx-auto w-full max-w-sm -rotate-1">
+        <div className="mx-auto w-full max-w-sm">
           {photo ? (
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl shadow-[0_18px_30px_-14px_rgba(18,53,67,0.35)]">
               <Image
@@ -71,17 +71,12 @@ export default async function ProductPage({
 
           <div className="mt-8 flex flex-wrap gap-2">
             <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
-              Pay with InstaPay
-            </span>
-            <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
-              Cash on Delivery available
+              Cash on Delivery
             </span>
           </div>
 
           <p className="mt-4 text-xs text-ink/50">
-            Physical journals ship once your order is confirmed — pay
-            upfront via InstaPay, or in cash when it arrives. Ebooks are
-            delivered by email after payment is confirmed.
+            Ships once your order is confirmed — pay in cash when it arrives.
           </p>
         </div>
       </Container>

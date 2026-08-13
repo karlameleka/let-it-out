@@ -7,7 +7,7 @@ export type WorkshopTopic = {
 export const WORKSHOP_TOPICS: WorkshopTopic[] = [
   {
     slug: "stress-management",
-    title: "Stress Management",
+    title: "Stress-Management",
     description:
       "Practical, evidence-based tools for recognizing stress triggers and building sustainable coping habits under pressure.",
   },

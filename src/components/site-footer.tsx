@@ -51,6 +51,12 @@ export default function SiteFooter() {
                 emergency, please contact your local emergency services
                 immediately.
               </li>
+              <li className="text-brand-100/70">
+                Egyptian National Crisis Hotline:{" "}
+                <a href="tel:16328" className="font-semibold text-white hover:underline">
+                  16328
+                </a>
+              </li>
             </ul>
           </div>
         </div>

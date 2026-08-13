@@ -45,7 +45,7 @@ export default async function OrderConfirmationPage({
             {order.items.map((item) => (
               <li key={item.id} className="flex justify-between text-sm">
                 <span className="text-ink/70">
-                  {item.titleSnapshot} ({item.formatSnapshot === "PHYSICAL" ? "Physical" : "Ebook"}) × {item.quantity}
+                  {item.titleSnapshot} × {item.quantity}
                 </span>
                 <span className="font-medium">{formatEGP(item.unitPriceEGP * item.quantity)}</span>
               </li>

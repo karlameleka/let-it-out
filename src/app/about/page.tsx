@@ -22,9 +22,9 @@ export default function AboutPage() {
             .
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-ink/70">
-            Founded by Karla Meleka, psychologist and trainer, Let It Out
+            Founded by Egyptian psychologist Karla Meleka, Let It Out
             delivers professional mental health support tailored to your
-            community&apos;s needs.
+            community&apos;s needs, reducing stigma, one mind at a time.
           </p>
         </Container>
       </section>
@@ -33,7 +33,7 @@ export default function AboutPage() {
 
       <section className="pb-16 pt-4 sm:pb-20">
         <Container className="grid gap-8 md:grid-cols-2">
-          <div className="-rotate-1 rounded-2xl border-2 border-brand-100 bg-white p-8 shadow-sm transition-transform hover:rotate-0">
+          <div className="rounded-2xl border-2 border-brand-100 bg-white p-8 shadow-sm">
             <h2 className="font-display text-xl font-semibold text-brand-900">
               Our Vision
             </h2>
@@ -45,7 +45,7 @@ export default function AboutPage() {
               and reducing stigma, one step at a time.
             </p>
           </div>
-          <div className="rotate-1 rounded-2xl border-2 border-brand-100 bg-white p-8 shadow-sm transition-transform hover:rotate-0">
+          <div className="rounded-2xl border-2 border-brand-100 bg-white p-8 shadow-sm">
             <h2 className="font-display text-xl font-semibold text-brand-900">
               Our Mission
             </h2>
@@ -85,7 +85,7 @@ export default function AboutPage() {
             </ul>
           </div>
           <div className="flex justify-center">
-            <Logo variant="icon-teal" height={200} className="rotate-3 drop-shadow-md" />
+            <Logo variant="icon-teal" height={200} className="drop-shadow-md" />
           </div>
         </Container>
       </section>

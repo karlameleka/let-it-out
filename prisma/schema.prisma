@@ -186,6 +186,12 @@ model ContactMessage {
   createdAt DateTime @default(now())
 }
 
+model WorkshopInterestSignup {
+  id        String   @id @default(cuid())
+  email     String
+  createdAt DateTime @default(now())
+}
+
 model JournalPrompt {
   id        String   @id @default(cuid())
   dayNumber Int      @unique

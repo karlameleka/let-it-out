@@ -38,7 +38,7 @@ export default function CartPage() {
                   {item.title}
                 </Link>
                 <p className="text-sm text-ink/50">
-                  {item.format === "PHYSICAL" ? "Physical" : "Ebook"} · {formatEGP(item.priceEGP)}
+                  {formatEGP(item.priceEGP)}
                 </p>
               </div>
 

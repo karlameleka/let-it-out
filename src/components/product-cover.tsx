@@ -47,9 +47,9 @@ export function ProductCover({
 
   return (
     <div className={`group relative aspect-[4/5] ${className}`}>
-      {/* Offset paper-stack effect behind the cover, like a real journal on a desk */}
-      <div className={`absolute inset-0 translate-x-2 translate-y-3 rotate-3 rounded-2xl ${dark ? "bg-brand-100" : "bg-brand-200/60"}`} />
-      <div className={`absolute inset-0 -translate-x-1 translate-y-1.5 -rotate-2 rounded-2xl ${dark ? "bg-brand-200/70" : "bg-brand-100"}`} />
+      {/* Offset stack effect behind the cover, like a real journal on a desk */}
+      <div className={`absolute inset-0 translate-x-2 translate-y-3 rounded-2xl ${dark ? "bg-brand-100" : "bg-brand-200/60"}`} />
+      <div className={`absolute inset-0 translate-x-1 translate-y-1.5 rounded-2xl ${dark ? "bg-brand-200/70" : "bg-brand-100"}`} />
 
       <div
         className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl p-5 shadow-[0_18px_30px_-12px_rgba(18,53,67,0.45)] transition-transform duration-300 group-hover:-translate-y-1 ${
@@ -69,7 +69,7 @@ export function ProductCover({
           alt=""
           width={852}
           height={829}
-          className={`absolute -bottom-8 -right-8 h-32 w-32 rotate-6 ${dark ? "opacity-15" : "opacity-[0.08]"}`}
+          className={`absolute -bottom-8 -right-8 h-32 w-32 ${dark ? "opacity-15" : "opacity-[0.08]"}`}
         />
 
         <p className={`relative font-display text-sm italic ${dark ? "text-white/90" : "text-brand-700"}`}>
