@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/db";
 import { Container, SectionHeading } from "@/components/ui";
-import { ProductCover } from "@/components/product-cover";
+import { PRODUCT_PHOTOS } from "@/components/product-cover";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import { formatEGP } from "@/lib/format";
 
@@ -44,20 +45,35 @@ export default async function ShopPage() {
       <section className="pb-16 pt-4 sm:pb-20">
         <Container>
           <SectionHeading eyebrow="Shop" title="Our journals" />
-          <div className="mt-12 grid gap-x-8 gap-y-14 sm:grid-cols-2">
+          <div className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
             {products.map((p, i) => {
               const prices = p.variants.map((v) => v.priceEGP);
               const min = Math.min(...prices);
               const max = Math.max(...prices);
+              const photo = PRODUCT_PHOTOS[p.slug];
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group">
-                  <div className={`mx-auto w-full max-w-[220px] transition-transform group-hover:-translate-y-1.5 ${i % 2 === 0 ? "-rotate-2" : "rotate-2"} group-hover:rotate-0`}>
-                    <ProductCover slug={p.slug} title={p.title} durationDays={p.durationDays} />
-                  </div>
+                  {photo && (
+                    <div
+                      className={`relative mx-auto aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl shadow-[0_18px_30px_-14px_rgba(18,53,67,0.35)] transition-transform duration-300 group-hover:-translate-y-1.5 ${
+                        i % 2 === 0 ? "-rotate-2 group-hover:rotate-0" : "rotate-2 group-hover:rotate-0"
+                      }`}
+                    >
+                      <Image
+                        src={photo}
+                        alt={`${p.title} guided journal`}
+                        fill
+                        sizes="(max-width: 640px) 90vw, 280px"
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
                   <h3 className="mt-5 text-center font-display text-lg font-semibold text-brand-900 group-hover:text-brand-600">
                     {p.title}
                   </h3>
-                  <p className="mt-1 text-center text-sm text-ink/60">{p.description}</p>
+                  <p className="mx-auto mt-1 max-w-xs text-center text-sm text-ink/60">
+                    {p.description}
+                  </p>
                   <p className="mt-2 text-center text-sm font-medium text-brand-700">
                     {min === max ? formatEGP(min) : `${formatEGP(min)} – ${formatEGP(max)}`}
                     <span className="ml-2 text-ink/50">· physical or ebook</span>

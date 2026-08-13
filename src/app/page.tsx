@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
-import { ProductCover } from "@/components/product-cover";
+import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
 
 export default async function HomePage() {
@@ -180,8 +180,20 @@ export default async function HomePage() {
               const cheapest = Math.min(...p.variants.map((v) => v.priceEGP));
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group flex items-center gap-6">
-                  <div className={`w-32 shrink-0 ${i % 2 === 0 ? "-rotate-2" : "rotate-2"} transition-transform group-hover:rotate-0`}>
-                    <ProductCover slug={p.slug} title="" durationDays={p.durationDays} />
+                  <div className={`relative w-32 shrink-0 overflow-hidden rounded-xl shadow-md transition-transform group-hover:-translate-y-1 ${i % 2 === 0 ? "-rotate-2 group-hover:rotate-0" : "rotate-2 group-hover:rotate-0"}`}>
+                    {PRODUCT_PHOTOS[p.slug] ? (
+                      <div className="relative aspect-[4/5] w-full">
+                        <Image
+                          src={PRODUCT_PHOTOS[p.slug]}
+                          alt={`${p.title} guided journal`}
+                          fill
+                          sizes="128px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <ProductCover slug={p.slug} title="" durationDays={p.durationDays} />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-display text-lg font-semibold text-brand-900">

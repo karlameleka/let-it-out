@@ -6,6 +6,12 @@ import Image from "next/image";
  * Falls back to a generic number+title layout for any future product
  * that doesn't have a hand-tuned entry here.
  */
+/** Real product lifestyle photos, keyed by product slug. */
+export const PRODUCT_PHOTOS: Record<string, string> = {
+  "80-days-of-self-love": "/products/80-days-of-self-love.jpg",
+  "30-days-of-mindfulness": "/products/30-days-of-mindfulness.jpg",
+};
+
 const COVER_STYLES: Record<
   string,
   {
