@@ -53,8 +53,18 @@ export default async function ProductPage({
             />
           </div>
 
-          <p className="mt-8 text-xs text-ink/50">
-            Physical journals ship after payment is confirmed. Ebooks are
+          <div className="mt-8 flex flex-wrap gap-2">
+            <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
+              Pay with InstaPay
+            </span>
+            <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
+              Cash on Delivery available
+            </span>
+          </div>
+
+          <p className="mt-4 text-xs text-ink/50">
+            Physical journals ship once your order is confirmed — pay
+            upfront via InstaPay, or in cash when it arrives. Ebooks are
             delivered by email after payment is confirmed.
           </p>
         </div>

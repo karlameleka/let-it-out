@@ -15,6 +15,7 @@ const createOrderSchema = z.object({
   guestEmail: z.string().trim().email("Please enter a valid email."),
   guestPhone: z.string().trim().min(5, "Please enter a valid phone number."),
   shippingAddress: z.string().trim().optional(),
+  paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY"]),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -25,7 +26,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  const { items, guestName, guestEmail, guestPhone, shippingAddress } = parsed.data;
+  const { items, guestName, guestEmail, guestPhone, shippingAddress, paymentMethod } = parsed.data;
 
   const variantIds = [...new Set(items.map((i) => i.productVariantId))];
   const variants = await prisma.productVariant.findMany({
@@ -44,6 +45,10 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
 
   if (needsShipping && !shippingAddress) {
     return { error: "Please enter a shipping address for physical items." };
+  }
+
+  if (paymentMethod === "CASH_ON_DELIVERY" && !needsShipping) {
+    return { error: "Cash on Delivery is only available when your order includes a physical journal." };
   }
 
   let totalEGP = 0;
@@ -72,6 +77,10 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       needsShipping,
       subtotalEGP: totalEGP,
       totalEGP,
+      paymentMethod,
+      // Cash on Delivery has no online payment step to wait on — the order
+      // goes straight to confirmed, and cash is collected on delivery.
+      status: paymentMethod === "CASH_ON_DELIVERY" ? "CONFIRMED" : "PENDING_PAYMENT",
       items: { create: orderItemsData },
     },
   });

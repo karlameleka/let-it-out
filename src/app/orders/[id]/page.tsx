@@ -62,7 +62,7 @@ export default async function OrderConfirmationPage({
           )}
         </div>
 
-        {order.status === "PENDING_PAYMENT" && (
+        {order.paymentMethod === "INSTAPAY" && order.status === "PENDING_PAYMENT" && (
           <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-6">
             <h2 className="font-display font-semibold text-brand-900">
               Pay via InstaPay
@@ -91,7 +91,20 @@ export default async function OrderConfirmationPage({
           </div>
         )}
 
-        {order.status !== "PENDING_PAYMENT" && (
+        {order.paymentMethod === "CASH_ON_DELIVERY" && (
+          <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-6">
+            <h2 className="font-display font-semibold text-brand-900">
+              Cash on Delivery
+            </h2>
+            <p className="mt-3 text-sm text-ink/80">
+              No payment needed now — have <strong>{formatEGP(order.totalEGP)}</strong> in
+              cash ready and pay when your journal is delivered. Our team
+              will reach out to confirm delivery details.
+            </p>
+          </div>
+        )}
+
+        {!(order.paymentMethod === "INSTAPAY" && order.status === "PENDING_PAYMENT") && (
           <p className="mt-8 text-sm text-ink/60">
             A confirmation has been sent to {order.guestEmail}. If you have
             any questions about your order, please{" "}

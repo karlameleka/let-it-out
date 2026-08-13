@@ -62,6 +62,9 @@ export default async function ShopPage() {
                     {min === max ? formatEGP(min) : `${formatEGP(min)} – ${formatEGP(max)}`}
                     <span className="ml-2 text-ink/50">· physical or ebook</span>
                   </p>
+                  <p className="mt-1 text-center text-xs text-ink/50">
+                    Pay via InstaPay or Cash on Delivery
+                  </p>
                 </Link>
               );
             })}

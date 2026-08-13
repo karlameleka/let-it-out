@@ -137,22 +137,28 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentMethod {
+  INSTAPAY
+  CASH_ON_DELIVERY
+}
+
 model Order {
-  id              String      @id @default(cuid())
-  user            User?       @relation(fields: [userId], references: [id])
+  id              String        @id @default(cuid())
+  user            User?         @relation(fields: [userId], references: [id])
   userId          String?
   guestName       String
   guestEmail      String
   guestPhone      String
-  shippingAddress String?     @db.Text
-  needsShipping   Boolean     @default(false)
+  shippingAddress String?       @db.Text
+  needsShipping   Boolean       @default(false)
   subtotalEGP     Int
   totalEGP        Int
-  status          OrderStatus @default(PENDING_PAYMENT)
+  paymentMethod   PaymentMethod @default(INSTAPAY)
+  status          OrderStatus   @default(PENDING_PAYMENT)
   paymentRef      String?
-  paymentNote     String?     @db.Text
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  paymentNote     String?       @db.Text
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   items OrderItem[]
 }

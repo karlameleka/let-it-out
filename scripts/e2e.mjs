@@ -96,6 +96,36 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow 2b: guest shop -> cash on delivery order --------------------------
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/shop`);
+  await page.click("text=30 Days of Mindfulness");
+  await page.waitForURL(/\/shop\/30-days-of-mindfulness/);
+  await page.click('button:has-text("Add to cart")');
+  await page.waitForTimeout(300);
+
+  await page.goto(`${BASE}/checkout`);
+  await page.fill("#guestName", "COD Buyer");
+  await page.fill("#guestEmail", `cod-${rand}@example.com`);
+  await page.fill("#guestPhone", "+201000000003");
+  await page.fill("#shippingAddress", "456 Test Ave, Giza, Egypt");
+
+  await page.click('button:has-text("Cash on Delivery")');
+  await page.click('button:has-text("Place order")');
+  await page.waitForURL(/\/orders\//, { timeout: 10000 });
+
+  const codVisible = await page.locator("text=Cash on Delivery").first().isVisible().catch(() => false);
+  log("COD order page shows Cash on Delivery confirmation", codVisible);
+
+  const instapayNotVisible = !(await page.locator("text=Pay via InstaPay").first().isVisible().catch(() => false));
+  log("COD order page does not show InstaPay instructions", instapayNotVisible);
+
+  await ctx.close();
+}
+
 // --- Flow 3: counseling booking ---------------------------------------------
 {
   const ctx = await browser.newContext();
@@ -158,6 +188,9 @@ let orderUrl = "";
   await page.goto(`${BASE}/admin/orders`);
   const orderInAdmin = await page.locator("text=Guest Buyer").first().isVisible().catch(() => false);
   log("order visible in admin", orderInAdmin);
+
+  const codOrderInAdmin = await page.locator("text=COD Buyer").first().isVisible().catch(() => false);
+  log("COD order visible in admin", codOrderInAdmin);
 
   await page.goto(`${BASE}/admin/bookings`);
   const bookingInAdmin = await page.locator("text=Booking Test").first().isVisible().catch(() => false);
