@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Logo } from "@/components/logo";
 import { WaveDivider } from "@/components/decor";
+import { SOCIAL_LINKS } from "@/components/social-icons";
 
 export default function SiteFooter() {
   return (
@@ -46,6 +47,20 @@ export default function SiteFooter() {
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
               <li><Link href="/contact" className="hover:text-white">Contact us</Link></li>
+              <li className="flex flex-wrap gap-2 pt-1">
+                {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target={href.startsWith("http") ? "_blank" : undefined}
+                    rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                    aria-label={label}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-brand-100 transition-colors hover:border-white/40 hover:bg-white/10 hover:text-white"
+                  >
+                    <Icon className="h-4 w-4" />
+                  </a>
+                ))}
+              </li>
               <li className="pt-2 text-brand-100/50">
                 If you are in crisis or experiencing a mental health
                 emergency, please contact your local emergency services
