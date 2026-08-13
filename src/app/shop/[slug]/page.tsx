@@ -32,7 +32,7 @@ export default async function ProductPage({
     <section className="py-16 sm:py-20">
       <Container className="grid gap-12 md:grid-cols-2">
         <div className="mx-auto w-full max-w-sm -rotate-1">
-          <ProductCover title={product.title} durationDays={product.durationDays} />
+          <ProductCover slug={product.slug} title={product.title} durationDays={product.durationDays} />
         </div>
 
         <div>

@@ -52,7 +52,7 @@ export default async function ShopPage() {
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group">
                   <div className={`mx-auto w-full max-w-[220px] transition-transform group-hover:-translate-y-1.5 ${i % 2 === 0 ? "-rotate-2" : "rotate-2"} group-hover:rotate-0`}>
-                    <ProductCover title={p.title} durationDays={p.durationDays} />
+                    <ProductCover slug={p.slug} title={p.title} durationDays={p.durationDays} />
                   </div>
                   <h3 className="mt-5 text-center font-display text-lg font-semibold text-brand-900 group-hover:text-brand-600">
                     {p.title}

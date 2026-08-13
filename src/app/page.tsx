@@ -181,7 +181,7 @@ export default async function HomePage() {
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group flex items-center gap-6">
                   <div className={`w-32 shrink-0 ${i % 2 === 0 ? "-rotate-2" : "rotate-2"} transition-transform group-hover:rotate-0`}>
-                    <ProductCover title="" durationDays={p.durationDays} />
+                    <ProductCover slug={p.slug} title="" durationDays={p.durationDays} />
                   </div>
                   <div>
                     <h3 className="font-display text-lg font-semibold text-brand-900">
