@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { sendSupportNotification } from "@/lib/email";
 
 const bookingSchema = z.object({
   counselorId: z.string().min(1),
@@ -38,11 +39,26 @@ export async function submitBookingRequest(
 
   const user = await getCurrentUser();
 
-  await prisma.bookingRequest.create({
+  const booking = await prisma.bookingRequest.create({
     data: {
       ...parsed.data,
       userId: user?.userId,
     },
+    include: { counselor: true },
+  });
+
+  await sendSupportNotification({
+    subject: "New counseling session request",
+    lines: [
+      { label: "Name", value: booking.name },
+      { label: "Email", value: booking.email },
+      { label: "Phone", value: booking.phone },
+      { label: "Counselor", value: booking.counselor.name },
+      { label: "Session type", value: booking.sessionType.replaceAll("_", " ") },
+      { label: "Preferred date", value: booking.preferredDate },
+      { label: "Preferred time", value: booking.preferredTime },
+      { label: "Message", value: booking.message || "—" },
+    ],
   });
 
   return { success: true };

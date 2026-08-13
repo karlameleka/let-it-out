@@ -3,6 +3,8 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { sendSupportNotification } from "@/lib/email";
+import { formatEGP } from "@/lib/format";
 
 const itemSchema = z.object({
   productVariantId: z.string().min(1),
@@ -83,6 +85,24 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       status: paymentMethod === "CASH_ON_DELIVERY" ? "CONFIRMED" : "PENDING_PAYMENT",
       items: { create: orderItemsData },
     },
+  });
+
+  const itemsSummary = orderItemsData
+    .map((i) => `${i.titleSnapshot} (${i.formatSnapshot === "PHYSICAL" ? "Physical" : "Ebook"}) x${i.quantity}`)
+    .join("\n");
+
+  await sendSupportNotification({
+    subject: "New journal order",
+    lines: [
+      { label: "Order #", value: order.id.slice(-8).toUpperCase() },
+      { label: "Customer", value: guestName },
+      { label: "Email", value: guestEmail },
+      { label: "Phone", value: guestPhone },
+      { label: "Items", value: itemsSummary },
+      { label: "Total", value: formatEGP(totalEGP) },
+      { label: "Payment method", value: paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : "InstaPay" },
+      { label: "Shipping address", value: needsShipping ? (shippingAddress ?? "—") : "N/A (ebook only)" },
+    ],
   });
 
   return { orderId: order.id };

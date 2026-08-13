@@ -38,6 +38,22 @@ workshops, and an in-app daily journaling experience.
 | `SESSION_SECRET` | Signing secret for auth session cookies — **generate a new random value for production** |
 | `INSTAPAY_LINK` | InstaPay payment link shown at checkout |
 | `INSTAPAY_HANDLE` | InstaPay handle shown at checkout |
+| `EMAIL_USER` | Gmail address used to *send* form-notification emails (optional — see below) |
+| `EMAIL_APP_PASSWORD` | Gmail [app password](https://myaccount.google.com/apppasswords) for `EMAIL_USER` (optional) |
+| `SUPPORT_EMAIL` | Address that receives form notifications — defaults to `letitoutsupport@gmail.com` |
+
+### Email notifications
+
+Every counseling booking request, workshop inquiry, and journal order sends
+a notification email to `SUPPORT_EMAIL` via Gmail SMTP (`src/lib/email.ts`).
+To enable it in production:
+
+1. Turn on 2-Step Verification on the sending Gmail account.
+2. Generate an app password at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+3. Set `EMAIL_USER` (that Gmail address) and `EMAIL_APP_PASSWORD` (the generated password) as environment variables in Vercel.
+
+If these aren't set, forms still save to the database normally — the email
+step is just skipped (logged as a warning), so it never blocks a submission.
 
 ### Dev admin login
 

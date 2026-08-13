@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { sendSupportNotification } from "@/lib/email";
 
 const workshopInquirySchema = z.object({
   organizationName: z.string().trim().min(1, "Please enter your organization or community name."),
@@ -35,7 +36,21 @@ export async function submitWorkshopInquiry(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  await prisma.workshopInquiry.create({ data: parsed.data });
+  const inquiry = await prisma.workshopInquiry.create({ data: parsed.data });
+
+  await sendSupportNotification({
+    subject: "New workshop inquiry",
+    lines: [
+      { label: "Organization", value: inquiry.organizationName },
+      { label: "Contact name", value: inquiry.contactName },
+      { label: "Email", value: inquiry.email },
+      { label: "Phone", value: inquiry.phone },
+      { label: "Topic", value: inquiry.workshopTopic },
+      { label: "Group size", value: inquiry.groupSize || "—" },
+      { label: "Preferred dates", value: inquiry.preferredDates || "—" },
+      { label: "Message", value: inquiry.message || "—" },
+    ],
+  });
 
   return { success: true };
 }
