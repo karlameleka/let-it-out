@@ -70,7 +70,7 @@ export default function WorkshopInquiryForm() {
         <label className={labelClass} htmlFor="message">Tell us more (optional)</label>
         <textarea id="message" name="message" rows={4} className={inputClass} />
       </div>
-      {state?.error && <p className="text-sm text-accent-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Sending…" : "Request a quote"}
       </Button>

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { Container, SectionHeading, Eyebrow } from "@/components/ui";
+import { Container, SectionHeading } from "@/components/ui";
+import { Ribbon, Swash, DoodleField } from "@/components/decor";
 
 export const metadata: Metadata = {
   title: "Counseling",
@@ -17,11 +18,16 @@ export default async function CounselingPage() {
 
   return (
     <>
-      <section className="bg-brand-50 py-16 sm:py-20">
-        <Container>
-          <Eyebrow>Individual online counseling</Eyebrow>
-          <h1 className="mt-3 max-w-2xl font-display text-4xl font-bold text-brand-900 sm:text-5xl">
-            One-on-one sessions with specialized psychotherapists.
+      <section className="relative overflow-hidden bg-brand-50 py-16 sm:py-20">
+        <DoodleField />
+        <Container className="relative">
+          <Ribbon>Individual online counseling</Ribbon>
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+            One-on-one sessions with{" "}
+            <span className="mark-swash italic text-brand-700">
+              specialized<Swash />
+            </span>{" "}
+            psychotherapists.
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-ink/70">
             We bring evidence-based frameworks — like Cognitive Behavioral,
@@ -39,16 +45,18 @@ export default async function CounselingPage() {
             description="Every counselor is a licensed psychologist. Pick a profile to view their background and request a session."
           />
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {counselors.map((c) => (
+            {counselors.map((c, i) => (
               <Link
                 key={c.id}
                 href={`/counseling/${c.slug}`}
-                className="group flex flex-col rounded-2xl border border-brand-100 bg-white p-7 shadow-sm transition-shadow hover:shadow-md"
+                className={`group flex flex-col rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:rotate-0 hover:border-brand-300 hover:shadow-md ${
+                  i % 2 === 0 ? "-rotate-1" : "rotate-1"
+                }`}
               >
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 font-display text-lg font-bold text-brand-700">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700">
                   {c.name.split(" ").map((n) => n[0]).join("")}
                 </div>
-                <h3 className="mt-4 font-display text-lg font-semibold text-brand-800">
+                <h3 className="mt-4 font-display text-lg font-semibold text-brand-900">
                   {c.name}
                 </h3>
                 <p className="mt-1 text-sm text-ink/60">{c.credentials}</p>
@@ -62,7 +70,7 @@ export default async function CounselingPage() {
                     </span>
                   ))}
                 </div>
-                <p className="mt-4 text-sm font-medium text-brand-600 group-hover:underline">
+                <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
                   View profile &amp; book &rarr;
                 </p>
               </Link>

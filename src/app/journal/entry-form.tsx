@@ -48,7 +48,7 @@ export default function EntryForm({ promptId }: { promptId?: string }) {
         className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
       />
 
-      {state?.error && <p className="text-sm text-accent-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state?.success && <p className="text-sm font-medium text-brand-600">Entry saved.</p>}
 
       <Button type="submit" disabled={pending}>

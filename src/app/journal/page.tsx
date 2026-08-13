@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { getTodayPrompt } from "@/lib/prompts";
+import { getNextPrompt } from "@/lib/prompts";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
+import { Swash } from "@/components/decor";
 import EntryForm from "./entry-form";
 
 export const metadata: Metadata = { title: "Your Journal" };
@@ -14,7 +15,7 @@ export default async function JournalPage() {
   if (!user) redirect("/login");
 
   const [prompt, entries] = await Promise.all([
-    getTodayPrompt(),
+    getNextPrompt(user.userId),
     prisma.journalEntry.findMany({
       where: { userId: user.userId },
       orderBy: { createdAt: "desc" },
@@ -25,17 +26,20 @@ export default async function JournalPage() {
   return (
     <Container className="py-16 sm:py-20">
       <Eyebrow>A self-exploration journey</Eyebrow>
-      <h1 className="mt-2 font-display text-3xl font-bold text-brand-900">
-        Hi {user.name.split(" ")[0]}, today&apos;s prompt
+      <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900">
+        Hi {user.name.split(" ")[0]}, here&apos;s a{" "}
+        <span className="mark-swash italic text-brand-700">
+          new prompt<Swash />
+        </span>
       </h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-2xl border border-brand-100 bg-brand-50 p-6">
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent-500">
+          <div className="relative -rotate-1 rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
               {prompt?.category ?? "Reflection"}
             </p>
-            <p className="mt-2 font-display text-lg font-medium text-brand-900">
+            <p data-testid="journal-prompt-text" className="mt-2 font-display text-xl font-medium italic text-brand-900">
               {prompt?.text ?? "What's on your mind today?"}
             </p>
           </div>
@@ -45,8 +49,8 @@ export default async function JournalPage() {
 
         <div>
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-semibold text-brand-800">Recent entries</h2>
-            <Link href="/journal/history" className="text-sm font-medium text-brand-600 hover:underline">
+            <h2 className="font-display font-semibold text-brand-900">Recent entries</h2>
+            <Link href="/journal/history" className="text-sm font-medium text-brand-600 link-grow">
               View all
             </Link>
           </div>
@@ -61,7 +65,7 @@ export default async function JournalPage() {
                 <li key={e.id}>
                   <Link
                     href={`/journal/${e.id}`}
-                    className="block rounded-xl border border-brand-100 bg-white p-4 hover:border-brand-300"
+                    className="block rounded-xl border-2 border-brand-100 bg-white p-4 transition-colors hover:border-brand-300"
                   >
                     <div className="flex items-center justify-between text-xs text-ink/50">
                       <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>

@@ -22,7 +22,7 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
   const { count } = useCart();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-brand-100 bg-sand-50/95 backdrop-blur supports-[backdrop-filter]:bg-sand-50/80">
+    <header className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <LogoLink height={36} />
 
@@ -33,8 +33,8 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-brand-600 ${
-                  active ? "text-brand-700" : "text-ink/70"
+                className={`link-grow pb-0.5 text-sm font-medium hover:text-brand-700 ${
+                  active ? "text-brand-700 [background-size:100%_1.5px]" : "text-ink/70"
                 }`}
               >
                 {link.label}
@@ -50,7 +50,7 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
           >
             Cart
             {count > 0 && (
-              <span className="absolute -right-3 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-accent-500 text-[10px] font-semibold text-white">
+              <span className="absolute -right-3 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-semibold text-white">
                 {count}
               </span>
             )}
@@ -80,7 +80,7 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
               </Link>
               <Link
                 href="/counseling"
-                className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
+                className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_0_0_theme(colors.brand.900)] transition-all hover:bg-brand-600 hover:translate-y-px hover:shadow-[0_2px_0_0_theme(colors.brand.900)]"
               >
                 Book a session
               </Link>
@@ -105,7 +105,7 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
       </div>
 
       {open && (
-        <div className="border-t border-brand-100 bg-sand-50 px-4 pb-4 md:hidden">
+        <div className="border-t border-brand-100 bg-white px-4 pb-4 md:hidden">
           <nav className="flex flex-col gap-1 pt-2">
             {NAV_LINKS.map((link) => (
               <Link

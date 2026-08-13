@@ -25,13 +25,18 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
   log("signup redirects to /journal", page.url() === `${BASE}/journal`);
 
-  const promptVisible = await page.locator("text=today's prompt").first().isVisible().catch(() => false);
+  const promptVisible = await page.locator("text=new prompt").first().isVisible().catch(() => false);
   log("journal dashboard shows prompt heading", promptVisible);
+
+  const promptBefore = await page.locator('[data-testid=journal-prompt-text]').innerText();
 
   await page.fill("textarea[name=content]", "This is my first journal entry via e2e test.");
   await page.click('button:has-text("Save entry")');
   await page.waitForSelector("text=Entry saved.", { timeout: 10000 });
   log("journal entry saves", true);
+
+  const promptAfter = await page.locator('[data-testid=journal-prompt-text]').innerText();
+  log("prompt changes after saving an entry", promptBefore !== promptAfter, `("${promptBefore.slice(0, 30)}..." -> "${promptAfter.slice(0, 30)}...")`);
 
   await page.goto(`${BASE}/journal/history`);
   const entryVisible = await page.locator("text=This is my first journal entry").first().isVisible().catch(() => false);

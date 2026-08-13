@@ -17,9 +17,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (user.role !== "ADMIN") redirect("/");
 
   return (
-    <div className="bg-sand-100 min-h-full">
+    <div className="bg-brand-50 min-h-full">
       <Container className="py-10">
-        <h1 className="font-display text-2xl font-bold text-brand-900">Admin</h1>
+        <h1 className="font-display text-2xl font-semibold text-brand-900">Admin</h1>
         <nav className="mt-6 flex flex-wrap gap-2 border-b border-brand-200 pb-2">
           {TABS.map((t) => (
             <Link

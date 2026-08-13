@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
@@ -11,10 +11,12 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: "variable",
+  axes: ["opsz", "SOFT", "WONK"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -32,9 +34,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${poppins.variable} h-full antialiased`}
+      className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-sand-50 text-ink">
+      <body className="min-h-full flex flex-col bg-white text-ink">
         <CartProvider>
           <SiteHeader user={user} />
           <main className="flex-1">{children}</main>

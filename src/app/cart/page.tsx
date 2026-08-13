@@ -13,7 +13,7 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <Container className="py-20 text-center">
-        <h1 className="font-display text-2xl font-bold text-brand-900">Your cart is empty</h1>
+        <h1 className="font-display text-2xl font-semibold text-brand-900">Your cart is empty</h1>
         <p className="mt-2 text-ink/60">Browse our guided journals to get started.</p>
         <ButtonLink href="/shop" className="mt-6">
           Shop journals
@@ -24,7 +24,7 @@ export default function CartPage() {
 
   return (
     <Container className="py-16 sm:py-20">
-      <h1 className="font-display text-3xl font-bold text-brand-900">Your cart</h1>
+      <h1 className="font-display text-3xl font-semibold text-brand-900">Your cart</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -69,7 +69,7 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={() => removeItem(item.productVariantId)}
-                className="text-ink/40 hover:text-accent-500"
+                className="text-ink/40 hover:text-brand-500"
                 aria-label="Remove item"
               >
                 ✕

@@ -39,7 +39,7 @@ export default function ContactForm() {
           className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
         />
       </div>
-      {state?.error && <p className="text-sm text-accent-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending}>
         {pending ? "Sending…" : "Send message"}
       </Button>

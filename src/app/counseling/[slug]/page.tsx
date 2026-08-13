@@ -29,10 +29,17 @@ export default async function CounselorPage({
       <Container className="grid gap-12 md:grid-cols-5">
         <div className="md:col-span-3">
           <Eyebrow>Counseling</Eyebrow>
-          <h1 className="mt-2 font-display text-3xl font-bold text-brand-900 sm:text-4xl">
-            {counselor.name}
-          </h1>
-          <p className="mt-1 text-sm font-medium text-brand-600">{counselor.credentials}</p>
+          <div className="mt-4 flex items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-xl font-semibold text-brand-700">
+              {counselor.name.split(" ").map((n) => n[0]).join("")}
+            </div>
+            <div>
+              <h1 className="font-display text-3xl font-semibold text-brand-900 sm:text-4xl">
+                {counselor.name}
+              </h1>
+              <p className="text-sm font-medium text-brand-600">{counselor.credentials}</p>
+            </div>
+          </div>
 
           <div className="mt-4 flex flex-wrap gap-1.5">
             {counselor.specialties.map((s) => (
@@ -51,8 +58,8 @@ export default async function CounselorPage({
         </div>
 
         <div className="md:col-span-2">
-          <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm">
-            <h2 className="font-display text-lg font-semibold text-brand-800">
+          <div className="sticky top-24 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
+            <h2 className="font-display text-lg font-semibold text-brand-900">
               Request a session
             </h2>
             <p className="mt-1 text-sm text-ink/60">

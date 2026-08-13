@@ -1,14 +1,26 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Logo } from "@/components/logo";
+import { WaveDivider } from "@/components/decor";
 
 export default function SiteFooter() {
   return (
-    <footer className="mt-20 bg-brand-800 text-brand-50">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+    <footer className="relative mt-24 bg-brand-900 text-brand-50">
+      <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />
+
+      <div className="relative mx-auto max-w-6xl overflow-hidden px-4 py-14 sm:px-6">
+        <Image
+          src="/brand/logo-icon-white.png"
+          alt=""
+          width={852}
+          height={829}
+          className="pointer-events-none absolute -bottom-16 -right-12 h-64 w-64 rotate-6 opacity-[0.05] sm:h-80 sm:w-80"
+        />
+
+        <div className="relative grid gap-10 sm:grid-cols-2 md:grid-cols-4">
           <div className="md:col-span-2">
             <Logo variant="horizontal-white" height={32} />
-            <p className="mt-4 max-w-sm text-sm text-brand-100/90">
+            <p className="mt-4 max-w-sm text-sm text-brand-100/80">
               Psychologist-led mental health support since 2021 — online
               counseling, guided journals, and workshops built on
               evidence-based care.
@@ -16,10 +28,10 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-100">
+            <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-200">
               Explore
             </h3>
-            <ul className="mt-4 space-y-2 text-sm text-brand-100/90">
+            <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
               <li><Link href="/about" className="hover:text-white">About us</Link></li>
               <li><Link href="/counseling" className="hover:text-white">Counseling</Link></li>
               <li><Link href="/workshops" className="hover:text-white">Workshops</Link></li>
@@ -29,12 +41,12 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-100">
+            <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-200">
               Get in touch
             </h3>
-            <ul className="mt-4 space-y-2 text-sm text-brand-100/90">
+            <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
               <li><Link href="/contact" className="hover:text-white">Contact us</Link></li>
-              <li className="pt-2 text-brand-100/60">
+              <li className="pt-2 text-brand-100/50">
                 If you are in crisis or experiencing a mental health
                 emergency, please contact your local emergency services
                 immediately.
@@ -43,9 +55,9 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-brand-700 pt-6 text-xs text-brand-100/60 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative mt-10 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-brand-100/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Let It Out. Est. 2021. All rights reserved.</p>
-          <p>A self-exploration journey.</p>
+          <p className="italic">A self-exploration journey.</p>
         </div>
       </div>
     </footer>

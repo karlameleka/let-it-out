@@ -47,7 +47,7 @@ export default function SignupForm() {
         />
         <p className="mt-1 text-xs text-ink/50">At least 8 characters.</p>
       </div>
-      {state?.error && <p className="text-sm text-accent-600">{state.error}</p>}
+      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Creating account…" : "Create account"}
       </Button>

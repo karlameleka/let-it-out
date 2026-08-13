@@ -7,7 +7,7 @@ workshops, and an in-app daily journaling experience.
 ## Tech stack
 
 - **Next.js 16** (App Router, TypeScript, Turbopack)
-- **Tailwind CSS v4** — brand theme in `src/app/globals.css` (`brand`, `sand`, `accent` palettes built around `#1e5b73`)
+- **Tailwind CSS v4** — brand theme in `src/app/globals.css`, built strictly from `#1e5b73` (deep teal), `#3388a4` (bright teal), and white, with a `Fraunces`/`Inter` display+body type pairing and reusable decorative primitives in `src/components/decor.tsx` (wave dividers, hand-placed ribbons, doodle brain motifs, underline swashes)
 - **PostgreSQL + Prisma 7** (driver adapter: `@prisma/adapter-pg`)
 - **Custom auth** — email/password, bcrypt hashing, signed JWT session cookie (`jose`)
 - **Payments** — InstaPay link + manual reference confirmation (no payment API integration; see below)

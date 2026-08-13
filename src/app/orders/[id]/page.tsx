@@ -32,7 +32,7 @@ export default async function OrderConfirmationPage({
     <Container className="py-16 sm:py-20">
       <div className="mx-auto max-w-2xl">
         <p className="text-sm font-medium text-brand-600">Order #{order.id.slice(-8).toUpperCase()}</p>
-        <h1 className="mt-1 font-display text-3xl font-bold text-brand-900">
+        <h1 className="mt-1 font-display text-3xl font-semibold text-brand-900">
           {order.status === "PENDING_PAYMENT" ? "Complete your payment" : "Thank you for your order"}
         </h1>
         <p className="mt-2 inline-flex rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700">
@@ -63,7 +63,7 @@ export default async function OrderConfirmationPage({
         </div>
 
         {order.status === "PENDING_PAYMENT" && (
-          <div className="mt-8 rounded-2xl border border-accent-200 bg-accent-50 p-6">
+          <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-6">
             <h2 className="font-display font-semibold text-brand-900">
               Pay via InstaPay
             </h2>

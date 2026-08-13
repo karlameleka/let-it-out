@@ -31,12 +31,12 @@ export default async function ProductPage({
   return (
     <section className="py-16 sm:py-20">
       <Container className="grid gap-12 md:grid-cols-2">
-        <div className="mx-auto w-full max-w-sm">
+        <div className="mx-auto w-full max-w-sm -rotate-1">
           <ProductCover title={product.title} durationDays={product.durationDays} />
         </div>
 
         <div>
-          <h1 className="font-display text-3xl font-bold text-brand-900">
+          <h1 className="font-display text-3xl font-semibold text-brand-900">
             {product.title}
           </h1>
           <p className="mt-4 text-ink/70 leading-relaxed">{product.description}</p>

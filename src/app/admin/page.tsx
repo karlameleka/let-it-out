@@ -24,7 +24,7 @@ export default async function AdminOverviewPage() {
           href={c.href}
           className="rounded-2xl border border-brand-100 bg-white p-6 hover:border-brand-300"
         >
-          <p className="font-display text-3xl font-bold text-brand-800">{c.value}</p>
+          <p className="font-display text-3xl font-semibold text-brand-800">{c.value}</p>
           <p className="mt-1 text-sm text-ink/60">{c.label}</p>
         </Link>
       ))}

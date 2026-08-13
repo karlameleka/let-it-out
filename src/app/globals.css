@@ -1,36 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf8f3;
-  --foreground: #1c2b31;
+  --background: #ffffff;
+  --foreground: #123543;
 
-  --color-brand-50: #eef5f7;
-  --color-brand-100: #d6e7ec;
-  --color-brand-200: #aecfd8;
-  --color-brand-300: #80b1bf;
-  --color-brand-400: #4f8fa2;
-  --color-brand-500: #2f7488;
-  --color-brand-600: #1e5b73;
-  --color-brand-700: #1a4c60;
-  --color-brand-800: #163e4e;
-  --color-brand-900: #12313e;
+  /* Brand palette — strictly derived from #1e5b73 (deep teal) and
+     #3388a4 (bright teal), plus pure white. No other hues. */
+  --color-brand-50: #eff6f8;
+  --color-brand-100: #dcedf1;
+  --color-brand-200: #b7dce3;
+  --color-brand-300: #8bc4d1;
+  --color-brand-400: #5aa7bb;
+  --color-brand-500: #3388a4;
+  --color-brand-600: #276f8a;
+  --color-brand-700: #1e5b73;
+  --color-brand-800: #17475a;
+  --color-brand-900: #123543;
+  --color-brand-950: #0b232c;
 
-  --color-sand-50: #fbf8f3;
-  --color-sand-100: #f5efe4;
-  --color-sand-200: #ecdfc9;
-  --color-sand-300: #ddc9a3;
-  --color-sand-400: #ccae78;
-  --color-sand-500: #b8945a;
-
-  --color-accent-50: #fdf1ea;
-  --color-accent-100: #fbe0cf;
-  --color-accent-200: #f5bd9c;
-  --color-accent-300: #ee9a6a;
-  --color-accent-400: #e57f47;
-  --color-accent-500: #d9673a;
-  --color-accent-600: #b8522d;
-
-  --color-ink: #1c2b31;
+  --color-white: #ffffff;
+  --color-ink: #123543;
 }
 
 @theme inline {
@@ -47,26 +36,12 @@
   --color-brand-700: var(--color-brand-700);
   --color-brand-800: var(--color-brand-800);
   --color-brand-900: var(--color-brand-900);
-
-  --color-sand-50: var(--color-sand-50);
-  --color-sand-100: var(--color-sand-100);
-  --color-sand-200: var(--color-sand-200);
-  --color-sand-300: var(--color-sand-300);
-  --color-sand-400: var(--color-sand-400);
-  --color-sand-500: var(--color-sand-500);
-
-  --color-accent-50: var(--color-accent-50);
-  --color-accent-100: var(--color-accent-100);
-  --color-accent-200: var(--color-accent-200);
-  --color-accent-300: var(--color-accent-300);
-  --color-accent-400: var(--color-accent-400);
-  --color-accent-500: var(--color-accent-500);
-  --color-accent-600: var(--color-accent-600);
+  --color-brand-950: var(--color-brand-950);
 
   --color-ink: var(--color-ink);
 
   --font-sans: var(--font-inter);
-  --font-display: var(--font-poppins);
+  --font-display: var(--font-fraunces);
 }
 
 body {
@@ -76,5 +51,42 @@ body {
 }
 
 h1, h2, h3, h4, .font-display {
-  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-family: var(--font-display), var(--font-sans), serif;
+}
+
+/* Hand-set underline marker for emphasized words in headlines */
+.mark-swash {
+  position: relative;
+  white-space: nowrap;
+}
+.mark-swash svg {
+  position: absolute;
+  left: -3%;
+  right: -3%;
+  bottom: -0.12em;
+  width: 106%;
+  height: 0.34em;
+  color: var(--color-brand-400);
+  opacity: 0.6;
+  z-index: -1;
+}
+
+/* Underline-grow link style used for inline text links */
+.link-grow {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0% 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition: background-size 0.25s ease;
+}
+.link-grow:hover {
+  background-size: 100% 1px;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(3deg); }
+}
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
 }

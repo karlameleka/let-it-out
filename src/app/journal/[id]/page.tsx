@@ -35,7 +35,7 @@ export default async function JournalEntryPage({
 
       {entry.prompt && (
         <div className="mt-4 rounded-2xl border border-brand-100 bg-brand-50 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-accent-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
             {entry.prompt.category}
           </p>
           <p className="mt-1 font-display font-medium text-brand-900">{entry.prompt.text}</p>
