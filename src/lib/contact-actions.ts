@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { sendSupportNotification } from "@/lib/email";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Please enter your name."),
@@ -27,7 +28,17 @@ export async function submitContactMessage(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  await prisma.contactMessage.create({ data: parsed.data });
+  const contact = await prisma.contactMessage.create({ data: parsed.data });
+
+  await sendSupportNotification({
+    subject: "New contact message",
+    lines: [
+      { label: "Name", value: contact.name },
+      { label: "Email", value: contact.email },
+      { label: "Subject", value: contact.subject },
+      { label: "Message", value: contact.message },
+    ],
+  });
 
   return { success: true };
 }
