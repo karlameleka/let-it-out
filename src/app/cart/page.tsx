@@ -32,9 +32,9 @@ export default function CartPage() {
           {items.map((item) => (
             <div
               key={item.productVariantId}
-              className="flex items-center gap-4 rounded-2xl border border-brand-100 bg-white p-4"
+              className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-brand-100 bg-white p-4"
             >
-              <div className="flex-1">
+              <div className="min-w-0 flex-1 basis-40">
                 <Link href={`/shop/${item.productSlug}`} className="font-display font-semibold text-brand-800 hover:underline">
                   {item.title}
                 </Link>
@@ -43,38 +43,40 @@ export default function CartPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="ml-auto flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(item.productVariantId, item.quantity - 1)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50"
+                    aria-label="Decrease quantity"
+                  >
+                    −
+                  </button>
+                  <span className="w-6 text-center text-sm">{item.quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(item.productVariantId, item.quantity + 1)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50"
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <p className="w-20 shrink-0 text-right font-medium text-ink/80">
+                  {formatEGP(item.priceEGP * item.quantity)}
+                </p>
+
                 <button
                   type="button"
-                  onClick={() => updateQuantity(item.productVariantId, item.quantity - 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50"
-                  aria-label="Decrease quantity"
+                  onClick={() => removeItem(item.productVariantId)}
+                  className="shrink-0 text-ink/40 hover:text-brand-500"
+                  aria-label="Remove item"
                 >
-                  −
-                </button>
-                <span className="w-6 text-center text-sm">{item.quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => updateQuantity(item.productVariantId, item.quantity + 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50"
-                  aria-label="Increase quantity"
-                >
-                  +
+                  ✕
                 </button>
               </div>
-
-              <p className="w-24 text-right font-medium text-ink/80">
-                {formatEGP(item.priceEGP * item.quantity)}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => removeItem(item.productVariantId)}
-                className="text-ink/40 hover:text-brand-500"
-                aria-label="Remove item"
-              >
-                ✕
-              </button>
             </div>
           ))}
         </div>
