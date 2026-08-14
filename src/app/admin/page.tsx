@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 export default async function AdminOverviewPage() {
-  const [pendingOrders, newBookings, newInquiries, messages, workshopSignups] = await Promise.all([
+  const [newLeads, pendingOrders, newBookings, newInquiries, messages, workshopSignups] = await Promise.all([
+    prisma.lead.count({ where: { status: "NEW" } }),
     prisma.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_SUBMITTED"] } } }),
     prisma.bookingRequest.count({ where: { status: "PENDING" } }),
     prisma.workshopInquiry.count({ where: { status: "NEW" } }),
@@ -11,6 +12,7 @@ export default async function AdminOverviewPage() {
   ]);
 
   const cards = [
+    { href: "/admin/crm", label: "New leads in the CRM", value: newLeads },
     { href: "/admin/orders", label: "Orders needing attention", value: pendingOrders },
     { href: "/admin/bookings", label: "Pending booking requests", value: newBookings },
     { href: "/admin/workshops", label: "New workshop inquiries", value: newInquiries },

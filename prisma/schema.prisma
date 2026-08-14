@@ -232,3 +232,38 @@ model PushSubscription {
   auth      String
   createdAt DateTime @default(now())
 }
+
+enum LeadType {
+  WORKSHOP_LEAD
+  COUNSELING_INQUIRY
+  JOURNAL_CUSTOMER
+  GENERAL_INQUIRY
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+/** Unified CRM record — one row per real workshop lead, counseling inquiry,
+ * journal order, or general inquiry, created alongside each source record
+ * so the whole pipeline can be tracked and worked from one place. */
+model Lead {
+  id            String     @id @default(cuid())
+  name          String
+  type          LeadType
+  status        LeadStatus @default(NEW)
+  email         String?
+  phone         String?
+  source        String?
+  sessionType   String?
+  groupSize     Int?
+  orderTotalEGP Int?
+  paymentMethod String?
+  notes         String?    @db.Text
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}

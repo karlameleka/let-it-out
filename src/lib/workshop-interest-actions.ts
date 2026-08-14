@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
+import { createLead } from "@/lib/leads";
 
 const schema = z.object({
   email: z.string().trim().email("Please enter a valid email."),
@@ -22,6 +23,14 @@ export async function submitWorkshopInterest(
   }
 
   const signup = await prisma.workshopInterestSignup.create({ data: parsed.data });
+
+  await createLead({
+    name: signup.email,
+    type: "WORKSHOP_LEAD",
+    email: signup.email,
+    source: "Website",
+    notes: "Signed up via workshop notifications popup.",
+  });
 
   await syncLeadToAirtable({
     Name: signup.email,

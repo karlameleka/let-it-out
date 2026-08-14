@@ -27,3 +27,11 @@ export async function updateWorkshopInquiryStatus(formData: FormData) {
   await prisma.workshopInquiry.update({ where: { id: inquiryId }, data: { status: status as never } });
   revalidatePath("/admin/workshops");
 }
+
+export async function updateLeadStatus(formData: FormData) {
+  await requireAdmin();
+  const leadId = String(formData.get("leadId"));
+  const status = String(formData.get("status"));
+  await prisma.lead.update({ where: { id: leadId }, data: { status: status as never } });
+  revalidatePath("/admin/crm");
+}

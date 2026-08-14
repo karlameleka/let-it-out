@@ -8,6 +8,7 @@ import { formatEGP } from "@/lib/format";
 import { computeShippingFeeEGP } from "@/lib/shipping";
 import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 import { syncLeadToAirtable } from "@/lib/airtable";
+import { createLead } from "@/lib/leads";
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   INSTAPAY: "InstaPay",
@@ -138,6 +139,20 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const itemsSummary = orderItemsData
     .map((i) => `${i.titleSnapshot} x${i.quantity}`)
     .join("\n");
+  const orderNotes = `Order #${order.id.slice(-8).toUpperCase()}\n${itemsSummary}`;
+  const crmPaymentMethodLabel = PAYMENT_METHOD_LABELS[paymentMethod] ?? paymentMethod;
+
+  await createLead({
+    name: guestName,
+    type: "JOURNAL_CUSTOMER",
+    status: order.status === "CONFIRMED" ? "CONVERTED" : "QUALIFIED",
+    email: guestEmail,
+    phone: guestPhone,
+    source: "Website",
+    orderTotalEGP: totalEGP,
+    paymentMethod: crmPaymentMethodLabel,
+    notes: orderNotes,
+  });
 
   await syncLeadToAirtable({
     Name: guestName,
@@ -147,8 +162,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     Phone: guestPhone,
     Source: "Website",
     "Order Total": totalEGP,
-    "Payment Method": PAYMENT_METHOD_LABELS[paymentMethod] ?? paymentMethod,
-    Notes: `Order #${order.id.slice(-8).toUpperCase()}\n${itemsSummary}`,
+    "Payment Method": crmPaymentMethodLabel,
+    Notes: orderNotes,
   });
 
   const shippingFeeSummary = !needsShipping

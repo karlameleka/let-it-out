@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
+import { createLead } from "@/lib/leads";
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   INDIVIDUAL_COUNSELING: "Individual",
@@ -55,6 +56,26 @@ export async function submitBookingRequest(
     include: { counselor: true },
   });
 
+  const bookingNotes = [
+    `Counselor: ${booking.counselor.name}`,
+    `Preferred date: ${booking.preferredDate}`,
+    `Preferred time: ${booking.preferredTime}`,
+    booking.message ? `Message: ${booking.message}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const sessionTypeLabel = SESSION_TYPE_LABELS[booking.sessionType] ?? booking.sessionType;
+
+  await createLead({
+    name: booking.name,
+    type: "COUNSELING_INQUIRY",
+    email: booking.email,
+    phone: booking.phone,
+    source: "Website",
+    sessionType: sessionTypeLabel,
+    notes: bookingNotes,
+  });
+
   await syncLeadToAirtable({
     Name: booking.name,
     Type: "Counseling Inquiry",
@@ -62,15 +83,8 @@ export async function submitBookingRequest(
     Email: booking.email,
     Phone: booking.phone,
     Source: "Website",
-    "Session Type": SESSION_TYPE_LABELS[booking.sessionType] ?? booking.sessionType,
-    Notes: [
-      `Counselor: ${booking.counselor.name}`,
-      `Preferred date: ${booking.preferredDate}`,
-      `Preferred time: ${booking.preferredTime}`,
-      booking.message ? `Message: ${booking.message}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n"),
+    "Session Type": sessionTypeLabel,
+    Notes: bookingNotes,
   });
 
   await sendSupportNotification({

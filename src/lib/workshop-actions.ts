@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
+import { createLead } from "@/lib/leads";
 
 const workshopInquirySchema = z.object({
   organizationName: z.string().trim().min(1, "Please enter your organization or community name."),
@@ -40,6 +41,26 @@ export async function submitWorkshopInquiry(
   const inquiry = await prisma.workshopInquiry.create({ data: parsed.data });
 
   const groupSizeNumber = inquiry.groupSize ? parseInt(inquiry.groupSize, 10) : NaN;
+  const leadNotes = [
+    `Organization: ${inquiry.organizationName}`,
+    `Topic: ${inquiry.workshopTopic}`,
+    inquiry.groupSize ? `Group size: ${inquiry.groupSize}` : null,
+    inquiry.preferredDates ? `Preferred dates: ${inquiry.preferredDates}` : null,
+    inquiry.message ? `Message: ${inquiry.message}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  await createLead({
+    name: inquiry.contactName,
+    type: "WORKSHOP_LEAD",
+    email: inquiry.email,
+    phone: inquiry.phone,
+    source: "Website",
+    ...(Number.isFinite(groupSizeNumber) ? { groupSize: groupSizeNumber } : {}),
+    notes: leadNotes,
+  });
+
   await syncLeadToAirtable({
     Name: inquiry.contactName,
     Type: "Workshop Lead",
@@ -48,15 +69,7 @@ export async function submitWorkshopInquiry(
     Phone: inquiry.phone,
     Source: "Website",
     ...(Number.isFinite(groupSizeNumber) ? { "Group Size": groupSizeNumber } : {}),
-    Notes: [
-      `Organization: ${inquiry.organizationName}`,
-      `Topic: ${inquiry.workshopTopic}`,
-      inquiry.groupSize ? `Group size: ${inquiry.groupSize}` : null,
-      inquiry.preferredDates ? `Preferred dates: ${inquiry.preferredDates}` : null,
-      inquiry.message ? `Message: ${inquiry.message}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n"),
+    Notes: leadNotes,
   });
 
   await sendSupportNotification({

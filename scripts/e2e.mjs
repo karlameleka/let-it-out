@@ -292,6 +292,32 @@ let orderUrl = "";
   const workshopSignupInAdmin = await page.locator(`text=workshop-fan-${rand}@example.com`).first().isVisible().catch(() => false);
   log("workshop notify signup visible in admin", workshopSignupInAdmin);
 
+  // CRM: every real form submission should also land here, filterable by type
+  await page.goto(`${BASE}/admin/crm`);
+  const workshopLeadInCrm = await page.locator("text=Test Corp").first().isVisible().catch(() => false);
+  log("workshop inquiry visible in CRM", workshopLeadInCrm);
+
+  const contactLeadInCrm = await page.locator("text=Contact Test").first().isVisible().catch(() => false);
+  log("contact message visible in CRM", contactLeadInCrm);
+
+  await page.click('a:has-text("General Inquiries")');
+  await page.waitForTimeout(300);
+  const filterHidesOtherTypes = !(await page.locator("text=Test Corp").first().isVisible().catch(() => false));
+  const filterKeepsMatchingType = await page.locator("text=Contact Test").first().isVisible().catch(() => false);
+  log("CRM type filter narrows results correctly", filterHidesOtherTypes && filterKeepsMatchingType);
+
+  await page.goto(`${BASE}/admin/crm`);
+  const workshopLeadCard = page.locator('div.rounded-2xl:has-text("Test Corp")').first();
+  await workshopLeadCard.locator('select[name=status]').selectOption("CONTACTED");
+  await workshopLeadCard.locator('button:has-text("Update")').click();
+  await page.waitForTimeout(500);
+  const leadMovedToContacted = await page
+    .locator("h2:has-text('Contacted')")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("CRM lead status can be updated", leadMovedToContacted);
+
   // update an order status
   await page.goto(`${BASE}/admin/orders`);
   const select = page.locator("select[name=status]").first();
