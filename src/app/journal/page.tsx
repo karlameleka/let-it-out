@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
+import { getJournalStats } from "@/lib/journal-stats";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
 import { Swash } from "@/components/decor";
@@ -14,13 +15,14 @@ export default async function JournalPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [prompt, entries] = await Promise.all([
+  const [prompt, entries, stats] = await Promise.all([
     getNextPrompt(user.userId),
     prisma.journalEntry.findMany({
       where: { userId: user.userId },
       orderBy: { createdAt: "desc" },
       take: 8,
     }),
+    getJournalStats(user.userId),
   ]);
 
   return (
@@ -33,18 +35,18 @@ export default async function JournalPage() {
         </span>
       </h1>
 
-      <div className="mt-8 grid gap-10 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="relative rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-              {prompt?.category ?? "Reflection"}
-            </p>
-            <p data-testid="journal-prompt-text" className="mt-2 font-display text-xl font-medium italic text-brand-900">
-              {prompt?.text ?? "What's on your mind today?"}
-            </p>
-          </div>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
+          🔥 {stats.streak}-day streak
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
+          📝 {stats.total} {stats.total === 1 ? "entry" : "entries"} so far
+        </span>
+      </div>
 
-          <EntryForm promptId={prompt?.id} />
+      <div className="mt-8 grid gap-10 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <EntryForm initialPrompt={prompt} />
         </div>
 
         <div>

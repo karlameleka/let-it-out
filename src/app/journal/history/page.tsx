@@ -29,16 +29,16 @@ export default async function JournalHistoryPage() {
           .
         </p>
       ) : (
-        <ul className="mt-8 space-y-3">
+        <ul className="mt-8 grid gap-3 sm:grid-cols-2">
           {entries.map((e) => (
             <li key={e.id}>
               <Link
                 href={`/journal/${e.id}`}
-                className="block rounded-xl border border-brand-100 bg-white p-4 hover:border-brand-300"
+                className="block rounded-xl border-2 border-brand-100 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-sm"
               >
                 <div className="flex items-center justify-between text-xs text-ink/50">
                   <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                  {e.mood && <span>{e.mood}</span>}
+                  {e.mood && <span className="text-base">{e.mood}</span>}
                 </div>
                 <p className="mt-1 line-clamp-2 text-sm text-ink/80">{e.content}</p>
               </Link>

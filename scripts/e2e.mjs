@@ -43,11 +43,20 @@ async function newContext() {
 
   await page.fill("textarea[name=content]", "This is my first journal entry via e2e test.");
   await page.click('button:has-text("Save entry")');
-  await page.waitForSelector("text=Entry saved.", { timeout: 10000 });
+  await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
   log("journal entry saves", true);
 
   const promptAfter = await page.locator('[data-testid=journal-prompt-text]').innerText();
   log("prompt changes after saving an entry", promptBefore !== promptAfter, `("${promptBefore.slice(0, 30)}..." -> "${promptAfter.slice(0, 30)}...")`);
+
+  const streakVisible = await page.locator("text=/day streak/").first().isVisible().catch(() => false);
+  log("journal shows streak stat after saving", streakVisible);
+
+  const promptBeforeShuffle = await page.locator('[data-testid=journal-prompt-text]').innerText();
+  await page.click('button:has-text("Shuffle prompt")');
+  await page.waitForTimeout(500);
+  const promptAfterShuffle = await page.locator('[data-testid=journal-prompt-text]').innerText();
+  log("shuffle prompt button changes the prompt", promptBeforeShuffle !== promptAfterShuffle);
 
   await page.goto(`${BASE}/journal/history`);
   const entryVisible = await page.locator("text=This is my first journal entry").first().isVisible().catch(() => false);

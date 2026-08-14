@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { getNextPrompt } from "@/lib/prompts";
 
 const entrySchema = z.object({
   content: z.string().trim().min(1, "Write a little something before saving."),
@@ -43,4 +44,16 @@ export async function createJournalEntry(
   revalidatePath("/journal/history");
 
   return { success: true };
+}
+
+/** Fetches a fresh, likely-different prompt for the "shuffle" button. */
+export async function shufflePrompt(currentPromptId?: string) {
+  const user = await requireUser().catch(() => null);
+  if (!user) return null;
+
+  let prompt = await getNextPrompt(user.userId);
+  if (prompt?.id === currentPromptId) {
+    prompt = await getNextPrompt(user.userId);
+  }
+  return prompt;
 }
