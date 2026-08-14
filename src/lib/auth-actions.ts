@@ -8,6 +8,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { createSession, destroySession, requireUser } from "@/lib/session";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { createLead } from "@/lib/leads";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -18,10 +19,24 @@ async function getBaseUrl() {
   return `${protocol}://${host}`;
 }
 
+// Optional demographic fields collapse an empty string to null (rather than
+// undefined) so that choosing "Prefer not to say" on an already-filled field
+// in account settings actually clears it — Prisma's `update` treats
+// `undefined` as "leave unchanged" but `null` as "set to null".
+const optionalField = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => (v ? v : null));
+
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name."),
   email: z.string().trim().email("Please enter a valid email."),
   password: z.string().min(8, "Password must be at least 8 characters."),
+  ageRange: optionalField,
+  gender: optionalField,
+  country: optionalField,
+  referralSource: optionalField,
 });
 
 const loginSchema = z.object({
@@ -39,13 +54,17 @@ export async function signupAction(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    ageRange: formData.get("ageRange"),
+    gender: formData.get("gender"),
+    country: formData.get("country"),
+    referralSource: formData.get("referralSource"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, email, password, ageRange, gender, country, referralSource } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -54,7 +73,24 @@ export async function signupAction(
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash },
+    data: { name, email, passwordHash, ageRange, gender, country, referralSource },
+  });
+
+  const demographicNotes = [
+    ageRange && `Age range: ${ageRange}`,
+    gender && `Gender: ${gender}`,
+    country && `Country: ${country}`,
+    referralSource && `Heard about us via: ${referralSource}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  await createLead({
+    name,
+    type: "ACCOUNT_SIGNUP",
+    email,
+    source: "Website",
+    notes: demographicNotes || "No demographic info provided.",
   });
 
   await createSession({
@@ -105,6 +141,38 @@ export async function loginAction(
 export async function logoutAction() {
   await destroySession();
   redirect("/");
+}
+
+const profileSchema = z.object({
+  ageRange: optionalField,
+  gender: optionalField,
+  country: optionalField,
+  referralSource: optionalField,
+});
+
+export type ProfileFormState = { error?: string; success?: boolean } | undefined;
+
+export async function updateProfileAction(
+  _prevState: ProfileFormState,
+  formData: FormData,
+): Promise<ProfileFormState> {
+  const session = await requireUser().catch(() => null);
+  if (!session) return { error: "Please log in to update your profile." };
+
+  const parsed = profileSchema.safeParse({
+    ageRange: formData.get("ageRange"),
+    gender: formData.get("gender"),
+    country: formData.get("country"),
+    referralSource: formData.get("referralSource"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await prisma.user.update({ where: { id: session.userId }, data: parsed.data });
+
+  return { success: true };
 }
 
 const changePasswordSchema = z

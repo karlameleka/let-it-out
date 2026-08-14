@@ -95,3 +95,17 @@ export const COUNTRIES = [
   "Yemen",
   "Other",
 ];
+
+/** Optional signup demographics — all skippable, so each list starts with a
+ * blank/neutral choice rather than defaulting to a specific answer. */
+export const AGE_RANGES = ["Under 18", "18–24", "25–34", "35–44", "45–54", "55–64", "65+"];
+
+export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"];
+
+export const REFERRAL_SOURCES = [
+  "Social media",
+  "Search engine",
+  "Friend or family",
+  "Workshop or employer",
+  "Other",
+];

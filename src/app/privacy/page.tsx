@@ -78,6 +78,12 @@ export default function PrivacyPolicyPage() {
                 securely hashed password if you create a journaling account.
               </li>
               <li>
+                <strong>Optional demographics:</strong> age range, gender,
+                country, and how you heard about us. These are never required
+                to sign up or use the app — you can skip them entirely or fill
+                them in later from account settings.
+              </li>
+              <li>
                 <strong>Booking information:</strong> name, email, phone
                 number, preferred session date/time, and any message you
                 choose to share about what you&apos;d like support with.
@@ -114,6 +120,10 @@ export default function PrivacyPolicyPage() {
               <li>To provide and personalize your journaling app experience.</li>
               <li>To send confirmation emails for bookings, orders, and inquiries.</li>
               <li>To maintain the security and proper functioning of our services.</li>
+              <li>
+                To understand, in aggregate, who we&apos;re serving so we can
+                improve our services — never to advertise to you individually.
+              </li>
             </ul>
             <p>
               We do not use your information for advertising, and we do not

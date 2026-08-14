@@ -32,9 +32,29 @@ async function newContext() {
   await page.fill("#name", "Test User");
   await page.fill("#email", email);
   await page.fill("#password", "password123");
+  await page.selectOption("#ageRange", "25–34");
+  await page.selectOption("#gender", "Non-binary");
+  await page.selectOption("#country", "Egypt");
+  await page.selectOption("#referralSource", "Social media");
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
   log("signup redirects to /journal", page.url() === `${BASE}/journal`);
+
+  await page.goto(`${BASE}/account`);
+  const demographicsSaved =
+    (await page.locator("#ageRange").inputValue()) === "25–34" &&
+    (await page.locator("#gender").inputValue()) === "Non-binary" &&
+    (await page.locator("#referralSource").inputValue()) === "Social media";
+  log("optional signup demographics are saved and shown in account settings", demographicsSaved);
+
+  await page.selectOption("#gender", "");
+  await page.click('button:has-text("Save")');
+  await page.waitForTimeout(500);
+  await page.reload();
+  const genderCleared = (await page.locator("#gender").inputValue()) === "";
+  log("choosing 'Prefer not to say' clears a previously-set field", genderCleared);
+
+  await page.goto(`${BASE}/journal`);
 
   const promptVisible = await page.locator("text=new prompt").first().isVisible().catch(() => false);
   log("journal dashboard shows prompt heading", promptVisible);
@@ -299,6 +319,12 @@ let orderUrl = "";
 
   const contactLeadInCrm = await page.locator("text=Contact Test").first().isVisible().catch(() => false);
   log("contact message visible in CRM", contactLeadInCrm);
+
+  await page.goto(`${BASE}/admin/crm?type=ACCOUNT_SIGNUP`);
+  const signupInCrm = await page.locator("text=Test User").first().isVisible().catch(() => false);
+  const signupNotesInCrm = await page.locator("text=Age range: 25").first().isVisible().catch(() => false);
+  log("account signup with demographics visible in CRM", signupInCrm && signupNotesInCrm);
+  await page.goto(`${BASE}/admin/crm`);
 
   await page.click('a:has-text("General Inquiries")');
   await page.waitForTimeout(300);

@@ -26,6 +26,15 @@ model User {
   resetTokenHash      String?   @unique
   resetTokenExpiresAt DateTime?
 
+  // Optional demographics, collected (never required) at signup or added
+  // later from account settings. Age is stored as a bucketed range rather
+  // than a birth date, both to avoid needing upkeep and to keep what we
+  // hold on each person to the minimum useful for understanding our users.
+  ageRange       String?
+  gender         String?
+  country        String?
+  referralSource String?
+
   journalEntries JournalEntry[]
   bookingRequests BookingRequest[]
   orders         Order[]
@@ -244,6 +253,7 @@ enum LeadType {
   COUNSELING_INQUIRY
   JOURNAL_CUSTOMER
   GENERAL_INQUIRY
+  ACCOUNT_SIGNUP
 }
 
 enum LeadStatus {
