@@ -19,6 +19,7 @@ async function main() {
       specialties: ["Stress & Burnout", "Emotional Dysregulation", "CBT", "DBT", "Psychosexual Therapy"],
       sortOrder: 0,
       active: true,
+      bookingUrl: "https://cal.com/karlameleka/verna-awad",
     },
     {
       slug: "karla-meleka",
@@ -28,6 +29,7 @@ async function main() {
       specialties: ["Depression", "Anxiety", "CBT", "DBT", "Adult Mental Health"],
       sortOrder: 1,
       active: true,
+      bookingUrl: "https://cal.com/karlameleka/counseling-session",
     },
     {
       slug: "lora-samuel",
