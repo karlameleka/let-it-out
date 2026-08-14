@@ -31,7 +31,32 @@ export default function AboutPage() {
 
       <WaveDivider fill="fill-white" />
 
-      <section className="pb-16 pt-4 sm:pb-20">
+      <section className="border-b border-brand-100 py-10">
+        <Container>
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-ink/40">
+            Trusted by teams and organizations including
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+            {[
+              "e&",
+              "Coca-Cola",
+              "Nestlé",
+              "BeReal Global",
+              "Fahim Foundation",
+              "Ministry of Youth",
+            ].map((org) => (
+              <span
+                key={org}
+                className="font-display text-lg font-semibold text-brand-800/70 sm:text-xl"
+              >
+                {org}
+              </span>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      <section className="pb-16 pt-16 sm:pb-20">
         <Container className="grid gap-8 md:grid-cols-2">
           <div className="rounded-2xl border-2 border-brand-100 bg-white p-8 shadow-sm">
             <h2 className="font-display text-xl font-semibold text-brand-900">

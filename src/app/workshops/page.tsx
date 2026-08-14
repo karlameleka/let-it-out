@@ -50,6 +50,14 @@ export default function WorkshopsPage() {
                   {topic.title}
                 </h3>
                 <p className="mt-2 text-sm text-ink/70">{topic.description}</p>
+                {topic.stat && (
+                  <div className="mt-4 rounded-xl bg-brand-50 p-3">
+                    <p className="text-xs font-medium leading-snug text-brand-800">{topic.stat}</p>
+                    {topic.statSource && (
+                      <p className="mt-1 text-[11px] text-ink/40">Source: {topic.statSource}</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -64,6 +64,17 @@ export default async function ArticlePage({
             </section>
           ))}
 
+          <div className="mt-10 border-t border-brand-100 pt-6">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">References</p>
+            <ol className="mt-2 space-y-1.5 text-xs text-ink/50">
+              {article.references.map((ref, i) => (
+                <li key={i}>
+                  {i + 1}. {ref}
+                </li>
+              ))}
+            </ol>
+          </div>
+
           <div className="mt-12 rounded-2xl border-2 border-brand-100 bg-brand-50 p-6 text-center">
             <p className="font-display font-semibold text-brand-800">
               Want more support than a good read?

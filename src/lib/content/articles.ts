@@ -11,6 +11,7 @@ export type Article = {
   category: string;
   readMinutes: number;
   sections: ArticleSection[];
+  references: string[];
 };
 
 export const ARTICLES: Article[] = [
@@ -55,6 +56,15 @@ export const ARTICLES: Article[] = [
         ],
       },
     ],
+    references: [
+      "Selye, H. (1976). The Stress of Life. McGraw-Hill.",
+      "Bakker, A. B., & Demerouti, E. (2007). The Job Demands-Resources model: State of the art. Journal of Managerial Psychology, 22(3), 309–328.",
+      "Balban, M. Y., et al. (2023). Brief structured respiration practices enhance mood and reduce physiological arousal. Cell Reports Medicine, 4(1).",
+      "Gollwitzer, P. M. (1999). Implementation intentions: Strong effects of simple plans. American Psychologist, 54(7), 493–503.",
+      "Trougakos, J. P., et al. (2014). Lunch breaks unpacked: The role of autonomy as a moderator of recovery during lunch. Academy of Management Journal, 57(2), 405–421.",
+      "Crum, A. J., Salovey, P., & Achor, S. (2013). Rethinking stress: The role of mindsets in determining the stress response. Journal of Personality and Social Psychology, 104(4), 716–733.",
+      "Coan, J. A., & Sbarra, D. A. (2015). Social baseline theory: The social regulation of risk and effort. Current Opinion in Psychology, 1, 87–91.",
+    ],
   },
   {
     slug: "importance-of-journaling",
@@ -93,6 +103,13 @@ export const ARTICLES: Article[] = [
           "Journaling isn't a cure-all, and it isn't a replacement for professional support when you need it — but as a daily habit, it's one of the few practices backed by decades of psychological research that costs nothing but a few minutes and a willingness to be honest with yourself. Start smaller than feels meaningful. The habit that survives is the one you can actually keep doing.",
         ],
       },
+    ],
+    references: [
+      "Pennebaker, J. W., & Beall, S. K. (1986). Confronting a traumatic event: Toward an understanding of inhibition and disease. Journal of Abnormal Psychology, 95(3), 274–281.",
+      "Lieberman, M. D., et al. (2007). Putting feelings into words: Affect labeling disrupts amygdala activity. Psychological Science, 18(5), 421–428.",
+      "Kross, E., et al. (2014). Self-talk as a regulatory mechanism: How you do it matters. Journal of Personality and Social Psychology, 106(2), 304–324.",
+      "Lally, P., et al. (2010). How are habits formed: Modelling habit formation in the real world. European Journal of Social Psychology, 40(6), 998–1009.",
+      "Emmons, R. A., & McCullough, M. E. (2003). Counting blessings versus burdens: An experimental investigation of gratitude. Journal of Personality and Social Psychology, 84(2), 377–389.",
     ],
   },
 ];

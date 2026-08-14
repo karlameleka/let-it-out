@@ -3,6 +3,30 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, DoodleField } from "@/components/decor";
+import { FaqList } from "@/components/faq";
+
+const COUNSELING_FAQ = [
+  {
+    question: "Is what I share in session confidential?",
+    answer:
+      "Yes. Everything you share with your counselor is confidential. The only exceptions are narrow legal and ethical ones — an imminent risk of serious harm to you or someone else, suspected abuse of a minor, or disclosure required by law. Your counselor will walk you through this at the start of your work together.",
+  },
+  {
+    question: "What does a session actually look like?",
+    answer:
+      "Sessions run 50 minutes and are held one-on-one with your counselor over video call. Once your booking request is confirmed, you'll get the video link by email ahead of time.",
+  },
+  {
+    question: "Can I choose which counselor I see?",
+    answer:
+      "Yes — browse profiles below and book directly with the counselor whose background and specialties feel like the right fit for you.",
+  },
+  {
+    question: "What if I need to reschedule?",
+    answer:
+      "Just reach out as early as you can — by email or through the contact page — and we'll help you find a new time.",
+  },
+];
 
 export const metadata: Metadata = {
   title: "Counseling",
@@ -73,6 +97,15 @@ export default async function CounselingPage() {
                 </p>
               </Link>
             ))}
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-brand-50 py-16 sm:py-20">
+        <Container className="max-w-2xl">
+          <SectionHeading eyebrow="Good to know" title="Frequently asked questions" />
+          <div className="mt-8">
+            <FaqList items={COUNSELING_FAQ} />
           </div>
         </Container>
       </section>

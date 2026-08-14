@@ -390,6 +390,54 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow 9: journal "how it works" strip before the signup wall ------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/journal`);
+  const howItWorksVisible = await page.locator("text=How it works").first().isVisible().catch(() => false);
+  log("logged-out /journal shows how-it-works strip instead of redirecting", howItWorksVisible);
+
+  await page.click('a:has-text("Start journaling")');
+  await page.waitForURL(`${BASE}/signup`, { timeout: 10000 });
+  log("how-it-works CTA links to signup", page.url() === `${BASE}/signup`);
+
+  await ctx.close();
+}
+
+// --- Flow 10: FAQ blocks on Counseling and Shop -------------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/counseling`);
+  const counselingFaqVisible = await page.locator("text=Is what I share in session confidential?").first().isVisible().catch(() => false);
+  log("counseling page shows confidentiality FAQ", counselingFaqVisible);
+
+  await page.goto(`${BASE}/shop`);
+  const shopFaqVisible = await page.locator("text=How long does delivery take?").first().isVisible().catch(() => false);
+  log("shop page shows delivery FAQ", shopFaqVisible);
+
+  await ctx.close();
+}
+
+// --- Flow 11: About track record + workshop stats -----------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/about`);
+  const trackRecordVisible = await page.locator("text=Coca-Cola").first().isVisible().catch(() => false);
+  log("about page shows track record strip", trackRecordVisible);
+
+  await page.goto(`${BASE}/workshops`);
+  const statVisible = await page.locator("text=McKinsey Health Institute").first().isVisible().catch(() => false);
+  log("workshops page shows sourced stat", statVisible);
+
+  await ctx.close();
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);

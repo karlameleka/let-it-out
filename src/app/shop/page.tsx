@@ -6,6 +6,25 @@ import { Container, SectionHeading } from "@/components/ui";
 import { PRODUCT_PHOTOS } from "@/components/product-cover";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import PriceDisplay from "@/components/price-display";
+import { FaqList } from "@/components/faq";
+
+const SHOP_FAQ = [
+  {
+    question: "How long does delivery take?",
+    answer:
+      "Within Egypt, orders typically arrive within 3–5 business days of your order being confirmed, for a flat shipping fee of EGP 100 anywhere in the country. Outside Egypt, shipping time and cost are confirmed with you directly before your order ships.",
+  },
+  {
+    question: "What if my journal arrives damaged or wrong?",
+    answer:
+      "Contact us within 7 days of delivery and we'll arrange a replacement or refund. Since payment is collected on delivery, other return requests are handled case-by-case — just reach out and we'll sort it out.",
+  },
+  {
+    question: "How do I pay?",
+    answer:
+      "Cash on Delivery — no payment needed upfront. Have the total amount ready in cash when your journal arrives.",
+  },
+];
 
 export const metadata: Metadata = {
   title: "Guided Journals",
@@ -76,6 +95,15 @@ export default async function ShopPage() {
                 </Link>
               );
             })}
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-brand-50 py-16 sm:py-20">
+        <Container className="max-w-2xl">
+          <SectionHeading eyebrow="Good to know" title="Frequently asked questions" />
+          <div className="mt-8">
+            <FaqList items={SHOP_FAQ} />
           </div>
         </Container>
       </section>

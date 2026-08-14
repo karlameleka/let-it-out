@@ -1,19 +1,88 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
 import { getJournalStats } from "@/lib/journal-stats";
 import { prisma } from "@/lib/db";
-import { Container, Eyebrow } from "@/components/ui";
-import { Swash } from "@/components/decor";
+import { Container, Eyebrow, ButtonLink } from "@/components/ui";
+import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import EntryForm from "./entry-form";
 
 export const metadata: Metadata = { title: "Your Journal" };
 
+const HOW_IT_WORKS = [
+  {
+    step: "1",
+    title: "Get a daily prompt",
+    description: "A fresh, rotating prompt each time — no blank page to stare at.",
+  },
+  {
+    step: "2",
+    title: "Write freely",
+    description: "A few sentences or a full page — there's no right answer, and it's private.",
+  },
+  {
+    step: "3",
+    title: "Build your streak",
+    description: "Look back on old entries anytime and watch your self-reflection habit grow.",
+  },
+];
+
 export default async function JournalPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+
+  if (!user) {
+    return (
+      <>
+        <section className="bg-brand-50 py-16 sm:py-20">
+          <Container>
+            <Ribbon>Free journaling app</Ribbon>
+            <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+              Let it out,{" "}
+              <span className="mark-swash italic text-brand-700">
+                one page<Swash />
+              </span>{" "}
+              at a time.
+            </h1>
+            <p className="mt-5 max-w-2xl text-lg text-ink/70">
+              A free, guided journaling space with rotating daily prompts —
+              no pressure, no perfect entries, just a little time for
+              yourself.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <ButtonLink href="/signup">Start journaling — it&apos;s free</ButtonLink>
+              <ButtonLink href="/login" variant="outline">
+                Log in
+              </ButtonLink>
+            </div>
+          </Container>
+        </section>
+
+        <WaveDivider fill="fill-white" />
+
+        <section className="py-12 sm:py-16">
+          <Container>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+              How it works
+            </p>
+            <div className="mt-6 grid gap-6 sm:grid-cols-3">
+              {HOW_IT_WORKS.map((item) => (
+                <div key={item.step} className="flex gap-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-700 font-display text-sm font-semibold text-white">
+                    {item.step}
+                  </span>
+                  <div>
+                    <p className="font-display font-semibold text-brand-900">{item.title}</p>
+                    <p className="mt-1 text-sm text-ink/60">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+      </>
+    );
+  }
 
   const [prompt, entries, stats] = await Promise.all([
     getNextPrompt(user.userId),
