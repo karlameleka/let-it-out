@@ -204,68 +204,83 @@ export default async function JournalPage() {
   ]);
 
   return (
-    <Container className="py-16 sm:py-20">
-      <Eyebrow>A self-exploration journey</Eyebrow>
-      <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900">
-        Hi {user.name.split(" ")[0]}, here&apos;s a{" "}
-        <span className="mark-swash italic text-brand-700">
-          new prompt<Swash />
-        </span>
-      </h1>
+    <>
+      <section className="relative overflow-hidden bg-brand-50">
+        <DoodleField />
+        <Container className="relative py-14 sm:py-16">
+          <Eyebrow>A self-exploration journey</Eyebrow>
+          <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900 sm:text-4xl">
+            Hi {user.name.split(" ")[0]}, here&apos;s a{" "}
+            <span className="mark-swash italic text-brand-700">
+              new prompt<Swash />
+            </span>
+          </h1>
+          <p className="mt-3 max-w-lg text-ink/70">
+            A few minutes today, a little more clarity tomorrow.
+          </p>
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
-          🔥 {stats.streak}-day streak
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
-          📝 {stats.total} {stats.total === 1 ? "entry" : "entries"} so far
-        </span>
-        <Link
-          href="/journal/patterns"
-          className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-4 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50"
-        >
-          📊 Mood patterns
-        </Link>
-        <JournalReminderToggle />
-      </div>
-
-      <div className="mt-8 grid gap-10 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <EntryForm initialPrompt={prompt} />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between">
-            <h2 className="font-display font-semibold text-brand-900">Recent entries</h2>
-            <Link href="/journal/history" className="text-sm font-medium text-brand-600 link-grow">
-              View all
+          <div className="mt-6 flex flex-wrap gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-brand-700 shadow-sm">
+              🔥 {stats.streak}-day streak
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-brand-700 shadow-sm">
+              📝 {stats.total} {stats.total === 1 ? "entry" : "entries"} so far
+            </span>
+            <Link
+              href="/journal/patterns"
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-100"
+            >
+              📊 Mood patterns
             </Link>
+            <JournalReminderToggle />
+          </div>
+        </Container>
+      </section>
+
+      <WaveDivider fill="fill-white" />
+
+      <Container className="pb-16 pt-8 sm:pb-24">
+        <div className="grid gap-10 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <EntryForm initialPrompt={prompt} />
           </div>
 
-          {entries.length === 0 ? (
-            <p className="mt-4 text-sm text-ink/60">
-              Your entries will show up here once you save your first one.
-            </p>
-          ) : (
-            <ul className="mt-4 space-y-3">
-              {entries.map((e) => (
-                <li key={e.id}>
-                  <Link
-                    href={`/journal/${e.id}`}
-                    className="block rounded-xl border-2 border-brand-100 bg-white p-4 transition-colors hover:border-brand-300"
-                  >
-                    <div className="flex items-center justify-between text-xs text-ink/50">
-                      <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                      {e.mood && <span>{e.mood}</span>}
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-ink/80">{e.content}</p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display font-semibold text-brand-900">Recent entries</h2>
+              <Link href="/journal/history" className="text-sm font-medium text-brand-600 link-grow">
+                View all
+              </Link>
+            </div>
+
+            {entries.length === 0 ? (
+              <div className="mt-6 flex flex-col items-center rounded-xl border border-dashed border-brand-200 bg-brand-50 px-4 py-8 text-center">
+                <span className="text-3xl">📖</span>
+                <p className="mt-3 text-sm text-ink/60">
+                  Your entries will show up here once you save your first one.
+                </p>
+              </div>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {entries.map((e) => (
+                  <li key={e.id}>
+                    <Link
+                      href={`/journal/${e.id}`}
+                      className="block rounded-xl border-2 border-brand-100 bg-brand-50/40 p-4 transition-colors hover:border-brand-300 hover:bg-brand-50"
+                    >
+                      <div className="flex items-center justify-between text-xs text-ink/50">
+                        <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                        {e.mood && <span>{e.mood}</span>}
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-sm text-ink/80">{e.content}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div>
-    </Container>
+      </Container>
+    </>
   );
 }
