@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow, ButtonLink } from "@/components/ui";
 import { Swash } from "@/components/decor";
+import { MoodDot } from "@/components/mood-dot";
 
 export const metadata: Metadata = { title: "Journal History" };
 
@@ -59,11 +60,7 @@ export default async function JournalHistoryPage() {
                   <span className="text-xs font-semibold uppercase tracking-wide text-brand-500">
                     {e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   </span>
-                  {e.mood && (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-base">
-                      {e.mood}
-                    </span>
-                  )}
+                  {e.mood && <MoodDot mood={e.mood} />}
                 </div>
                 <p className="mt-3 line-clamp-3 text-sm text-ink/80">{e.content}</p>
               </Link>

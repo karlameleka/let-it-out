@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/db";
-import { MOODS, moodLabel } from "@/lib/moods";
+import { MOODS, moodLabel, moodColor } from "@/lib/moods";
 
 export type MoodPatterns = {
-  frequency: { emoji: string; label: string; count: number; percent: number }[];
-  topMood: { emoji: string; label: string; count: number } | null;
+  frequency: { id: string; label: string; color: string; count: number; percent: number }[];
+  topMood: { id: string; label: string; color: string; count: number } | null;
   totalWithMood: number;
   /** Oldest first, aligned to full weeks (Sun–Sat) for a calendar-style grid. */
   heatmap: { date: string; mood: string | null }[];
@@ -38,16 +38,17 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
   const totalWithMood = [...counts.values()].reduce((a, b) => a + b, 0);
 
   const frequency = MOODS.map((m) => ({
-    emoji: m.emoji,
+    id: m.id,
     label: m.label,
-    count: counts.get(m.emoji) ?? 0,
-    percent: totalWithMood > 0 ? Math.round(((counts.get(m.emoji) ?? 0) / totalWithMood) * 100) : 0,
+    color: m.color,
+    count: counts.get(m.id) ?? 0,
+    percent: totalWithMood > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalWithMood) * 100) : 0,
   }))
     .filter((m) => m.count > 0)
     .sort((a, b) => b.count - a.count);
 
   const topMood = frequency[0]
-    ? { emoji: frequency[0].emoji, label: frequency[0].label, count: frequency[0].count }
+    ? { id: frequency[0].id, label: frequency[0].label, color: frequency[0].color, count: frequency[0].count }
     : null;
 
   const heatmap: MoodPatterns["heatmap"] = [];
@@ -61,4 +62,4 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
   return { frequency, topMood, totalWithMood, heatmap };
 }
 
-export { moodLabel };
+export { moodLabel, moodColor };

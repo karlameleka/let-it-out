@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { BarChart3, BookOpen } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
+import { moodColor, moodLabel } from "@/lib/moods";
 import { getNextPrompt } from "@/lib/prompts";
 import { getJournalStats } from "@/lib/journal-stats";
 import { prisma } from "@/lib/db";
@@ -291,7 +292,13 @@ export default async function JournalPage() {
                     >
                       <div className="flex items-center justify-between text-xs text-ink/50">
                         <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                        {e.mood && <span>{e.mood}</span>}
+                        {e.mood && (
+                          <span
+                            title={moodLabel(e.mood)}
+                            className="h-2.5 w-2.5 rounded-full border border-black/10"
+                            style={{ backgroundColor: moodColor(e.mood) }}
+                          />
+                        )}
                       </div>
                       <p className="mt-1 line-clamp-2 text-sm text-ink/80">{e.content}</p>
                     </Link>

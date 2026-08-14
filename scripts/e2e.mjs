@@ -511,8 +511,8 @@ let orderUrl = "";
   log("mood patterns page shows empty state before any mood entries", emptyStateVisible);
 
   await page.goto(`${BASE}/journal`);
-  for (const mood of ["😊", "😌", "😊"]) {
-    await page.click(`button[title]:has-text("${mood}")`);
+  for (const mood of ["Happy", "Sad", "Happy"]) {
+    await page.click(`button:has-text("${mood}")`);
     await page.fill("textarea[name=content]", `Entry feeling ${mood}`);
     await page.click('button:has-text("Save entry")');
     await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
@@ -522,11 +522,28 @@ let orderUrl = "";
   await page.click("text=Mood patterns");
   await page.waitForURL(`${BASE}/journal/patterns`, { timeout: 10000 });
 
-  const topMoodCorrect = await page.locator("text=/Most common mood:.*Great.*2×/").first().isVisible().catch(() => false);
+  const topMoodCorrect = await page.locator("text=/Most common mood:.*Happy.*2×/").first().isVisible().catch(() => false);
   log("mood breakdown counts every tagged entry, not just one per day", topMoodCorrect);
 
-  const heatmapCellVisible = await page.locator("text=😊").first().isVisible().catch(() => false);
-  log("heatmap shows today's mood emoji", heatmapCellVisible);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayCellTitle = await page.locator(`[title^="${todayIso}"]`).first().getAttribute("title").catch(() => null);
+  const heatmapCellVisible = todayCellTitle?.includes("Happy") ?? false;
+  log("heatmap shows today's mood via colored cell", heatmapCellVisible);
+
+  // Drilling into a core emotion should reveal more specific secondary feelings.
+  await page.goto(`${BASE}/journal`);
+  await page.click('button:has-text("Happy")');
+  const secondaryVisible = await page.locator('button:has-text("Content")').first().isVisible().catch(() => false);
+  log("selecting a core emotion reveals its secondary feelings", secondaryVisible);
+
+  await page.click('button:has-text("Content")');
+  await page.fill("textarea[name=content]", "Entry feeling specifically content.");
+  await page.click('button:has-text("Save entry")');
+  await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
+
+  await page.goto(`${BASE}/journal/history`);
+  const secondaryMoodSaved = await page.locator('[title="Content"]').first().isVisible().catch(() => false);
+  log("picking a secondary feeling saves that specific mood", secondaryMoodSaved);
 
   await ctx.close();
 }

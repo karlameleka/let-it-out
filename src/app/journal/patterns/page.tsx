@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getMoodPatterns } from "@/lib/mood-patterns";
+import { moodColor, moodLabel } from "@/lib/moods";
 import { Container } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Mood Patterns" };
@@ -43,8 +44,12 @@ export default async function MoodPatternsPage() {
           <div className="lg:col-span-3">
             <h2 className="font-display font-semibold text-brand-900">Last 12 weeks</h2>
             {topMood && (
-              <p className="mt-1 text-sm text-ink/60">
-                Most common mood: <span className="text-base">{topMood.emoji}</span>{" "}
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-ink/60">
+                Most common mood:
+                <span
+                  className="h-2.5 w-2.5 rounded-full border border-black/10"
+                  style={{ backgroundColor: topMood.color }}
+                />
                 <span className="font-medium text-ink/80">{topMood.label}</span> ({topMood.count}×)
               </p>
             )}
@@ -65,19 +70,12 @@ export default async function MoodPatternsPage() {
                   {heatmap.map((day) => (
                     <div
                       key={day.date}
-                      title={`${day.date}${day.mood ? ` — ${day.mood}` : ""}`}
-                      className={`flex h-6 w-6 items-center justify-center rounded-md text-xs ${
-                        day.date === today
-                          ? "ring-2 ring-brand-400"
-                          : ""
-                      } ${
-                        day.mood
-                          ? "bg-brand-100"
-                          : "bg-brand-50/60"
-                      }`}
-                    >
-                      {day.mood ?? ""}
-                    </div>
+                      title={`${day.date}${day.mood ? ` — ${moodLabel(day.mood)}` : ""}`}
+                      className={`h-6 w-6 rounded-md border ${
+                        day.date === today ? "ring-2 ring-brand-400" : ""
+                      } ${day.mood ? "border-black/10" : "border-transparent bg-brand-50/60"}`}
+                      style={day.mood ? { backgroundColor: moodColor(day.mood) } : undefined}
+                    />
                   ))}
                 </div>
               </div>
@@ -88,18 +86,21 @@ export default async function MoodPatternsPage() {
             <h2 className="font-display font-semibold text-brand-900">Mood breakdown</h2>
             <div className="mt-4 space-y-3">
               {frequency.map((m) => (
-                <div key={m.emoji}>
+                <div key={m.id}>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1.5">
-                      <span className="text-base">{m.emoji}</span>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full border border-black/10"
+                        style={{ backgroundColor: m.color }}
+                      />
                       <span className="text-ink/80">{m.label}</span>
                     </span>
                     <span className="text-ink/50">{m.count}×</span>
                   </div>
                   <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-brand-50">
                     <div
-                      className="h-full rounded-full bg-brand-500"
-                      style={{ width: `${m.percent}%` }}
+                      className="h-full rounded-full"
+                      style={{ width: `${m.percent}%`, backgroundColor: m.color }}
                     />
                   </div>
                 </div>

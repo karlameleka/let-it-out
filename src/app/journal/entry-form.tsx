@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { Shuffle } from "lucide-react";
 import { createJournalEntry, shufflePrompt } from "@/lib/journal-actions";
 import { Button } from "@/components/ui";
-import { MOODS } from "@/lib/moods";
+import { CORE_EMOTIONS, getSecondaryEmotions, type CoreEmotionId } from "@/lib/moods";
 
 const CELEBRATIONS = [
   "Entry saved — that's one more step in your journey.",
@@ -19,6 +19,7 @@ type Prompt = { id: string; category: string; text: string } | null;
 export default function EntryForm({ initialPrompt }: { initialPrompt: Prompt }) {
   const [state, formAction, pending] = useActionState(createJournalEntry, undefined);
   const [mood, setMood] = useState<string | null>(null);
+  const [expandedCore, setExpandedCore] = useState<CoreEmotionId | null>(null);
   const [key, setKey] = useState(0);
   const [lastHandledState, setLastHandledState] = useState(state);
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -30,7 +31,22 @@ export default function EntryForm({ initialPrompt }: { initialPrompt: Prompt }) 
     if (state?.success) {
       setKey((k) => k + 1);
       setMood(null);
+      setExpandedCore(null);
     }
+  }
+
+  function selectCore(coreId: CoreEmotionId) {
+    if (mood === coreId && expandedCore === coreId) {
+      setMood(null);
+      setExpandedCore(null);
+    } else {
+      setMood(coreId);
+      setExpandedCore(coreId);
+    }
+  }
+
+  function selectSecondary(id: string) {
+    setMood(mood === id ? null : id);
   }
 
   function handleShuffle() {
@@ -86,22 +102,50 @@ export default function EntryForm({ initialPrompt }: { initialPrompt: Prompt }) 
             How are you feeling?
           </p>
           <div className="flex flex-wrap gap-2">
-            {MOODS.map(({ emoji, label }) => (
-              <button
-                key={emoji}
-                type="button"
-                title={label}
-                onClick={() => setMood(emoji === mood ? null : emoji)}
-                className={`flex h-11 w-11 items-center justify-center rounded-full border text-xl transition-all hover:scale-110 ${
-                  mood === emoji
-                    ? "border-brand-600 bg-brand-50 scale-110 shadow-[0_2px_0_0_theme(colors.brand.300)]"
-                    : "border-brand-100 hover:border-brand-300"
-                }`}
-              >
-                {emoji}
-              </button>
-            ))}
+            {CORE_EMOTIONS.map((core) => {
+              const isExactMatch = mood === core.id;
+              const isExpanded = expandedCore === core.id;
+              return (
+                <button
+                  key={core.id}
+                  type="button"
+                  onClick={() => selectCore(core.id)}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
+                    isExactMatch
+                      ? "border-brand-600 bg-brand-50 text-brand-800 shadow-[0_2px_0_0_theme(colors.brand.300)]"
+                      : isExpanded
+                        ? "border-brand-300 text-ink/80"
+                        : "border-brand-100 text-ink/70 hover:border-brand-300"
+                  }`}
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full border border-black/10"
+                    style={{ backgroundColor: core.color }}
+                  />
+                  {core.label}
+                </button>
+              );
+            })}
           </div>
+
+          {expandedCore && (
+            <div className="animate-pop-in mt-3 flex flex-wrap gap-2 rounded-xl border border-dashed border-brand-100 bg-brand-50/50 p-3">
+              {getSecondaryEmotions(expandedCore).map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => selectSecondary(m.id)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                    mood === m.id
+                      ? "border-brand-600 bg-white text-brand-800 shadow-sm"
+                      : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <textarea

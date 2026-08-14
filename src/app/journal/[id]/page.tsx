@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { Container } from "@/components/ui";
 import { moodLabel } from "@/lib/moods";
+import { MoodDot } from "@/components/mood-dot";
 
 export default async function JournalEntryPage({
   params,
@@ -36,12 +37,10 @@ export default async function JournalEntryPage({
             {entry.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
           </p>
           {entry.mood && (
-            <span
-              title={moodLabel(entry.mood)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl shadow-sm"
-            >
-              {entry.mood}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-brand-700">{moodLabel(entry.mood)}</span>
+              <MoodDot mood={entry.mood} size="md" />
+            </div>
           )}
         </div>
 
