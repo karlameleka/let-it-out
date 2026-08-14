@@ -22,7 +22,7 @@ const SHOP_FAQ = [
   {
     question: "How do I pay?",
     answer:
-      "Cash on Delivery — no payment needed upfront. Have the total amount ready in cash when your journal arrives.",
+      "You'll choose at checkout — pay securely online by card or mobile wallet, or choose Cash on Delivery and pay when your journal arrives.",
   },
 ];
 
@@ -88,9 +88,6 @@ export default async function ShopPage() {
                   </p>
                   <p className="mt-2 text-center text-sm font-medium text-brand-700">
                     <PriceDisplay egpAmount={price} />
-                  </p>
-                  <p className="mt-1 text-center text-xs text-ink/50">
-                    Cash on Delivery
                   </p>
                 </Link>
               );

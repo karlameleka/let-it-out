@@ -68,16 +68,6 @@ export default async function ProductPage({
               }))}
             />
           </div>
-
-          <div className="mt-8 flex flex-wrap gap-2">
-            <span className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
-              Cash on Delivery
-            </span>
-          </div>
-
-          <p className="mt-4 text-xs text-ink/50">
-            Ships once your order is confirmed — pay in cash when it arrives.
-          </p>
         </div>
       </Container>
     </section>
