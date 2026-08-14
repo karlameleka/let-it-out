@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { Container, Eyebrow, ButtonLink } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import EntryForm from "./entry-form";
+import JournalReminderToggle from "@/components/journal-reminder-toggle";
 
 export const metadata: Metadata = { title: "Your Journal" };
 
@@ -117,6 +118,7 @@ export default async function JournalPage() {
         >
           📊 Mood patterns
         </Link>
+        <JournalReminderToggle />
       </div>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">

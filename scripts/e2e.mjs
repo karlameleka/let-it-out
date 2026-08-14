@@ -531,6 +531,80 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow 15: daily journal push notification opt-in --------------------------
+{
+  // The real Push API can't be exercised here (it requires reaching a real
+  // push service), so only the browser-internal subscribe/getSubscription
+  // calls are mocked — everything downstream (permission request, our
+  // component, the server action, the DB write) runs for real.
+  const ctx = await browser.newContext();
+  await ctx.addInitScript(() => {
+    window.localStorage.setItem("lio_consent_given", "1");
+    window.localStorage.setItem("lio_country", "Egypt");
+
+    const fakeSub = {
+      endpoint: "https://fake-push-endpoint.example.com/e2e-test",
+      toJSON: () => ({
+        endpoint: "https://fake-push-endpoint.example.com/e2e-test",
+        keys: { p256dh: "fake-p256dh", auth: "fake-auth" },
+      }),
+      unsubscribe: async () => true,
+    };
+    let subscribed = null;
+    const fakeRegistration = {
+      pushManager: {
+        subscribe: async () => {
+          subscribed = fakeSub;
+          return fakeSub;
+        },
+        getSubscription: async () => subscribed,
+      },
+    };
+    Object.defineProperty(navigator.serviceWorker, "ready", {
+      get: () => Promise.resolve(fakeRegistration),
+    });
+    const originalRegister = navigator.serviceWorker.register.bind(navigator.serviceWorker);
+    navigator.serviceWorker.register = async (url) => {
+      try {
+        await originalRegister(url);
+      } catch {}
+      return fakeRegistration;
+    };
+  });
+  await ctx.grantPermissions(["notifications"]);
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/signup`);
+  await page.fill("#name", "Push Flow Tester");
+  await page.fill("#email", `push-flow-${rand}@example.com`);
+  await page.fill("#password", "password123");
+  await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+
+  await page.click("text=Enable daily reminders");
+  await page.waitForTimeout(1000);
+  const subscribedState = await page.locator("text=Daily reminders on").first().isVisible().catch(() => false);
+  log("enabling reminders subscribes and updates the toggle", subscribedState);
+
+  await page.click("text=Daily reminders on");
+  await page.waitForTimeout(1000);
+  const unsubscribedState = await page.locator("text=Enable daily reminders").first().isVisible().catch(() => false);
+  log("disabling reminders unsubscribes and updates the toggle", unsubscribedState);
+
+  await ctx.close();
+}
+
+// --- Flow 16: journal reminder cron route is protected -----------------------
+{
+  const unauthedRes = await fetch(`${BASE}/api/cron/journal-reminder`);
+  log("cron route rejects requests without the shared secret", unauthedRes.status === 401);
+
+  const wrongSecretRes = await fetch(`${BASE}/api/cron/journal-reminder`, {
+    headers: { Authorization: "Bearer wrong-secret" },
+  });
+  log("cron route rejects requests with the wrong secret", wrongSecretRes.status === 401);
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);
