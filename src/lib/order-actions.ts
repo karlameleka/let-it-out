@@ -22,7 +22,7 @@ const createOrderSchema = z.object({
   googleMapsLink: z.string().trim().optional(),
   country: z.string().trim().optional(),
   governorate: z.string().trim().optional(),
-  paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY"]),
+  paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY", "PAYMOB"]),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -138,6 +138,9 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       ? "Calculated upon delivery (outside Egypt)"
       : formatEGP(shippingFeeEGP);
 
+  const paymentMethodLabel =
+    paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : paymentMethod === "PAYMOB" ? "Card / Wallet (Paymob)" : "InstaPay";
+
   await sendSupportNotification({
     subject: "New journal order",
     lines: [
@@ -149,7 +152,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       { label: "Subtotal", value: formatEGP(subtotalEGP) },
       { label: "Shipping fee", value: shippingFeeSummary },
       { label: "Total", value: formatEGP(totalEGP) },
-      { label: "Payment method", value: paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : "InstaPay" },
+      { label: "Payment method", value: paymentMethodLabel },
       { label: "Country", value: needsShipping ? (country ?? "—") : "N/A (ebook only)" },
       { label: "Governorate", value: needsShipping && country === "Egypt" ? (governorate ?? "—") : "N/A" },
       { label: "Shipping address", value: needsShipping ? (shippingAddress ?? "—") : "N/A (ebook only)" },
@@ -157,11 +160,15 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     ],
   });
 
+  const isPendingOnlinePayment = paymentMethod === "PAYMOB" || paymentMethod === "INSTAPAY";
+
   await sendCustomerConfirmation({
     to: guestEmail,
     name: guestName,
-    subject: "Your order is confirmed",
-    intro: `Thanks for your order! It's confirmed and will ship soon — pay ${formatEGP(totalEGP)} in cash when it arrives.`,
+    subject: isPendingOnlinePayment ? "Complete your payment" : "Your order is confirmed",
+    intro: isPendingOnlinePayment
+      ? `Thanks for your order! Complete your payment of ${formatEGP(totalEGP)} to confirm it.`
+      : `Thanks for your order! It's confirmed and will ship soon — pay ${formatEGP(totalEGP)} in cash when it arrives.`,
     lines: [
       { label: "Order #", value: order.id.slice(-8).toUpperCase() },
       { label: "Items", value: itemsSummary },

@@ -4,6 +4,7 @@ import { Container } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
 import PriceDisplay from "@/components/price-display";
 import PaymentForm from "./payment-form";
+import RetryPaymobPayment from "./retry-paymob-payment";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_PAYMENT: "Awaiting payment",
@@ -130,6 +131,34 @@ export default async function OrderConfirmationPage({
           </div>
         )}
 
+        {order.paymentMethod === "PAYMOB" && order.status === "PENDING_PAYMENT" && (
+          <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-6">
+            <h2 className="font-display font-semibold text-brand-900">
+              Complete your payment
+            </h2>
+            <p className="mt-3 text-sm text-ink/80">
+              Your order is saved but not yet confirmed. Finish payment
+              below to confirm it.
+            </p>
+            <div className="mt-6">
+              <RetryPaymobPayment orderId={order.id} amountEGP={order.totalEGP} />
+            </div>
+          </div>
+        )}
+
+        {order.paymentMethod === "PAYMOB" && order.status === "CONFIRMED" && (
+          <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-6">
+            <h2 className="font-display font-semibold text-brand-900">
+              Payment received
+            </h2>
+            <p className="mt-3 text-sm text-ink/80">
+              We&apos;ve received your payment of{" "}
+              <strong>{formatEGP(order.totalEGP)}</strong>. Our team will
+              reach out to confirm delivery details.
+            </p>
+          </div>
+        )}
+
         {order.paymentMethod === "CASH_ON_DELIVERY" && (
           <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-6">
             <h2 className="font-display font-semibold text-brand-900">
@@ -143,7 +172,10 @@ export default async function OrderConfirmationPage({
           </div>
         )}
 
-        {!(order.paymentMethod === "INSTAPAY" && order.status === "PENDING_PAYMENT") && (
+        {!(
+          (order.paymentMethod === "INSTAPAY" || order.paymentMethod === "PAYMOB") &&
+          order.status === "PENDING_PAYMENT"
+        ) && (
           <p className="mt-8 text-sm text-ink/60">
             A confirmation has been sent to {order.guestEmail}. If you have
             any questions about your order, please{" "}

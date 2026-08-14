@@ -140,6 +140,7 @@ enum OrderStatus {
 enum PaymentMethod {
   INSTAPAY
   CASH_ON_DELIVERY
+  PAYMOB
 }
 
 model Order {

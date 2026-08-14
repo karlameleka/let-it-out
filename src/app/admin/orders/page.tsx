@@ -23,7 +23,11 @@ export default async function AdminOrdersPage() {
               <p className="text-sm text-ink/60">{order.guestEmail} · {order.guestPhone}</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
-                  {order.paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : "InstaPay"}
+                  {order.paymentMethod === "CASH_ON_DELIVERY"
+                    ? "Cash on Delivery"
+                    : order.paymentMethod === "PAYMOB"
+                      ? "Card / Wallet (Paymob)"
+                      : "InstaPay"}
                 </span>
                 <p className="text-xs text-ink/40">
                   {order.createdAt.toLocaleString("en-GB")}

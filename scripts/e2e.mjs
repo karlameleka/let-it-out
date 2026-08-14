@@ -438,6 +438,48 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow 12: Paymob card/wallet payment method at checkout ------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/shop`);
+  await page.click("text=80 Days of Self-Love");
+  await page.waitForURL(/\/shop\/80-days-of-self-love/);
+  await page.click('button:has-text("Buy now")');
+  await page.waitForURL(`${BASE}/cart`, { timeout: 10000 });
+  await page.click('button:has-text("Checkout")');
+  await page.waitForURL(`${BASE}/checkout`, { timeout: 10000 });
+
+  const paymobOptionVisible = await page.locator("text=Card / Mobile Wallet").first().isVisible().catch(() => false);
+  log("checkout offers Card / Mobile Wallet (Paymob) as a payment method", paymobOptionVisible);
+
+  await page.fill("#guestName", "Paymob E2E");
+  await page.fill("#guestEmail", `paymob-e2e-${rand}@example.com`);
+  await page.fill("#guestPhone", "+201000000094");
+  await page.fill("#shippingAddress", "1 Test St, Cairo");
+  await page.selectOption("#country", "Egypt");
+  await page.selectOption("#governorate", "Cairo");
+  await page.click("text=Card / Mobile Wallet");
+  await page.waitForTimeout(300);
+
+  const payButtonVisible = await page.locator('button:has-text("with Card")').first().isVisible().catch(() => false);
+  log("selecting Paymob shows Pay with Card / Wallet buttons", payButtonVisible);
+
+  // No PAYMOB_* env vars are configured in this environment, so the route
+  // should fail gracefully rather than crash the page or lose the cart.
+  await page.click('button:has-text("with Card")');
+  await page.waitForTimeout(1500);
+
+  const pageIntact = (await page.locator("form").count()) === 1;
+  log("checkout page stays intact after a gateway error (cart/order not lost)", pageIntact);
+
+  const gatewayErrorVisible = await page.locator("text=/not available right now/i").first().isVisible().catch(() => false);
+  log("gateway error is shown inline instead of crashing", gatewayErrorVisible);
+
+  await ctx.close();
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);

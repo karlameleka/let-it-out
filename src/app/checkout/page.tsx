@@ -1,25 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
-import { createOrder } from "@/lib/order-actions";
+import { createOrder, type CreateOrderInput } from "@/lib/order-actions";
 import { Container, Button, ButtonLink } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
 import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 import { EGYPT_SHIPPING_FEE_EGP } from "@/lib/shipping";
 import PriceDisplay from "@/components/price-display";
+import PaymentSelector from "@/components/PaymentSelector";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
 const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
+type PaymentMethod = "CASH_ON_DELIVERY" | "PAYMOB";
+
 export default function CheckoutPage() {
   const { items, subtotalEGP, clear } = useCart();
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [country, setCountry] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH_ON_DELIVERY");
+  const [paymobOrderId, setPaymobOrderId] = useState<string | null>(null);
 
   const needsShipping = items.some((i) => i.format === "PHYSICAL");
   const isEgypt = country === "Egypt";
@@ -36,10 +42,10 @@ export default function CheckoutPage() {
     );
   }
 
-  async function handleSubmit(formData: FormData) {
-    setPending(true);
-    setError(null);
-    const result = await createOrder({
+  function buildOrderInput(method: PaymentMethod): CreateOrderInput | null {
+    if (!formRef.current || !formRef.current.reportValidity()) return null;
+    const formData = new FormData(formRef.current);
+    return {
       items: items.map((i) => ({ productVariantId: i.productVariantId, quantity: i.quantity })),
       guestName: String(formData.get("guestName") || ""),
       guestEmail: String(formData.get("guestEmail") || ""),
@@ -48,8 +54,18 @@ export default function CheckoutPage() {
       googleMapsLink: String(formData.get("googleMapsLink") || ""),
       country: String(formData.get("country") || ""),
       governorate: String(formData.get("governorate") || ""),
-      paymentMethod: "CASH_ON_DELIVERY",
-    });
+      paymentMethod: method,
+    };
+  }
+
+  async function handleCodSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const input = buildOrderInput("CASH_ON_DELIVERY");
+    if (!input) return;
+
+    setPending(true);
+    setError(null);
+    const result = await createOrder(input);
     setPending(false);
 
     if ("error" in result) {
@@ -61,12 +77,34 @@ export default function CheckoutPage() {
     router.push(`/orders/${result.orderId}`);
   }
 
+  async function handleCreatePaymobOrder(): Promise<string | null> {
+    // Reuse the order from an earlier attempt on this page (e.g. after a
+    // gateway hiccup) instead of creating a duplicate pending order.
+    if (paymobOrderId) return paymobOrderId;
+
+    setError(null);
+    const input = buildOrderInput("PAYMOB");
+    if (!input) return null;
+
+    const result = await createOrder(input);
+    if ("error" in result) {
+      setError(result.error);
+      return null;
+    }
+
+    // Don't clear the cart yet — only once we're actually about to redirect
+    // to Paymob (see onRedirect below). If the gateway call fails, the
+    // order already exists but the cart and this page should stay intact.
+    setPaymobOrderId(result.orderId);
+    return result.orderId;
+  }
+
   return (
     <Container className="py-16 sm:py-20">
       <h1 className="font-display text-3xl font-semibold text-brand-900">Checkout</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
-        <form action={handleSubmit} className="space-y-6 lg:col-span-2">
+        <form ref={formRef} onSubmit={handleCodSubmit} className="space-y-6 lg:col-span-2">
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -146,19 +184,59 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          <div className="rounded-xl border-2 border-brand-100 bg-brand-50 p-4">
-            <p className="text-sm font-semibold text-brand-800">Cash on Delivery</p>
-            <p className="mt-1 text-sm text-ink/60">
-              No payment needed now — pay in cash when your journal is
-              delivered to you.
-            </p>
+          <div>
+            <p className={labelClass}>Payment method</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-colors ${
+                  paymentMethod === "CASH_ON_DELIVERY" ? "border-brand-500 bg-brand-50" : "border-brand-100"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethodChoice"
+                  className="mt-1"
+                  checked={paymentMethod === "CASH_ON_DELIVERY"}
+                  onChange={() => setPaymentMethod("CASH_ON_DELIVERY")}
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-brand-800">Cash on Delivery</span>
+                  <span className="mt-0.5 block text-xs text-ink/60">
+                    No payment needed now — pay in cash when your journal arrives.
+                  </span>
+                </span>
+              </label>
+              <label
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-colors ${
+                  paymentMethod === "PAYMOB" ? "border-brand-500 bg-brand-50" : "border-brand-100"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethodChoice"
+                  className="mt-1"
+                  checked={paymentMethod === "PAYMOB"}
+                  onChange={() => setPaymentMethod("PAYMOB")}
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-brand-800">Card / Mobile Wallet</span>
+                  <span className="mt-0.5 block text-xs text-ink/60">
+                    Pay securely online now via Paymob.
+                  </span>
+                </span>
+              </label>
+            </div>
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <Button type="submit" disabled={pending} className="w-full">
-            {pending ? "Placing order…" : "Place order"}
-          </Button>
+          {paymentMethod === "CASH_ON_DELIVERY" ? (
+            <Button type="submit" disabled={pending} className="w-full">
+              {pending ? "Placing order…" : "Place order"}
+            </Button>
+          ) : (
+            <PaymentSelector amountEGP={totalEGP} getOrderId={handleCreatePaymobOrder} onRedirect={clear} />
+          )}
         </form>
 
         <div className="rounded-2xl border-2 border-brand-100 bg-white p-6 h-fit">
