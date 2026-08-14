@@ -227,15 +227,16 @@ model JournalPrompt {
 }
 
 model JournalEntry {
-  id        String         @id @default(cuid())
-  user      User           @relation(fields: [userId], references: [id])
-  userId    String
-  prompt    JournalPrompt? @relation(fields: [promptId], references: [id])
-  promptId  String?
-  content   String         @db.Text
-  mood      String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id         String         @id @default(cuid())
+  user       User           @relation(fields: [userId], references: [id])
+  userId     String
+  prompt     JournalPrompt? @relation(fields: [promptId], references: [id])
+  promptId   String?
+  content    String         @db.Text
+  mood       String?
+  bookmarked Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 }
 
 model PushSubscription {

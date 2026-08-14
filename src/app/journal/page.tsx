@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Image from "next/image";
-import { BarChart3, BookOpen } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { moodColor, moodLabel } from "@/lib/moods";
-import { getNextPrompt } from "@/lib/prompts";
-import { getJournalStats } from "@/lib/journal-stats";
-import { prisma } from "@/lib/db";
-import { Container, Eyebrow, SectionHeading, ButtonLink } from "@/components/ui";
+import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
-import EntryForm from "./entry-form";
-import JournalReminderToggle from "@/components/journal-reminder-toggle";
+import JournalLockGate from "@/components/journal-lock-gate";
+import JournalFeed from "./journal-feed";
 
 export const metadata: Metadata = { title: "Your Journal" };
 
@@ -197,118 +191,9 @@ export default async function JournalPage() {
     );
   }
 
-  const [prompt, entries, stats] = await Promise.all([
-    getNextPrompt(user.userId),
-    prisma.journalEntry.findMany({
-      where: { userId: user.userId },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
-    getJournalStats(user.userId),
-  ]);
-
   return (
-    <>
-      <section className="relative overflow-hidden bg-brand-50">
-        <DoodleField />
-        <Container className="relative py-14 sm:py-16">
-          <Eyebrow>A self-exploration journey</Eyebrow>
-          <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900 sm:text-4xl">
-            Hi {user.name.split(" ")[0]}, here&apos;s a{" "}
-            <span className="mark-swash italic text-brand-700">
-              new prompt<Swash />
-            </span>
-          </h1>
-          <p className="mt-3 max-w-lg text-ink/70">
-            A few minutes today, a little more clarity tomorrow.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-stretch gap-4">
-            <div className="flex divide-x divide-brand-100 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
-              <div className="px-6 py-3.5">
-                <p className="font-display text-2xl font-semibold leading-none text-brand-900">
-                  {stats.streak}
-                </p>
-                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
-                  day streak
-                </p>
-              </div>
-              <div className="px-6 py-3.5">
-                <p className="font-display text-2xl font-semibold leading-none text-brand-900">
-                  {stats.total}
-                </p>
-                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
-                  {stats.total === 1 ? "Entry" : "Entries"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/journal/patterns"
-                className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-100"
-              >
-                <BarChart3 className="h-4 w-4" strokeWidth={2} />
-                Mood patterns
-              </Link>
-              <JournalReminderToggle />
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      <WaveDivider fill="fill-white" />
-
-      <Container className="pb-16 pt-8 sm:pb-24">
-        <div className="grid gap-10 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <EntryForm initialPrompt={prompt} />
-          </div>
-
-          <div className="rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display font-semibold text-brand-900">Recent entries</h2>
-              <Link href="/journal/history" className="text-sm font-medium text-brand-600 link-grow">
-                View all
-              </Link>
-            </div>
-
-            {entries.length === 0 ? (
-              <div className="mt-6 flex flex-col items-center rounded-xl border border-dashed border-brand-200 bg-brand-50 px-4 py-8 text-center">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-200 bg-white text-brand-500">
-                  <BookOpen className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-                <p className="mt-3 text-sm text-ink/60">
-                  Your entries will show up here once you save your first one.
-                </p>
-              </div>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {entries.map((e) => (
-                  <li key={e.id}>
-                    <Link
-                      href={`/journal/${e.id}`}
-                      className="block rounded-xl border-2 border-brand-100 bg-brand-50/40 p-4 transition-colors hover:border-brand-300 hover:bg-brand-50"
-                    >
-                      <div className="flex items-center justify-between text-xs text-ink/50">
-                        <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                        {e.mood && (
-                          <span
-                            title={moodLabel(e.mood)}
-                            className="h-2.5 w-2.5 rounded-full border border-black/10"
-                            style={{ backgroundColor: moodColor(e.mood) }}
-                          />
-                        )}
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-sm text-ink/80">{e.content}</p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </Container>
-    </>
+    <JournalLockGate>
+      <JournalFeed firstName={user.name.split(" ")[0]} />
+    </JournalLockGate>
   );
 }

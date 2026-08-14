@@ -16,7 +16,16 @@ const CELEBRATIONS = [
 
 type Prompt = { id: string; category: string; text: string } | null;
 
-export default function EntryForm({ initialPrompt }: { initialPrompt: Prompt }) {
+export default function EntryForm({
+  initialPrompt,
+  onSaved,
+}: {
+  initialPrompt: Prompt;
+  /** Called once per successful save, in addition to the form's own
+   * reset-for-next-entry behavior below — e.g. to navigate back to the
+   * feed once the composer is done. */
+  onSaved?: () => void;
+}) {
   const [state, formAction, pending] = useActionState(createJournalEntry, undefined);
   const [mood, setMood] = useState<string | null>(null);
   const [expandedCore, setExpandedCore] = useState<CoreEmotionId | null>(null);
@@ -32,6 +41,7 @@ export default function EntryForm({ initialPrompt }: { initialPrompt: Prompt }) 
       setKey((k) => k + 1);
       setMood(null);
       setExpandedCore(null);
+      onSaved?.();
     }
   }
 

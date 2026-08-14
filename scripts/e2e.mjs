@@ -22,6 +22,18 @@ async function newContext() {
   return ctx;
 }
 
+// Unlocks the journal's privacy lock (a per-tab sessionStorage gate) by
+// re-entering the account password — every fresh `page` hitting a journal
+// route for the first time needs this before any entry content is visible.
+async function unlockJournal(page, password) {
+  await page.waitForSelector("text=Your journal is locked", { timeout: 5000 }).catch(() => {});
+  const locked = await page.locator("text=Your journal is locked").isVisible().catch(() => false);
+  if (!locked) return;
+  await page.fill('input[type="password"]', password);
+  await page.click('button:has-text("Unlock")');
+  await page.waitForSelector("text=Your journal is locked", { state: "hidden", timeout: 5000 });
+}
+
 // --- Flow 1: signup, journal entry, logout ---------------------------------
 {
   const ctx = await newContext();
@@ -55,32 +67,95 @@ async function newContext() {
   log("choosing 'Prefer not to say' clears a previously-set field", genderCleared);
 
   await page.goto(`${BASE}/journal`);
+  await page.waitForSelector("text=Your journal is locked", { timeout: 5000 }).catch(() => {});
+  log("journal shows the privacy lock on first visit", await page.locator("text=Your journal is locked").isVisible().catch(() => false));
 
-  const promptVisible = await page.locator("text=new prompt").first().isVisible().catch(() => false);
-  log("journal dashboard shows prompt heading", promptVisible);
+  await page.fill('input[type="password"]', "wrong-password");
+  await page.click('button:has-text("Unlock")');
+  await page.waitForTimeout(400);
+  log("wrong password on the journal lock shows an error", await page.locator("text=Incorrect password").isVisible().catch(() => false));
+
+  await unlockJournal(page, "password123");
+  log("correct password unlocks the journal", !(await page.locator("text=Your journal is locked").isVisible().catch(() => false)));
+
+  await page.waitForTimeout(400);
+  const emptyStateVisible = await page.locator("text=Your entries will show up here").isVisible().catch(() => false);
+  log("journal feed shows the empty state before any entries", emptyStateVisible);
+
+  await page.click('a:has-text("New entry")');
+  await page.waitForURL(`${BASE}/journal/new`, { timeout: 10000 });
+  log("composer opens without re-locking the journal", !(await page.locator("text=Your journal is locked").isVisible().catch(() => false)));
+
+  const promptVisible = await page.locator('[data-testid=journal-prompt-text]').isVisible().catch(() => false);
+  log("composer shows a rotating prompt", promptVisible);
 
   const promptBefore = await page.locator('[data-testid=journal-prompt-text]').innerText();
+  await page.click('button:has-text("Shuffle prompt")');
+  await page.waitForTimeout(500);
+  const promptAfterShuffle = await page.locator('[data-testid=journal-prompt-text]').innerText();
+  log("shuffle prompt button changes the prompt", promptBefore !== promptAfterShuffle);
 
   await page.fill("textarea[name=content]", "This is my first journal entry via e2e test.");
   await page.click('button:has-text("Save entry")');
   await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
   log("journal entry saves", true);
 
-  const promptAfter = await page.locator('[data-testid=journal-prompt-text]').innerText();
-  log("prompt changes after saving an entry", promptBefore !== promptAfter, `("${promptBefore.slice(0, 30)}..." -> "${promptAfter.slice(0, 30)}...")`);
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  log("composer redirects back to the feed after saving", page.url() === `${BASE}/journal`);
+
+  await page.waitForTimeout(500);
+  const entryVisible = await page.locator("text=This is my first journal entry").first().isVisible().catch(() => false);
+  log("saved entry appears in the feed", entryVisible);
 
   const streakVisible = await page.locator("text=/day streak/").first().isVisible().catch(() => false);
   log("journal shows streak stat after saving", streakVisible);
 
-  const promptBeforeShuffle = await page.locator('[data-testid=journal-prompt-text]').innerText();
-  await page.click('button:has-text("Shuffle prompt")');
+  // A second same-day entry should be allowed (no more one-entry-per-day gate).
+  await page.click('a:has-text("New entry")');
+  await page.waitForURL(`${BASE}/journal/new`, { timeout: 10000 });
+  await page.fill("textarea[name=content]", "This is a second entry, same day.");
+  await page.click('button:has-text("Save entry")');
+  await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
   await page.waitForTimeout(500);
-  const promptAfterShuffle = await page.locator('[data-testid=journal-prompt-text]').innerText();
-  log("shuffle prompt button changes the prompt", promptBeforeShuffle !== promptAfterShuffle);
+  const bothEntriesVisible =
+    (await page.locator("text=This is my first journal entry").isVisible().catch(() => false)) &&
+    (await page.locator("text=This is a second entry, same day").isVisible().catch(() => false));
+  log("multiple entries on the same day are both kept", bothEntriesVisible);
+
+  // Bookmark the second entry and confirm the filter narrows to it.
+  const secondCard = page.locator("li", { hasText: "second entry, same day" });
+  await secondCard.locator("button").click();
+  await page.waitForTimeout(400);
+  await page.click('button:has-text("Bookmarked")');
+  await page.waitForTimeout(300);
+  const bookmarkFilterWorks =
+    (await page.locator("text=second entry, same day").isVisible().catch(() => false)) &&
+    !(await page.locator("text=first journal entry").isVisible().catch(() => false));
+  log("bookmark filter narrows the feed to bookmarked entries", bookmarkFilterWorks);
+  await page.click('button:has-text("Bookmarked")');
+
+  // Search narrows the feed by content.
+  await page.fill('input[type="search"]', "first journal entry");
+  await page.waitForTimeout(300);
+  const searchWorks =
+    (await page.locator("text=first journal entry").isVisible().catch(() => false)) &&
+    !(await page.locator("text=second entry, same day").isVisible().catch(() => false));
+  log("search narrows the feed by entry content", searchWorks);
+  await page.fill('input[type="search"]', "");
+  await page.waitForTimeout(300);
+
+  await page.click("text=This is my first journal entry");
+  await page.waitForURL(/\/journal\/[a-zA-Z0-9]+$/, { timeout: 10000 });
+  await page.waitForTimeout(400);
+  log("entry detail page shows the full entry without re-locking", await page.locator("text=This is my first journal entry").isVisible().catch(() => false));
 
   await page.goto(`${BASE}/journal/history`);
-  const entryVisible = await page.locator("text=This is my first journal entry").first().isVisible().catch(() => false);
-  log("entry appears in history", entryVisible);
+  log("/journal/history redirects to the feed", page.url() === `${BASE}/journal`);
+
+  await page.click('button:has-text("Lock")');
+  await page.waitForTimeout(500);
+  log("Lock button re-locks the journal immediately", await page.locator("text=Your journal is locked").isVisible().catch(() => false));
 
   await page.click('button:has-text("Log out")');
   await page.waitForURL(`${BASE}/`, { timeout: 10000 });
@@ -643,24 +718,31 @@ let orderUrl = "";
   await page.fill("#password", "password123");
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  await unlockJournal(page, "password123");
 
   await page.goto(`${BASE}/journal/patterns`);
+  await page.waitForSelector("text=No mood data yet", { timeout: 5000 }).catch(() => {});
   const emptyStateVisible = await page.locator("text=No mood data yet").first().isVisible().catch(() => false);
   log("mood patterns page shows empty state before any mood entries", emptyStateVisible);
 
-  await page.goto(`${BASE}/journal`);
   for (const mood of ["Happy", "Sad", "Happy"]) {
+    await page.goto(`${BASE}/journal/new`);
     await page.click(`button:has-text("${mood}")`);
     await page.fill("textarea[name=content]", `Entry feeling ${mood}`);
     await page.click('button:has-text("Save entry")');
     await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
-    await page.waitForTimeout(300);
+    await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
   }
 
   await page.click("text=Mood patterns");
   await page.waitForURL(`${BASE}/journal/patterns`, { timeout: 10000 });
+  await page.waitForSelector("text=Mood breakdown", { timeout: 5000 }).catch(() => {});
 
-  const topMoodCorrect = await page.locator("text=/Most common mood:.*Happy.*2×/").first().isVisible().catch(() => false);
+  const topMoodCorrect = await page
+    .locator("text=/Most common mood:.*Happy.*2×/")
+    .first()
+    .isVisible()
+    .catch(() => false);
   log("mood breakdown counts every tagged entry, not just one per day", topMoodCorrect);
 
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -669,7 +751,7 @@ let orderUrl = "";
   log("heatmap shows today's mood via colored cell", heatmapCellVisible);
 
   // Drilling into a core emotion should reveal more specific secondary feelings.
-  await page.goto(`${BASE}/journal`);
+  await page.goto(`${BASE}/journal/new`);
   await page.click('button:has-text("Happy")');
   const secondaryVisible = await page.locator('button:has-text("Content")').first().isVisible().catch(() => false);
   log("selecting a core emotion reveals its secondary feelings", secondaryVisible);
@@ -678,8 +760,9 @@ let orderUrl = "";
   await page.fill("textarea[name=content]", "Entry feeling specifically content.");
   await page.click('button:has-text("Save entry")');
   await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  await page.waitForTimeout(500);
 
-  await page.goto(`${BASE}/journal/history`);
   const secondaryMoodSaved = await page.locator('[title="Content"]').first().isVisible().catch(() => false);
   log("picking a secondary feeling saves that specific mood", secondaryMoodSaved);
 
@@ -735,6 +818,8 @@ let orderUrl = "";
   await page.fill("#password", "password123");
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  await unlockJournal(page, "password123");
+  await page.waitForTimeout(400);
 
   await page.click("text=Enable daily reminders");
   await page.waitForTimeout(1000);
