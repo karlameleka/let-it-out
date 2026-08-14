@@ -8,6 +8,7 @@ import { Container, Button, ButtonLink } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
 import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 import { EGYPT_SHIPPING_FEE_EGP } from "@/lib/shipping";
+import PriceDisplay from "@/components/price-display";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -191,7 +192,7 @@ export default function CheckoutPage() {
             )}
             <div className="flex justify-between border-t border-brand-100 pt-2 font-semibold">
               <span>Total</span>
-              <span>{formatEGP(totalEGP)}</span>
+              <span><PriceDisplay egpAmount={totalEGP} /></span>
             </div>
           </div>
         </div>

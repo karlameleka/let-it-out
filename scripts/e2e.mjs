@@ -11,9 +11,19 @@ function log(name, ok, extra = "") {
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
 
+// Most flows aren't testing the first-visit country picker, so pre-seed a
+// chosen country to keep its modal from blocking unrelated interactions.
+async function newContext() {
+  const ctx = await browser.newContext();
+  await ctx.addInitScript(() => {
+    window.localStorage.setItem("lio_country", "Egypt");
+  });
+  return ctx;
+}
+
 // --- Flow 1: signup, journal entry, logout ---------------------------------
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
   const email = `user-${rand}@example.com`;
 
@@ -52,7 +62,7 @@ const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromi
 // --- Flow 2: guest "Buy now" (skip cart) -> checkout -> COD order -----------
 let orderUrl = "";
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/shop`);
@@ -104,7 +114,7 @@ let orderUrl = "";
 
 // --- Flow 2b: guest shop -> add to cart -> checkout -> COD order ------------
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/shop`);
@@ -132,7 +142,7 @@ let orderUrl = "";
 
 // --- Flow 2d: guest checkout with international shipping --------------------
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/shop`);
@@ -173,7 +183,7 @@ let orderUrl = "";
 
 // --- Flow 2c: workshop notify popup ------------------------------------------
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/`);
@@ -198,7 +208,7 @@ let orderUrl = "";
 
 // --- Flow 3: counseling booking ---------------------------------------------
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/counseling`);
@@ -219,7 +229,7 @@ let orderUrl = "";
 
 // --- Flow 4: workshop inquiry + contact form ---------------------------------
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/workshops`);
@@ -245,7 +255,7 @@ let orderUrl = "";
 
 // --- Flow 5: admin login and review everything ------------------------------
 {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/login`);
@@ -285,6 +295,36 @@ let orderUrl = "";
   await page.locator('button:has-text("Update")').first().click();
   await page.waitForTimeout(1000);
   log("admin can update order status", true);
+
+  await ctx.close();
+}
+
+// --- Flow 6: country picker + currency conversion (fresh, unseeded visitor) --
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/`);
+  await page.waitForTimeout(500);
+  const modalVisible = await page.locator("text=Welcome to Let It Out").first().isVisible().catch(() => false);
+  log("country picker modal appears on first visit", modalVisible);
+
+  await page.selectOption("#entry-country", "United States");
+  await page.click('button:has-text("Continue")');
+  await page.waitForTimeout(300);
+
+  const stored = await page.evaluate(() => window.localStorage.getItem("lio_country"));
+  log("selected country persisted to localStorage", stored === "United States", stored);
+
+  await page.goto(`${BASE}/shop`);
+  await page.waitForTimeout(500);
+  const conversionVisible = await page.locator("text=/EGP.*\\$/").first().isVisible().catch(() => false);
+  log("shop shows approximate USD conversion after picking country", conversionVisible);
+
+  await page.reload();
+  await page.waitForTimeout(500);
+  const modalGoneOnReturn = !(await page.locator("text=Welcome to Let It Out").first().isVisible().catch(() => false));
+  log("country picker modal does not reappear once a country is set", modalGoneOnReturn);
 
   await ctx.close();
 }

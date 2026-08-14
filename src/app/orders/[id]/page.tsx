@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Container } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
+import PriceDisplay from "@/components/price-display";
 import PaymentForm from "./payment-form";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -68,7 +69,7 @@ export default async function OrderConfirmationPage({
             )}
             <div className="flex justify-between border-t border-brand-100 pt-2 font-semibold">
               <span>Total</span>
-              <span>{formatEGP(order.totalEGP)}</span>
+              <span><PriceDisplay egpAmount={order.totalEGP} /></span>
             </div>
           </div>
           {order.needsShipping && order.shippingAddress && (

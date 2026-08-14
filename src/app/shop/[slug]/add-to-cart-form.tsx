@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui";
-import { formatEGP } from "@/lib/format";
+import PriceDisplay from "@/components/price-display";
 
 type Variant = {
   id: string;
@@ -41,7 +41,7 @@ export default function AddToCartForm({
   return (
     <div className="space-y-5">
       <p className="font-display text-2xl font-semibold text-brand-900">
-        {formatEGP(variant.priceEGP)}
+        <PriceDisplay egpAmount={variant.priceEGP} />
       </p>
 
       <div className="flex flex-wrap gap-3">

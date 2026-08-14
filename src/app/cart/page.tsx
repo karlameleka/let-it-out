@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { Container, ButtonLink, Button } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
+import PriceDisplay from "@/components/price-display";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotalEGP } = useCart();
@@ -38,7 +39,7 @@ export default function CartPage() {
                   {item.title}
                 </Link>
                 <p className="text-sm text-ink/50">
-                  {formatEGP(item.priceEGP)}
+                  <PriceDisplay egpAmount={item.priceEGP} />
                 </p>
               </div>
 
@@ -81,7 +82,7 @@ export default function CartPage() {
         <div className="rounded-2xl border border-brand-100 bg-white p-6 h-fit">
           <div className="flex justify-between text-sm text-ink/70">
             <span>Subtotal</span>
-            <span className="font-semibold text-ink">{formatEGP(subtotalEGP)}</span>
+            <span className="font-semibold text-ink"><PriceDisplay egpAmount={subtotalEGP} /></span>
           </div>
           <p className="mt-1 text-xs text-ink/50">Shipping (physical items) arranged after order confirmation.</p>
           <Button className="mt-6 w-full" onClick={() => router.push("/checkout")}>

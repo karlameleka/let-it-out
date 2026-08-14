@@ -4,7 +4,9 @@ import "./globals.css";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import WorkshopInterestPopup from "@/components/workshop-interest-popup";
+import CountryPickerModal from "@/components/country-picker-modal";
 import { CartProvider } from "@/lib/cart-context";
+import { CurrencyProvider } from "@/lib/currency-context";
 import { getCurrentUser } from "@/lib/session";
 
 const inter = Inter({
@@ -38,12 +40,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-ink">
-        <CartProvider>
-          <SiteHeader user={user} />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-          <WorkshopInterestPopup />
-        </CartProvider>
+        <CurrencyProvider>
+          <CartProvider>
+            <SiteHeader user={user} />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+            <WorkshopInterestPopup />
+            <CountryPickerModal />
+          </CartProvider>
+        </CurrencyProvider>
       </body>
     </html>
   );

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { Container, SectionHeading } from "@/components/ui";
 import { PRODUCT_PHOTOS } from "@/components/product-cover";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
-import { formatEGP } from "@/lib/format";
+import PriceDisplay from "@/components/price-display";
 
 export const metadata: Metadata = {
   title: "Guided Journals",
@@ -68,7 +68,7 @@ export default async function ShopPage() {
                     {p.description}
                   </p>
                   <p className="mt-2 text-center text-sm font-medium text-brand-700">
-                    {formatEGP(price)}
+                    <PriceDisplay egpAmount={price} />
                   </p>
                   <p className="mt-1 text-center text-xs text-ink/50">
                     Cash on Delivery
