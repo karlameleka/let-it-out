@@ -700,6 +700,55 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow 18: forgot password -------------------------------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+  const email = `forgot-flow-${rand}@example.com`;
+
+  await page.goto(`${BASE}/signup`);
+  await page.fill("#name", "Forgot Flow Tester");
+  await page.fill("#email", email);
+  await page.fill("#password", "original-password-123");
+  await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+
+  await page.click('button:has-text("Log out")');
+  await page.waitForURL(`${BASE}/`, { timeout: 10000 });
+
+  await page.goto(`${BASE}/login`);
+  const forgotLinkVisible = await page.locator('a:has-text("Forgot password?")').first().isVisible().catch(() => false);
+  log("login page shows a Forgot password link", forgotLinkVisible);
+
+  await page.click('a:has-text("Forgot password?")');
+  await page.waitForURL(`${BASE}/forgot-password`, { timeout: 10000 });
+
+  // Requesting a reset for an email that doesn't exist should give the same
+  // generic response as a real one — never reveal which emails are registered.
+  await page.fill("#email", "nobody-real-e2e@example.com");
+  await page.click('button:has-text("Send reset link")');
+  await page.waitForTimeout(500);
+  const genericSuccessForUnknown = await page.locator("text=If an account exists").first().isVisible().catch(() => false);
+  log("forgot password gives a generic response for an unregistered email", genericSuccessForUnknown);
+
+  await page.goto(`${BASE}/forgot-password`);
+  await page.fill("#email", email);
+  await page.click('button:has-text("Send reset link")');
+  await page.waitForTimeout(500);
+  const successForReal = await page.locator("text=If an account exists").first().isVisible().catch(() => false);
+  log("forgot password gives the same response for a registered email", successForReal);
+
+  await page.goto(`${BASE}/reset-password?token=this-token-does-not-exist`);
+  await page.fill("#newPassword", "whatever-password-123");
+  await page.fill("#confirmPassword", "whatever-password-123");
+  await page.click('button:has-text("Reset password")');
+  await page.waitForTimeout(500);
+  const invalidTokenRejected = await page.locator("text=invalid or has expired").first().isVisible().catch(() => false);
+  log("reset password rejects an unknown/invalid token", invalidTokenRejected);
+
+  await ctx.close();
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);

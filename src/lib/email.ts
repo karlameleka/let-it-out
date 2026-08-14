@@ -146,6 +146,64 @@ export async function sendCustomerConfirmation({
   }
 }
 
+/**
+ * Sends a password-reset link. Same fail-silently behavior as the other
+ * senders, but the caller must still return a generic success response
+ * regardless — never reveal whether an email is registered.
+ */
+export async function sendPasswordResetEmail({
+  to,
+  name,
+  resetUrl,
+}: {
+  to: string;
+  name: string;
+  resetUrl: string;
+}) {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] Skipped password reset email to ${to} — not configured.`);
+    return;
+  }
+
+  const text = [
+    `Hi ${name},`,
+    "",
+    "Someone requested a password reset for your Let It Out account. If this was you, use the link below to choose a new password — it expires in 1 hour:",
+    "",
+    resetUrl,
+    "",
+    "If you didn't request this, you can safely ignore this email.",
+    "",
+    "Warmly,\nThe Let It Out team",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+      <p>Hi ${escapeHtml(name)},</p>
+      <p>Someone requested a password reset for your account. If this was you, click below to choose a new password — this link expires in 1 hour.</p>
+      <p style="margin: 24px 0;">
+        <a href="${resetUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Reset your password</a>
+      </p>
+      <p style="color: #6b7c80; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
+      <p>Warmly,<br />The Let It Out team</p>
+    </div>
+  `;
+
+  try {
+    await transport.sendMail({
+      from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: "Let It Out — Reset your password",
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error(`[email] Failed to send password reset email to ${to}:`, err);
+  }
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")

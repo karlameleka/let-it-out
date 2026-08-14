@@ -20,6 +20,12 @@ model User {
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
 
+  // Set when a password-reset email is requested; cleared once used or
+  // once a new one is issued. The token itself is never stored — only a
+  // hash of it — so a database leak can't be used to reset accounts.
+  resetTokenHash      String?   @unique
+  resetTokenExpiresAt DateTime?
+
   journalEntries JournalEntry[]
   bookingRequests BookingRequest[]
   orders         Order[]
