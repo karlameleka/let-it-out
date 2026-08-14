@@ -4,7 +4,7 @@ import "./globals.css";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import WorkshopInterestPopup from "@/components/workshop-interest-popup";
-import CountryPickerModal from "@/components/country-picker-modal";
+import EntryGates from "@/components/entry-gates";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { getCurrentUser } from "@/lib/session";
@@ -46,7 +46,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <main className="flex-1">{children}</main>
             <SiteFooter />
             <WorkshopInterestPopup />
-            <CountryPickerModal />
+            <EntryGates />
           </CartProvider>
         </CurrencyProvider>
       </body>

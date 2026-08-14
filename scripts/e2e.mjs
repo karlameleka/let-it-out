@@ -11,11 +11,12 @@ function log(name, ok, extra = "") {
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
 
-// Most flows aren't testing the first-visit country picker, so pre-seed a
-// chosen country to keep its modal from blocking unrelated interactions.
+// Most flows aren't testing the first-visit consent gate or country picker,
+// so pre-seed both to keep their modals from blocking unrelated interactions.
 async function newContext() {
   const ctx = await browser.newContext();
   await ctx.addInitScript(() => {
+    window.localStorage.setItem("lio_consent_given", "1");
     window.localStorage.setItem("lio_country", "Egypt");
   });
   return ctx;
@@ -299,15 +300,27 @@ let orderUrl = "";
   await ctx.close();
 }
 
-// --- Flow 6: country picker + currency conversion (fresh, unseeded visitor) --
+// --- Flow 6: consent gate + country picker + currency (fresh, unseeded visitor)
 {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/`);
   await page.waitForTimeout(500);
+  const consentVisible = await page.locator("text=Your privacy, protected").first().isVisible().catch(() => false);
+  log("consent gate appears on first visit", consentVisible);
+
+  const countryHiddenBehindConsent = !(await page.locator("text=Welcome to Let It Out").first().isVisible().catch(() => false));
+  log("country picker does not show until consent is given", countryHiddenBehindConsent);
+
+  await page.click('button:has-text("I understand and agree")');
+  await page.waitForTimeout(300);
+
+  const consentStored = await page.evaluate(() => window.localStorage.getItem("lio_consent_given"));
+  log("consent persisted to localStorage", consentStored === "1", consentStored);
+
   const modalVisible = await page.locator("text=Welcome to Let It Out").first().isVisible().catch(() => false);
-  log("country picker modal appears on first visit", modalVisible);
+  log("country picker modal appears after consent", modalVisible);
 
   await page.selectOption("#entry-country", "United States");
   await page.click('button:has-text("Continue")');
@@ -323,8 +336,26 @@ let orderUrl = "";
 
   await page.reload();
   await page.waitForTimeout(500);
-  const modalGoneOnReturn = !(await page.locator("text=Welcome to Let It Out").first().isVisible().catch(() => false));
-  log("country picker modal does not reappear once a country is set", modalGoneOnReturn);
+  const gatesGoneOnReturn =
+    !(await page.locator("text=Your privacy, protected").first().isVisible().catch(() => false)) &&
+    !(await page.locator("text=Welcome to Let It Out").first().isVisible().catch(() => false));
+  log("consent gate and country picker don't reappear once set", gatesGoneOnReturn);
+
+  await ctx.close();
+}
+
+// --- Flow 7: privacy and terms pages are reachable ---------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/privacy`);
+  const privacyVisible = await page.locator("text=Privacy Policy").first().isVisible().catch(() => false);
+  log("privacy policy page loads", privacyVisible);
+
+  await page.goto(`${BASE}/terms`);
+  const termsVisible = await page.locator("text=Terms & Conditions").first().isVisible().catch(() => false);
+  log("terms & conditions page loads", termsVisible);
 
   await ctx.close();
 }

@@ -78,8 +78,12 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="relative mt-10 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-brand-100/50 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-brand-100/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Let It Out. Est. 2021. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white">Terms &amp; Conditions</Link>
+          </div>
           <p className="italic">A self-exploration journey.</p>
         </div>
       </div>
