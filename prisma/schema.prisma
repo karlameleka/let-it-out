@@ -35,6 +35,10 @@ model Counselor {
   photoUrl     String?
   active       Boolean  @default(true)
   sortOrder    Int      @default(0)
+  // Full Cal.com booking link (e.g. "https://cal.com/karla-meleka/50min").
+  // When set, the counselor's page embeds live Cal.com scheduling instead
+  // of the manual request form.
+  bookingUrl   String?
 
   bookingRequests BookingRequest[]
 }

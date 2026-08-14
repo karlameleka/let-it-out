@@ -3,6 +3,13 @@ import bcrypt from "bcryptjs";
 
 async function main() {
   // --- Counselors -----------------------------------------------------
+  // bookingUrl: once a counselor has a live Cal.com account with their
+  // Google Calendar connected and Google Meet enabled as the conferencing
+  // location, set this to their full event link (e.g.
+  // "https://cal.com/verna-awad/50min-session") and their page will
+  // automatically switch from the manual request form to the live Cal.com
+  // scheduler. Leave null until that's ready — the manual form keeps
+  // working in the meantime.
   const counselors = [
     {
       slug: "verna-awad",

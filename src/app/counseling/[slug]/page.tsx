@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
 import BookingForm from "./booking-form";
+import CalBooking from "@/components/cal-booking";
 
 export async function generateMetadata({
   params,
@@ -62,17 +63,35 @@ export default async function CounselorPage({
 
         <div className="md:col-span-2">
           <div className="sticky top-24 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
-            <h2 className="font-display text-lg font-semibold text-brand-900">
-              Request a session
-            </h2>
-            <p className="mt-1 text-sm text-ink/60">
-              Sessions run 50 minutes. Tell us a bit about what you&apos;re
-              looking for and your preferred timing, and we&apos;ll reach
-              out to confirm.
-            </p>
-            <div className="mt-6">
-              <BookingForm counselorId={counselor.id} />
-            </div>
+            {counselor.bookingUrl ? (
+              <>
+                <h2 className="font-display text-lg font-semibold text-brand-900">
+                  Book a session
+                </h2>
+                <p className="mt-1 text-sm text-ink/60">
+                  Sessions run 50 minutes over video call. Pick an open
+                  slot below — you&apos;ll get a confirmation with your
+                  video link right away.
+                </p>
+                <div className="mt-4">
+                  <CalBooking calLink={counselor.bookingUrl.replace(/^https?:\/\/(www\.)?cal\.com\//, "")} />
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="font-display text-lg font-semibold text-brand-900">
+                  Request a session
+                </h2>
+                <p className="mt-1 text-sm text-ink/60">
+                  Sessions run 50 minutes. Tell us a bit about what you&apos;re
+                  looking for and your preferred timing, and we&apos;ll reach
+                  out to confirm.
+                </p>
+                <div className="mt-6">
+                  <BookingForm counselorId={counselor.id} />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </Container>
