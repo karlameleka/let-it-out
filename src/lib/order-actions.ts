@@ -7,6 +7,13 @@ import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { formatEGP } from "@/lib/format";
 import { computeShippingFeeEGP } from "@/lib/shipping";
 import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
+import { syncLeadToAirtable } from "@/lib/airtable";
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  INSTAPAY: "InstaPay",
+  CASH_ON_DELIVERY: "Cash",
+  PAYMOB: "Credit Card",
+};
 
 const itemSchema = z.object({
   productVariantId: z.string().min(1),
@@ -131,6 +138,18 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const itemsSummary = orderItemsData
     .map((i) => `${i.titleSnapshot} x${i.quantity}`)
     .join("\n");
+
+  await syncLeadToAirtable({
+    Name: guestName,
+    Type: "Journal Customer",
+    Status: order.status === "CONFIRMED" ? "Converted" : "Qualified",
+    Email: guestEmail,
+    Phone: guestPhone,
+    Source: "Website",
+    "Order Total": totalEGP,
+    "Payment Method": PAYMENT_METHOD_LABELS[paymentMethod] ?? paymentMethod,
+    Notes: `Order #${order.id.slice(-8).toUpperCase()}\n${itemsSummary}`,
+  });
 
   const shippingFeeSummary = !needsShipping
     ? "N/A (ebook only)"

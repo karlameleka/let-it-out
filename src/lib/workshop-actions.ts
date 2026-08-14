@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
+import { syncLeadToAirtable } from "@/lib/airtable";
 
 const workshopInquirySchema = z.object({
   organizationName: z.string().trim().min(1, "Please enter your organization or community name."),
@@ -37,6 +38,26 @@ export async function submitWorkshopInquiry(
   }
 
   const inquiry = await prisma.workshopInquiry.create({ data: parsed.data });
+
+  const groupSizeNumber = inquiry.groupSize ? parseInt(inquiry.groupSize, 10) : NaN;
+  await syncLeadToAirtable({
+    Name: inquiry.contactName,
+    Type: "Workshop Lead",
+    Status: "New",
+    Email: inquiry.email,
+    Phone: inquiry.phone,
+    Source: "Website",
+    ...(Number.isFinite(groupSizeNumber) ? { "Group Size": groupSizeNumber } : {}),
+    Notes: [
+      `Organization: ${inquiry.organizationName}`,
+      `Topic: ${inquiry.workshopTopic}`,
+      inquiry.groupSize ? `Group size: ${inquiry.groupSize}` : null,
+      inquiry.preferredDates ? `Preferred dates: ${inquiry.preferredDates}` : null,
+      inquiry.message ? `Message: ${inquiry.message}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  });
 
   await sendSupportNotification({
     subject: "New workshop inquiry",

@@ -4,6 +4,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
+import { syncLeadToAirtable } from "@/lib/airtable";
+
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  INDIVIDUAL_COUNSELING: "Individual",
+  COUPLES_COUNSELING: "Couples",
+  FOLLOW_UP: "Follow-up",
+  OTHER: "Other",
+};
 
 const bookingSchema = z.object({
   counselorId: z.string().min(1),
@@ -45,6 +53,24 @@ export async function submitBookingRequest(
       userId: user?.userId,
     },
     include: { counselor: true },
+  });
+
+  await syncLeadToAirtable({
+    Name: booking.name,
+    Type: "Counseling Inquiry",
+    Status: "New",
+    Email: booking.email,
+    Phone: booking.phone,
+    Source: "Website",
+    "Session Type": SESSION_TYPE_LABELS[booking.sessionType] ?? booking.sessionType,
+    Notes: [
+      `Counselor: ${booking.counselor.name}`,
+      `Preferred date: ${booking.preferredDate}`,
+      `Preferred time: ${booking.preferredTime}`,
+      booking.message ? `Message: ${booking.message}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
   });
 
   await sendSupportNotification({

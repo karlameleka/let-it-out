@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
+import { syncLeadToAirtable } from "@/lib/airtable";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Please enter your name."),
@@ -29,6 +30,15 @@ export async function submitContactMessage(
   }
 
   const contact = await prisma.contactMessage.create({ data: parsed.data });
+
+  await syncLeadToAirtable({
+    Name: contact.name,
+    Type: "General Inquiry",
+    Status: "New",
+    Email: contact.email,
+    Source: "Website",
+    Notes: `${contact.subject}\n\n${contact.message}`,
+  });
 
   await sendSupportNotification({
     subject: "New contact message",
