@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: "/workshops", label: "Workshops" },
   { href: "/shop", label: "Shop" },
   { href: "/journal", label: "Journal" },
+  { href: "/resources", label: "Resources" },
 ];
 
 export default function SiteHeader({ user }: { user: SessionPayload | null }) {

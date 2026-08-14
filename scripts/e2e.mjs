@@ -360,6 +360,27 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow 8: resource articles ------------------------------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/resources`);
+  const listVisible = await page.locator("text=Stress Management for Employees").first().isVisible().catch(() => false);
+  log("resources listing shows both articles", listVisible);
+
+  await page.click("text=Stress Management for Employees");
+  await page.waitForURL(/\/resources\/stress-management-for-employees/);
+  const stressArticleVisible = await page.locator("text=physiological sigh").first().isVisible().catch(() => false);
+  log("stress management article renders full content", stressArticleVisible);
+
+  await page.goto(`${BASE}/resources/importance-of-journaling`);
+  const journalArticleVisible = await page.locator("text=James Pennebaker").first().isVisible().catch(() => false);
+  log("journaling article renders full content", journalArticleVisible);
+
+  await ctx.close();
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);
