@@ -1,11 +1,12 @@
 export type ArticleProgress = {
-  /** Milestone keys reached so far, e.g. "section-0", "checkin", "section-1". */
+  /** Milestone keys reached so far, e.g. "section-0", "checkin-0", "section-1". */
   completed: string[];
-  /** The option text picked at the check-in, if answered. */
-  checkInAnswer: string | null;
+  /** The option text picked at each check-in, indexed the same as
+   * `article.checkIns`; null for any not yet answered. */
+  checkInAnswers: (string | null)[];
 };
 
-const EMPTY: ArticleProgress = { completed: [], checkInAnswer: null };
+const EMPTY: ArticleProgress = { completed: [], checkInAnswers: [] };
 
 function storageKey(slug: string) {
   return `lio_article_progress_${slug}`;
@@ -19,7 +20,7 @@ export function getArticleProgress(slug: string): ArticleProgress {
     const parsed = JSON.parse(raw);
     return {
       completed: Array.isArray(parsed.completed) ? parsed.completed : [],
-      checkInAnswer: typeof parsed.checkInAnswer === "string" ? parsed.checkInAnswer : null,
+      checkInAnswers: Array.isArray(parsed.checkInAnswers) ? parsed.checkInAnswers : [],
     };
   } catch {
     return EMPTY;

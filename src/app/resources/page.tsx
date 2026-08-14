@@ -45,7 +45,10 @@ export default function ResourcesPage() {
               >
                 <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500">
                   {article.category} · {article.readMinutes} min read
-                  <ArticleProgressBadge slug={article.slug} totalMilestones={article.sections.length + 1} />
+                  <ArticleProgressBadge
+                    slug={article.slug}
+                    totalMilestones={article.sections.length + article.checkIns.length}
+                  />
                 </p>
                 <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 group-hover:text-brand-600">
                   {article.title}

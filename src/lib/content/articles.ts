@@ -4,8 +4,8 @@ export type ArticleSection = {
   list?: string[];
 };
 
-/** A reflective check-in shown after the first section — picking any
- * option unlocks the rest of the article. There's no "right" answer. */
+/** A reflective check-in shown after a section — picking any option unlocks
+ * the next one. There's no "right" answer. */
 export type ArticleCheckIn = {
   prompt: string;
   options: string[];
@@ -18,7 +18,9 @@ export type Article = {
   category: string;
   readMinutes: number;
   sections: ArticleSection[];
-  checkIn: ArticleCheckIn;
+  /** One check-in per section, in reading order — checkIns[i] gates
+   * sections[i + 1] (or the closing references/CTA, for the last one). */
+  checkIns: ArticleCheckIn[];
   references: string[];
 };
 
@@ -61,14 +63,34 @@ export const ARTICLES: Article[] = [
         ],
       },
     ],
-    checkIn: {
-      prompt: "Before the toolkit — which feels closer to your week right now?",
-      options: [
-        "My stress rarely gets a real chance to switch off",
-        "I have some recovery time, I just don't use it well",
-        "Honestly, I'm not sure where to start",
-      ],
-    },
+    checkIns: [
+      {
+        prompt: "Before the toolkit — which feels closer to your week right now?",
+        options: [
+          "My stress rarely gets a real chance to switch off",
+          "I have some recovery time, I just don't use it well",
+          "Honestly, I'm not sure where to start",
+        ],
+      },
+      {
+        prompt: "Of the five tools, which feels most doable to actually try this week?",
+        options: [
+          "The physiological sigh",
+          "A dedicated worry window",
+          "\"If-then\" planning",
+          "Short, frequent breaks",
+          "Talking to someone",
+        ],
+      },
+      {
+        prompt: "Looking back on the whole guide — what's your honest read?",
+        options: [
+          "I'm ready to actually try one of these",
+          "I needed the reminder more than the toolkit",
+          "I think I need more support than a guide can give",
+        ],
+      },
+    ],
     references: [
       "Selye, H. (1976). The Stress of Life. McGraw-Hill.",
       "Bakker, A. B., & Demerouti, E. (2007). The Job Demands-Resources model: State of the art. Journal of Managerial Psychology, 22(3), 309–328.",
@@ -116,14 +138,33 @@ export const ARTICLES: Article[] = [
         ],
       },
     ],
-    checkIn: {
-      prompt: "What's actually stopped you from journaling before?",
-      options: [
-        "I never know what to write",
-        "I start, then forget after a few days",
-        "I haven't really tried it yet",
-      ],
-    },
+    checkIns: [
+      {
+        prompt: "What's actually stopped you from journaling before?",
+        options: [
+          "I never know what to write",
+          "I start, then forget after a few days",
+          "I haven't really tried it yet",
+        ],
+      },
+      {
+        prompt: "Which of these tips do you think you'd actually use?",
+        options: [
+          "Lowering the bar to three sentences",
+          "Attaching it to something I already do",
+          "Using a prompt when I'm stuck",
+          "Letting it be messy",
+        ],
+      },
+      {
+        prompt: "After reading this, how are you feeling about starting?",
+        options: [
+          "Ready to write my first three sentences",
+          "Still not sure, but less intimidated",
+          "I think I'll wait a bit longer",
+        ],
+      },
+    ],
     references: [
       "Pennebaker, J. W., & Beall, S. K. (1986). Confronting a traumatic event: Toward an understanding of inhibition and disease. Journal of Abnormal Psychology, 95(3), 274–281.",
       "Lieberman, M. D., et al. (2007). Putting feelings into words: Affect labeling disrupts amygdala activity. Psychological Science, 18(5), 421–428.",

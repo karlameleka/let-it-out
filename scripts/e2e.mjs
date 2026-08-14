@@ -427,17 +427,53 @@ let orderUrl = "";
   await page.click("text=Stress Management for Employees");
   await page.waitForURL(/\/resources\/stress-management-for-employees/);
   const checkInGated = await page.locator("text=physiological sigh").first().isVisible().catch(() => false);
-  log("stress management article gates rest of content behind check-in", !checkInGated);
+  log("stress management article gates section 2 behind the first check-in", !checkInGated);
+  const secondCheckInHidden = await page
+    .locator("text=Of the five tools")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("second check-in isn't shown until the first is answered", !secondCheckInHidden);
 
-  await page.click("text=Quick check-in").catch(() => {});
   await page.click('button:has-text("not sure where to start")');
   const stressArticleVisible = await page.locator("text=physiological sigh").first().isVisible().catch(() => false);
-  log("stress management article unlocks full content after check-in", stressArticleVisible);
+  log("first check-in unlocks section 2", stressArticleVisible);
+  const thirdCheckInStillHidden = await page
+    .locator("text=Looking back on the whole guide")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("third check-in isn't shown until the second is answered", !thirdCheckInStillHidden);
+
+  await page.click('button:has-text("A dedicated worry window")');
+  const thirdCheckInVisible = await page
+    .locator("text=Looking back on the whole guide")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("second check-in unlocks section 3 and the third check-in", thirdCheckInVisible);
+  const ctaHiddenBeforeLastAnswer = await page
+    .locator("text=Want more support than a good read")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("references/CTA stay hidden until the last check-in is answered", !ctaHiddenBeforeLastAnswer);
+
+  await page.click('button:has-text("ready to actually try one of these")');
+  const ctaVisible = await page
+    .locator("text=Our psychologist-led team offers")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("last check-in unlocks references and the closing CTA", ctaVisible);
 
   const progress = await page.evaluate(() =>
     JSON.parse(window.localStorage.getItem("lio_article_progress_stress-management-for-employees") || "null"),
   );
-  log("check-in answer saved to localStorage", progress?.checkInAnswer?.includes("not sure where to start") ?? false);
+  log(
+    "all three check-in answers saved to localStorage",
+    progress?.checkInAnswers?.length === 3 && progress.checkInAnswers.every((a) => typeof a === "string"),
+  );
 
   await page.goto(`${BASE}/resources/importance-of-journaling`);
   const journalArticleVisible = await page.locator("text=James Pennebaker").first().isVisible().catch(() => false);

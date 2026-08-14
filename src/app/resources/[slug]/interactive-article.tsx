@@ -1,19 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui";
-import type { Article, ArticleSection } from "@/lib/content/articles";
+import type { Article, ArticleCheckIn, ArticleSection } from "@/lib/content/articles";
 import { getArticleProgress, saveArticleProgress } from "@/lib/article-progress";
 
-function milestoneKey(index: number) {
+function sectionKey(index: number) {
   return `section-${index}`;
 }
 
+function checkInKey(index: number) {
+  return `checkin-${index}`;
+}
+
+type Progress = { completed: Set<string>; checkInAnswers: (string | null)[] };
+
 export default function InteractiveArticle({ article }: { article: Article }) {
-  const totalMilestones = article.sections.length + 1; // +1 for the check-in itself
-  const [completed, setCompleted] = useState<Set<string>>(new Set());
-  const [checkInAnswer, setCheckInAnswer] = useState<string | null>(null);
+  const totalMilestones = article.sections.length + article.checkIns.length;
+  const [progress, setProgress] = useState<Progress>(() => ({
+    completed: new Set(),
+    checkInAnswers: article.checkIns.map(() => null),
+  }));
   const [hydrated, setHydrated] = useState(false);
 
   // Load any saved progress after mount only, so the server-rendered and
@@ -21,37 +29,40 @@ export default function InteractiveArticle({ article }: { article: Article }) {
   useEffect(() => {
     const saved = getArticleProgress(article.slug);
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCompleted(new Set(saved.completed));
-    setCheckInAnswer(saved.checkInAnswer);
+    setProgress({
+      completed: new Set(saved.completed),
+      checkInAnswers: article.checkIns.map((_, i) => saved.checkInAnswers[i] ?? null),
+    });
     setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article.slug]);
 
   function markComplete(key: string) {
-    setCompleted((prev) => {
-      if (prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.add(key);
-      saveArticleProgress(article.slug, { completed: [...next], checkInAnswer });
-      return next;
+    setProgress((prev) => {
+      if (prev.completed.has(key)) return prev;
+      const completed = new Set(prev.completed);
+      completed.add(key);
+      saveArticleProgress(article.slug, { completed: [...completed], checkInAnswers: prev.checkInAnswers });
+      return { completed, checkInAnswers: prev.checkInAnswers };
     });
   }
 
-  function answerCheckIn(option: string) {
-    setCheckInAnswer(option);
-    setCompleted((prev) => {
-      const next = new Set(prev);
-      next.add("checkin");
-      saveArticleProgress(article.slug, { completed: [...next], checkInAnswer: option });
-      return next;
+  function answerCheckIn(index: number, option: string) {
+    setProgress((prev) => {
+      const checkInAnswers = [...prev.checkInAnswers];
+      checkInAnswers[index] = option;
+      const completed = new Set(prev.completed);
+      completed.add(checkInKey(index));
+      saveArticleProgress(article.slug, { completed: [...completed], checkInAnswers });
+      return { completed, checkInAnswers };
     });
   }
 
-  const answered = checkInAnswer !== null;
+  const { completed, checkInAnswers } = progress;
   const progressCount = completed.size;
   const isComplete = progressCount >= totalMilestones;
   const percent = Math.min(100, Math.round((progressCount / totalMilestones) * 100));
-
-  const [firstSection, ...restSections] = article.sections;
+  const allAnswered = checkInAnswers.every((a) => a !== null);
 
   return (
     <>
@@ -70,53 +81,27 @@ export default function InteractiveArticle({ article }: { article: Article }) {
       </div>
 
       <div className="mt-10">
-        <ArticleSectionBlock section={firstSection} onSeen={() => markComplete(milestoneKey(0))} />
+        {article.sections.map((section, i) => {
+          const unlocked = i === 0 || checkInAnswers[i - 1] !== null;
+          if (!unlocked) return null;
+          const isLastCheckIn = i === article.checkIns.length - 1;
 
-        <div className="mt-10 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50 p-6 sm:p-8">
-          {!answered ? (
-            <>
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Quick check-in</p>
-              <p className="mt-2 font-display text-lg font-medium text-brand-900">{article.checkIn.prompt}</p>
-              <div className="mt-4 flex flex-col gap-2">
-                {article.checkIn.options.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => answerCheckIn(option)}
-                    className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-left text-sm text-ink/80 transition-colors hover:border-brand-400 hover:bg-brand-50"
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-3 text-xs text-ink/40">
-                Pick whatever&apos;s true for you — the rest of the article unlocks either way.
-              </p>
-            </>
-          ) : (
-            <div className="animate-pop-in flex items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm text-white">
-                ✓
-              </span>
-              <p className="text-sm text-ink/70">
-                Got it — <span className="font-medium text-ink/90">&ldquo;{checkInAnswer}&rdquo;</span>. Here&apos;s
-                the rest.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {answered && (
-          <div className="animate-pop-in">
-            {restSections.slice(0, -1).map((section, i) => (
-              <ArticleSectionBlock
-                key={section.heading}
-                section={section}
-                onSeen={() => markComplete(milestoneKey(i + 1))}
+          return (
+            <div key={section.heading} className={i === 0 ? "" : "animate-pop-in"}>
+              <ArticleSectionContent section={section} />
+              <CheckInCard
+                checkIn={article.checkIns[i]}
+                answer={checkInAnswers[i]}
+                onAnswer={(option) => answerCheckIn(i, option)}
+                isLast={isLastCheckIn}
               />
-            ))}
-            {restSections.length > 0 && <ArticleSectionContent section={restSections[restSections.length - 1]} />}
+              <Sentinel onSeen={() => markComplete(sectionKey(i))} />
+            </div>
+          );
+        })}
 
+        {allAnswered && (
+          <div className="animate-pop-in">
             <div className="mt-10 border-t border-brand-100 pt-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">References</p>
               <ol className="mt-2 space-y-1.5 text-xs text-ink/50">
@@ -143,11 +128,6 @@ export default function InteractiveArticle({ article }: { article: Article }) {
                 </ButtonLink>
               </div>
             </div>
-
-            {/* Placed at the true end of the content so an instant jump-to-bottom
-                (keyboard End, "scroll to bottom" affordances) still fires the last
-                milestone, not just a gradual scroll through the last section. */}
-            <Sentinel onSeen={() => markComplete(milestoneKey(article.sections.length - 1))} />
           </div>
         )}
       </div>
@@ -161,21 +141,55 @@ export default function InteractiveArticle({ article }: { article: Article }) {
   );
 }
 
-function ArticleSectionBlock({ section, onSeen }: { section: ArticleSection; onSeen: () => void }) {
+function CheckInCard({
+  checkIn,
+  answer,
+  onAnswer,
+  isLast,
+}: {
+  checkIn: ArticleCheckIn;
+  answer: string | null;
+  onAnswer: (option: string) => void;
+  isLast: boolean;
+}) {
   return (
-    <ArticleSectionContent section={section}>
-      <Sentinel onSeen={onSeen} />
-    </ArticleSectionContent>
+    <div className="mt-10 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50 p-6 sm:p-8">
+      {answer === null ? (
+        <>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Quick check-in</p>
+          <p className="mt-2 font-display text-lg font-medium text-brand-900">{checkIn.prompt}</p>
+          <div className="mt-4 flex flex-col gap-2">
+            {checkIn.options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onAnswer(option)}
+                className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-left text-sm text-ink/80 transition-colors hover:border-brand-400 hover:bg-brand-50"
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-ink/40">
+            Pick whatever&apos;s true for you — {isLast ? "the wrap-up" : "the next part"} unlocks either way.
+          </p>
+        </>
+      ) : (
+        <div className="animate-pop-in flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm text-white">
+            ✓
+          </span>
+          <p className="text-sm text-ink/70">
+            Got it — <span className="font-medium text-ink/90">&ldquo;{answer}&rdquo;</span>. Here&apos;s{" "}
+            {isLast ? "the rest" : "the next part"}.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
-function ArticleSectionContent({
-  section,
-  children,
-}: {
-  section: ArticleSection;
-  children?: ReactNode;
-}) {
+function ArticleSectionContent({ section }: { section: ArticleSection }) {
   return (
     <section className="mt-10 first:mt-0">
       <h2 className="font-display text-xl font-semibold text-brand-900">{section.heading}</h2>
@@ -191,7 +205,6 @@ function ArticleSectionContent({
           </ul>
         )}
       </div>
-      {children}
     </section>
   );
 }
