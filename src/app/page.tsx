@@ -6,9 +6,15 @@ import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
+import InstallOverlay from "@/components/install-overlay";
 
-export default async function HomePage() {
-  const [counselors, products] = await Promise.all([
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ install?: string }>;
+}) {
+  const [{ install }, counselors, products] = await Promise.all([
+    searchParams,
     prisma.counselor.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
       where: { active: true },
@@ -19,6 +25,8 @@ export default async function HomePage() {
 
   return (
     <>
+      <InstallOverlay initialOpen={install === "true"} />
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-brand-50">
         <DoodleField />

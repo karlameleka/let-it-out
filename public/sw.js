@@ -1,3 +1,15 @@
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// A fetch handler (even a pass-through one) is part of Chromium's PWA
+// installability criteria — it's what makes `beforeinstallprompt` fire.
+self.addEventListener("fetch", () => {});
+
 self.addEventListener("push", (event) => {
   let data = {
     title: "Let It Out",

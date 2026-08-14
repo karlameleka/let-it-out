@@ -759,6 +759,92 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow: PWA install flow ---------------------------------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  const manifestRes = await page.goto(`${BASE}/manifest.webmanifest`);
+  const manifestJson = await manifestRes.json().catch(() => null);
+  log(
+    "manifest.webmanifest is valid and has both icon sizes",
+    manifestJson?.name === "Let It Out" && manifestJson.icons?.length === 2,
+  );
+
+  await page.goto(`${BASE}/install`, { waitUntil: "networkidle" });
+  const fallbackVisible = await page.locator("text=Add to Home Screen").first().isVisible().catch(() => false);
+  log("/install shows generic fallback before beforeinstallprompt fires", fallbackVisible);
+
+  await page.evaluate(() => {
+    class FakeBIPEvent extends Event {
+      constructor() {
+        super("beforeinstallprompt", { cancelable: true });
+        this.promptCalled = false;
+      }
+      prompt() {
+        this.promptCalled = true;
+        return Promise.resolve();
+      }
+      get userChoice() {
+        return Promise.resolve({ outcome: "accepted" });
+      }
+    }
+    window.__fakeEvt = new FakeBIPEvent();
+    window.dispatchEvent(window.__fakeEvt);
+  });
+  await page.waitForTimeout(300);
+  const installBtnVisible = await page.locator('button:has-text("Install App")').isVisible().catch(() => false);
+  log("/install shows an Install App button once beforeinstallprompt fires", installBtnVisible);
+
+  await page.click('button:has-text("Install App")');
+  await page.waitForTimeout(300);
+  const promptCalled = await page.evaluate(() => window.__fakeEvt.promptCalled);
+  log("Install App button triggers the native install prompt", promptCalled);
+  const installedVisible = await page.locator("text=already installed").isVisible().catch(() => false);
+  log("shows 'already installed' after the prompt is accepted", installedVisible);
+
+  const page2 = await ctx.newPage();
+  await page2.goto(`${BASE}/?install=true`, { waitUntil: "networkidle" });
+  const overlayVisible = await page2
+    .locator("text=Add Let It Out to your home screen")
+    .isVisible()
+    .catch(() => false);
+  log("home page shows the install overlay when ?install=true", overlayVisible);
+
+  await page2.click('button[aria-label="Close"]');
+  await page2.waitForTimeout(500);
+  const overlayGone = await page2
+    .locator("text=Add Let It Out to your home screen")
+    .isVisible()
+    .catch(() => false);
+  log("closing the overlay hides it and clears the query param", !overlayGone && page2.url() === `${BASE}/`);
+
+  const page3 = await ctx.newPage();
+  await page3.goto(BASE, { waitUntil: "networkidle" });
+  const noOverlay = await page3
+    .locator("text=Add Let It Out to your home screen")
+    .isVisible()
+    .catch(() => false);
+  log("home page shows no overlay without the install param", !noOverlay);
+
+  const iosCtx = await browser.newContext({
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+  });
+  await iosCtx.addInitScript(() => {
+    window.localStorage.setItem("lio_consent_given", "1");
+    window.localStorage.setItem("lio_country", "Egypt");
+  });
+  const iosPage = await iosCtx.newPage();
+  await iosPage.goto(`${BASE}/install`, { waitUntil: "networkidle" });
+  const iosInstructionsVisible = await iosPage.locator("text=Add to Home Screen").first().isVisible().catch(() => false);
+  const iosNoInstallButton = !(await iosPage.locator('button:has-text("Install App")').isVisible().catch(() => false));
+  log("iOS Safari sees Share instructions instead of the Install App button", iosInstructionsVisible && iosNoInstallButton);
+  await iosCtx.close();
+
+  await ctx.close();
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);
