@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { sendSupportNotification } from "@/lib/email";
+import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Please enter your name."),
@@ -38,6 +38,13 @@ export async function submitContactMessage(
       { label: "Subject", value: contact.subject },
       { label: "Message", value: contact.message },
     ],
+  });
+
+  await sendCustomerConfirmation({
+    to: contact.email,
+    name: contact.name,
+    subject: "We've received your message",
+    intro: `Thank you for reaching out about "${contact.subject}". We'll get back to you soon.`,
   });
 
   return { success: true };

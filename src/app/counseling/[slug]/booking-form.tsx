@@ -23,8 +23,8 @@ export default function BookingForm({ counselorId }: { counselorId: string }) {
       <div className="rounded-xl bg-brand-50 p-5 text-center">
         <p className="font-display font-semibold text-brand-800">Request received</p>
         <p className="mt-2 text-sm text-ink/70">
-          Thank you — we&apos;ll reach out shortly by email or phone to
-          confirm your session and arrange payment.
+          Thank you — we will reach out to confirm your appointment as soon
+          as possible, by email or phone.
         </p>
       </div>
     );
@@ -63,6 +63,10 @@ export default function BookingForm({ counselorId }: { counselorId: string }) {
           <input id="preferredTime" name="preferredTime" type="time" required className={inputClass} />
         </div>
       </div>
+      <p className="text-xs text-ink/45">
+        Your preferred date and time aren&apos;t guaranteed — we&apos;ll
+        confirm actual availability with you directly.
+      </p>
       <div>
         <label className={labelClass} htmlFor="message">Anything you&apos;d like us to know? (optional)</label>
         <textarea id="message" name="message" rows={3} className={inputClass} />

@@ -150,8 +150,12 @@ model Order {
   guestEmail      String
   guestPhone      String
   shippingAddress String?       @db.Text
+  googleMapsLink  String?
+  country         String?
+  governorate     String?
   needsShipping   Boolean       @default(false)
   subtotalEGP     Int
+  shippingFeeEGP  Int           @default(0)
   totalEGP        Int
   paymentMethod   PaymentMethod @default(INSTAPAY)
   status          OrderStatus   @default(PENDING_PAYMENT)

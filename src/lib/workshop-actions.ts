@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { sendSupportNotification } from "@/lib/email";
+import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 
 const workshopInquirySchema = z.object({
   organizationName: z.string().trim().min(1, "Please enter your organization or community name."),
@@ -50,6 +50,13 @@ export async function submitWorkshopInquiry(
       { label: "Preferred dates", value: inquiry.preferredDates || "—" },
       { label: "Message", value: inquiry.message || "—" },
     ],
+  });
+
+  await sendCustomerConfirmation({
+    to: inquiry.email,
+    name: inquiry.contactName,
+    subject: "We've received your workshop request",
+    intro: `Thank you for your interest in a "${inquiry.workshopTopic}" workshop for ${inquiry.organizationName}. Our team will follow up with you shortly to design a session together.`,
   });
 
   return { success: true };

@@ -44,7 +44,31 @@ export default async function AdminOrdersPage() {
           </ul>
 
           {order.needsShipping && order.shippingAddress && (
-            <p className="mt-2 text-sm text-ink/60">Ship to: {order.shippingAddress}</p>
+            <div className="mt-2 space-y-1 text-sm text-ink/60">
+              <p>
+                Ship to: {order.shippingAddress}
+                {order.governorate ? `, ${order.governorate}` : ""}
+                {order.country ? `, ${order.country}` : ""}
+              </p>
+              {order.googleMapsLink && (
+                <p>
+                  <a
+                    href={order.googleMapsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-brand-600 underline"
+                  >
+                    Google Maps location
+                  </a>
+                </p>
+              )}
+              <p>
+                Shipping fee:{" "}
+                {order.country === "Egypt"
+                  ? formatEGP(order.shippingFeeEGP)
+                  : "Calculated upon delivery"}
+              </p>
+            </div>
           )}
           {order.paymentRef && (
             <p className="mt-2 text-sm text-ink/60">

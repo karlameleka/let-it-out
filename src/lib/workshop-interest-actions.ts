@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { sendSupportNotification } from "@/lib/email";
+import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 
 const schema = z.object({
   email: z.string().trim().email("Please enter a valid email."),
@@ -25,6 +25,13 @@ export async function submitWorkshopInterest(
   await sendSupportNotification({
     subject: "New workshop notification signup",
     lines: [{ label: "Email", value: signup.email }],
+  });
+
+  await sendCustomerConfirmation({
+    to: signup.email,
+    name: "there",
+    subject: "You're on the list!",
+    intro: "You're on the list — we'll email you the moment we announce our next training or workshop.",
   });
 
   return { success: true };

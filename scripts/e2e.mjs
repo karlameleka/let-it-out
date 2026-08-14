@@ -80,6 +80,15 @@ let orderUrl = "";
   log("checkout shows shipping field for physical item", shippingVisible);
   if (shippingVisible) {
     await page.fill("#shippingAddress", "123 Test St, Cairo, Egypt");
+    await page.fill("#googleMapsLink", "https://maps.app.goo.gl/test123");
+    await page.selectOption("#country", "Egypt");
+    const governorateVisible = await page.locator("#governorate").isVisible().catch(() => false);
+    log("checkout shows governorate field for Egypt", governorateVisible);
+    if (governorateVisible) {
+      await page.selectOption("#governorate", "Cairo");
+    }
+    const shippingFeeVisible = await page.locator("text=EGP 100").first().isVisible().catch(() => false);
+    log("checkout shows EGP 100 shipping fee for Egypt", shippingFeeVisible);
   }
 
   await page.click('button:has-text("Place order")');
@@ -109,12 +118,55 @@ let orderUrl = "";
   await page.fill("#guestEmail", `cod-${rand}@example.com`);
   await page.fill("#guestPhone", "+201000000003");
   await page.fill("#shippingAddress", "456 Test Ave, Giza, Egypt");
+  await page.selectOption("#country", "Egypt");
+  await page.selectOption("#governorate", "Giza");
 
   await page.click('button:has-text("Place order")');
   await page.waitForURL(/\/orders\//, { timeout: 10000 });
 
   const codVisible = await page.locator("text=Cash on Delivery").first().isVisible().catch(() => false);
   log("COD order page shows Cash on Delivery confirmation", codVisible);
+
+  await ctx.close();
+}
+
+// --- Flow 2d: guest checkout with international shipping --------------------
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/shop`);
+  await page.click("text=30 Days of Mindfulness");
+  await page.waitForURL(/\/shop\/30-days-of-mindfulness/);
+  await page.click('button:has-text("Add to cart")');
+  await page.waitForTimeout(300);
+
+  await page.goto(`${BASE}/checkout`);
+  await page.fill("#guestName", "International Buyer");
+  await page.fill("#guestEmail", `intl-${rand}@example.com`);
+  await page.fill("#guestPhone", "+14155550000");
+  await page.fill("#shippingAddress", "1 Test Rd, Springfield, USA");
+  await page.selectOption("#country", "United States");
+
+  const governorateGone = !(await page.locator("#governorate").isVisible().catch(() => false));
+  log("checkout hides governorate field for non-Egypt country", governorateGone);
+
+  const calcOnDeliveryVisible = await page
+    .locator("text=calculated upon delivery")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("checkout shows 'calculated upon delivery' for international shipping", calcOnDeliveryVisible);
+
+  await page.click('button:has-text("Place order")');
+  await page.waitForURL(/\/orders\//, { timeout: 10000 });
+
+  const intlShippingNote = await page
+    .locator("text=Shipping outside Egypt is calculated upon delivery")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("order page shows international shipping note", intlShippingNote);
 
   await ctx.close();
 }

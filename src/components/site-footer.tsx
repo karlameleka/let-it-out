@@ -22,9 +22,11 @@ export default function SiteFooter() {
           <div className="md:col-span-2">
             <Logo variant="horizontal-white" height={32} />
             <p className="mt-4 max-w-sm text-sm text-brand-100/80">
-              Psychologist-led mental health support since 2021 — online
-              counseling, guided journals, and workshops built on
-              evidence-based care.
+              Enhancing Mental Health using Evidence-based Research since
+              2021
+            </p>
+            <p className="mt-2 max-w-sm text-sm text-brand-100/60">
+              Online Counseling • Guided Journals • Trainings and Workshops
             </p>
           </div>
 

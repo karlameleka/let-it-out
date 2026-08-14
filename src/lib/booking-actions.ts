@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { sendSupportNotification } from "@/lib/email";
+import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 
 const bookingSchema = z.object({
   counselorId: z.string().min(1),
@@ -58,6 +58,19 @@ export async function submitBookingRequest(
       { label: "Preferred date", value: booking.preferredDate },
       { label: "Preferred time", value: booking.preferredTime },
       { label: "Message", value: booking.message || "—" },
+    ],
+  });
+
+  await sendCustomerConfirmation({
+    to: booking.email,
+    name: booking.name,
+    subject: "We've received your session request",
+    intro: `Thank you for requesting a session with ${booking.counselor.name}. Your preferred date and time aren't guaranteed yet — we'll reach out to confirm your appointment as soon as possible.`,
+    lines: [
+      { label: "Counselor", value: booking.counselor.name },
+      { label: "Session type", value: booking.sessionType.replaceAll("_", " ") },
+      { label: "Preferred date", value: booking.preferredDate },
+      { label: "Preferred time", value: booking.preferredTime },
     ],
   });
 

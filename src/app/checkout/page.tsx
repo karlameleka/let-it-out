@@ -6,6 +6,8 @@ import { useCart } from "@/lib/cart-context";
 import { createOrder } from "@/lib/order-actions";
 import { Container, Button, ButtonLink } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
+import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
+import { EGYPT_SHIPPING_FEE_EGP } from "@/lib/shipping";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -16,8 +18,13 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [country, setCountry] = useState("");
 
   const needsShipping = items.some((i) => i.format === "PHYSICAL");
+  const isEgypt = country === "Egypt";
+  const shippingCalculatedOnDelivery = needsShipping && country !== "" && !isEgypt;
+  const shippingFeeEGP = needsShipping && isEgypt ? EGYPT_SHIPPING_FEE_EGP : 0;
+  const totalEGP = subtotalEGP + shippingFeeEGP;
 
   if (items.length === 0) {
     return (
@@ -37,6 +44,9 @@ export default function CheckoutPage() {
       guestEmail: String(formData.get("guestEmail") || ""),
       guestPhone: String(formData.get("guestPhone") || ""),
       shippingAddress: String(formData.get("shippingAddress") || ""),
+      googleMapsLink: String(formData.get("googleMapsLink") || ""),
+      country: String(formData.get("country") || ""),
+      governorate: String(formData.get("governorate") || ""),
       paymentMethod: "CASH_ON_DELIVERY",
     });
     setPending(false);
@@ -72,12 +82,68 @@ export default function CheckoutPage() {
               <input id="guestPhone" name="guestPhone" type="tel" required className={inputClass} />
             </div>
             {needsShipping && (
-              <div>
-                <label className={labelClass} htmlFor="shippingAddress">Shipping address</label>
-                <textarea id="shippingAddress" name="shippingAddress" rows={3} required className={inputClass} />
-              </div>
+              <>
+                <div>
+                  <label className={labelClass} htmlFor="shippingAddress">Shipping address</label>
+                  <textarea id="shippingAddress" name="shippingAddress" rows={3} required className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="googleMapsLink">
+                    Google Maps location link <span className="font-normal text-ink/40">(optional, helps our courier find you)</span>
+                  </label>
+                  <input
+                    id="googleMapsLink"
+                    name="googleMapsLink"
+                    type="url"
+                    placeholder="https://maps.app.goo.gl/…"
+                    className={inputClass}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass} htmlFor="country">Country</label>
+                    <select
+                      id="country"
+                      name="country"
+                      required
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="" disabled>Select your country</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {isEgypt && (
+                    <div>
+                      <label className={labelClass} htmlFor="governorate">Governorate</label>
+                      <select id="governorate" name="governorate" required defaultValue="" className={inputClass}>
+                        <option value="" disabled>Select your governorate</option>
+                        {EGYPT_GOVERNORATES.map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
+
+          {needsShipping && (
+            <div className="rounded-xl border-2 border-brand-100 bg-brand-50 p-4">
+              <p className="text-sm font-semibold text-brand-800">Shipping</p>
+              <p className="mt-1 text-sm text-ink/60">
+                {isEgypt
+                  ? `Flat shipping fee of ${formatEGP(EGYPT_SHIPPING_FEE_EGP)} anywhere in Egypt.`
+                  : shippingCalculatedOnDelivery
+                    ? "Shipping outside Egypt is calculated upon delivery."
+                    : "Select your country to see shipping details."}
+              </p>
+            </div>
+          )}
 
           <div className="rounded-xl border-2 border-brand-100 bg-brand-50 p-4">
             <p className="text-sm font-semibold text-brand-800">Cash on Delivery</p>
@@ -106,9 +172,27 @@ export default function CheckoutPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-4 flex justify-between border-t border-brand-100 pt-4 text-sm font-semibold">
-            <span>Total</span>
-            <span>{formatEGP(subtotalEGP)}</span>
+          <div className="mt-4 space-y-2 border-t border-brand-100 pt-4 text-sm">
+            <div className="flex justify-between text-ink/70">
+              <span>Subtotal</span>
+              <span>{formatEGP(subtotalEGP)}</span>
+            </div>
+            {needsShipping && (
+              <div className="flex justify-between text-ink/70">
+                <span>Shipping</span>
+                <span>
+                  {isEgypt
+                    ? formatEGP(shippingFeeEGP)
+                    : shippingCalculatedOnDelivery
+                      ? "On delivery"
+                      : "—"}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-brand-100 pt-2 font-semibold">
+              <span>Total</span>
+              <span>{formatEGP(totalEGP)}</span>
+            </div>
           </div>
         </div>
       </div>

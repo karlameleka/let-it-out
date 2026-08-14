@@ -51,14 +51,52 @@ export default async function OrderConfirmationPage({
               </li>
             ))}
           </ul>
-          <div className="mt-4 flex justify-between border-t border-brand-100 pt-4 text-sm font-semibold">
-            <span>Total</span>
-            <span>{formatEGP(order.totalEGP)}</span>
+          <div className="mt-4 space-y-2 border-t border-brand-100 pt-4 text-sm">
+            <div className="flex justify-between text-ink/70">
+              <span>Subtotal</span>
+              <span>{formatEGP(order.subtotalEGP)}</span>
+            </div>
+            {order.needsShipping && (
+              <div className="flex justify-between text-ink/70">
+                <span>Shipping</span>
+                <span>
+                  {order.country === "Egypt"
+                    ? formatEGP(order.shippingFeeEGP)
+                    : "Calculated upon delivery"}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-brand-100 pt-2 font-semibold">
+              <span>Total</span>
+              <span>{formatEGP(order.totalEGP)}</span>
+            </div>
           </div>
           {order.needsShipping && order.shippingAddress && (
-            <p className="mt-4 text-sm text-ink/60">
-              Shipping to: {order.shippingAddress}
-            </p>
+            <div className="mt-4 space-y-1 text-sm text-ink/60">
+              <p>
+                Shipping to: {order.shippingAddress}
+                {order.governorate ? `, ${order.governorate}` : ""}
+                {order.country ? `, ${order.country}` : ""}
+              </p>
+              {order.googleMapsLink && (
+                <p>
+                  <a
+                    href={order.googleMapsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-brand-600 underline"
+                  >
+                    View location on Google Maps
+                  </a>
+                </p>
+              )}
+              {order.country && order.country !== "Egypt" && (
+                <p>
+                  Shipping outside Egypt is calculated upon delivery — we&apos;ll
+                  confirm the fee with you before shipping.
+                </p>
+              )}
+            </div>
           )}
         </div>
 

@@ -3,8 +3,10 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { sendSupportNotification } from "@/lib/email";
+import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { formatEGP } from "@/lib/format";
+import { computeShippingFeeEGP } from "@/lib/shipping";
+import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 
 const itemSchema = z.object({
   productVariantId: z.string().min(1),
@@ -17,6 +19,9 @@ const createOrderSchema = z.object({
   guestEmail: z.string().trim().email("Please enter a valid email."),
   guestPhone: z.string().trim().min(5, "Please enter a valid phone number."),
   shippingAddress: z.string().trim().optional(),
+  googleMapsLink: z.string().trim().optional(),
+  country: z.string().trim().optional(),
+  governorate: z.string().trim().optional(),
   paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY"]),
 });
 
@@ -28,7 +33,17 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  const { items, guestName, guestEmail, guestPhone, shippingAddress, paymentMethod } = parsed.data;
+  const {
+    items,
+    guestName,
+    guestEmail,
+    guestPhone,
+    shippingAddress,
+    googleMapsLink,
+    country,
+    governorate,
+    paymentMethod,
+  } = parsed.data;
 
   const variantIds = [...new Set(items.map((i) => i.productVariantId))];
   const variants = await prisma.productVariant.findMany({
@@ -49,14 +64,30 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     return { error: "Please enter a shipping address for physical items." };
   }
 
+  if (needsShipping && !country) {
+    return { error: "Please select your country." };
+  }
+
+  if (needsShipping && country && !COUNTRIES.includes(country)) {
+    return { error: "Please select a valid country." };
+  }
+
+  if (needsShipping && country === "Egypt" && !governorate) {
+    return { error: "Please select your governorate." };
+  }
+
+  if (needsShipping && country === "Egypt" && governorate && !EGYPT_GOVERNORATES.includes(governorate)) {
+    return { error: "Please select a valid governorate." };
+  }
+
   if (paymentMethod === "CASH_ON_DELIVERY" && !needsShipping) {
     return { error: "Cash on Delivery is only available when your order includes a physical journal." };
   }
 
-  let totalEGP = 0;
+  let subtotalEGP = 0;
   const orderItemsData = items.map((i) => {
     const v = variants.find((v) => v.id === i.productVariantId)!;
-    totalEGP += v.priceEGP * i.quantity;
+    subtotalEGP += v.priceEGP * i.quantity;
     return {
       productId: v.productId,
       productVariantId: v.id,
@@ -67,6 +98,12 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     };
   });
 
+  // Shipping fee is always computed server-side from the validated country —
+  // never trust a client-submitted amount.
+  const shippingFeeEGP = needsShipping && country ? computeShippingFeeEGP(country) : 0;
+  const totalEGP = subtotalEGP + shippingFeeEGP;
+  const shippingCalculatedOnDelivery = needsShipping && country !== "Egypt";
+
   const user = await getCurrentUser();
 
   const order = await prisma.order.create({
@@ -76,8 +113,12 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       guestEmail,
       guestPhone,
       shippingAddress: needsShipping ? shippingAddress : null,
+      googleMapsLink: needsShipping ? googleMapsLink : null,
+      country: needsShipping ? country : null,
+      governorate: needsShipping && country === "Egypt" ? governorate : null,
       needsShipping,
-      subtotalEGP: totalEGP,
+      subtotalEGP,
+      shippingFeeEGP,
       totalEGP,
       paymentMethod,
       // Cash on Delivery has no online payment step to wait on — the order
@@ -91,6 +132,12 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     .map((i) => `${i.titleSnapshot} x${i.quantity}`)
     .join("\n");
 
+  const shippingFeeSummary = !needsShipping
+    ? "N/A (ebook only)"
+    : shippingCalculatedOnDelivery
+      ? "Calculated upon delivery (outside Egypt)"
+      : formatEGP(shippingFeeEGP);
+
   await sendSupportNotification({
     subject: "New journal order",
     lines: [
@@ -99,9 +146,28 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       { label: "Email", value: guestEmail },
       { label: "Phone", value: guestPhone },
       { label: "Items", value: itemsSummary },
+      { label: "Subtotal", value: formatEGP(subtotalEGP) },
+      { label: "Shipping fee", value: shippingFeeSummary },
       { label: "Total", value: formatEGP(totalEGP) },
       { label: "Payment method", value: paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : "InstaPay" },
+      { label: "Country", value: needsShipping ? (country ?? "—") : "N/A (ebook only)" },
+      { label: "Governorate", value: needsShipping && country === "Egypt" ? (governorate ?? "—") : "N/A" },
       { label: "Shipping address", value: needsShipping ? (shippingAddress ?? "—") : "N/A (ebook only)" },
+      { label: "Google Maps link", value: needsShipping ? (googleMapsLink ?? "—") : "N/A" },
+    ],
+  });
+
+  await sendCustomerConfirmation({
+    to: guestEmail,
+    name: guestName,
+    subject: "Your order is confirmed",
+    intro: `Thanks for your order! It's confirmed and will ship soon — pay ${formatEGP(totalEGP)} in cash when it arrives.`,
+    lines: [
+      { label: "Order #", value: order.id.slice(-8).toUpperCase() },
+      { label: "Items", value: itemsSummary },
+      { label: "Subtotal", value: formatEGP(subtotalEGP) },
+      { label: "Shipping fee", value: shippingFeeSummary },
+      { label: "Total", value: formatEGP(totalEGP) },
     ],
   });
 

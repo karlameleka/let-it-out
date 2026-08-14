@@ -41,7 +41,10 @@ export default async function CounselorPage({
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700">
+              50-minute session
+            </span>
             {counselor.specialties.map((s) => (
               <span
                 key={s}
@@ -63,9 +66,9 @@ export default async function CounselorPage({
               Request a session
             </h2>
             <p className="mt-1 text-sm text-ink/60">
-              Tell us a bit about what you&apos;re looking for and your
-              preferred timing. We&apos;ll reach out to confirm your session
-              and arrange payment.
+              Sessions run 50 minutes. Tell us a bit about what you&apos;re
+              looking for and your preferred timing, and we&apos;ll reach
+              out to confirm.
             </p>
             <div className="mt-6">
               <BookingForm counselorId={counselor.id} />
