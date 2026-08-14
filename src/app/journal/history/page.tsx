@@ -18,7 +18,12 @@ export default async function JournalHistoryPage() {
 
   return (
     <Container className="py-16 sm:py-20">
-      <h1 className="font-display text-3xl font-semibold text-brand-900">Your entries</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h1 className="font-display text-3xl font-semibold text-brand-900">Your entries</h1>
+        <Link href="/journal/patterns" className="text-sm font-medium text-brand-600 link-grow">
+          View mood patterns
+        </Link>
+      </div>
 
       {entries.length === 0 ? (
         <p className="mt-6 text-ink/60">

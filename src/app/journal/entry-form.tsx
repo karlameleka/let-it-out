@@ -3,15 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { createJournalEntry, shufflePrompt } from "@/lib/journal-actions";
 import { Button } from "@/components/ui";
-
-const MOODS = [
-  { emoji: "😊", label: "Great" },
-  { emoji: "😌", label: "Calm" },
-  { emoji: "😐", label: "Neutral" },
-  { emoji: "😔", label: "Low" },
-  { emoji: "😣", label: "Stressed" },
-  { emoji: "😴", label: "Tired" },
-];
+import { MOODS } from "@/lib/moods";
 
 const CELEBRATIONS = [
   "Entry saved! 🎉 That's one more step in your journey.",

@@ -494,6 +494,43 @@ let orderUrl = "";
   await ctx.close();
 }
 
+// --- Flow 14: mood pattern tracking -------------------------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+
+  await page.goto(`${BASE}/signup`);
+  await page.fill("#name", "Mood Flow Tester");
+  await page.fill("#email", `mood-flow-${rand}@example.com`);
+  await page.fill("#password", "password123");
+  await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+
+  await page.goto(`${BASE}/journal/patterns`);
+  const emptyStateVisible = await page.locator("text=No mood data yet").first().isVisible().catch(() => false);
+  log("mood patterns page shows empty state before any mood entries", emptyStateVisible);
+
+  await page.goto(`${BASE}/journal`);
+  for (const mood of ["😊", "😌", "😊"]) {
+    await page.click(`button[title]:has-text("${mood}")`);
+    await page.fill("textarea[name=content]", `Entry feeling ${mood}`);
+    await page.click('button:has-text("Save entry")');
+    await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
+    await page.waitForTimeout(300);
+  }
+
+  await page.click("text=Mood patterns");
+  await page.waitForURL(`${BASE}/journal/patterns`, { timeout: 10000 });
+
+  const topMoodCorrect = await page.locator("text=/Most common mood:.*Great.*2×/").first().isVisible().catch(() => false);
+  log("mood breakdown counts every tagged entry, not just one per day", topMoodCorrect);
+
+  const heatmapCellVisible = await page.locator("text=😊").first().isVisible().catch(() => false);
+  log("heatmap shows today's mood emoji", heatmapCellVisible);
+
+  await ctx.close();
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);

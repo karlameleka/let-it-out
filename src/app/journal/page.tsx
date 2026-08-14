@@ -111,6 +111,12 @@ export default async function JournalPage() {
         <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
           📝 {stats.total} {stats.total === 1 ? "entry" : "entries"} so far
         </span>
+        <Link
+          href="/journal/patterns"
+          className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-4 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50"
+        >
+          📊 Mood patterns
+        </Link>
       </div>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
