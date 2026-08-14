@@ -479,6 +479,46 @@ let orderUrl = "";
   const journalArticleVisible = await page.locator("text=James Pennebaker").first().isVisible().catch(() => false);
   log("journaling article renders first-section content before check-in", journalArticleVisible);
 
+  // Cognitive reframing tool
+  await page.goto(`${BASE}/resources`);
+  const reframingCardVisible = await page.locator("text=Cognitive Reframing").first().isVisible().catch(() => false);
+  log("resources listing shows the cognitive reframing tool", reframingCardVisible);
+
+  await page.click("text=Cognitive Reframing");
+  await page.waitForURL(/cognitive-reframing/);
+  log("reframing tool starts on step 1 of 4", await page.locator("text=Step 1 of 4").isVisible().catch(() => false));
+
+  await page.click('button:has-text("Start reframing it")');
+  const step2Visible = await page.locator("text=Step 2 of 4").isVisible().catch(() => false);
+  const distortionsVisible = await page.locator("text=Catastrophizing").isVisible().catch(() => false);
+  log("reframing tool shows the distortion checklist on step 2", step2Visible && distortionsVisible);
+
+  await page.click('button:has-text("Catastrophizing")');
+  await page.click('button:has-text("Next")');
+  log("reframing tool reaches the evidence step", await page.locator("text=Step 3 of 4").isVisible().catch(() => false));
+
+  await page.fill("#evidenceFor", "It happened once before.");
+  await page.fill("#evidenceAgainst", "It usually turns out fine.");
+  await page.click('button:has-text("Next")');
+  const finishBtn = page.locator('button:has-text("Finish")');
+  const finishDisabledEmpty = await finishBtn.isDisabled();
+  log("reframing tool's Finish button is disabled until a reframe is written", finishDisabledEmpty);
+
+  await page.fill("textarea", "One moment doesn't decide the whole outcome.");
+  await finishBtn.click();
+  await page.waitForTimeout(300);
+  const summaryVisible = await page
+    .locator("text=One moment doesn't decide the whole outcome")
+    .isVisible()
+    .catch(() => false);
+  log("reframing tool shows a completion summary of the exercise", summaryVisible);
+
+  await page.click('button:has-text("Try another scenario")');
+  await page.waitForTimeout(200);
+  const backToStep1 = await page.locator("text=Step 1 of 4").isVisible().catch(() => false);
+  const countPersisted = await page.locator("text=1 reframe so far").isVisible().catch(() => false);
+  log("reframing tool resets to a new scenario and keeps the completed count", backToStep1 && countPersisted);
+
   await ctx.close();
 }
 
