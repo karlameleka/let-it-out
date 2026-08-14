@@ -91,7 +91,7 @@ function Mail({ className }: { className?: string }) {
 }
 
 export const SOCIAL_LINKS: SocialLink[] = [
-  { label: "Instagram", href: "https://www.instagram.com/letitout_byk/rewind", icon: Instagram },
+  { label: "Instagram", href: "https://www.instagram.com/letitout_byk/", icon: Instagram },
   { label: "Facebook", href: "https://www.facebook.com/Let-it-Out-104788271746529", icon: Facebook },
   { label: "TikTok", href: "https://www.tiktok.com/@letitout_byk", icon: TikTok },
   { label: "LinkedIn", href: "https://www.linkedin.com/company/105449822/", icon: LinkedIn },
