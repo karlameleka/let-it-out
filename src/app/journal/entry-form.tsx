@@ -1,16 +1,17 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { Shuffle } from "lucide-react";
 import { createJournalEntry, shufflePrompt } from "@/lib/journal-actions";
 import { Button } from "@/components/ui";
 import { MOODS } from "@/lib/moods";
 
 const CELEBRATIONS = [
-  "Entry saved! 🎉 That's one more step in your journey.",
-  "Nice work — that's out of your head and onto the page. ✨",
-  "Saved! Come back tomorrow to keep the streak going. 🔥",
-  "Entry saved. Future you will thank present you for this. 💛",
-  "That's in the books! See you tomorrow? 📖",
+  "Entry saved — that's one more step in your journey.",
+  "Nice work. That's out of your head and onto the page.",
+  "Saved. Come back tomorrow to keep the streak going.",
+  "Entry saved. Future you will thank present you for this.",
+  "That's in the books. See you tomorrow?",
 ];
 
 type Prompt = { id: string; category: string; text: string } | null;
@@ -62,9 +63,10 @@ export default function EntryForm({ initialPrompt }: { initialPrompt: Prompt }) 
             type="button"
             onClick={handleShuffle}
             disabled={shuffling}
-            className="shrink-0 rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-medium text-brand-600 transition-transform hover:scale-105 hover:border-brand-400 disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50"
           >
-            {shuffling ? "Shuffling…" : "🔀 Shuffle prompt"}
+            <Shuffle className={`h-3.5 w-3.5 ${shuffling ? "animate-spin" : ""}`} strokeWidth={2} />
+            {shuffling ? "Shuffling…" : "Shuffle prompt"}
           </button>
         </div>
         <p

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { BarChart3, BookOpen } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
 import { getJournalStats } from "@/lib/journal-stats";
@@ -88,9 +89,11 @@ export default async function JournalPage() {
                 </p>
               </div>
               <div className="animate-float-slow ml-20 mt-44 w-64 rotate-2 rounded-2xl bg-brand-700 p-6 text-white shadow-xl">
-                <p className="text-3xl">🔥</p>
-                <p className="mt-2 font-display text-lg font-semibold">12-day streak</p>
-                <p className="mt-1 text-sm text-brand-50/80">
+                <p className="font-display text-4xl font-semibold leading-none">12</p>
+                <p className="mt-2 text-sm font-medium uppercase tracking-wide text-brand-100">
+                  Day streak
+                </p>
+                <p className="mt-2 text-sm text-brand-50/80">
                   and counting — one small page at a time.
                 </p>
               </div>
@@ -219,20 +222,36 @@ export default async function JournalPage() {
             A few minutes today, a little more clarity tomorrow.
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-brand-700 shadow-sm">
-              🔥 {stats.streak}-day streak
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-brand-700 shadow-sm">
-              📝 {stats.total} {stats.total === 1 ? "entry" : "entries"} so far
-            </span>
-            <Link
-              href="/journal/patterns"
-              className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-100"
-            >
-              📊 Mood patterns
-            </Link>
-            <JournalReminderToggle />
+          <div className="mt-8 flex flex-wrap items-stretch gap-4">
+            <div className="flex divide-x divide-brand-100 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
+              <div className="px-6 py-3.5">
+                <p className="font-display text-2xl font-semibold leading-none text-brand-900">
+                  {stats.streak}
+                </p>
+                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
+                  day streak
+                </p>
+              </div>
+              <div className="px-6 py-3.5">
+                <p className="font-display text-2xl font-semibold leading-none text-brand-900">
+                  {stats.total}
+                </p>
+                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
+                  {stats.total === 1 ? "Entry" : "Entries"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/journal/patterns"
+                className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-100"
+              >
+                <BarChart3 className="h-4 w-4" strokeWidth={2} />
+                Mood patterns
+              </Link>
+              <JournalReminderToggle />
+            </div>
           </div>
         </Container>
       </section>
@@ -255,7 +274,9 @@ export default async function JournalPage() {
 
             {entries.length === 0 ? (
               <div className="mt-6 flex flex-col items-center rounded-xl border border-dashed border-brand-200 bg-brand-50 px-4 py-8 text-center">
-                <span className="text-3xl">📖</span>
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-200 bg-white text-brand-500">
+                  <BookOpen className="h-5 w-5" strokeWidth={1.75} />
+                </span>
                 <p className="mt-3 text-sm text-ink/60">
                   Your entries will show up here once you save your first one.
                 </p>

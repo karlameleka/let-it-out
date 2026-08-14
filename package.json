@@ -19,6 +19,7 @@
     "@stripe/stripe-js": "^9.13.0",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.8",
+    "lucide-react": "^1.31.0",
     "next": "16.3.0",
     "nodemailer": "^9.0.5",
     "pg": "^8.23.0",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Bell, BellOff, BellRing } from "lucide-react";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-actions";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -91,8 +92,9 @@ export default function JournalReminderToggle() {
 
   if (status === "denied") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 px-4 py-2 text-xs text-ink/40">
-        🔕 Reminders blocked in browser settings
+      <span className="inline-flex items-center gap-2 rounded-full border border-brand-100 px-4 py-2 text-xs text-ink/40">
+        <BellOff className="h-3.5 w-3.5" strokeWidth={2} />
+        Reminders blocked in browser settings
       </span>
     );
   }
@@ -102,13 +104,18 @@ export default function JournalReminderToggle() {
       type="button"
       onClick={status === "on" ? disable : enable}
       disabled={busy}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
         status === "on"
           ? "border-brand-500 bg-brand-50 text-brand-700"
           : "border-brand-200 text-brand-600 hover:bg-brand-50"
       }`}
     >
-      {status === "on" ? "🔔 Daily reminders on" : "🔕 Enable daily reminders"}
+      {status === "on" ? (
+        <BellRing className="h-4 w-4" strokeWidth={2} />
+      ) : (
+        <Bell className="h-4 w-4" strokeWidth={2} />
+      )}
+      {status === "on" ? "Daily reminders on" : "Enable daily reminders"}
     </button>
   );
 }
