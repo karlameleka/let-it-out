@@ -400,12 +400,22 @@ let orderUrl = "";
 
   await page.click("text=Stress Management for Employees");
   await page.waitForURL(/\/resources\/stress-management-for-employees/);
+  const checkInGated = await page.locator("text=physiological sigh").first().isVisible().catch(() => false);
+  log("stress management article gates rest of content behind check-in", !checkInGated);
+
+  await page.click("text=Quick check-in").catch(() => {});
+  await page.click('button:has-text("not sure where to start")');
   const stressArticleVisible = await page.locator("text=physiological sigh").first().isVisible().catch(() => false);
-  log("stress management article renders full content", stressArticleVisible);
+  log("stress management article unlocks full content after check-in", stressArticleVisible);
+
+  const progress = await page.evaluate(() =>
+    JSON.parse(window.localStorage.getItem("lio_article_progress_stress-management-for-employees") || "null"),
+  );
+  log("check-in answer saved to localStorage", progress?.checkInAnswer?.includes("not sure where to start") ?? false);
 
   await page.goto(`${BASE}/resources/importance-of-journaling`);
   const journalArticleVisible = await page.locator("text=James Pennebaker").first().isVisible().catch(() => false);
-  log("journaling article renders full content", journalArticleVisible);
+  log("journaling article renders first-section content before check-in", journalArticleVisible);
 
   await ctx.close();
 }

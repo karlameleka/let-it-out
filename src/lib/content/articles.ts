@@ -4,6 +4,13 @@ export type ArticleSection = {
   list?: string[];
 };
 
+/** A reflective check-in shown after the first section — picking any
+ * option unlocks the rest of the article. There's no "right" answer. */
+export type ArticleCheckIn = {
+  prompt: string;
+  options: string[];
+};
+
 export type Article = {
   slug: string;
   title: string;
@@ -11,6 +18,7 @@ export type Article = {
   category: string;
   readMinutes: number;
   sections: ArticleSection[];
+  checkIn: ArticleCheckIn;
   references: string[];
 };
 
@@ -53,6 +61,14 @@ export const ARTICLES: Article[] = [
         ],
       },
     ],
+    checkIn: {
+      prompt: "Before the toolkit — which feels closer to your week right now?",
+      options: [
+        "My stress rarely gets a real chance to switch off",
+        "I have some recovery time, I just don't use it well",
+        "Honestly, I'm not sure where to start",
+      ],
+    },
     references: [
       "Selye, H. (1976). The Stress of Life. McGraw-Hill.",
       "Bakker, A. B., & Demerouti, E. (2007). The Job Demands-Resources model: State of the art. Journal of Managerial Psychology, 22(3), 309–328.",
@@ -100,6 +116,14 @@ export const ARTICLES: Article[] = [
         ],
       },
     ],
+    checkIn: {
+      prompt: "What's actually stopped you from journaling before?",
+      options: [
+        "I never know what to write",
+        "I start, then forget after a few days",
+        "I haven't really tried it yet",
+      ],
+    },
     references: [
       "Pennebaker, J. W., & Beall, S. K. (1986). Confronting a traumatic event: Toward an understanding of inhibition and disease. Journal of Abnormal Psychology, 95(3), 274–281.",
       "Lieberman, M. D., et al. (2007). Putting feelings into words: Affect labeling disrupts amygdala activity. Psychological Science, 18(5), 421–428.",

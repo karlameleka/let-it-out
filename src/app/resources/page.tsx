@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import { ARTICLES } from "@/lib/content/articles";
+import ArticleProgressBadge from "./article-progress-badge";
 
 export const metadata: Metadata = {
   title: "Resources",
@@ -42,8 +43,9 @@ export default function ResourcesPage() {
                 href={`/resources/${article.slug}`}
                 className="group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+                <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500">
                   {article.category} · {article.readMinutes} min read
+                  <ArticleProgressBadge slug={article.slug} totalMilestones={article.sections.length + 1} />
                 </p>
                 <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 group-hover:text-brand-600">
                   {article.title}
