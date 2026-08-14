@@ -86,7 +86,7 @@ export default function CartPage() {
             <span>Subtotal</span>
             <span className="font-semibold text-ink"><PriceDisplay egpAmount={subtotalEGP} /></span>
           </div>
-          <p className="mt-1 text-xs text-ink/50">Shipping (physical items) arranged after order confirmation.</p>
+          <p className="mt-1 text-xs text-ink/50">Shipping fees are calculated at checkout.</p>
           <Button className="mt-6 w-full" onClick={() => router.push("/checkout")}>
             Checkout
           </Button>

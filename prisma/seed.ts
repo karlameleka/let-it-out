@@ -14,7 +14,7 @@ async function main() {
     {
       slug: "verna-awad",
       name: "Verna Awad",
-      credentials: "Lead Psychologist",
+      credentials: "Lead Psychotherapist",
       bio: "Verna Awad is a clinical psychologist holding an MSc in Clinical Psychology from the University of Gibraltar. She has been working with adults since 2020, supporting people through stress, burnout, emotional dysregulation, and the quiet exhaustion that builds when we stop prioritizing ourselves. Her work is grounded in CBT and DBT, and she is currently in advanced training in psychosexual therapy. She believes that self-awareness is the foundation of any real change — and that the tools we build in therapy are the ones we carry into every area of life.",
       specialties: ["Stress & Burnout", "Emotional Dysregulation", "CBT", "DBT", "Psychosexual Therapy"],
       sortOrder: 0,
@@ -25,7 +25,7 @@ async function main() {
       slug: "karla-meleka",
       name: "Karla Meleka",
       credentials: "Psychologist, MSc (Liverpool John Moores University)",
-      bio: "Karla Meleka is a compassionate psychologist with dual degrees in Psychology from the British University in Egypt and London South Bank University. She holds an MSc from Liverpool John Moores University. Passionate about adult mental health, she uses evidence-based therapies like CBT and DBT combined with a holistic approach to help clients manage depression, anxiety, and general psychological distress. Karla focuses on empowering clients with practical tools and resilience to achieve lasting well-being through an empathetic, client-centered approach.",
+      bio: "Karla Meleka is a compassionate psychologist with dual degrees in Psychology from the British University in Egypt and London South Bank University. She holds an MSc from Liverpool John Moores University. Passionate about adult mental health, she uses evidence-based therapies like CBT and DBT combined with a holistic approach to help clients manage depression, anxiety, and general psychological distress. Karla focuses on empowering clients with practical tools and resilience to achieve lasting wellbeing through an empathetic, client-centered approach.",
       specialties: ["Depression", "Anxiety", "CBT", "DBT", "Adult Mental Health"],
       sortOrder: 1,
       active: true,

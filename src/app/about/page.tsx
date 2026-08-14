@@ -91,23 +91,33 @@ export default function AboutPage() {
           <div>
             <SectionHeading
               eyebrow="What we stand for"
-              title="Practical, accessible, compassionate care"
+              title="A few things we won't compromise on"
             />
-            <ul className="mt-6 space-y-4">
+            <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {[
-                "Psychologist-led expertise",
-                "Evidence-based approaches",
-                "Practical, accessible, compassionate care",
-                "Tailored to your unique needs",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-700 text-xs text-white">
-                    ✓
-                  </span>
-                  <span className="text-ink/80">{item}</span>
-                </li>
+                {
+                  label: "Psychologist-led",
+                  description: "Every service starts with a licensed psychologist, not a template.",
+                },
+                {
+                  label: "Evidence-based",
+                  description: "Grounded in CBT, DBT, and research that's actually been tested.",
+                },
+                {
+                  label: "Accessible",
+                  description: "Straightforward pricing and language — care shouldn't feel like a maze.",
+                },
+                {
+                  label: "Human, not clinical",
+                  description: "We meet you where you are, not where a textbook says you should be.",
+                },
+              ].map((value) => (
+                <div key={value.label} className="border-l-2 border-brand-300 pl-4">
+                  <p className="font-display text-lg font-semibold text-brand-900">{value.label}</p>
+                  <p className="mt-1.5 text-sm text-ink/70">{value.description}</p>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
           <div className="flex justify-center">
             <Logo variant="icon-teal" height={200} className="drop-shadow-md" />
@@ -129,7 +139,7 @@ export default function AboutPage() {
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
         <Container className="text-center">
           <h2 className="font-display text-3xl font-semibold sm:text-4xl">
-            Let&apos;s start your journey to well-being, together.
+            Let&apos;s start your journey to wellbeing, together.
           </h2>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <ButtonLink href="/counseling" variant="bright">

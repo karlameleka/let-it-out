@@ -15,7 +15,7 @@ export default function ContactPage() {
         <div>
           <SectionHeading
             eyebrow="Get in touch"
-            title="Let's start your journey to well-being, together."
+            title="Let's start your journey to wellbeing, together."
             description="Have a question about counseling, workshops, or our guided journals? Send us a message and we'll get back to you."
           />
           <div className="mt-8 rounded-2xl border border-brand-100 bg-white p-6 text-sm text-ink/70">

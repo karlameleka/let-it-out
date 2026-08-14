@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ShoppingCart } from "lucide-react";
 import { LogoLink } from "@/components/logo";
 import { useCart } from "@/lib/cart-context";
 import { logoutAction } from "@/lib/auth-actions";
@@ -92,20 +93,35 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="inline-flex items-center justify-center rounded-md p-2 text-ink md:hidden"
-          aria-label="Toggle menu"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {open ? (
-              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-            ) : (
-              <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+        <div className="flex items-center gap-1 md:hidden">
+          <Link
+            href="/cart"
+            aria-label={`Cart${count > 0 ? `, ${count} items` : ""}`}
+            className="relative inline-flex items-center justify-center rounded-md p-2 text-ink"
+          >
+            <ShoppingCart className="h-5 w-5" strokeWidth={1.75} />
+            {count > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-semibold text-white">
+                {count}
+              </span>
             )}
-          </svg>
-        </button>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="inline-flex items-center justify-center rounded-md p-2 text-ink"
+            aria-label="Toggle menu"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {open ? (
+                <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+              ) : (
+                <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -121,13 +137,6 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/cart"
-              onClick={() => setOpen(false)}
-              className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
-            >
-              Cart {count > 0 ? `(${count})` : ""}
-            </Link>
             {user ? (
               <>
                 <Link

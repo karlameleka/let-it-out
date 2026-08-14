@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { Logo } from "@/components/logo";
 
 export function Container({
   className = "",
@@ -50,7 +51,7 @@ export function ButtonLink({
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-brand-500">
-      <span className="h-px w-6 bg-brand-400" />
+      <Logo variant="icon-teal" height={14} className="shrink-0 opacity-80" />
       {children}
     </p>
   );
