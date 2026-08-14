@@ -4,7 +4,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { createSession, destroySession } from "@/lib/session";
+import { createSession, destroySession, requireUser } from "@/lib/session";
 
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name."),
@@ -93,4 +93,46 @@ export async function loginAction(
 export async function logoutAction() {
   await destroySession();
   redirect("/");
+}
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Please enter your current password."),
+    newPassword: z.string().min(8, "New password must be at least 8 characters."),
+    confirmPassword: z.string().min(1, "Please confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords don't match.",
+    path: ["confirmPassword"],
+  });
+
+export type ChangePasswordFormState = { error?: string; success?: boolean } | undefined;
+
+export async function changePasswordAction(
+  _prevState: ChangePasswordFormState,
+  formData: FormData,
+): Promise<ChangePasswordFormState> {
+  const session = await requireUser().catch(() => null);
+  if (!session) return { error: "Please log in to change your password." };
+
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  if (!user) return { error: "Account not found." };
+
+  const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
+  if (!valid) return { error: "Current password is incorrect." };
+
+  const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+  return { success: true };
 }

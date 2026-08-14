@@ -648,6 +648,58 @@ let orderUrl = "";
   log("cron route rejects requests with the wrong secret", wrongSecretRes.status === 401);
 }
 
+// --- Flow 17: account settings — change password -----------------------------
+{
+  const ctx = await newContext();
+  const page = await ctx.newPage();
+  const email = `password-flow-${rand}@example.com`;
+
+  await page.goto(`${BASE}/signup`);
+  await page.fill("#name", "Password Flow Tester");
+  await page.fill("#email", email);
+  await page.fill("#password", "original-password-123");
+  await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+
+  await page.goto(`${BASE}/account`);
+
+  await page.fill("#currentPassword", "wrong-password");
+  await page.fill("#newPassword", "new-password-456");
+  await page.fill("#confirmPassword", "new-password-456");
+  await page.click('button:has-text("Update password")');
+  await page.waitForTimeout(500);
+  const wrongCurrentRejected = await page.locator("text=Current password is incorrect").first().isVisible().catch(() => false);
+  log("change password rejects an incorrect current password", wrongCurrentRejected);
+
+  await page.fill("#currentPassword", "original-password-123");
+  await page.fill("#newPassword", "new-password-456");
+  await page.fill("#confirmPassword", "does-not-match-789");
+  await page.click('button:has-text("Update password")');
+  await page.waitForTimeout(500);
+  const mismatchRejected = await page.locator("text=New passwords don't match").first().isVisible().catch(() => false);
+  log("change password rejects mismatched new passwords", mismatchRejected);
+
+  await page.fill("#currentPassword", "original-password-123");
+  await page.fill("#newPassword", "new-password-456");
+  await page.fill("#confirmPassword", "new-password-456");
+  await page.click('button:has-text("Update password")');
+  await page.waitForTimeout(500);
+  const updateSucceeded = await page.locator("text=Password updated").first().isVisible().catch(() => false);
+  log("change password succeeds with correct current password", updateSucceeded);
+
+  await page.click('button:has-text("Log out")');
+  await page.waitForURL(`${BASE}/`, { timeout: 10000 });
+
+  await page.goto(`${BASE}/login`);
+  await page.fill("#email", email);
+  await page.fill("#password", "new-password-456");
+  await page.click('button[type=submit]');
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  log("can log in with the new password after changing it", true);
+
+  await ctx.close();
+}
+
 await browser.close();
 
 const failed = results.filter((r) => !r.ok);

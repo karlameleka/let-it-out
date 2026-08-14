@@ -65,6 +65,9 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
               >
                 {user.name.split(" ")[0]}
               </Link>
+              <Link href="/account" className="text-sm font-medium text-ink/50 hover:text-brand-600">
+                Settings
+              </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
@@ -133,6 +136,13 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
                   className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
                 >
                   My account
+                </Link>
+                <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
+                >
+                  Settings
                 </Link>
                 <form action={logoutAction}>
                   <button
