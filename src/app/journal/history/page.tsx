@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { Container } from "@/components/ui";
+import { Container, Eyebrow, ButtonLink } from "@/components/ui";
+import { Swash } from "@/components/decor";
 
 export const metadata: Metadata = { title: "Journal History" };
 
@@ -18,34 +19,49 @@ export default async function JournalHistoryPage() {
 
   return (
     <Container className="py-16 sm:py-20">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-3xl font-semibold text-brand-900">Your entries</h1>
-        <Link href="/journal/patterns" className="text-sm font-medium text-brand-600 link-grow">
-          View mood patterns
+      <Eyebrow>A self-exploration journey</Eyebrow>
+      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
+        <h1 className="font-display text-3xl font-semibold text-brand-900">
+          Your{" "}
+          <span className="mark-swash italic text-brand-700">
+            entries<Swash />
+          </span>
+        </h1>
+        <Link
+          href="/journal/patterns"
+          className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-4 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50"
+        >
+          📊 View mood patterns
         </Link>
       </div>
 
       {entries.length === 0 ? (
-        <p className="mt-6 text-ink/60">
-          No entries yet.{" "}
-          <Link href="/journal" className="font-medium text-brand-600 hover:underline">
-            Write your first one
-          </Link>
-          .
-        </p>
+        <div className="mt-10 flex flex-col items-center rounded-2xl border border-dashed border-brand-200 bg-brand-50 px-6 py-14 text-center">
+          <span className="text-4xl">📖</span>
+          <p className="mt-4 text-ink/60">No entries yet — your journal is waiting for its first page.</p>
+          <ButtonLink href="/journal" className="mt-6">
+            Write your first entry
+          </ButtonLink>
+        </div>
       ) : (
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2">
           {entries.map((e) => (
             <li key={e.id}>
               <Link
                 href={`/journal/${e.id}`}
-                className="block rounded-xl border-2 border-brand-100 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-sm"
+                className="block rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md"
               >
-                <div className="flex items-center justify-between text-xs text-ink/50">
-                  <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                  {e.mood && <span className="text-base">{e.mood}</span>}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+                    {e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                  {e.mood && (
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-base">
+                      {e.mood}
+                    </span>
+                  )}
                 </div>
-                <p className="mt-1 line-clamp-2 text-sm text-ink/80">{e.content}</p>
+                <p className="mt-3 line-clamp-3 text-sm text-ink/80">{e.content}</p>
               </Link>
             </li>
           ))}
