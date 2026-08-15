@@ -163,6 +163,21 @@ export async function toggleBookmark(entryId: string): Promise<{ success: boolea
   return { success: true, bookmarked: updated.bookmarked };
 }
 
+export async function deleteJournalEntry(entryId: string): Promise<{ success: boolean }> {
+  const user = await requireUser().catch(() => null);
+  if (!user) return { success: false };
+
+  const entry = await prisma.journalEntry.findUnique({ where: { id: entryId }, select: { userId: true } });
+  if (!entry || entry.userId !== user.userId) return { success: false };
+
+  await prisma.journalEntry.delete({ where: { id: entryId } });
+
+  revalidatePath("/journal");
+  revalidatePath(`/journal/${entryId}`);
+
+  return { success: true };
+}
+
 export async function updateJournalLockSetting(enabled: boolean): Promise<{ success: boolean }> {
   const user = await requireUser().catch(() => null);
   if (!user) return { success: false };

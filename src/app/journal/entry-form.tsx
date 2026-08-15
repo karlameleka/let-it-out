@@ -15,6 +15,8 @@ const CELEBRATIONS = [
   "That's in the books. See you tomorrow?",
 ];
 
+const PHOTO_PERMISSION_KEY = "lio_photo_access_granted";
+
 type Prompt = { id: string; category: string; text: string } | null;
 
 export default function EntryForm({
@@ -38,6 +40,7 @@ export default function EntryForm({
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoProcessing, setPhotoProcessing] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [showPhotoPermission, setShowPhotoPermission] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (state !== lastHandledState) {
@@ -50,6 +53,20 @@ export default function EntryForm({
       setPhotoError(null);
       onSaved?.();
     }
+  }
+
+  function requestPhotoAccess() {
+    if (window.localStorage.getItem(PHOTO_PERMISSION_KEY) === "1") {
+      fileInputRef.current?.click();
+    } else {
+      setShowPhotoPermission(true);
+    }
+  }
+
+  function allowPhotoAccess() {
+    window.localStorage.setItem(PHOTO_PERMISSION_KEY, "1");
+    setShowPhotoPermission(false);
+    fileInputRef.current?.click();
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -210,7 +227,7 @@ export default function EntryForm({
           ) : (
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={requestPhotoAccess}
               disabled={photoProcessing}
               className="inline-flex items-center gap-2 rounded-xl border border-dashed border-brand-200 px-4 py-3 text-sm text-ink/60 transition-colors hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50"
             >
@@ -240,6 +257,41 @@ export default function EntryForm({
           {pending ? "Saving…" : "Save entry"}
         </Button>
       </form>
+
+      {showPhotoPermission && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-xs animate-pop-in overflow-hidden rounded-2xl bg-white text-center shadow-2xl">
+            <div className="px-5 pt-6">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+                <ImagePlus className="h-6 w-6" strokeWidth={1.75} />
+              </span>
+              <p className="mt-3 font-display text-base font-semibold text-ink/90">
+                &ldquo;Let It Out&rdquo; Would Like to Access Your Photos
+              </p>
+              <p className="mt-1.5 pb-5 text-sm text-ink/60">
+                This lets you attach a photo to your journal entries. You can change this any time in your
+                browser or device settings.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-brand-100 border-t border-brand-100 text-sm font-medium">
+              <button
+                type="button"
+                onClick={() => setShowPhotoPermission(false)}
+                className="py-3 text-ink/60 transition-colors hover:bg-brand-50"
+              >
+                Don&apos;t Allow
+              </button>
+              <button
+                type="button"
+                onClick={allowPhotoAccess}
+                className="py-3 text-brand-600 transition-colors hover:bg-brand-50"
+              >
+                Allow Access
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

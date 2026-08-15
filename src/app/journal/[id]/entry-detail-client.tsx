@@ -2,14 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
-import { getJournalEntryDetail, toggleBookmark, type JournalEntryDetail } from "@/lib/journal-actions";
+import {
+  deleteJournalEntry,
+  getJournalEntryDetail,
+  toggleBookmark,
+  type JournalEntryDetail,
+} from "@/lib/journal-actions";
 import { moodLabel } from "@/lib/moods";
 import { MoodDot } from "@/components/mood-dot";
 import { Container } from "@/components/ui";
 
 export default function EntryDetailClient({ id }: { id: string }) {
+  const router = useRouter();
   const [entry, setEntry] = useState<JournalEntryDetail | null | undefined>(undefined);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     getJournalEntryDetail(id).then(setEntry);
@@ -20,6 +29,16 @@ export default function EntryDetailClient({ id }: { id: string }) {
     setEntry({ ...entry, bookmarked: !entry.bookmarked });
     const result = await toggleBookmark(id);
     if (!result.success) setEntry((prev) => (prev ? { ...prev, bookmarked: !prev.bookmarked } : prev));
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const result = await deleteJournalEntry(id);
+    if (result.success) {
+      router.push("/journal");
+    } else {
+      setDeleting(false);
+    }
   }
 
   if (entry === undefined) return null;
@@ -88,6 +107,38 @@ export default function EntryDetailClient({ id }: { id: string }) {
           <p className="mt-6 whitespace-pre-line font-display text-lg leading-relaxed text-ink/80">
             {entry.content}
           </p>
+        </div>
+
+        <div className="border-t border-brand-100 px-6 py-3.5 sm:px-8">
+          {!confirmingDelete ? (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="text-xs text-ink/30 transition-colors hover:text-red-500"
+            >
+              Delete entry
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <span className="text-ink/50">Delete this entry? This can&apos;t be undone.</span>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="font-semibold text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={deleting}
+                className="text-ink/50 transition-colors hover:text-ink/70 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </Container>

@@ -88,9 +88,22 @@ async function unlockJournal(page, password) {
   log("shuffle prompt button changes the prompt", promptBefore !== promptAfterShuffle);
 
   await page.fill("textarea[name=content]", "This is my first journal entry via e2e test.");
-  await page.setInputFiles('input[type="file"]', "public/brand/icon-192.png");
+
+  await page.click('button:has-text("Add photo")');
+  await page.waitForTimeout(300);
+  log("photo permission prompt appears before opening the picker", await page.locator("text=Would Like to Access Your Photos").isVisible().catch(() => false));
+
+  await page.click('button:has-text("Don\'t Allow")');
+  await page.waitForTimeout(200);
+  log("declining photo access dismisses the prompt without opening a picker", (await page.locator('input[name="photoUrl"]').inputValue()) === "");
+
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    page.click('button:has-text("Add photo")').then(() => page.click('button:has-text("Allow Access")')),
+  ]);
+  await fileChooser.setFiles("public/brand/icon-192.png");
   await page.waitForSelector('button[aria-label="Remove photo"]', { timeout: 5000 }).catch(() => {});
-  log("photo preview appears after choosing a file", await page.locator('button[aria-label="Remove photo"]').isVisible().catch(() => false));
+  log("photo preview appears after allowing access and choosing a file", await page.locator('button[aria-label="Remove photo"]').isVisible().catch(() => false));
 
   await page.click('button:has-text("Save entry")');
   await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
@@ -147,6 +160,27 @@ async function unlockJournal(page, password) {
   await page.waitForTimeout(400);
   log("entry detail page shows the full entry without re-locking", await page.locator("text=This is my first journal entry").isVisible().catch(() => false));
   log("entry detail page shows the attached photo", await page.locator(".rounded-3xl.border-brand-100 img").first().isVisible().catch(() => false));
+
+  // Deleting an entry is a subtle text link that requires a confirm step.
+  const deleteLink = page.locator('button:has-text("Delete entry")');
+  log("subtle 'Delete entry' link is visible on the entry detail page", await deleteLink.isVisible().catch(() => false));
+  log("no confirm buttons before the delete link is clicked", !(await page.locator('button:has-text("Cancel")').isVisible().catch(() => false)));
+
+  await deleteLink.click();
+  await page.waitForTimeout(200);
+  log("confirm step appears after clicking Delete entry", await page.locator("text=This can't be undone").isVisible().catch(() => false));
+
+  await page.click('button:has-text("Cancel")');
+  await page.waitForTimeout(200);
+  log("Cancel returns to the subtle delete link", await deleteLink.isVisible().catch(() => false));
+
+  await deleteLink.click();
+  await page.waitForTimeout(200);
+  await page.click('button:has-text("Delete"):not(:has-text("entry"))');
+  await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  await page.waitForTimeout(500);
+  log("deleting redirects back to the feed", page.url() === `${BASE}/journal`);
+  log("deleted entry no longer appears in the feed", !(await page.locator("text=This is my first journal entry").isVisible().catch(() => false)));
 
   await page.goto(`${BASE}/journal/history`);
   log("/journal/history redirects to the feed", page.url() === `${BASE}/journal`);
