@@ -10,6 +10,13 @@ export default defineConfig({
     seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Prisma 7 removed `directUrl` from schema.prisma entirely — the CLI
+    // (migrate/generate/studio) now takes its own connection here, separate
+    // from the pooled connection the running app uses via the driver
+    // adapter in src/lib/db.ts. Migrations need a direct (unpooled)
+    // connection to run their DDL/advisory-lock operations reliably, so
+    // this prefers DIRECT_URL and only falls back to DATABASE_URL where a
+    // separate direct connection isn't configured (e.g. local dev).
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
