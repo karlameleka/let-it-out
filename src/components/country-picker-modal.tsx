@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCurrency } from "@/lib/currency-context";
 import { COUNTRIES } from "@/lib/content/geo";
+import { Button } from "@/components/ui";
 
 export default function CountryPickerModal() {
   const pathname = usePathname();
@@ -52,13 +53,9 @@ export default function CountryPickerModal() {
             pay the exact Egyptian Pound (EGP) amount.
           </p>
           <div className="mt-5 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={confirm}
-              className="flex-1 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-800/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-400 hover:shadow-md hover:shadow-brand-800/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
-            >
+            <Button type="button" onClick={confirm} variant="bright" className="flex-1">
               Continue
-            </button>
+            </Button>
             <button
               type="button"
               onClick={skip}

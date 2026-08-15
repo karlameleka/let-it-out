@@ -15,7 +15,7 @@ export function Container({
 }
 
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-200 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 active:scale-[0.98]";
+  "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-200 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2";
 
 const variants = {
   primary:
@@ -27,6 +27,9 @@ const variants = {
   "outline-inverse":
     "border-[1.5px] border-white/70 text-white hover:border-white hover:bg-white/10 hover:-translate-y-0.5 focus-visible:ring-white/60 focus-visible:ring-offset-0",
   ghost: "text-brand-700 hover:bg-brand-50",
+  /** Quiet secondary action — an underlined text link, not a boxed button.
+      Pairs with `primary` in hero/marketing CTA rows per the editorial direction. */
+  text: "!rounded-none !px-0 !py-0 font-semibold text-ink link-grow",
 };
 
 export function Button({
@@ -52,8 +55,8 @@ export function ButtonLink({
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-brand-500">
-      <Logo variant="icon-teal" height={14} className="shrink-0 opacity-80" />
+    <p className="inline-flex items-center gap-2 border-b border-brand-200 pb-2 text-xs font-semibold uppercase tracking-[0.18em] text-brand-600">
+      <Logo variant="icon-teal" height={13} className="shrink-0 opacity-70" />
       {children}
     </p>
   );

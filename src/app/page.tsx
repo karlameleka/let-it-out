@@ -34,35 +34,40 @@ export default async function HomePage({
       {/* Hero */}
       <section className="relative overflow-hidden bg-brand-50">
         <DoodleField />
-        <Container className="relative grid gap-12 py-20 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div>
+        <Container className="relative py-20 sm:py-28">
+          <div className="max-w-2xl">
             <Ribbon>{t.heroRibbon}</Ribbon>
-            <h1 className="mt-5 max-w-xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+            <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
               {t.heroTitlePrefix}
               <span className="mark-swash italic text-brand-700">{t.heroTitleHighlight}<Swash /></span>
               {t.heroTitleSuffix}
             </h1>
-            <p className="mt-6 max-w-lg text-lg text-ink/70">{t.heroDescription}</p>
-            <div className="mt-9 flex flex-wrap gap-4">
+            <p className="animate-rise mt-6 max-w-lg text-lg text-ink/70" style={{ animationDelay: "0.18s" }}>
+              {t.heroDescription}
+            </p>
+            <div className="animate-rise mt-9 flex flex-wrap items-center gap-x-8 gap-y-4" style={{ animationDelay: "0.28s" }}>
               <ButtonLink href="/counseling" variant="primary">
                 {t.heroCtaBook}
               </ButtonLink>
-              <ButtonLink href="/shop" variant="outline">
-                {t.heroCtaShop}
+              <ButtonLink href="/shop" variant="text">
+                {t.heroCtaShop} &rarr;
               </ButtonLink>
             </div>
           </div>
 
-          <div className="relative mx-auto hidden w-full max-w-sm lg:block">
-            <div className="absolute -left-6 top-4 rounded-2xl border border-brand-200 bg-white p-4 shadow-lg">
-              <p className="font-display text-sm italic text-brand-800">{t.heroPromptQuote}</p>
-              <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-brand-500">
+          <div
+            className="animate-rise mt-16 grid gap-8 border-t border-brand-200 pt-10 sm:grid-cols-[1fr_auto] sm:items-center"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <div className="max-w-md">
+              <p className="font-display text-lg italic leading-snug text-brand-900">{t.heroPromptQuote}</p>
+              <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
                 {t.heroPromptLabel}
               </p>
             </div>
-            <div className="ml-16 mt-24 rounded-2xl bg-brand-700 p-6 text-white shadow-xl">
-              <Logo variant="icon-white" height={64} />
-              <p className="mt-4 font-display text-lg italic">{t.heroCardQuote}</p>
+            <div className="flex items-center gap-4 rounded-lg bg-brand-700 px-6 py-5 text-white sm:max-w-xs">
+              <Logo variant="icon-white" height={40} className="shrink-0" />
+              <p className="font-display text-base italic leading-snug">{t.heroCardQuote}</p>
             </div>
           </div>
         </Container>

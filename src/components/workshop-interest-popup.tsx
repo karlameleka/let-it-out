@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { submitWorkshopInterest } from "@/lib/workshop-interest-actions";
 import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui";
 
 const STORAGE_KEY = "lio_workshop_popup_seen";
 const SHOW_AFTER_MS = 6000;
@@ -78,13 +79,9 @@ export default function WorkshopInterestPopup() {
                   placeholder="you@email.com"
                   className="w-full flex-1 rounded-full border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm outline-none focus:border-brand-500"
                 />
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="shrink-0 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-800/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-400 hover:shadow-md hover:shadow-brand-800/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none disabled:translate-y-0"
-                >
+                <Button type="submit" variant="bright" disabled={pending} className="shrink-0">
                   {pending ? "..." : "Notify me"}
-                </button>
+                </Button>
               </form>
               {state?.error && (
                 <p className="mt-2 text-xs text-red-600">{state.error}</p>

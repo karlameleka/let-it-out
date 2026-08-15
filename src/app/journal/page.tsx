@@ -51,40 +51,43 @@ export default async function JournalPage() {
         {/* Hero */}
         <section className="relative overflow-hidden bg-brand-50">
           <DoodleField />
-          <Container className="relative grid gap-12 py-20 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div>
+          <Container className="relative py-20 sm:py-28">
+            <div className="max-w-2xl">
               <Ribbon>Free journaling app</Ribbon>
-              <h1 className="mt-5 max-w-xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+              <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
                 Let it out,{" "}
                 <span className="mark-swash italic text-brand-700">
                   one page<Swash />
                 </span>{" "}
                 at a time.
               </h1>
-              <p className="mt-6 max-w-lg text-lg text-ink/70">
+              <p className="animate-rise mt-6 max-w-lg text-lg text-ink/70" style={{ animationDelay: "0.18s" }}>
                 A free, guided journaling space with rotating daily prompts —
                 no pressure, no perfect entries, just a little time for
                 yourself.
               </p>
-              <div className="mt-9 flex flex-wrap gap-4">
+              <div className="animate-rise mt-9 flex flex-wrap items-center gap-x-8 gap-y-4" style={{ animationDelay: "0.28s" }}>
                 <ButtonLink href="/signup">Start journaling — it&apos;s free</ButtonLink>
-                <ButtonLink href="/login" variant="outline">
+                <ButtonLink href="/login" variant="text">
                   Log in
                 </ButtonLink>
               </div>
             </div>
 
-            <div className="relative mx-auto hidden w-full max-w-sm lg:block">
-              <div className="animate-pop-in absolute -left-4 top-0 w-72 -rotate-3 rounded-2xl border border-brand-200 bg-white p-5 shadow-lg">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-500">
-                  Today&apos;s prompt
-                </p>
-                <p className="mt-2 font-display text-base italic leading-snug text-brand-900">
+            <div
+              className="animate-rise mt-16 grid gap-8 border-t border-brand-200 pt-10 sm:grid-cols-[1fr_auto] sm:items-center"
+              style={{ animationDelay: "0.4s" }}
+            >
+              <div className="max-w-md">
+                <p className="font-display text-lg italic leading-snug text-brand-900">
                   &ldquo;What would you do if you trusted yourself completely,
                   just for one day?&rdquo;
                 </p>
+                <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
+                  Today&apos;s prompt
+                </p>
               </div>
-              <div className="animate-float-slow ml-20 mt-44 w-64 rotate-2 rounded-2xl bg-brand-700 p-6 text-white shadow-xl">
+              <div className="rounded-lg bg-brand-700 px-6 py-5 text-white sm:max-w-xs">
                 <p className="font-display text-4xl font-semibold leading-none">12</p>
                 <p className="mt-2 text-sm font-medium uppercase tracking-wide text-brand-100">
                   Day streak
@@ -179,9 +182,9 @@ export default async function JournalPage() {
                 title="Your first entry is one click away"
                 description="Free forever. No credit card, no pressure — just a fresh prompt and a private page."
               />
-              <div className="mt-8 flex justify-center gap-4">
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
                 <ButtonLink href="/signup">Start journaling — it&apos;s free</ButtonLink>
-                <ButtonLink href="/login" variant="outline">
+                <ButtonLink href="/login" variant="text">
                   Log in
                 </ButtonLink>
               </div>
