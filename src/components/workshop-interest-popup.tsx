@@ -81,7 +81,7 @@ export default function WorkshopInterestPopup() {
                 <button
                   type="submit"
                   disabled={pending}
-                  className="shrink-0 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_3px_0_0_theme(colors.brand.800)] transition-all hover:bg-brand-400 hover:translate-y-px hover:shadow-[0_2px_0_0_theme(colors.brand.800)] disabled:opacity-60"
+                  className="shrink-0 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-800/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-400 hover:shadow-md hover:shadow-brand-800/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none disabled:translate-y-0"
                 >
                   {pending ? "..." : "Notify me"}
                 </button>

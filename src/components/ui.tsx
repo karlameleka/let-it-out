@@ -15,15 +15,17 @@ export function Container({
 }
 
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none active:translate-y-px";
+  "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-200 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 active:scale-[0.98]";
 
 const variants = {
   primary:
-    "bg-brand-700 text-white shadow-[0_4px_0_0_theme(colors.brand.900)] hover:bg-brand-600 hover:shadow-[0_2px_0_0_theme(colors.brand.900)] hover:translate-y-[2px]",
+    "bg-brand-700 text-white shadow-sm shadow-brand-900/20 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-900/25 hover:-translate-y-0.5",
   bright:
-    "bg-brand-500 text-white shadow-[0_4px_0_0_theme(colors.brand.800)] hover:bg-brand-400 hover:shadow-[0_2px_0_0_theme(colors.brand.800)] hover:translate-y-[2px]",
-  outline: "border-2 border-brand-700 text-brand-700 hover:bg-brand-50",
-  "outline-inverse": "border-2 border-white text-white hover:bg-white/10",
+    "bg-brand-500 text-white shadow-sm shadow-brand-800/20 hover:bg-brand-400 hover:shadow-md hover:shadow-brand-800/25 hover:-translate-y-0.5",
+  outline:
+    "border-[1.5px] border-brand-200 text-brand-700 hover:border-brand-400 hover:bg-brand-50 hover:-translate-y-0.5",
+  "outline-inverse":
+    "border-[1.5px] border-white/70 text-white hover:border-white hover:bg-white/10 hover:-translate-y-0.5 focus-visible:ring-white/60 focus-visible:ring-offset-0",
   ghost: "text-brand-700 hover:bg-brand-50",
 };
 

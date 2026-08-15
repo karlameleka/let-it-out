@@ -1,9 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import { resetPasswordAction } from "@/lib/auth-actions";
-import { Button } from "@/components/ui";
+import { Button, ButtonLink } from "@/components/ui";
 
 export default function ResetPasswordForm({ token }: { token: string }) {
   const [state, formAction, pending] = useActionState(resetPasswordAction, undefined);
@@ -14,12 +13,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
         <p className="text-sm font-medium text-brand-600">
           Your password has been updated.
         </p>
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-700 px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_0_0_theme(colors.brand.900)] transition-all hover:bg-brand-600 hover:translate-y-px hover:shadow-[0_2px_0_0_theme(colors.brand.900)]"
-        >
-          Log in
-        </Link>
+        <ButtonLink href="/login">Log in</ButtonLink>
       </div>
     );
   }

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Container } from "@/components/ui";
+import { Container, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { DoodleField } from "@/components/decor";
 import ResetPasswordForm from "./reset-password-form";
@@ -46,12 +45,9 @@ export default async function ResetPasswordPage({
               <p className="mt-2 text-sm text-ink/60">
                 This link is missing its reset token. Request a new one below.
               </p>
-              <Link
-                href="/forgot-password"
-                className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-brand-700 px-6 py-3 text-sm font-semibold text-white shadow-[0_4px_0_0_theme(colors.brand.900)] transition-all hover:bg-brand-600 hover:translate-y-px hover:shadow-[0_2px_0_0_theme(colors.brand.900)]"
-              >
+              <ButtonLink href="/forgot-password" className="mt-8">
                 Request a new link
-              </Link>
+              </ButtonLink>
             </>
           )}
         </Container>

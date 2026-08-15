@@ -48,10 +48,33 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, .font-display {
   font-family: var(--font-display), var(--font-sans), serif;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-900);
+}
+
+/* A crisp, consistent focus ring for any interactive element that doesn't
+   define its own — keyboard navigation should always be visible without
+   relying on each component to remember to add one. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-brand-400);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* Hand-set underline marker for emphasized words in headlines */

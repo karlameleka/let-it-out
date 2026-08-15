@@ -87,7 +87,7 @@ export default function JournalFeed({ firstName, lockEnabled }: { firstName: str
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <ButtonLink href="/journal/new" className="shadow-[0_4px_0_0_theme(colors.brand.900)]">
+              <ButtonLink href="/journal/new">
                 <PlusCircle className="h-4 w-4" strokeWidth={2} />
                 New entry
               </ButtonLink>
