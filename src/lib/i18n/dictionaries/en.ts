@@ -109,6 +109,13 @@ const en = {
       "Create a free account for guided, self-exploration prompts and a private space to write — right on the app.",
     journalCta: "Start journaling free",
   },
+  services: {
+    ribbon: "Our services",
+    titlePrefix: "Two ways to ",
+    titleHighlight: "work with us",
+    titleSuffix: ".",
+    description: "Whichever fits where you are right now — one-on-one support, or a session for your team.",
+  },
   about: {
     ribbon: "Who we are",
     titlePrefix: "Psychologist-led mental health support, ",

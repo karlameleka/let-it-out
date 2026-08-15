@@ -16,10 +16,12 @@ export default function SiteHeader({
   user,
   locale,
   dict,
+  arabicEnabled = true,
 }: {
   user: SessionPayload | null;
   locale: Locale;
   dict: Dictionary;
+  arabicEnabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -103,7 +105,7 @@ export default function SiteHeader({
             </div>
           )}
 
-          <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} compact />
+          <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} compact arabicEnabled={arabicEnabled} />
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
@@ -194,7 +196,7 @@ export default function SiteHeader({
               </>
             )}
             <div className="mt-2 border-t border-brand-100 pt-3">
-              <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} />
+              <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} arabicEnabled={arabicEnabled} />
             </div>
           </nav>
         </div>

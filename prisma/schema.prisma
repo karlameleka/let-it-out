@@ -374,3 +374,18 @@ model Lead {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
+
+enum CbtExercisePlacement {
+  TOP
+  BOTTOM
+}
+
+// Sitewide feature toggles editable from /admin/settings, without a code
+// change or redeploy. Single row, always looked up by the fixed id
+// "singleton" — see src/lib/site-settings.ts.
+model SiteSettings {
+  id                   String               @id @default("singleton")
+  arabicEnabled        Boolean              @default(true)
+  cbtExercisePlacement CbtExercisePlacement @default(TOP)
+  updatedAt            DateTime             @updatedAt
+}

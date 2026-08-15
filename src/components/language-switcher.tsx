@@ -10,10 +10,12 @@ export default function LanguageSwitcher({
   locale,
   dict,
   compact = false,
+  arabicEnabled = true,
 }: {
   locale: Locale;
   dict: Dictionary["languageSwitcher"];
   compact?: boolean;
+  arabicEnabled?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -25,6 +27,8 @@ export default function LanguageSwitcher({
       router.refresh();
     });
   }
+
+  if (!arabicEnabled) return null;
 
   return (
     <div

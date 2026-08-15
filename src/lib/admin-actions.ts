@@ -88,3 +88,25 @@ export async function updateVariantStock(formData: FormData) {
   revalidatePath("/admin/products");
   revalidatePath("/shop");
 }
+
+export async function updateProductPlacement(formData: FormData) {
+  await requireAdmin();
+  const productId = String(formData.get("productId"));
+  const active = formData.get("active") === "on";
+  const sortOrder = Number(formData.get("sortOrder") ?? 0);
+  await prisma.product.update({ where: { id: productId }, data: { active, sortOrder } });
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  revalidatePath("/");
+}
+
+export async function updateCounselorPlacement(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const active = formData.get("active") === "on";
+  const sortOrder = Number(formData.get("sortOrder") ?? 0);
+  await prisma.counselor.update({ where: { id: counselorId }, data: { active, sortOrder } });
+  revalidatePath("/admin/counselors");
+  revalidatePath("/counseling");
+  revalidatePath("/");
+}

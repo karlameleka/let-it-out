@@ -8,12 +8,14 @@ const TABS = [
   { href: "/admin/crm", label: "CRM" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/counselors", label: "Counselors" },
   { href: "/admin/promo-codes", label: "Promo codes" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/workshops", label: "Workshop inquiries" },
   { href: "/admin/workshop-signups", label: "Workshop notify list" },
   { href: "/admin/messages", label: "Contact messages" },
-  { href: "/account", label: "Settings" },
+  { href: "/admin/settings", label: "Site settings" },
+  { href: "/account", label: "My account" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

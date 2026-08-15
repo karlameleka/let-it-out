@@ -13,6 +13,7 @@ import { CurrencyProvider } from "@/lib/currency-context";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale, dirForLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { getSiteSettings } from "@/lib/site-settings";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -54,7 +55,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
+  const [user, locale, settings] = await Promise.all([getCurrentUser(), getLocale(), getSiteSettings()]);
   const dict = getDictionary(locale);
 
   return (
@@ -66,7 +67,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-white text-ink pb-20 md:pb-0">
         <CurrencyProvider>
           <CartProvider>
-            <SiteHeader user={user} locale={locale} dict={dict} />
+            <SiteHeader user={user} locale={locale} dict={dict} arabicEnabled={settings.arabicEnabled} />
             <main className="flex-1">{children}</main>
             <SiteFooter locale={locale} dict={dict.footer} />
             <WorkshopInterestPopup />
