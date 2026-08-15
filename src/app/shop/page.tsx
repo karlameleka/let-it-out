@@ -7,6 +7,7 @@ import { PRODUCT_PHOTOS } from "@/components/product-cover";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import PriceDisplay from "@/components/price-display";
 import { FaqList } from "@/components/faq";
+import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
@@ -54,7 +55,8 @@ export default async function ShopPage() {
       <WaveDivider fill="fill-white" />
 
       <section className="pb-16 pt-4 sm:pb-20">
-        <Container>
+        <Reveal>
+          <Container>
           <SectionHeading eyebrow={t.ourJournalsEyebrow} title={t.ourJournalsTitle} />
           <div className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
             {products.map((p) => {
@@ -86,16 +88,19 @@ export default async function ShopPage() {
               );
             })}
           </div>
-        </Container>
+          </Container>
+        </Reveal>
       </section>
 
       <section className="bg-brand-50 py-16 sm:py-20">
-        <Container className="max-w-2xl">
-          <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
-          <div className="mt-8">
-            <FaqList items={SHOP_FAQ} />
-          </div>
-        </Container>
+        <Reveal>
+          <Container className="max-w-2xl">
+            <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
+            <div className="mt-8">
+              <FaqList items={SHOP_FAQ} />
+            </div>
+          </Container>
+        </Reveal>
       </section>
     </>
   );

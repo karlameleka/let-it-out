@@ -15,17 +15,17 @@ export function Container({
 }
 
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-200 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2";
+  "inline-flex items-center justify-center gap-2 rounded px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-300 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2";
 
 const variants = {
   primary:
-    "bg-brand-700 text-white shadow-sm shadow-brand-900/20 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-900/25 hover:-translate-y-0.5",
+    "bg-brand-700 text-white shadow-sm shadow-brand-900/20 hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)]",
   bright:
-    "bg-brand-500 text-white shadow-sm shadow-brand-800/20 hover:bg-brand-400 hover:shadow-md hover:shadow-brand-800/25 hover:-translate-y-0.5",
+    "bg-brand-500 text-white shadow-sm shadow-brand-800/20 hover:bg-brand-400 hover:shadow-[0_0_0_6px_rgba(51,136,164,0.18)]",
   outline:
-    "border-[1.5px] border-brand-200 text-brand-700 hover:border-brand-400 hover:bg-brand-50 hover:-translate-y-0.5",
+    "border-[1.5px] border-brand-200 text-brand-700 hover:border-brand-400 hover:bg-brand-50 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.08)]",
   "outline-inverse":
-    "border-[1.5px] border-white/70 text-white hover:border-white hover:bg-white/10 hover:-translate-y-0.5 focus-visible:ring-white/60 focus-visible:ring-offset-0",
+    "border-[1.5px] border-white/70 text-white hover:border-white hover:bg-white/10 hover:shadow-[0_0_0_6px_rgba(255,255,255,0.14)] focus-visible:ring-white/60 focus-visible:ring-offset-0",
   ghost: "text-brand-700 hover:bg-brand-50",
   /** Quiet secondary action — an underlined text link, not a boxed button.
       Pairs with `primary` in hero/marketing CTA rows per the editorial direction. */

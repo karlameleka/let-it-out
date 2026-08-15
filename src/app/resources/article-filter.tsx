@@ -78,20 +78,20 @@ export default function ArticleFilter() {
             <Link
               key={article.slug}
               href={`/resources/${article.slug}`}
-              className="group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+              className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900"
             >
-              <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500">
+              <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500 transition-colors duration-300 group-hover:text-white/70">
                 {article.category} · {article.readMinutes} min read
                 <ArticleProgressBadge
                   slug={article.slug}
                   totalMilestones={article.sections.length + article.checkIns.length}
                 />
               </p>
-              <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 group-hover:text-brand-600">
+              <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
                 {article.title}
               </h3>
-              <p className="mt-2 text-sm text-ink/60">{article.excerpt}</p>
-              <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
+              <p className="mt-2 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70">{article.excerpt}</p>
+              <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
                 Read article &rarr;
               </p>
             </Link>

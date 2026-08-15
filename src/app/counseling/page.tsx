@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, DoodleField } from "@/components/decor";
 import { FaqList } from "@/components/faq";
+import { Reveal } from "@/components/reveal";
 import CounselorFinder from "./counselor-finder";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -48,23 +49,27 @@ export default async function CounselingPage() {
       </section>
 
       <section className="py-16 sm:py-20">
-        <Container>
-          <SectionHeading
-            eyebrow={t.chooseEyebrow}
-            title={t.chooseTitle}
-            description={t.chooseDescription}
-          />
-          <CounselorFinder counselors={counselors} dict={dict} />
-        </Container>
+        <Reveal>
+          <Container>
+            <SectionHeading
+              eyebrow={t.chooseEyebrow}
+              title={t.chooseTitle}
+              description={t.chooseDescription}
+            />
+            <CounselorFinder counselors={counselors} dict={dict} />
+          </Container>
+        </Reveal>
       </section>
 
       <section id="faq" className="bg-brand-50 py-16 sm:py-20">
-        <Container className="max-w-2xl">
-          <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
-          <div className="mt-8">
-            <FaqList items={COUNSELING_FAQ} />
-          </div>
-        </Container>
+        <Reveal>
+          <Container className="max-w-2xl">
+            <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
+            <div className="mt-8">
+              <FaqList items={COUNSELING_FAQ} />
+            </div>
+          </Container>
+        </Reveal>
       </section>
     </>
   );

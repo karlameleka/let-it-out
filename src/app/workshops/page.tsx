@@ -3,6 +3,7 @@ import { Container, SectionHeading } from "@/components/ui";
 import { getWorkshopTopics } from "@/lib/content/workshops";
 import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
 import WorkshopInquiryForm from "./inquiry-form";
+import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
@@ -40,26 +41,27 @@ export default async function WorkshopsPage() {
       <WaveDivider fill="fill-white" />
 
       <section className="pb-16 pt-4 sm:pb-20">
+        <Reveal>
         <Container>
           <SectionHeading eyebrow={t.topicsEyebrow} title={t.topicsTitle} />
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {topics.map((topic, i) => (
               <div
                 key={topic.slug}
-                className="group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md"
+                className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900"
               >
-                <span className="font-display text-2xl font-semibold text-brand-200">
+                <span className="font-display text-2xl font-semibold text-brand-200 transition-colors duration-300 group-hover:text-white/15">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h3 className="mt-1 font-display text-base font-semibold text-brand-900">
+                <h3 className="mt-1 font-display text-base font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
                   {topic.title}
                 </h3>
-                <p className="mt-2 text-sm text-ink/70">{topic.description}</p>
+                <p className="mt-2 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70">{topic.description}</p>
                 {topic.stat && (
-                  <div className="mt-4 rounded-xl bg-brand-50 p-3">
-                    <p className="text-xs font-medium leading-snug text-brand-800">{topic.stat}</p>
+                  <div className="mt-4 rounded-xl bg-brand-50 p-3 transition-colors duration-300 group-hover:bg-white/10">
+                    <p className="text-xs font-medium leading-snug text-brand-800 transition-colors duration-300 group-hover:text-white">{topic.stat}</p>
                     {topic.statSource && (
-                      <p className="mt-1 text-[11px] text-ink/40">
+                      <p className="mt-1 text-[11px] text-ink/40 transition-colors duration-300 group-hover:text-white/40">
                         {t.statSourceLabel}: {topic.statSource}
                       </p>
                     )}
@@ -69,31 +71,34 @@ export default async function WorkshopsPage() {
             ))}
           </div>
         </Container>
+        </Reveal>
       </section>
 
       <section className="relative overflow-hidden bg-brand-50 py-16 sm:py-20" id="request-quote">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-50" />
-        <Container className="grid gap-12 md:grid-cols-2">
-          <div>
-            <SectionHeading
-              eyebrow={t.workTogetherEyebrow}
-              title={t.requestTitle}
-              description={t.requestDescription}
-            />
-            <div className="mt-6 space-y-3 text-sm text-ink/70">
-              <p className="font-semibold text-brand-800">{t.pastSessionsLabel}</p>
-              <ul className="space-y-1.5">
-                {pastSessions.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+        <Reveal>
+          <Container className="grid gap-12 md:grid-cols-2">
+            <div>
+              <SectionHeading
+                eyebrow={t.workTogetherEyebrow}
+                title={t.requestTitle}
+                description={t.requestDescription}
+              />
+              <div className="mt-6 space-y-3 text-sm text-ink/70">
+                <p className="font-semibold text-brand-800">{t.pastSessionsLabel}</p>
+                <ul className="space-y-1.5">
+                  {pastSessions.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
-          <WorkshopInquiryForm topics={topics} dict={dict} />
-        </Container>
+            <WorkshopInquiryForm topics={topics} dict={dict} />
+          </Container>
+        </Reveal>
       </section>
     </>
   );

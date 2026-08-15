@@ -95,7 +95,7 @@ export default function CounselorFinder({
             <Link
               key={c.id}
               href={`/counseling/${c.slug}`}
-              className="group flex flex-col rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md"
+              className="group flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-7 transition-colors duration-300 hover:bg-brand-900"
             >
               {c.photoUrl ? (
                 <Image
@@ -103,28 +103,28 @@ export default function CounselorFinder({
                   alt={c.name}
                   width={56}
                   height={56}
-                  className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover"
+                  className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover transition-colors duration-300 group-hover:border-white/30"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-hover:bg-white/10 group-hover:text-white">
                   {c.name.split(" ").map((n) => n[0]).join("")}
                 </div>
               )}
-              <h3 className="mt-4 font-display text-lg font-semibold text-brand-900">{c.name}</h3>
-              <p className="mt-1 text-sm text-ink/60">{c.credentials}</p>
+              <h3 className="mt-4 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">{c.name}</h3>
+              <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70">{c.credentials}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {c.specialties.slice(0, 3).map((s) => (
-                  <span key={s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+                  <span key={s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors duration-300 group-hover:bg-white/10 group-hover:text-white">
                     {s}
                   </span>
                 ))}
               </div>
               {c.languages.length > 0 && (
-                <p className="mt-3 text-xs text-ink/50">
-                  <span className="font-medium text-ink/60">{t.speaks}:</span> {c.languages.join(", ")}
+                <p className="mt-3 text-xs text-ink/50 transition-colors duration-300 group-hover:text-white/60">
+                  <span className="font-medium text-ink/60 transition-colors duration-300 group-hover:text-white/80">{t.speaks}:</span> {c.languages.join(", ")}
                 </p>
               )}
-              <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
+              <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
                 {t.viewProfileCta} &rarr;
               </p>
             </Link>

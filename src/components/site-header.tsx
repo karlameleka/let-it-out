@@ -36,10 +36,10 @@ export default function SiteHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <LogoLink height={36} />
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 md:py-6">
+        <LogoLink height={48} className="h-10 w-auto sm:h-11 md:h-12" />
 
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="hidden items-center gap-6 md:flex lg:gap-8">
           {NAV_LINKS.map((link) => {
             const active = pathname === link.href || pathname.startsWith(link.href + "/");
             return (
@@ -96,7 +96,7 @@ export default function SiteHeader({
               </Link>
               <Link
                 href="/counseling"
-                className="rounded bg-brand-700 px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-900/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-900/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
+                className="rounded bg-brand-700 px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-900/20 transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 md:px-5 md:py-2.5"
               >
                 {dict.nav.bookASession}
               </Link>

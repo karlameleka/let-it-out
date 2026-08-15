@@ -134,6 +134,21 @@ select:focus-visible,
   animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Scroll-triggered section reveal — pronounced: real distance + a touch of
+   scale, so a section noticeably settles into place as it enters view.
+   Paired with the `Reveal` component, which adds `.reveal-in` on first
+   intersection. */
+.reveal {
+  opacity: 0;
+  transform: translateY(34px) scale(0.97);
+}
+.reveal.reveal-in {
+  animation: reveal-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes reveal-in {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

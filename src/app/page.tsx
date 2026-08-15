@@ -7,6 +7,7 @@ import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
 import InstallOverlay from "@/components/install-overlay";
+import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
@@ -77,37 +78,39 @@ export default async function HomePage({
 
       {/* Services */}
       <section className="pb-24 pt-4 sm:pb-28">
-        <Container>
-          <SectionHeading
-            eyebrow={t.servicesEyebrow}
-            title={t.servicesTitle}
-            description={t.servicesDescription}
-          />
-          <div className="mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-3">
-            <ServiceCard
-              index="01"
-              href="/counseling"
-              title={t.service1Title}
-              description={t.service1Description}
-              cta={t.service1Cta}
+        <Reveal>
+          <Container>
+            <SectionHeading
+              eyebrow={t.servicesEyebrow}
+              title={t.servicesTitle}
+              description={t.servicesDescription}
             />
-            <ServiceCard
-              index="02"
-              href="/workshops"
-              title={t.service2Title}
-              description={t.service2Description}
-              cta={t.service2Cta}
-              offset
-            />
-            <ServiceCard
-              index="03"
-              href="/shop"
-              title={t.service3Title}
-              description={t.service3Description}
-              cta={t.service3Cta}
-            />
-          </div>
-        </Container>
+            <div className="mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-3">
+              <ServiceCard
+                index="01"
+                href="/counseling"
+                title={t.service1Title}
+                description={t.service1Description}
+                cta={t.service1Cta}
+              />
+              <ServiceCard
+                index="02"
+                href="/workshops"
+                title={t.service2Title}
+                description={t.service2Description}
+                cta={t.service2Cta}
+                offset
+              />
+              <ServiceCard
+                index="03"
+                href="/shop"
+                title={t.service3Title}
+                description={t.service3Description}
+                cta={t.service3Cta}
+              />
+            </div>
+          </Container>
+        </Reveal>
       </section>
 
       {/* Story teaser */}
@@ -120,119 +123,127 @@ export default async function HomePage({
           height={829}
           className="pointer-events-none absolute -bottom-20 -left-16 h-72 w-72 opacity-[0.06]"
         />
-        <Container className="relative grid items-center gap-10 md:grid-cols-2">
-          <div>
-            <Ribbon tone="dark">{t.storyRibbon}</Ribbon>
-            <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">
-              {t.storyTitle}
-            </h2>
-            <p className="mt-5 text-brand-50/85">{t.storyDescription}</p>
-            <ButtonLink href="/about" variant="bright" className="mt-7">
-              {t.storyCta}
-            </ButtonLink>
-          </div>
-          <div className="flex justify-center">
-            <Logo variant="icon-white" height={200} className="drop-shadow-xl" />
-          </div>
-        </Container>
+        <Reveal>
+          <Container className="relative grid items-center gap-10 md:grid-cols-2">
+            <div>
+              <Ribbon tone="dark">{t.storyRibbon}</Ribbon>
+              <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">
+                {t.storyTitle}
+              </h2>
+              <p className="mt-5 text-brand-50/85">{t.storyDescription}</p>
+              <ButtonLink href="/about" variant="bright" className="mt-7">
+                {t.storyCta}
+              </ButtonLink>
+            </div>
+            <div className="flex justify-center">
+              <Logo variant="icon-white" height={200} className="drop-shadow-xl" />
+            </div>
+          </Container>
+        </Reveal>
       </section>
 
       {/* Counselors */}
       <section className="py-24">
-        <Container>
-          <SectionHeading
-            eyebrow={t.teamEyebrow}
-            title={t.teamTitle}
-            description={t.teamDescription}
-          />
-          <div className="mt-14 grid gap-6 sm:grid-cols-3">
-            {counselors.map((c) => (
-              <Link
-                key={c.id}
-                href={`/counseling/${c.slug}`}
-                className="group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md"
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700">
-                  {c.name.split(" ").map((n) => n[0]).join("")}
-                </div>
-                <h3 className="mt-4 font-display text-lg font-semibold text-brand-900">
-                  {c.name}
-                </h3>
-                <p className="mt-1 text-sm text-ink/60">{c.credentials}</p>
-                <p className="mt-3 text-sm font-medium text-brand-600 link-grow w-fit">
-                  {t.teamViewProfile} &rarr;
-                </p>
-              </Link>
-            ))}
-          </div>
-        </Container>
+        <Reveal>
+          <Container>
+            <SectionHeading
+              eyebrow={t.teamEyebrow}
+              title={t.teamTitle}
+              description={t.teamDescription}
+            />
+            <div className="mt-14 grid gap-6 sm:grid-cols-3">
+              {counselors.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/counseling/${c.slug}`}
+                  className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900"
+                >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-hover:bg-white/10 group-hover:text-white">
+                    {c.name.split(" ").map((n) => n[0]).join("")}
+                  </div>
+                  <h3 className="mt-4 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
+                    {c.name}
+                  </h3>
+                  <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70">{c.credentials}</p>
+                  <p className="mt-3 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
+                    {t.teamViewProfile} &rarr;
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </Container>
+        </Reveal>
       </section>
 
       {/* Shop teaser */}
       <section className="relative overflow-hidden bg-brand-50 py-24">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-50" />
-        <Container>
-          <SectionHeading
-            eyebrow={t.shopEyebrow}
-            title={t.shopTitle}
-            description={t.shopDescription}
-          />
-          <div className="mt-14 grid gap-10 sm:grid-cols-2">
-            {products.map((p) => {
-              const price = Math.min(...p.variants.map((v) => v.priceEGP));
-              return (
-                <Link key={p.id} href={`/shop/${p.slug}`} className="group flex items-center gap-6">
-                  <div className="relative w-32 shrink-0 overflow-hidden rounded-xl shadow-md transition-transform group-hover:-translate-y-1">
-                    {PRODUCT_PHOTOS[p.slug] ? (
-                      <div className="relative aspect-[4/5] w-full">
-                        <Image
-                          src={PRODUCT_PHOTOS[p.slug]}
-                          alt={`${p.title} guided journal`}
-                          fill
-                          sizes="128px"
-                          className="object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <ProductCover slug={p.slug} title="" durationDays={p.durationDays} />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-display text-lg font-semibold text-brand-900">
-                      {p.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-ink/60">
-                      {formatEGP(price)}
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-brand-600 link-grow w-fit">
-                      {t.shopNow} &rarr;
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </Container>
+        <Reveal>
+          <Container>
+            <SectionHeading
+              eyebrow={t.shopEyebrow}
+              title={t.shopTitle}
+              description={t.shopDescription}
+            />
+            <div className="mt-14 grid gap-10 sm:grid-cols-2">
+              {products.map((p) => {
+                const price = Math.min(...p.variants.map((v) => v.priceEGP));
+                return (
+                  <Link key={p.id} href={`/shop/${p.slug}`} className="group flex items-center gap-6">
+                    <div className="relative w-32 shrink-0 overflow-hidden rounded-xl shadow-md transition-transform group-hover:-translate-y-1">
+                      {PRODUCT_PHOTOS[p.slug] ? (
+                        <div className="relative aspect-[4/5] w-full">
+                          <Image
+                            src={PRODUCT_PHOTOS[p.slug]}
+                            alt={`${p.title} guided journal`}
+                            fill
+                            sizes="128px"
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <ProductCover slug={p.slug} title="" durationDays={p.durationDays} />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-display text-lg font-semibold text-brand-900">
+                        {p.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-ink/60">
+                        {formatEGP(price)}
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-brand-600 link-grow w-fit">
+                        {t.shopNow} &rarr;
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </Container>
+        </Reveal>
       </section>
 
       {/* Journal app CTA */}
       <section className="py-24">
-        <Container className="relative overflow-hidden rounded-3xl border-2 border-brand-100 bg-white px-6 py-16 text-center sm:px-16">
-          <DoodleField />
-          <div className="relative">
-            <SectionHeading
-              align="center"
-              eyebrow={t.journalEyebrow}
-              title={t.journalTitle}
-              description={t.journalDescription}
-            />
-            <div className="mt-8 flex justify-center gap-4">
-              <ButtonLink href="/signup" variant="primary">
-                {t.journalCta}
-              </ButtonLink>
+        <Reveal>
+          <Container className="relative overflow-hidden rounded-3xl border-2 border-brand-100 bg-white px-6 py-16 text-center sm:px-16">
+            <DoodleField />
+            <div className="relative">
+              <SectionHeading
+                align="center"
+                eyebrow={t.journalEyebrow}
+                title={t.journalTitle}
+                description={t.journalDescription}
+              />
+              <div className="mt-8 flex justify-center gap-4">
+                <ButtonLink href="/signup" variant="primary">
+                  {t.journalCta}
+                </ButtonLink>
+              </div>
             </div>
-          </div>
-        </Container>
+          </Container>
+        </Reveal>
       </section>
     </>
   );
@@ -256,14 +267,14 @@ function ServiceCard({
   return (
     <Link
       href={href}
-      className={`group relative flex flex-col rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1.5 hover:border-brand-300 hover:shadow-lg ${offset ? "sm:mt-8" : ""}`}
+      className={`group relative flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-7 transition-colors duration-300 hover:bg-brand-900 ${offset ? "sm:mt-8" : ""}`}
     >
-      <span className="font-display text-4xl font-semibold text-brand-100 transition-colors group-hover:text-brand-200">
+      <span className="font-display text-4xl font-semibold text-brand-100 transition-colors duration-300 group-hover:text-white/10">
         {index}
       </span>
-      <h3 className="mt-2 font-display text-lg font-semibold text-brand-900">{title}</h3>
-      <p className="mt-3 flex-1 text-sm text-ink/70">{description}</p>
-      <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
+      <h3 className="mt-2 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">{title}</h3>
+      <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70">{description}</p>
+      <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
         {cta} &rarr;
       </p>
     </Link>
