@@ -10,6 +10,12 @@ export default defineConfig({
     seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Prisma 7 removed `directUrl` from the schema's datasource block —
+    // connection URLs live here instead. This is the CLI/migration
+    // connection, so point it at DIRECT_URL when one is set (an unpooled
+    // link for providers that front Postgres with a pooler, which cannot
+    // run migrations). Runtime queries keep using DATABASE_URL through the
+    // driver adapter in src/lib/db.ts.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });

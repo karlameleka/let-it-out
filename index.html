@@ -34,7 +34,8 @@ workshops, and an in-app daily journaling experience.
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | Postgres connection string |
+| `DATABASE_URL` | Postgres connection string used by the app at runtime |
+| `DIRECT_URL` | Optional unpooled Postgres connection used by the Prisma CLI (`migrate`, `db seed`, `studio`). Set this when `DATABASE_URL` points at a connection pooler that can't run migrations; falls back to `DATABASE_URL` when unset. Configured in `prisma.config.ts` — Prisma 7 no longer accepts `directUrl` in `schema.prisma` |
 | `SESSION_SECRET` | Signing secret for auth session cookies — **generate a new random value for production** |
 | `INSTAPAY_LINK` | InstaPay payment link shown at checkout |
 | `INSTAPAY_HANDLE` | InstaPay handle shown at checkout |
