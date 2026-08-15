@@ -15,7 +15,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
   if (pathname?.startsWith("/admin")) return null;
 
   return (
-    <div className="fixed bottom-20 end-5 z-50 md:bottom-5">
+    <div className="fixed bottom-24 end-5 z-50 md:bottom-5">
       {open && (
         <div className="animate-pop-in absolute bottom-[calc(100%+0.75rem)] end-0 w-72 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-xl">
           <p className="font-display font-semibold text-brand-900">{dict.heading}</p>

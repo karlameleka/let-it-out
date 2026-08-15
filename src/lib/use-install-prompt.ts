@@ -21,6 +21,21 @@ function isStandalone() {
   );
 }
 
+// Browsers (iOS Safari in particular) give web pages no way to ask "has this
+// been added to the home screen?" — display-mode only reveals whether *this*
+// tab happens to be running standalone right now. So the first time we ever
+// observe standalone mode, we remember it here; a later visit in an ordinary
+// browser tab (not standalone) can then still know it was installed before.
+const INSTALLED_FLAG_KEY = "lio_pwa_installed";
+
+function wasEverInstalled() {
+  return window.localStorage.getItem(INSTALLED_FLAG_KEY) === "1";
+}
+
+function rememberInstalled() {
+  window.localStorage.setItem(INSTALLED_FLAG_KEY, "1");
+}
+
 export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [iOS, setIOS] = useState(false);
@@ -32,7 +47,9 @@ export function useInstallPrompt() {
     // and first client render stay identical and we avoid a hydration mismatch.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIOS(isIOSSafari());
-    setInstalled(isStandalone());
+    const standaloneNow = isStandalone();
+    if (standaloneNow) rememberInstalled();
+    setInstalled(standaloneNow || wasEverInstalled());
     setReady(true);
 
     function onBeforeInstallPrompt(e: Event) {
@@ -40,6 +57,7 @@ export function useInstallPrompt() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     }
     function onInstalled() {
+      rememberInstalled();
       setInstalled(true);
       setDeferredPrompt(null);
     }

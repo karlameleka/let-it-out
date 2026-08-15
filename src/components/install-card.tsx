@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Share, SquarePlus, Download, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
 
 export default function InstallCard() {
+  const router = useRouter();
   const { ready, installed, iOS, canPromptInstall, promptInstall } = useInstallPrompt();
 
   if (!ready) return null;
@@ -18,8 +20,11 @@ export default function InstallCard() {
           Let It Out is already installed
         </h2>
         <p className="mt-2 text-sm text-ink/60">
-          You&apos;re all set — open it from your home screen any time.
+          You&apos;ve already added it to your home screen — look for the icon there, or continue below.
         </p>
+        <Button onClick={() => router.push("/")} className="mt-6 w-full">
+          Open App
+        </Button>
       </div>
     );
   }

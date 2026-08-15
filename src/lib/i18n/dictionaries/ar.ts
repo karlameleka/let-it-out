@@ -4,6 +4,7 @@ const ar: Dictionary = {
   nav: {
     home: "الرئيسية",
     about: "من نحن",
+    ourServices: "خدماتنا",
     counseling: "الاستشارات النفسية",
     workshops: "ورش العمل",
     shop: "المتجر",

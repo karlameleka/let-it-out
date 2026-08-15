@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, HeartHandshake, BookOpen, ShoppingBag } from "lucide-react";
+import { Home, HeartHandshake, BookOpen, Newspaper, ShoppingBag } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
@@ -12,8 +12,9 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
 
   const TABS = [
     { href: "/", label: dict.home, icon: Home },
-    { href: "/counseling", label: dict.counseling, icon: HeartHandshake },
     { href: "/journal", label: dict.journal, icon: BookOpen },
+    { href: "/counseling", label: dict.ourServices, icon: HeartHandshake },
+    { href: "/resources", label: dict.resources, icon: Newspaper },
     { href: "/shop", label: dict.shop, icon: ShoppingBag },
   ];
 
@@ -28,11 +29,11 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
           <Link
             key={href}
             href={href}
-            className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
-              active ? "text-brand-700" : "text-ink/45"
+            className={`flex flex-1 flex-col items-center gap-1 py-3 text-[11.5px] font-bold transition-colors ${
+              active ? "text-brand-700" : "text-ink/40"
             }`}
           >
-            <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
+            <Icon className="h-7 w-7" strokeWidth={active ? 2.5 : 1.9} />
             {label}
           </Link>
         );

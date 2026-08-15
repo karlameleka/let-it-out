@@ -63,7 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       dir={dirForLocale(locale)}
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-ink pb-16 md:pb-0">
+      <body className="min-h-full flex flex-col bg-white text-ink pb-20 md:pb-0">
         <CurrencyProvider>
           <CartProvider>
             <SiteHeader user={user} locale={locale} dict={dict} />
