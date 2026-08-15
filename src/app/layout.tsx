@@ -35,6 +35,14 @@ export const metadata: Metadata = {
     icon: "/brand/icon-192.png",
     apple: "/brand/icon-180.png",
   },
+  appleWebApp: {
+    // Without this, iOS uses the full <title> ("Let It Out | Mental Health
+    // Service") as the label under the home screen icon, which truncates
+    // awkwardly. This also makes the installed app open full-screen
+    // (no Safari address bar) instead of as a bookmark.
+    title: "Let It Out",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
