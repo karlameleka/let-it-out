@@ -4,10 +4,12 @@ import { MapPin } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { WaveDivider } from "@/components/decor";
 import { SOCIAL_LINKS } from "@/components/social-icons";
+import type { Locale } from "@/lib/i18n/locale";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const OFFICE_MAPS_URL = "https://maps.app.goo.gl/ym5Dc5zvyxfPVxcZA";
 
-export default function SiteFooter() {
+export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary["footer"] }) {
   return (
     <footer className="relative mt-24 bg-brand-900 text-brand-50">
       <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />
@@ -24,34 +26,29 @@ export default function SiteFooter() {
         <div className="relative grid gap-10 sm:grid-cols-2 md:grid-cols-4">
           <div className="md:col-span-2">
             <Logo variant="horizontal-white" height={32} />
-            <p className="mt-4 max-w-sm text-sm text-brand-100/80">
-              Enhancing Mental Health using Evidence-based Research since
-              2021
-            </p>
-            <p className="mt-2 max-w-sm text-sm text-brand-100/60">
-              Online Counseling • Guided Journals • Trainings and Workshops
-            </p>
+            <p className="mt-4 max-w-sm text-sm text-brand-100/80">{dict.tagline}</p>
+            <p className="mt-2 max-w-sm text-sm text-brand-100/60">{dict.servicesLine}</p>
           </div>
 
           <div>
             <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-200">
-              Explore
+              {dict.exploreHeading}
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
-              <li><Link href="/about" className="hover:text-white">About us</Link></li>
-              <li><Link href="/counseling" className="hover:text-white">Counseling</Link></li>
-              <li><Link href="/workshops" className="hover:text-white">Workshops</Link></li>
-              <li><Link href="/shop" className="hover:text-white">Guided journals</Link></li>
-              <li><Link href="/journal" className="hover:text-white">Journaling app</Link></li>
+              <li><Link href="/about" className="hover:text-white">{dict.aboutUs}</Link></li>
+              <li><Link href="/counseling" className="hover:text-white">{dict.counseling}</Link></li>
+              <li><Link href="/workshops" className="hover:text-white">{dict.workshops}</Link></li>
+              <li><Link href="/shop" className="hover:text-white">{dict.guidedJournals}</Link></li>
+              <li><Link href="/journal" className="hover:text-white">{dict.journalingApp}</Link></li>
             </ul>
           </div>
 
           <div>
             <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-200">
-              Get in touch
+              {dict.getInTouchHeading}
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
-              <li><Link href="/contact" className="hover:text-white">Contact us</Link></li>
+              <li><Link href="/contact" className="hover:text-white">{dict.contactUs}</Link></li>
               <li>
                 <a
                   href={OFFICE_MAPS_URL}
@@ -60,7 +57,7 @@ export default function SiteFooter() {
                   className="inline-flex items-center gap-1.5 hover:text-white"
                 >
                   <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-                  Heliopolis, Cairo, Egypt
+                  {dict.officeLocation}
                 </a>
               </li>
               <li className="flex flex-wrap gap-2 pt-1">
@@ -77,13 +74,9 @@ export default function SiteFooter() {
                   </a>
                 ))}
               </li>
-              <li className="pt-2 text-brand-100/50">
-                If you are in crisis or experiencing a mental health
-                emergency, please contact your local emergency services
-                immediately.
-              </li>
+              <li className="pt-2 text-brand-100/50">{dict.crisisNotice}</li>
               <li className="text-brand-100/70">
-                Egyptian National Crisis Hotline:{" "}
+                {dict.crisisHotlineLabel}{" "}
                 <a href="tel:16328" className="font-semibold text-white hover:underline">
                   16328
                 </a>
@@ -93,12 +86,12 @@ export default function SiteFooter() {
         </div>
 
         <div className="relative mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-brand-100/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Let It Out. Est. 2021. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {dict.copyright}</p>
           <div className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-white">Terms &amp; Conditions</Link>
+            <Link href="/privacy" className="hover:text-white">{dict.privacyPolicy}</Link>
+            <Link href="/terms" className="hover:text-white">{dict.terms}</Link>
           </div>
-          <p className="italic">A self-exploration journey.</p>
+          <p className="italic">{dict.motto}</p>
         </div>
       </div>
     </footer>

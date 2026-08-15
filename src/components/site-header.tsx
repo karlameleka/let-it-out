@@ -8,20 +8,31 @@ import { LogoLink } from "@/components/logo";
 import { useCart } from "@/lib/cart-context";
 import { logoutAction } from "@/lib/auth-actions";
 import type { SessionPayload } from "@/lib/session";
+import type { Locale } from "@/lib/i18n/locale";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import LanguageSwitcher from "@/components/language-switcher";
 
-const NAV_LINKS = [
-  { href: "/about", label: "About" },
-  { href: "/counseling", label: "Counseling" },
-  { href: "/workshops", label: "Workshops" },
-  { href: "/shop", label: "Shop" },
-  { href: "/journal", label: "Journal" },
-  { href: "/resources", label: "Resources" },
-];
-
-export default function SiteHeader({ user }: { user: SessionPayload | null }) {
+export default function SiteHeader({
+  user,
+  locale,
+  dict,
+}: {
+  user: SessionPayload | null;
+  locale: Locale;
+  dict: Dictionary;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { count } = useCart();
+
+  const NAV_LINKS = [
+    { href: "/about", label: dict.nav.about },
+    { href: "/counseling", label: dict.nav.counseling },
+    { href: "/workshops", label: dict.nav.workshops },
+    { href: "/shop", label: dict.nav.shop },
+    { href: "/journal", label: dict.nav.journal },
+    { href: "/resources", label: dict.nav.resources },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -50,7 +61,7 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
             href="/cart"
             className="relative text-sm font-medium text-ink/70 hover:text-brand-600"
           >
-            Cart
+            {dict.nav.cart}
             {count > 0 && (
               <span className="absolute -right-3 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-semibold text-white">
                 {count}
@@ -67,36 +78,38 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
                 {user.name.split(" ")[0]}
               </Link>
               <Link href="/account" className="text-sm font-medium text-ink/50 hover:text-brand-600">
-                Settings
+                {dict.nav.settings}
               </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
                   className="text-sm font-medium text-ink/50 hover:text-brand-600"
                 >
-                  Log out
+                  {dict.nav.logOut}
                 </button>
               </form>
             </div>
           ) : (
             <div className="flex items-center gap-3">
               <Link href="/login" className="text-sm font-medium text-ink/70 hover:text-brand-600">
-                Log in
+                {dict.nav.logIn}
               </Link>
               <Link
                 href="/counseling"
                 className="rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-[0_3px_0_0_theme(colors.brand.900)] transition-all hover:bg-brand-600 hover:translate-y-px hover:shadow-[0_2px_0_0_theme(colors.brand.900)]"
               >
-                Book a session
+                {dict.nav.bookASession}
               </Link>
             </div>
           )}
+
+          <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} compact />
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
           <Link
             href="/cart"
-            aria-label={`Cart${count > 0 ? `, ${count} items` : ""}`}
+            aria-label={`${dict.nav.cart}${count > 0 ? `, ${count}` : ""}`}
             className="relative inline-flex items-center justify-center rounded-md p-2 text-ink"
           >
             <ShoppingCart className="h-5 w-5" strokeWidth={1.75} />
@@ -111,7 +124,7 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
             type="button"
             onClick={() => setOpen((o) => !o)}
             className="inline-flex items-center justify-center rounded-md p-2 text-ink"
-            aria-label="Toggle menu"
+            aria-label={dict.nav.toggleMenu}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {open ? (
@@ -144,21 +157,21 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
                   onClick={() => setOpen(false)}
                   className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
                 >
-                  My account
+                  {dict.nav.myAccount}
                 </Link>
                 <Link
                   href="/account"
                   onClick={() => setOpen(false)}
                   className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
                 >
-                  Settings
+                  {dict.nav.settings}
                 </Link>
                 <form action={logoutAction}>
                   <button
                     type="submit"
                     className="w-full rounded-md px-2 py-2 text-left text-sm font-medium text-ink/60 hover:bg-brand-50"
                   >
-                    Log out
+                    {dict.nav.logOut}
                   </button>
                 </form>
               </>
@@ -169,17 +182,20 @@ export default function SiteHeader({ user }: { user: SessionPayload | null }) {
                   onClick={() => setOpen(false)}
                   className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
                 >
-                  Log in
+                  {dict.nav.logIn}
                 </Link>
                 <Link
                   href="/signup"
                   onClick={() => setOpen(false)}
                   className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
                 >
-                  Sign up
+                  {dict.nav.signUp}
                 </Link>
               </>
             )}
+            <div className="mt-2 border-t border-brand-100 pt-3">
+              <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} />
+            </div>
           </nav>
         </div>
       )}

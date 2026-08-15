@@ -7,13 +7,15 @@ import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
 import InstallOverlay from "@/components/install-overlay";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ install?: string }>;
 }) {
-  const [{ install }, counselors, products] = await Promise.all([
+  const [{ install }, counselors, products, locale] = await Promise.all([
     searchParams,
     prisma.counselor.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
@@ -21,7 +23,9 @@ export default async function HomePage({
       orderBy: { sortOrder: "asc" },
       include: { variants: { where: { format: "PHYSICAL" } } },
     }),
+    getLocale(),
   ]);
+  const t = getDictionary(locale).home;
 
   return (
     <>
@@ -32,42 +36,33 @@ export default async function HomePage({
         <DoodleField />
         <Container className="relative grid gap-12 py-20 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <Ribbon>Psychologist-led · Est. 2021</Ribbon>
+            <Ribbon>{t.heroRibbon}</Ribbon>
             <h1 className="mt-5 max-w-xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
-              A <span className="mark-swash italic text-brand-700">self-exploration<Swash /></span>{" "}
-              journey, with you every step of the way.
+              {t.heroTitlePrefix}
+              <span className="mark-swash italic text-brand-700">{t.heroTitleHighlight}<Swash /></span>
+              {t.heroTitleSuffix}
             </h1>
-            <p className="mt-6 max-w-lg text-lg text-ink/70">
-              Let It Out enhances wellbeing through evidence-based research,
-              practical tools, and compassionate care — through one-on-one
-              counseling, guided journals, and workshops for workplaces and
-              communities.
-            </p>
+            <p className="mt-6 max-w-lg text-lg text-ink/70">{t.heroDescription}</p>
             <div className="mt-9 flex flex-wrap gap-4">
               <ButtonLink href="/counseling" variant="primary">
-                Book a session
+                {t.heroCtaBook}
               </ButtonLink>
               <ButtonLink href="/shop" variant="outline">
-                Explore guided journals
+                {t.heroCtaShop}
               </ButtonLink>
             </div>
           </div>
 
           <div className="relative mx-auto hidden w-full max-w-sm lg:block">
             <div className="absolute -left-6 top-4 rounded-2xl border border-brand-200 bg-white p-4 shadow-lg">
-              <p className="font-display text-sm italic text-brand-800">
-                &ldquo;What is one thing your body did for you today that you
-                didn&apos;t thank it for?&rdquo;
-              </p>
+              <p className="font-display text-sm italic text-brand-800">{t.heroPromptQuote}</p>
               <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-brand-500">
-                Today&apos;s prompt
+                {t.heroPromptLabel}
               </p>
             </div>
             <div className="ml-16 mt-24 rounded-2xl bg-brand-700 p-6 text-white shadow-xl">
               <Logo variant="icon-white" height={64} />
-              <p className="mt-4 font-display text-lg italic">
-                Let it out. One page at a time.
-              </p>
+              <p className="mt-4 font-display text-lg italic">{t.heroCardQuote}</p>
             </div>
           </div>
         </Container>
@@ -79,32 +74,32 @@ export default async function HomePage({
       <section className="pb-24 pt-4 sm:pb-28">
         <Container>
           <SectionHeading
-            eyebrow="Our services"
-            title="Support that meets you where you are"
-            description="Three ways to work with us — whichever fits your life right now."
+            eyebrow={t.servicesEyebrow}
+            title={t.servicesTitle}
+            description={t.servicesDescription}
           />
           <div className="mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-3">
             <ServiceCard
               index="01"
               href="/counseling"
-              title="Individual Online Counseling"
-              description="One-on-one sessions with specialized psychotherapists using CBT, ACT, and DBT frameworks, personalized to you."
-              cta="See counselor profiles"
+              title={t.service1Title}
+              description={t.service1Description}
+              cta={t.service1Cta}
             />
             <ServiceCard
               index="02"
               href="/workshops"
-              title="Trainings and Workshops"
-              description="Interactive, evidence-based sessions designed to enhance employee wellbeing — from stress-management to mental health first-aid."
-              cta="See workshop topics"
+              title={t.service2Title}
+              description={t.service2Description}
+              cta={t.service2Cta}
               offset
             />
             <ServiceCard
               index="03"
               href="/shop"
-              title="Guided Journals & Digital Resources"
-              description="Practical, CBT-informed self-help journals to help you build a healthier relationship with yourself."
-              cta="Browse journals"
+              title={t.service3Title}
+              description={t.service3Description}
+              cta={t.service3Cta}
             />
           </div>
         </Container>
@@ -122,17 +117,13 @@ export default async function HomePage({
         />
         <Container className="relative grid items-center gap-10 md:grid-cols-2">
           <div>
-            <Ribbon tone="dark">Our story</Ribbon>
+            <Ribbon tone="dark">{t.storyRibbon}</Ribbon>
             <h2 className="mt-4 font-display text-3xl font-semibold sm:text-4xl">
-              Founded to make quality mental health care reachable.
+              {t.storyTitle}
             </h2>
-            <p className="mt-5 text-brand-50/85">
-              Founded by Egyptian psychologist Karla Meleka, Let It Out
-              delivers professional mental health support tailored to your
-              community&apos;s needs, reducing stigma, one mind at a time.
-            </p>
+            <p className="mt-5 text-brand-50/85">{t.storyDescription}</p>
             <ButtonLink href="/about" variant="bright" className="mt-7">
-              Read our story
+              {t.storyCta}
             </ButtonLink>
           </div>
           <div className="flex justify-center">
@@ -145,9 +136,9 @@ export default async function HomePage({
       <section className="py-24">
         <Container>
           <SectionHeading
-            eyebrow="Meet the team"
-            title="Psychologist-led, evidence-based care"
-            description="Every session is led by a licensed, specialized psychotherapist."
+            eyebrow={t.teamEyebrow}
+            title={t.teamTitle}
+            description={t.teamDescription}
           />
           <div className="mt-14 grid gap-6 sm:grid-cols-3">
             {counselors.map((c) => (
@@ -164,7 +155,7 @@ export default async function HomePage({
                 </h3>
                 <p className="mt-1 text-sm text-ink/60">{c.credentials}</p>
                 <p className="mt-3 text-sm font-medium text-brand-600 link-grow w-fit">
-                  View profile &rarr;
+                  {t.teamViewProfile} &rarr;
                 </p>
               </Link>
             ))}
@@ -177,9 +168,9 @@ export default async function HomePage({
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-50" />
         <Container>
           <SectionHeading
-            eyebrow="Guided journals"
-            title="Self-help tools you can hold onto"
-            description="CBT-informed guided journals, paid on delivery."
+            eyebrow={t.shopEyebrow}
+            title={t.shopTitle}
+            description={t.shopDescription}
           />
           <div className="mt-14 grid gap-10 sm:grid-cols-2">
             {products.map((p) => {
@@ -209,7 +200,7 @@ export default async function HomePage({
                       {formatEGP(price)}
                     </p>
                     <p className="mt-2 text-sm font-medium text-brand-600 link-grow w-fit">
-                      Shop now &rarr;
+                      {t.shopNow} &rarr;
                     </p>
                   </div>
                 </Link>
@@ -226,13 +217,13 @@ export default async function HomePage({
           <div className="relative">
             <SectionHeading
               align="center"
-              eyebrow="In your pocket"
-              title="Daily journaling prompts, whenever you need them"
-              description="Create a free account for guided, self-exploration prompts and a private space to write — right on the app."
+              eyebrow={t.journalEyebrow}
+              title={t.journalTitle}
+              description={t.journalDescription}
             />
             <div className="mt-8 flex justify-center gap-4">
               <ButtonLink href="/signup" variant="primary">
-                Start journaling free
+                {t.journalCta}
               </ButtonLink>
             </div>
           </div>

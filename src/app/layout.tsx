@@ -9,6 +9,8 @@ import ServiceWorkerRegister from "@/components/sw-register";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { getCurrentUser } from "@/lib/session";
+import { getLocale, dirForLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -50,19 +52,21 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const user = await getCurrentUser();
+  const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
+  const dict = getDictionary(locale);
 
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={dirForLocale(locale)}
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-ink">
         <CurrencyProvider>
           <CartProvider>
-            <SiteHeader user={user} />
+            <SiteHeader user={user} locale={locale} dict={dict} />
             <main className="flex-1">{children}</main>
-            <SiteFooter />
+            <SiteFooter locale={locale} dict={dict.footer} />
             <WorkshopInterestPopup />
             <EntryGates />
             <ServiceWorkerRegister />
