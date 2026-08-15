@@ -138,6 +138,50 @@ export async function getJournalEntryDetail(id: string): Promise<JournalEntryDet
   };
 }
 
+export type JournalExportEntry = {
+  id: string;
+  content: string;
+  mood: string | null;
+  bookmarked: boolean;
+  photoUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  prompt: { category: string; text: string } | null;
+};
+
+export type JournalExportData = {
+  exportedAt: string;
+  entries: JournalExportEntry[];
+};
+
+/** Every field of every entry the signed-in user owns, for the "download my
+ * data" account-settings feature — unlike the feed, this is uncapped and
+ * unfiltered so it's a genuine full copy. */
+export async function exportJournalEntries(): Promise<JournalExportData | null> {
+  const user = await requireUser().catch(() => null);
+  if (!user) return null;
+
+  const entries = await prisma.journalEntry.findMany({
+    where: { userId: user.userId },
+    orderBy: { createdAt: "desc" },
+    include: { prompt: { select: { category: true, text: true } } },
+  });
+
+  return {
+    exportedAt: new Date().toISOString(),
+    entries: entries.map((e) => ({
+      id: e.id,
+      content: e.content,
+      mood: e.mood,
+      bookmarked: e.bookmarked,
+      photoUrl: e.photoUrl,
+      createdAt: e.createdAt.toISOString(),
+      updatedAt: e.updatedAt.toISOString(),
+      prompt: e.prompt,
+    })),
+  };
+}
+
 export async function getMoodPatternsData(): Promise<MoodPatterns | null> {
   const user = await requireUser().catch(() => null);
   if (!user) return null;

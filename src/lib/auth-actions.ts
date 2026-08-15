@@ -217,6 +217,46 @@ export async function changePasswordAction(
   return { success: true };
 }
 
+const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Please enter your password."),
+});
+
+export type DeleteAccountFormState = { error?: string } | undefined;
+
+export async function deleteAccountAction(
+  _prevState: DeleteAccountFormState,
+  formData: FormData,
+): Promise<DeleteAccountFormState> {
+  const session = await requireUser().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const parsed = deleteAccountSchema.safeParse({ password: formData.get("password") });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  if (!user) return { error: "Account not found." };
+
+  const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+  if (!valid) return { error: "Incorrect password." };
+
+  // JournalEntry and PushSubscription require a userId, so those rows are
+  // deleted outright. Order and BookingRequest keep userId optional — they
+  // represent real business records (a paid order, a session request), so
+  // they're kept and just disassociated from the deleted account.
+  await prisma.$transaction([
+    prisma.journalEntry.deleteMany({ where: { userId: user.id } }),
+    prisma.pushSubscription.deleteMany({ where: { userId: user.id } }),
+    prisma.order.updateMany({ where: { userId: user.id }, data: { userId: null } }),
+    prisma.bookingRequest.updateMany({ where: { userId: user.id }, data: { userId: null } }),
+    prisma.user.delete({ where: { id: user.id } }),
+  ]);
+
+  await destroySession();
+  redirect("/");
+}
+
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email("Please enter a valid email."),
 });

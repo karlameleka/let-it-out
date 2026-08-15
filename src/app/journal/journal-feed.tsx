@@ -10,6 +10,7 @@ import { relockJournal } from "@/components/journal-lock-gate";
 import { moodColor, moodLabel } from "@/lib/moods";
 import { ButtonLink } from "@/components/ui";
 import JournalReminderToggle from "@/components/journal-reminder-toggle";
+import JournalDataNotice from "@/components/journal-data-notice";
 
 export default function JournalFeed({ firstName, lockEnabled }: { firstName: string; lockEnabled: boolean }) {
   const [entries, setEntries] = useState<JournalFeedEntry[] | null>(null);
@@ -102,6 +103,8 @@ export default function JournalFeed({ firstName, lockEnabled }: { firstName: str
           </div>
         </div>
       </section>
+
+      <JournalDataNotice />
 
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
         <div className="flex flex-wrap items-center gap-3">

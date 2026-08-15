@@ -6,6 +6,8 @@ import { Container, Eyebrow } from "@/components/ui";
 import ChangePasswordForm from "./change-password-form";
 import ProfileForm from "./profile-form";
 import JournalLockToggle from "./journal-lock-toggle";
+import ExportDataButton from "./export-data-button";
+import DeleteAccountForm from "./delete-account-form";
 
 export const metadata: Metadata = { title: "Account Settings" };
 
@@ -53,6 +55,24 @@ export default async function AccountPage() {
         <h2 className="font-display font-semibold text-brand-900">Change password</h2>
         <p className="mt-1 text-sm text-ink/60">Choose a new password with at least 8 characters.</p>
         <ChangePasswordForm />
+      </div>
+
+      <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-brand-900">Your data</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Download a complete copy of everything you&apos;ve written in your journal, as a
+          JSON file.
+        </p>
+        <ExportDataButton />
+      </div>
+
+      <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-red-700">Danger zone</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Deleting your account permanently deletes your journal entries. Past orders and
+          session requests are kept for our records but are no longer linked to you.
+        </p>
+        <DeleteAccountForm />
       </div>
     </Container>
   );
