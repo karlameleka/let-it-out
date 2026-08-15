@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 type Counselor = {
   id: string;
@@ -14,23 +15,31 @@ type Counselor = {
   photoUrl: string | null;
 };
 
-// A friendlier, presenting-concern framing of a subset of the specialty
-// tags — not every specialty is something a visitor would self-identify
-// with (e.g. "CBT" or "Adult Mental Health" describe a method or scope,
-// not a concern), so this is curated rather than derived automatically.
-const CONCERNS = [
-  { label: "Stress or burnout", specialty: "Stress & Burnout" },
-  { label: "Feeling low or depressed", specialty: "Depression" },
-  { label: "Anxious or overwhelmed", specialty: "Anxiety" },
-  { label: "Trouble managing emotions", specialty: "Emotional Dysregulation" },
-  { label: "Relationship or intimacy concerns", specialty: "Psychosexual Therapy" },
-];
-
-export default function CounselorFinder({ counselors }: { counselors: Counselor[] }) {
+export default function CounselorFinder({
+  counselors,
+  dict,
+}: {
+  counselors: Counselor[];
+  dict: Dictionary;
+}) {
+  const t = dict.counseling;
   const [showQuiz, setShowQuiz] = useState(false);
   const [concern, setConcern] = useState<string | null>(null);
 
+  // A friendlier, presenting-concern framing of a subset of the specialty
+  // tags — not every specialty is something a visitor would self-identify
+  // with (e.g. "CBT" or "Adult Mental Health" describe a method or scope,
+  // not a concern), so this is curated rather than derived automatically.
+  const CONCERNS = [
+    { label: t.concernStress, specialty: "Stress & Burnout" },
+    { label: t.concernDepression, specialty: "Depression" },
+    { label: t.concernAnxiety, specialty: "Anxiety" },
+    { label: t.concernEmotional, specialty: "Emotional Dysregulation" },
+    { label: t.concernRelationship, specialty: "Psychosexual Therapy" },
+  ];
+
   const filtered = concern ? counselors.filter((c) => c.specialties.includes(concern)) : counselors;
+  const concernLabel = CONCERNS.find((c) => c.specialty === concern)?.label;
 
   return (
     <>
@@ -40,11 +49,11 @@ export default function CounselorFinder({ counselors }: { counselors: Counselor[
           onClick={() => setShowQuiz(true)}
           className="mt-4 text-sm font-medium text-brand-600 underline decoration-brand-300 underline-offset-4 hover:text-brand-700"
         >
-          Not sure who to pick?
+          {t.notSureLink}
         </button>
       ) : (
         <div className="animate-pop-in mt-4 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50 p-5">
-          <p className="text-sm font-medium text-ink/80">What are you looking for?</p>
+          <p className="text-sm font-medium text-ink/80">{t.quizPrompt}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {CONCERNS.map((c) => (
               <button
@@ -63,9 +72,9 @@ export default function CounselorFinder({ counselors }: { counselors: Counselor[
           </div>
           {concern && (
             <p className="mt-3 text-xs text-ink/50">
-              Showing counselors who work with {concern.toLowerCase()}.{" "}
+              {t.showingResultsPrefix} {concernLabel?.toLowerCase()}.{" "}
               <button type="button" onClick={() => setConcern(null)} className="font-medium text-brand-600 underline">
-                Clear
+                {t.clear}
               </button>
             </p>
           )}
@@ -75,11 +84,11 @@ export default function CounselorFinder({ counselors }: { counselors: Counselor[
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.length === 0 ? (
           <p className="col-span-full text-sm text-ink/60">
-            No counselor matches that specifically, but reach out through our{" "}
+            {t.emptyStateText}{" "}
             <Link href="/contact" className="font-medium text-brand-600 underline">
-              contact page
+              {t.emptyStateLink}
             </Link>{" "}
-            and we&apos;ll help you find the right fit.
+            {t.emptyStateSuffix}
           </p>
         ) : (
           filtered.map((c) => (
@@ -112,11 +121,11 @@ export default function CounselorFinder({ counselors }: { counselors: Counselor[
               </div>
               {c.languages.length > 0 && (
                 <p className="mt-3 text-xs text-ink/50">
-                  <span className="font-medium text-ink/60">Speaks:</span> {c.languages.join(", ")}
+                  <span className="font-medium text-ink/60">{t.speaks}:</span> {c.languages.join(", ")}
                 </p>
               )}
               <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
-                View profile &amp; book &rarr;
+                {t.viewProfileCta} &rarr;
               </p>
             </Link>
           ))

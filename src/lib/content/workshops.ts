@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n/locale";
+
 export type WorkshopTopic = {
   slug: string;
   title: string;
@@ -6,7 +8,7 @@ export type WorkshopTopic = {
   statSource?: string;
 };
 
-export const WORKSHOP_TOPICS: WorkshopTopic[] = [
+const EN_TOPICS: WorkshopTopic[] = [
   {
     slug: "stress-management",
     title: "Stress-Management",
@@ -64,3 +66,61 @@ export const WORKSHOP_TOPICS: WorkshopTopic[] = [
     statSource: "World Health Organization",
   },
 ];
+
+// Stat sources (institution/citation names) are kept in English even in the
+// Arabic version — standard practice for academic/institutional citations.
+const AR_TOPICS: WorkshopTopic[] = [
+  {
+    slug: "stress-management",
+    title: "إدارة الضغوط",
+    description: "أدوات عملية قائمة على الأدلة للتعرف على محفزات التوتر وبناء عادات تأقلم مستدامة تحت الضغط.",
+    stat: "55% من الموظفين في دول الخليج يُبلغون عن ضغوط نفسية يومية مرتفعة، مقابل 32% عالميًا.",
+    statSource: "McKinsey Health Institute",
+  },
+  {
+    slug: "burnout-prevention",
+    title: "الوقاية من الإرهاق الوظيفي",
+    description: "مساعدة الفرق على التعرف على العلامات المبكرة للإرهاق الوظيفي، وبناء حدود وعادات تحمي رفاهيتهم على المدى الطويل.",
+    stat: "ما يقارب 1 من كل 3 موظفين في دول الخليج يُبلغون عن أعراض إرهاق وظيفي، و36% ينوون ترك وظائفهم — أكثر من ضعف المعدل العالمي.",
+    statSource: "McKinsey Health Institute",
+  },
+  {
+    slug: "mental-health-first-aid",
+    title: "الإسعافات الأولية للصحة النفسية",
+    description: "تزويد الموظفين والعاملين بالوعي واللغة اللازمة للتعرف على مشكلات الصحة النفسية لدى الآخرين والتعامل معها.",
+    stat: "66% من الأشخاص في دول الخليج واجهوا تحديًا نفسيًا، ومع ذلك يتجنب ما يقارب 9 من كل 10 شباب طلب المساعدة خوفًا من الحكم عليهم.",
+    statSource: "Regional youth mental health survey, via Workplace Options",
+  },
+  {
+    slug: "parenting-101",
+    title: "أساسيات التربية",
+    description: "إرشادات أساسية مبنية على علم النفس للآباء الذين يتعاملون مع الاحتياجات العاطفية اليومية لأطفالهم.",
+    stat: "5% على الأقل من الآباء حول العالم يعانون من إرهاق الأبوة — وغالبًا ما يكون غير مرئي حتى يؤثر على الأسرة بأكملها.",
+    statSource: "Roskam & Mikolajczak, 42-country international study",
+  },
+  {
+    slug: "bridging-generational-gaps",
+    title: "تجسير الفجوات بين الأجيال",
+    description: "بناء التفاهم والتواصل بين الأجيال في مكان العمل أو الأسرة، بأسلوب قائم على التعاطف واللغة المشتركة.",
+    stat: "62% من الموظفين يقولون إن الاختلافات بين الأجيال تُغذي الصراع في مكان العمل، ويُبلغ 39% عن انهيارات تواصل حقيقية بسببها.",
+    statSource: "Cross-generational workplace research",
+  },
+  {
+    slug: "self-expression-through-art",
+    title: "التعبير عن الذات من خلال الفن",
+    description: "ورشة عمل تفاعلية وإبداعية تستخدم الفن كأداة للمعالجة العاطفية واكتشاف الذات — لا حاجة لخبرة فنية سابقة.",
+    stat: "عبر 35 دراسة وأكثر من 3000 مشارك، أدى العلاج بالفن البصري إلى انخفاض ملحوظ وقابل للقياس في أعراض القلق.",
+    statSource: "Huang et al., meta-analysis, Journal of Psychiatric and Mental Health Nursing",
+  },
+  {
+    slug: "tailored-topics",
+    title: "مواضيع مخصصة",
+    description: "لديك فكرة محددة في ذهنك؟ نصمم جلسات مخصصة تناسب احتياجات مؤسستك أو مجتمعك الفريدة.",
+    stat: "كل دولار واحد يُستثمر في دعم الصحة النفسية في مكان العمل يعود بحوالي 4 دولارات في تحسين الصحة والإنتاجية.",
+    statSource: "World Health Organization",
+  },
+];
+
+export function getWorkshopTopics(locale: Locale): WorkshopTopic[] {
+  return locale === "ar" ? AR_TOPICS : EN_TOPICS;
+}

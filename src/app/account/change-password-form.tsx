@@ -3,11 +3,13 @@
 import { useActionState, useState } from "react";
 import { changePasswordAction } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function ChangePasswordForm() {
+export default function ChangePasswordForm({ dict }: { dict: Dictionary }) {
   const [state, formAction, pending] = useActionState(changePasswordAction, undefined);
   const [key, setKey] = useState(0);
   const [lastHandledState, setLastHandledState] = useState(state);
+  const t = dict.account;
 
   if (state !== lastHandledState) {
     setLastHandledState(state);
@@ -18,7 +20,7 @@ export default function ChangePasswordForm() {
     <form action={formAction} key={key} className="mt-5 space-y-4">
       <div>
         <label htmlFor="currentPassword" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/40">
-          Current password
+          {t.currentPassword}
         </label>
         <input
           id="currentPassword"
@@ -32,7 +34,7 @@ export default function ChangePasswordForm() {
 
       <div>
         <label htmlFor="newPassword" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/40">
-          New password
+          {t.newPassword}
         </label>
         <input
           id="newPassword"
@@ -47,7 +49,7 @@ export default function ChangePasswordForm() {
 
       <div>
         <label htmlFor="confirmPassword" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/40">
-          Confirm new password
+          {t.confirmNewPassword}
         </label>
         <input
           id="confirmPassword"
@@ -62,11 +64,11 @@ export default function ChangePasswordForm() {
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state?.success && (
-        <p className="animate-pop-in text-sm font-medium text-brand-600">Password updated.</p>
+        <p className="animate-pop-in text-sm font-medium text-brand-600">{t.passwordUpdated}</p>
       )}
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Updating…" : "Update password"}
+        {pending ? t.updating : t.updatePassword}
       </Button>
     </form>
   );

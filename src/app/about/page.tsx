@@ -2,30 +2,37 @@ import type { Metadata } from "next";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, Swash } from "@/components/decor";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "About Us",
   description: "Learn about Let It Out's story, mission, and vision since 2021.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const t = getDictionary(await getLocale()).about;
+
+  const values = [
+    { label: t.value1Label, description: t.value1Text },
+    { label: t.value2Label, description: t.value2Text },
+    { label: t.value3Label, description: t.value3Text },
+    { label: t.value4Label, description: t.value4Text },
+  ];
+
   return (
     <>
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container>
-          <Ribbon>Who we are</Ribbon>
+          <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
-            Psychologist-led mental health support,{" "}
+            {t.titlePrefix}
             <span className="mark-swash italic text-brand-700">
-              since 2021<Swash />
+              {t.titleHighlight}<Swash />
             </span>
-            .
+            {t.titleSuffix}
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-ink/70">
-            Founded by Egyptian psychologist Karla Meleka, Let It Out
-            delivers professional mental health support tailored to your
-            community&apos;s needs, reducing stigma, one mind at a time.
-          </p>
+          <p className="mt-5 max-w-2xl text-lg text-ink/70">{t.intro}</p>
         </Container>
       </section>
 
@@ -34,7 +41,7 @@ export default function AboutPage() {
       <section className="border-b border-brand-100 py-10">
         <Container>
           <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-ink/40">
-            Trusted by teams and organizations including
+            {t.trustedByLabel}
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
             {[
@@ -60,28 +67,21 @@ export default function AboutPage() {
         <Container className="grid gap-8 md:grid-cols-2">
           <div className="rounded-2xl border-2 border-brand-100 bg-white p-8 shadow-sm">
             <h2 className="font-display text-xl font-semibold text-brand-900">
-              Our Vision
+              {t.visionTitle}
             </h2>
             <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-brand-500">
-              Quality-driven
+              {t.visionLabel}
             </p>
-            <p className="mt-4 text-ink/70">
-              To create lasting value by improving quality mental health care
-              and reducing stigma, one step at a time.
-            </p>
+            <p className="mt-4 text-ink/70">{t.visionText}</p>
           </div>
           <div className="rounded-2xl border-2 border-brand-100 bg-white p-8 shadow-sm">
             <h2 className="font-display text-xl font-semibold text-brand-900">
-              Our Mission
+              {t.missionTitle}
             </h2>
             <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-brand-500">
-              Evidence-based
+              {t.missionLabel}
             </p>
-            <p className="mt-4 text-ink/70">
-              To enhance mental health and wellbeing through evidence-based
-              research, practical solutions, and compassionate collaboration
-              centered on people&apos;s needs.
-            </p>
+            <p className="mt-4 text-ink/70">{t.missionText}</p>
           </div>
         </Container>
       </section>
@@ -89,29 +89,9 @@ export default function AboutPage() {
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container className="grid items-center gap-12 md:grid-cols-2">
           <div>
-            <SectionHeading
-              eyebrow="What we stand for"
-              title="A few things we won't compromise on"
-            />
+            <SectionHeading eyebrow={t.valuesEyebrow} title={t.valuesTitle} />
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
-              {[
-                {
-                  label: "Psychologist-led",
-                  description: "Every service starts with a licensed psychologist, not a template.",
-                },
-                {
-                  label: "Evidence-based",
-                  description: "Grounded in CBT, DBT, and research that's actually been tested.",
-                },
-                {
-                  label: "Accessible",
-                  description: "Straightforward pricing and language — care shouldn't feel like a maze.",
-                },
-                {
-                  label: "Human, not clinical",
-                  description: "We meet you where you are, not where a textbook says you should be.",
-                },
-              ].map((value) => (
+              {values.map((value) => (
                 <div key={value.label} className="border-l-2 border-brand-300 pl-4">
                   <p className="font-display text-lg font-semibold text-brand-900">{value.label}</p>
                   <p className="mt-1.5 text-sm text-ink/70">{value.description}</p>
@@ -128,9 +108,9 @@ export default function AboutPage() {
       <section className="py-16 sm:py-20">
         <Container>
           <SectionHeading
-            eyebrow="Community engagement"
-            title="Building healthier, more supportive environments"
-            description="We are committed to supporting workplace mental wellbeing through engaging corporate and community workshops that build awareness and provide practical tools for employees, teams, students, and parents."
+            eyebrow={t.communityEyebrow}
+            title={t.communityTitle}
+            description={t.communityDescription}
           />
         </Container>
       </section>
@@ -138,15 +118,13 @@ export default function AboutPage() {
       <section className="relative overflow-hidden bg-brand-800 py-16 text-white sm:py-20">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
         <Container className="text-center">
-          <h2 className="font-display text-3xl font-semibold sm:text-4xl">
-            Let&apos;s start your journey to wellbeing, together.
-          </h2>
+          <h2 className="font-display text-3xl font-semibold sm:text-4xl">{t.ctaTitle}</h2>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <ButtonLink href="/counseling" variant="bright">
-              Book a session
+              {t.ctaBook}
             </ButtonLink>
             <ButtonLink href="/contact" variant="outline-inverse">
-              Contact us
+              {t.ctaContact}
             </ButtonLink>
           </div>
         </Container>

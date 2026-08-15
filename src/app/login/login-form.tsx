@@ -4,15 +4,18 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function LoginForm() {
+export default function LoginForm({ dict }: { dict: Dictionary }) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
+  const t = dict.auth;
+  const f = dict.forms;
 
   return (
     <form action={formAction} className="space-y-4">
       <div>
         <label htmlFor="email" className="mb-1 block text-sm font-medium text-ink/80">
-          Email
+          {f.email}
         </label>
         <input
           id="email"
@@ -25,10 +28,10 @@ export default function LoginForm() {
       <div>
         <div className="mb-1 flex items-center justify-between">
           <label htmlFor="password" className="block text-sm font-medium text-ink/80">
-            Password
+            {t.password}
           </label>
           <Link href="/forgot-password" className="text-xs font-medium text-brand-600 link-grow">
-            Forgot password?
+            {t.forgotPassword}
           </Link>
         </div>
         <input
@@ -41,7 +44,7 @@ export default function LoginForm() {
       </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Logging in…" : "Log in"}
+        {pending ? t.loggingIn : t.logIn}
       </Button>
     </form>
   );

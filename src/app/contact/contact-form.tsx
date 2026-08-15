@@ -3,19 +3,18 @@
 import { useActionState } from "react";
 import { submitContactMessage } from "@/lib/contact-actions";
 import { Button } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function ContactForm() {
+export default function ContactForm({ dict }: { dict: Dictionary }) {
   const [state, formAction, pending] = useActionState(submitContactMessage, undefined);
+  const t = dict.contact;
+  const f = dict.forms;
 
   if (state?.success) {
     return (
       <div className="rounded-2xl border border-brand-100 bg-brand-50 p-8 text-center">
-        <h3 className="font-display text-lg font-semibold text-brand-800">
-          Message sent
-        </h3>
-        <p className="mt-2 text-sm text-ink/70">
-          Thanks for reaching out — we&apos;ll get back to you soon.
-        </p>
+        <h3 className="font-display text-lg font-semibold text-brand-800">{t.sentTitle}</h3>
+        <p className="mt-2 text-sm text-ink/70">{t.sentDescription}</p>
       </div>
     );
   }
@@ -23,13 +22,13 @@ export default function ContactForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Your name" name="name" />
-        <Field label="Email" name="email" type="email" />
+        <Field label={f.yourName} name="name" />
+        <Field label={f.email} name="email" type="email" />
       </div>
-      <Field label="Subject" name="subject" />
+      <Field label={f.subject} name="subject" />
       <div>
         <label htmlFor="message" className="mb-1 block text-sm font-medium text-ink/80">
-          Message
+          {f.message}
         </label>
         <textarea
           id="message"
@@ -41,7 +40,7 @@ export default function ContactForm() {
       </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending}>
-        {pending ? "Sending…" : "Send message"}
+        {pending ? f.sending : f.send}
       </Button>
     </form>
   );

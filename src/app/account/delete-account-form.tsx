@@ -2,10 +2,12 @@
 
 import { useActionState, useState } from "react";
 import { deleteAccountAction } from "@/lib/auth-actions";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function DeleteAccountForm() {
+export default function DeleteAccountForm({ dict }: { dict: Dictionary }) {
   const [state, formAction, pending] = useActionState(deleteAccountAction, undefined);
   const [confirming, setConfirming] = useState(false);
+  const t = dict.account;
 
   if (!confirming) {
     return (
@@ -14,23 +16,20 @@ export default function DeleteAccountForm() {
         onClick={() => setConfirming(true)}
         className="mt-5 rounded-full border-2 border-red-300 px-5 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
       >
-        Delete my account
+        {t.deleteAccountButton}
       </button>
     );
   }
 
   return (
     <form action={formAction} className="animate-pop-in mt-5 space-y-4 rounded-xl border-2 border-red-200 bg-red-50 p-5">
-      <p className="text-sm font-medium text-red-800">
-        This permanently deletes your account and all your journal entries — this can&apos;t
-        be undone. Download your journal above first if you want to keep a copy.
-      </p>
+      <p className="text-sm font-medium text-red-800">{t.deleteWarning}</p>
       <div>
         <label
           htmlFor="deletePassword"
           className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-red-700/70"
         >
-          Confirm your password
+          {t.confirmPasswordLabel}
         </label>
         <input
           id="deletePassword"
@@ -48,14 +47,14 @@ export default function DeleteAccountForm() {
           disabled={pending}
           className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
         >
-          {pending ? "Deleting…" : "Permanently delete my account"}
+          {pending ? t.deleting : t.permanentlyDelete}
         </button>
         <button
           type="button"
           onClick={() => setConfirming(false)}
           className="rounded-full border border-brand-200 px-5 py-2.5 text-sm font-medium text-ink/60 transition-colors hover:border-brand-300"
         >
-          Cancel
+          {t.cancel}
         </button>
       </div>
     </form>

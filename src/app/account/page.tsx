@@ -8,12 +8,17 @@ import ProfileForm from "./profile-form";
 import JournalLockToggle from "./journal-lock-toggle";
 import ExportDataButton from "./export-data-button";
 import DeleteAccountForm from "./delete-account-form";
+import LanguageSwitcher from "@/components/language-switcher";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = { title: "Account Settings" };
 
 export default async function AccountPage() {
-  const session = await getCurrentUser();
+  const [session, locale] = await Promise.all([getCurrentUser(), getLocale()]);
   if (!session) redirect("/login");
+  const dict = getDictionary(locale);
+  const t = dict.account;
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
@@ -28,16 +33,23 @@ export default async function AccountPage() {
 
   return (
     <Container className="max-w-xl py-16 sm:py-20">
-      <Eyebrow>Account</Eyebrow>
-      <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900">Settings</h1>
-      <p className="mt-2 text-sm text-ink/60">Signed in as {session.email}</p>
+      <Eyebrow>{t.eyebrow}</Eyebrow>
+      <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900">{t.title}</h1>
+      <p className="mt-2 text-sm text-ink/60">{t.signedInAs} {session.email}</p>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-brand-900">About you</h2>
-        <p className="mt-1 text-sm text-ink/60">
-          Optional, and only shared internally to help us understand who we&apos;re serving.
-        </p>
+        <h2 className="font-display font-semibold text-brand-900">{t.languageTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.languageDescription}</p>
+        <div className="mt-4">
+          <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} />
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-brand-900">{t.aboutYouTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.aboutYouDescription}</p>
         <ProfileForm
+          dict={dict}
           ageRange={user?.ageRange ?? null}
           gender={user?.gender ?? null}
           country={user?.country ?? null}
@@ -46,33 +58,27 @@ export default async function AccountPage() {
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-brand-900">Journal privacy</h2>
-        <p className="mt-1 text-sm text-ink/60">An extra lock screen for your journal, like Face ID on iPhone.</p>
-        <JournalLockToggle initialEnabled={user?.journalLockEnabled ?? false} />
+        <h2 className="font-display font-semibold text-brand-900">{t.journalPrivacyTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.journalPrivacyDescription}</p>
+        <JournalLockToggle initialEnabled={user?.journalLockEnabled ?? false} dict={dict} />
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-brand-900">Change password</h2>
-        <p className="mt-1 text-sm text-ink/60">Choose a new password with at least 8 characters.</p>
-        <ChangePasswordForm />
+        <h2 className="font-display font-semibold text-brand-900">{t.changePasswordTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.changePasswordDescription}</p>
+        <ChangePasswordForm dict={dict} />
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-brand-900">Your data</h2>
-        <p className="mt-1 text-sm text-ink/60">
-          Download a complete copy of everything you&apos;ve written in your journal, as a
-          JSON file.
-        </p>
-        <ExportDataButton />
+        <h2 className="font-display font-semibold text-brand-900">{t.yourDataTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.yourDataDescription}</p>
+        <ExportDataButton dict={dict} />
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-red-700">Danger zone</h2>
-        <p className="mt-1 text-sm text-ink/60">
-          Deleting your account permanently deletes your journal entries. Past orders and
-          session requests are kept for our records but are no longer linked to you.
-        </p>
-        <DeleteAccountForm />
+        <h2 className="font-display font-semibold text-red-700">{t.dangerZoneTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.dangerZoneDescription}</p>
+        <DeleteAccountForm dict={dict} />
       </div>
     </Container>
   );

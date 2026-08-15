@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { exportJournalEntries } from "@/lib/journal-actions";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function ExportDataButton() {
+export default function ExportDataButton({ dict }: { dict: Dictionary }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = dict.account;
 
   async function handleExport() {
     setPending(true);
@@ -14,7 +16,7 @@ export default function ExportDataButton() {
     const data = await exportJournalEntries();
     setPending(false);
     if (!data) {
-      setError("Couldn't export your data — please try again.");
+      setError(t.exportError);
       return;
     }
 
@@ -37,7 +39,7 @@ export default function ExportDataButton() {
         disabled={pending}
         className="rounded-full border-2 border-brand-600 px-5 py-2.5 text-sm font-semibold text-brand-700 transition-all hover:bg-brand-50 disabled:opacity-60"
       >
-        {pending ? "Preparing your export…" : "Download my journal entries (JSON)"}
+        {pending ? t.preparingExport : t.downloadButton}
       </button>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
     </div>

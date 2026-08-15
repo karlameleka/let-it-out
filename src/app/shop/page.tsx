@@ -7,24 +7,8 @@ import { PRODUCT_PHOTOS } from "@/components/product-cover";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import PriceDisplay from "@/components/price-display";
 import { FaqList } from "@/components/faq";
-
-const SHOP_FAQ = [
-  {
-    question: "How long does delivery take?",
-    answer:
-      "Within Egypt, orders typically arrive within 3–5 business days of your order being confirmed, for a flat shipping fee of EGP 100 anywhere in the country. Outside Egypt, shipping time and cost are confirmed with you directly before your order ships.",
-  },
-  {
-    question: "What if my journal arrives damaged or wrong?",
-    answer:
-      "Contact us within 7 days of delivery and we'll arrange a replacement or refund. Since payment is collected on delivery, other return requests are handled case-by-case — just reach out and we'll sort it out.",
-  },
-  {
-    question: "How do I pay?",
-    answer:
-      "You'll choose at checkout — pay securely online by card or mobile wallet, or choose Cash on Delivery and pay when your journal arrives.",
-  },
-];
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "Guided Journals",
@@ -32,31 +16,37 @@ export const metadata: Metadata = {
 };
 
 export default async function ShopPage() {
-  const products = await prisma.product.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-    include: { variants: { where: { format: "PHYSICAL" } } },
-  });
+  const [products, locale] = await Promise.all([
+    prisma.product.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+      include: { variants: { where: { format: "PHYSICAL" } } },
+    }),
+    getLocale(),
+  ]);
+  const t = getDictionary(locale).shop;
+
+  const SHOP_FAQ = [
+    { question: t.faq1Q, answer: t.faq1A },
+    { question: t.faq2Q, answer: t.faq2A },
+    { question: t.faq3Q, answer: t.faq3A },
+  ];
 
   return (
     <>
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container>
-          <Ribbon>Guided journals &amp; digital resources</Ribbon>
+          <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
-            Self-help tools you can{" "}
+            {t.titlePrefix}
             <span className="mark-swash italic text-brand-700">
-              hold onto<Swash />
+              {t.titleHighlight}<Swash />
             </span>
-            .
+            {t.titleSuffix}
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-ink/70">
-            Built on a Cognitive-Behavioral Therapy approach to help you
-            build healthier relationships with yourself and those around
-            you.
-          </p>
+          <p className="mt-5 max-w-2xl text-lg text-ink/70">{t.description}</p>
           <p className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-4 py-1.5 text-sm font-medium text-brand-700">
-            1,000+ sold copies
+            {t.soldBadge}
           </p>
         </Container>
       </section>
@@ -65,7 +55,7 @@ export default async function ShopPage() {
 
       <section className="pb-16 pt-4 sm:pb-20">
         <Container>
-          <SectionHeading eyebrow="Shop" title="Our journals" />
+          <SectionHeading eyebrow={t.ourJournalsEyebrow} title={t.ourJournalsTitle} />
           <div className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
             {products.map((p) => {
               const price = Math.min(...p.variants.map((v) => v.priceEGP));
@@ -101,7 +91,7 @@ export default async function ShopPage() {
 
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container className="max-w-2xl">
-          <SectionHeading eyebrow="Good to know" title="Frequently asked questions" />
+          <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
           <div className="mt-8">
             <FaqList items={SHOP_FAQ} />
           </div>

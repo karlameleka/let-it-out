@@ -2,40 +2,41 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container, SectionHeading } from "@/components/ui";
 import ContactForm from "./contact-form";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "Contact Us",
   description: "Get in touch with Let It Out.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const dict = getDictionary(await getLocale());
+  const t = dict.contact;
+
   return (
     <section className="py-16 sm:py-24">
       <Container className="grid gap-12 md:grid-cols-2">
         <div>
-          <SectionHeading
-            eyebrow="Get in touch"
-            title="Let's start your journey to wellbeing, together."
-            description="Have a question about counseling, workshops, or our guided journals? Send us a message and we'll get back to you."
-          />
+          <SectionHeading eyebrow={t.eyebrow} title={t.title} description={t.description} />
           <div className="mt-8 rounded-2xl border border-brand-100 bg-white p-6 text-sm text-ink/70">
             <p>
-              Looking to book a counseling session? Visit{" "}
+              {t.counselingHint}{" "}
               <Link href="/counseling" className="font-medium text-brand-600 hover:underline">
-                Counseling
+                {t.counselingLink}
               </Link>
               .
             </p>
             <p className="mt-2">
-              Interested in a workshop for your team or community? Visit{" "}
+              {t.workshopsHint}{" "}
               <Link href="/workshops" className="font-medium text-brand-600 hover:underline">
-                Workshops
+                {t.workshopsLink}
               </Link>
               .
             </p>
           </div>
         </div>
-        <ContactForm />
+        <ContactForm dict={dict} />
       </Container>
     </section>
   );
