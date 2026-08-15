@@ -2,7 +2,15 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { createJournalEntry, shufflePrompt } from "@/lib/journal-actions";
-import { Button } from "@/components/ui";
+import {
+  AmbientGlow,
+  Button,
+  FormError,
+  Surface,
+  Textarea,
+  focusRing,
+  motionEase,
+} from "@/components/ui";
 
 const MOODS = [
   { emoji: "😊", label: "Great" },
@@ -60,67 +68,91 @@ export default function EntryForm({ initialPrompt }: { initialPrompt: Prompt }) 
   }, [key]);
 
   return (
-    <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-            {prompt?.category ?? "Reflection"}
-          </p>
-          <button
-            type="button"
-            onClick={handleShuffle}
-            disabled={shuffling}
-            className="shrink-0 rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-medium text-brand-600 transition-transform hover:scale-105 hover:border-brand-400 disabled:opacity-50"
+    <div className="space-y-8">
+      <Surface tone="tinted" className="relative overflow-hidden p-7 sm:p-8">
+        <AmbientGlow palette="brand" intensity={0.16} />
+        <div className="relative">
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-500">
+              {prompt?.category ?? "Reflection"}
+            </p>
+            <button
+              type="button"
+              onClick={handleShuffle}
+              disabled={shuffling}
+              className={`shrink-0 rounded-full border border-brand-900/10 bg-white/80 px-4 py-1.5 text-xs font-medium text-brand-600 shadow-ambient-sm backdrop-blur-md ${motionEase} ${focusRing} hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-ambient active:translate-y-0 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50`}
+            >
+              {shuffling ? "Shuffling…" : "🔀 Shuffle prompt"}
+            </button>
+          </div>
+          {/* The prompt itself is the focal point of the page — display face,
+              generous leading, and a gentle dip while the next one loads. */}
+          <p
+            data-testid="journal-prompt-text"
+            className={`mt-4 font-display text-xl font-medium italic leading-relaxed tracking-tight text-brand-900 sm:text-2xl ${motionEase} ${
+              shuffling ? "opacity-40 blur-[1px]" : "opacity-100 blur-0"
+            }`}
           >
-            {shuffling ? "Shuffling…" : "🔀 Shuffle prompt"}
-          </button>
+            {prompt?.text ?? "What's on your mind today?"}
+          </p>
         </div>
-        <p
-          data-testid="journal-prompt-text"
-          className={`mt-2 font-display text-xl font-medium italic text-brand-900 transition-opacity ${shuffling ? "opacity-40" : "opacity-100"}`}
-        >
-          {prompt?.text ?? "What's on your mind today?"}
-        </p>
-      </div>
+      </Surface>
 
-      <form action={formAction} key={key} className="space-y-4">
+      <form action={formAction} key={key} className="space-y-6">
         {prompt?.id && <input type="hidden" name="promptId" value={prompt.id} />}
         <input type="hidden" name="mood" value={mood ?? ""} />
 
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
+        <fieldset>
+          <legend className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-ink-faint">
             How are you feeling?
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {MOODS.map(({ emoji, label }) => (
-              <button
-                key={emoji}
-                type="button"
-                title={label}
-                onClick={() => setMood(emoji === mood ? null : emoji)}
-                className={`flex h-11 w-11 items-center justify-center rounded-full border text-xl transition-all hover:scale-110 ${
-                  mood === emoji
-                    ? "border-brand-600 bg-brand-50 scale-110 shadow-[0_2px_0_0_theme(colors.brand.300)]"
-                    : "border-brand-100 hover:border-brand-300"
-                }`}
-              >
-                {emoji}
-              </button>
-            ))}
+          </legend>
+          <div className="flex flex-wrap gap-2.5">
+            {MOODS.map(({ emoji, label }) => {
+              const selected = mood === emoji;
+              return (
+                <button
+                  key={emoji}
+                  type="button"
+                  title={label}
+                  aria-label={label}
+                  aria-pressed={selected}
+                  onClick={() => setMood(selected ? null : emoji)}
+                  className={`flex h-12 w-12 items-center justify-center rounded-full border text-xl ${motionEase} ${focusRing} hover:-translate-y-0.5 hover:scale-105 active:translate-y-0 active:scale-[0.98] ${
+                    selected
+                      ? "scale-105 border-brand-400 bg-white shadow-ambient"
+                      : "border-brand-900/10 bg-white/60 shadow-ambient-sm backdrop-blur-md hover:border-brand-300"
+                  }`}
+                >
+                  {emoji}
+                </button>
+              );
+            })}
           </div>
+        </fieldset>
+
+        <div>
+          <label
+            htmlFor="entry-content"
+            className="mb-3 block text-xs font-bold uppercase tracking-[0.18em] text-ink-faint"
+          >
+            Your entry
+          </label>
+          <Textarea
+            id="entry-content"
+            name="content"
+            rows={8}
+            required
+            placeholder="Let it out here..."
+            className="text-base"
+          />
         </div>
 
-        <textarea
-          name="content"
-          rows={6}
-          required
-          placeholder="Let it out here..."
-          className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
-        />
-
-        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+        {state?.error && <FormError>{state.error}</FormError>}
         {state?.success && (
-          <p data-testid="entry-saved-message" className="animate-pop-in text-sm font-medium text-brand-600">
+          <p
+            data-testid="entry-saved-message"
+            className="animate-pop-in rounded-2xl border border-brand-900/10 bg-brand-50/70 px-4 py-3 text-sm font-medium text-brand-700 backdrop-blur-sm"
+          >
             {celebration}
           </p>
         )}

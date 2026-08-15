@@ -52,10 +52,10 @@ export function Ribbon({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-dashed px-3.5 py-1 text-xs font-semibold tracking-wide ${
+      className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-dashed px-4 py-1.5 text-xs font-semibold tracking-wide backdrop-blur-md ${
         tone === "light"
-          ? "border-brand-300 bg-white text-brand-700"
-          : "border-white/50 bg-white/10 text-white"
+          ? "border-brand-300/70 bg-white/70 text-brand-700 shadow-ambient-sm"
+          : "border-white/40 bg-white/10 text-white"
       } ${className}`}
     >
       {children}

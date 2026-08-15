@@ -64,8 +64,8 @@ export default function WorkshopsPage() {
         </Container>
       </section>
 
+      <WaveDivider fill="fill-brand-50" className="-mb-px" />
       <section className="relative overflow-hidden bg-brand-50 py-16 sm:py-20" id="request-quote">
-        <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-50" />
         <Container className="grid gap-12 md:grid-cols-2">
           <div>
             <SectionHeading

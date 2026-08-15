@@ -125,8 +125,8 @@ export default function AboutPage() {
         </Container>
       </section>
 
+      <WaveDivider fill="fill-brand-800" className="-mb-px" />
       <section className="relative overflow-hidden bg-brand-800 py-16 text-white sm:py-20">
-        <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
         <Container className="text-center">
           <h2 className="font-display text-3xl font-semibold sm:text-4xl">
             Let&apos;s start your journey to well-being, together.

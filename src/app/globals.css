@@ -5,7 +5,9 @@
   --foreground: #123543;
 
   /* Brand palette — strictly derived from #1e5b73 (deep teal) and
-     #3388a4 (bright teal), plus pure white. No other hues. */
+     #3388a4 (bright teal), plus pure white. No other hues. This *is*
+     the product's teal ramp: reach for `brand-*` wherever a generic
+     `teal-*` would otherwise be used, so every surface stays on-brand. */
   --color-brand-50: #eff6f8;
   --color-brand-100: #dcedf1;
   --color-brand-200: #b7dce3;
@@ -20,6 +22,14 @@
 
   --color-white: #ffffff;
   --color-ink: #123543;
+
+  /* Ink at fixed opacities, for text hierarchy without alpha guesswork:
+     body → secondary → muted metadata. Each step is held at or above the
+     WCAG AA 4.5:1 threshold on white (7.5 / 5.4 / 4.5), so the hierarchy is
+     carried by weight and size as much as by tone. */
+  --color-ink-body: rgb(18 53 67 / 0.82);
+  --color-ink-muted: rgb(18 53 67 / 0.72);
+  --color-ink-faint: rgb(18 53 67 / 0.66);
 }
 
 @theme inline {
@@ -39,9 +49,41 @@
   --color-brand-950: var(--color-brand-950);
 
   --color-ink: var(--color-ink);
+  --color-ink-body: var(--color-ink-body);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-fraunces);
+
+  /* Ambient, diffuse elevation. Three stacked layers — a hairline contact
+     shadow, a mid-range spread, and a wide soft pool — read as light in a
+     room rather than a drop shadow pasted under a box. All tinted with the
+     brand ink so shadows never turn grey. */
+  --shadow-ambient-sm:
+    0 1px 2px rgb(18 53 67 / 0.04),
+    0 4px 12px -6px rgb(18 53 67 / 0.08);
+  --shadow-ambient:
+    0 1px 2px rgb(18 53 67 / 0.04),
+    0 8px 20px -10px rgb(18 53 67 / 0.10),
+    0 24px 48px -28px rgb(18 53 67 / 0.14);
+  --shadow-ambient-lg:
+    0 1px 2px rgb(18 53 67 / 0.05),
+    0 14px 30px -12px rgb(18 53 67 / 0.13),
+    0 36px 64px -32px rgb(18 53 67 / 0.20);
+  --shadow-ambient-xl:
+    0 2px 4px rgb(18 53 67 / 0.05),
+    0 20px 44px -16px rgb(18 53 67 / 0.16),
+    0 48px 88px -40px rgb(18 53 67 / 0.26);
+  /* Frosted-glass elevation: the ambient stack plus an inner top highlight,
+     the glassy lip that keeps a blurred translucent panel from reading flat.
+     Kept as one token because Tailwind shadow utilities replace rather than
+     compose — `shadow-ambient shadow-lift` would silently drop one. */
+  --shadow-glass:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.65),
+    0 1px 2px rgb(18 53 67 / 0.04),
+    0 8px 20px -10px rgb(18 53 67 / 0.10),
+    0 24px 48px -28px rgb(18 53 67 / 0.14);
 }
 
 body {
@@ -52,6 +94,25 @@ body {
 
 h1, h2, h3, h4, .font-display {
   font-family: var(--font-display), var(--font-sans), serif;
+}
+
+/* Display type is set tight by default: Fraunces at heading sizes needs
+   negative tracking to stop it reading as loose and web-default. */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------------------
+   Focus: one visible, on-brand ring everywhere, keyboard-only.
+   Components opt into `focusRing` from `@/components/ui` explicitly; this
+   is the safety net for anything that doesn't (raw <a>, <details>, etc.).
+   An `outline` (rather than a box-shadow ring) is deliberate here: it
+   follows each element's own border-radius and never clobbers the ambient
+   shadow a surface already carries.
+   --------------------------------------------------------------------- */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid rgb(51 136 164 / 0.6);
+  outline-offset: 2px;
 }
 
 /* Hand-set underline marker for emphasized words in headlines */
@@ -77,10 +138,20 @@ h1, h2, h3, h4, .font-display {
   background-position: 0% 100%;
   background-repeat: no-repeat;
   background-size: 0% 1px;
-  transition: background-size 0.25s ease;
+  transition: background-size 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .link-grow:hover {
   background-size: 100% 1px;
+}
+
+/* Long-form reading rhythm — used for article bodies and journal entries,
+   where line length and leading matter more than density. */
+.prose-longform {
+  line-height: 1.85;
+  letter-spacing: 0.003em;
+}
+.prose-longform p + p {
+  margin-top: 1.25em;
 }
 
 @keyframes float-slow {
@@ -106,4 +177,81 @@ h1, h2, h3, h4, .font-display {
 }
 .animate-wiggle {
   animation: wiggle 2.2s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------
+   Skeletons — a soft brand-tinted block with a light sweep travelling
+   across it. The sweep is a pseudo-element so the base block keeps its
+   own background and border radius.
+   --------------------------------------------------------------------- */
+@keyframes shimmer-sweep {
+  100% { transform: translateX(100%); }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-brand-100);
+  isolation: isolate;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgb(255 255 255 / 0) 0%,
+    rgb(255 255 255 / 0.55) 50%,
+    rgb(255 255 255 / 0) 100%
+  );
+  animation: shimmer-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Softer variant for skeletons sitting on an already-tinted surface. */
+.skeleton-subtle {
+  background-color: var(--color-brand-50);
+}
+
+/* Staggered fade-up for skeleton groups and revealed content, so a list
+   resolves in sequence rather than all snapping in at once. */
+@keyframes rise-in {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-rise-in {
+  animation: rise-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Slow drift for the ambient glow spots behind heroes and CTA cards.
+   Large blurs plus a long duration keep it perceptible but never busy. */
+@keyframes glow-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(3%, -4%, 0) scale(1.08); }
+}
+.animate-glow-drift {
+  animation: glow-drift 18s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------
+   Motion preferences — every decorative animation above is ornamental,
+   so honour the OS setting and hold each one on a static frame. The
+   shimmer becomes a steady tint rather than disappearing, so loading
+   surfaces still read as placeholders.
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-pop-in,
+  .animate-wiggle,
+  .animate-rise-in,
+  .animate-glow-drift,
+  .skeleton::after {
+    animation: none;
+  }
+  .skeleton::after {
+    background-image: none;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+  }
 }

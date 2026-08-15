@@ -2,7 +2,16 @@
 
 import { useActionState } from "react";
 import { submitBookingRequest } from "@/lib/booking-actions";
-import { Button } from "@/components/ui";
+import {
+  Button,
+  Field,
+  FormError,
+  Input,
+  Select,
+  Surface,
+  Textarea,
+} from "@/components/ui";
+import { CalendarMark } from "@/components/illustrations";
 
 const SESSION_TYPES = [
   { value: "INDIVIDUAL_COUNSELING", label: "Individual counseling" },
@@ -11,67 +20,75 @@ const SESSION_TYPES = [
   { value: "OTHER", label: "Other / not sure yet" },
 ];
 
-const inputClass =
-  "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
-const labelClass = "mb-1 block text-sm font-medium text-ink/80";
-
 export default function BookingForm({ counselorId }: { counselorId: string }) {
   const [state, formAction, pending] = useActionState(submitBookingRequest, undefined);
 
   if (state?.success) {
     return (
-      <div className="rounded-xl bg-brand-50 p-5 text-center">
-        <p className="font-display font-semibold text-brand-800">Request received</p>
-        <p className="mt-2 text-sm text-ink/70">
+      <Surface tone="tinted" className="animate-pop-in p-7 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-brand-900/10 bg-white/80 text-brand-500 shadow-ambient-sm">
+          <CalendarMark className="h-7 w-7" />
+        </div>
+        <p className="mt-5 font-display text-lg font-semibold tracking-tight text-brand-900">
+          Request received
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
           Thank you — we will reach out to confirm your appointment as soon
           as possible, by email or phone.
         </p>
-      </div>
+      </Surface>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-5">
       <input type="hidden" name="counselorId" value={counselorId} />
-      <div>
-        <label className={labelClass} htmlFor="name">Name</label>
-        <input id="name" name="name" required className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="email">Email</label>
-        <input id="email" name="email" type="email" required className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="phone">Phone</label>
-        <input id="phone" name="phone" type="tel" required className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="sessionType">Session type</label>
-        <select id="sessionType" name="sessionType" defaultValue="INDIVIDUAL_COUNSELING" className={inputClass}>
+
+      <Field label="Name" htmlFor="name">
+        <Input id="name" name="name" required autoComplete="name" />
+      </Field>
+
+      <Field label="Email" htmlFor="email">
+        <Input id="email" name="email" type="email" required autoComplete="email" />
+      </Field>
+
+      <Field label="Phone" htmlFor="phone">
+        <Input id="phone" name="phone" type="tel" required autoComplete="tel" />
+      </Field>
+
+      <Field label="Session type" htmlFor="sessionType">
+        <Select id="sessionType" name="sessionType" defaultValue="INDIVIDUAL_COUNSELING">
           {SESSION_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
           ))}
-        </select>
+        </Select>
+      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Preferred date" htmlFor="preferredDate">
+          <Input id="preferredDate" name="preferredDate" type="date" required />
+        </Field>
+        <Field label="Preferred time" htmlFor="preferredTime">
+          <Input id="preferredTime" name="preferredTime" type="time" required />
+        </Field>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelClass} htmlFor="preferredDate">Preferred date</label>
-          <input id="preferredDate" name="preferredDate" type="date" required className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass} htmlFor="preferredTime">Preferred time</label>
-          <input id="preferredTime" name="preferredTime" type="time" required className={inputClass} />
-        </div>
-      </div>
-      <p className="text-xs text-ink/45">
+
+      <p className="text-xs leading-relaxed text-ink-faint">
         Your preferred date and time aren&apos;t guaranteed — we&apos;ll
         confirm actual availability with you directly.
       </p>
-      <div>
-        <label className={labelClass} htmlFor="message">Anything you&apos;d like us to know? (optional)</label>
-        <textarea id="message" name="message" rows={3} className={inputClass} />
-      </div>
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+
+      <Field
+        label="Anything you'd like us to know? (optional)"
+        htmlFor="message"
+      >
+        <Textarea id="message" name="message" rows={4} />
+      </Field>
+
+      {state?.error && <FormError>{state.error}</FormError>}
+
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Sending…" : "Request session"}
       </Button>

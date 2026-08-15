@@ -4,8 +4,18 @@ import { getCurrentUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
 import { getJournalStats } from "@/lib/journal-stats";
 import { prisma } from "@/lib/db";
-import { Container, Eyebrow, ButtonLink } from "@/components/ui";
-import { Ribbon, Swash, WaveDivider } from "@/components/decor";
+import {
+  AmbientGlow,
+  Badge,
+  ButtonLink,
+  Container,
+  EmptyState,
+  Eyebrow,
+  Surface,
+  surfaceClass,
+} from "@/components/ui";
+import { Ribbon, Swash, DoodleField } from "@/components/decor";
+import { PenMark } from "@/components/illustrations";
 import EntryForm from "./entry-form";
 
 export const metadata: Metadata = { title: "Your Journal" };
@@ -34,48 +44,53 @@ export default async function JournalPage() {
   if (!user) {
     return (
       <>
-        <section className="bg-brand-50 py-16 sm:py-20">
-          <Container>
+        <section className="relative overflow-hidden bg-linear-to-b from-brand-50 via-brand-50/60 to-white py-20 sm:py-28">
+          <AmbientGlow palette="brand" intensity={0.2} />
+          <DoodleField />
+          <Container className="relative">
             <Ribbon>Free journaling app</Ribbon>
-            <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+            <h1 className="mt-6 max-w-2xl font-display text-4xl font-semibold leading-[1.14] tracking-tight text-brand-900 sm:text-[3.4rem]">
               Let it out,{" "}
               <span className="mark-swash italic text-brand-700">
                 one page<Swash />
               </span>{" "}
               at a time.
             </h1>
-            <p className="mt-5 max-w-2xl text-lg text-ink/70">
+            <p className="mt-7 max-w-2xl text-lg leading-relaxed text-ink-body">
               A free, guided journaling space with rotating daily prompts —
               no pressure, no perfect entries, just a little time for
               yourself.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <ButtonLink href="/signup">Start journaling — it&apos;s free</ButtonLink>
-              <ButtonLink href="/login" variant="outline">
+            <div className="mt-10 flex flex-wrap gap-4">
+              <ButtonLink href="/signup" size="lg">
+                Start journaling — it&apos;s free
+              </ButtonLink>
+              <ButtonLink href="/login" variant="outline" size="lg">
                 Log in
               </ButtonLink>
             </div>
           </Container>
         </section>
 
-        <WaveDivider fill="fill-white" />
 
-        <section className="py-12 sm:py-16">
+        <section className="py-16 sm:py-20">
           <Container>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-              How it works
-            </p>
-            <div className="mt-6 grid gap-6 sm:grid-cols-3">
+            <Eyebrow>How it works</Eyebrow>
+            <div className="mt-10 grid gap-6 sm:grid-cols-3">
               {HOW_IT_WORKS.map((item) => (
-                <div key={item.step} className="flex gap-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-700 font-display text-sm font-semibold text-white">
+                <Surface key={item.step} className="flex gap-5 p-7">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-b from-brand-600 to-brand-700 font-display text-sm font-semibold text-white shadow-ambient-sm">
                     {item.step}
                   </span>
                   <div>
-                    <p className="font-display font-semibold text-brand-900">{item.title}</p>
-                    <p className="mt-1 text-sm text-ink/60">{item.description}</p>
+                    <p className="font-display font-semibold tracking-tight text-brand-900">
+                      {item.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                      {item.description}
+                    </p>
                   </div>
-                </div>
+                </Surface>
               ))}
             </div>
           </Container>
@@ -95,61 +110,87 @@ export default async function JournalPage() {
   ]);
 
   return (
-    <Container className="py-16 sm:py-20">
-      <Eyebrow>A self-exploration journey</Eyebrow>
-      <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900">
-        Hi {user.name.split(" ")[0]}, here&apos;s a{" "}
-        <span className="mark-swash italic text-brand-700">
-          new prompt<Swash />
-        </span>
-      </h1>
+    <div className="relative overflow-hidden">
+      <AmbientGlow palette="brand" intensity={0.12} className="h-[42rem]" />
+      <Container className="relative py-20 sm:py-24">
+        <Eyebrow>A self-exploration journey</Eyebrow>
+        <h1 className="mt-4 font-display text-3xl font-semibold leading-[1.12] tracking-tight text-brand-900 sm:text-4xl">
+          Hi {user.name.split(" ")[0]}, here&apos;s a{" "}
+          <span className="mark-swash italic text-brand-700">
+            new prompt<Swash />
+          </span>
+        </h1>
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
-          🔥 {stats.streak}-day streak
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
-          📝 {stats.total} {stats.total === 1 ? "entry" : "entries"} so far
-        </span>
-      </div>
-
-      <div className="mt-8 grid gap-10 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <EntryForm initialPrompt={prompt} />
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Badge className="px-4 py-2 text-sm">🔥 {stats.streak}-day streak</Badge>
+          <Badge className="px-4 py-2 text-sm">
+            📝 {stats.total} {stats.total === 1 ? "entry" : "entries"} so far
+          </Badge>
         </div>
 
-        <div>
-          <div className="flex items-center justify-between">
-            <h2 className="font-display font-semibold text-brand-900">Recent entries</h2>
-            <Link href="/journal/history" className="text-sm font-medium text-brand-600 link-grow">
-              View all
-            </Link>
+        <div className="mt-12 grid gap-10 lg:grid-cols-3 lg:gap-12">
+          <div className="lg:col-span-2">
+            <EntryForm initialPrompt={prompt} />
           </div>
 
-          {entries.length === 0 ? (
-            <p className="mt-4 text-sm text-ink/60">
-              Your entries will show up here once you save your first one.
-            </p>
-          ) : (
-            <ul className="mt-4 space-y-3">
-              {entries.map((e) => (
-                <li key={e.id}>
-                  <Link
-                    href={`/journal/${e.id}`}
-                    className="block rounded-xl border-2 border-brand-100 bg-white p-4 transition-colors hover:border-brand-300"
+          <div>
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-display text-lg font-semibold tracking-tight text-brand-900">
+                Recent entries
+              </h2>
+              <Link
+                href="/journal/history"
+                className="link-grow text-sm font-medium text-brand-600"
+              >
+                View all
+              </Link>
+            </div>
+
+            {entries.length === 0 ? (
+              <EmptyState
+                className="mt-5"
+                illustration={<PenMark className="h-9 w-9" />}
+                title="Your first page is waiting"
+                description="Nothing saved yet — write a line or two on today's prompt and it will show up right here, ready to look back on."
+                action={
+                  <ButtonLink href="#entry-content" size="sm">
+                    Write today&apos;s entry
+                  </ButtonLink>
+                }
+              />
+            ) : (
+              <ul className="mt-5 space-y-3">
+                {entries.map((e, i) => (
+                  <li
+                    key={e.id}
+                    className="animate-rise-in"
+                    style={{ animationDelay: `${i * 50}ms` }}
                   >
-                    <div className="flex items-center justify-between text-xs text-ink/50">
-                      <span>{e.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
-                      {e.mood && <span>{e.mood}</span>}
-                    </div>
-                    <p className="mt-1 line-clamp-2 text-sm text-ink/80">{e.content}</p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <Link
+                      href={`/journal/${e.id}`}
+                      className={`block p-5 ${surfaceClass()}`}
+                    >
+                      <div className="flex items-center justify-between gap-3 text-xs text-ink-faint">
+                        <span className="font-semibold uppercase tracking-[0.12em]">
+                          {e.createdAt.toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                        {e.mood && <span className="text-base">{e.mood}</span>}
+                      </div>
+                      <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-ink-body">
+                        {e.content}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div>
-    </Container>
+      </Container>
+    </div>
   );
 }
