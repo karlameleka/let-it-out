@@ -96,7 +96,7 @@ export default function SiteHeader({
               </Link>
               <Link
                 href="/counseling"
-                className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-900/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-900/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
+                className="rounded bg-brand-700 px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-900/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-md hover:shadow-brand-900/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
               >
                 {dict.nav.bookASession}
               </Link>

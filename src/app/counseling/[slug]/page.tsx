@@ -55,7 +55,7 @@ export default async function CounselorPage({
               </div>
             )}
             <div>
-              <h1 className="font-display text-3xl font-semibold text-brand-900 sm:text-4xl">
+              <h1 className="font-display text-3xl font-medium text-brand-900 sm:text-4xl">
                 {counselor.name}
               </h1>
               <p className="text-sm font-medium text-brand-600">{counselor.credentials}</p>

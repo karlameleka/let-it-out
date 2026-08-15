@@ -54,7 +54,7 @@ export default function ConsentGate({ onAccept }: { onAccept: () => void }) {
           <button
             type="button"
             onClick={onAccept}
-            className="w-full rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-800/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-400 hover:shadow-md hover:shadow-brand-800/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
+            className="w-full rounded bg-brand-500 px-5 py-3 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-800/20 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-brand-400 hover:shadow-md hover:shadow-brand-800/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
           >
             I understand and agree
           </button>

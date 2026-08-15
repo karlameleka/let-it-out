@@ -30,7 +30,7 @@ export default function TermsPage() {
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container>
           <Ribbon>Please read before you begin</Ribbon>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
             Terms &amp; Conditions
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-ink/70">

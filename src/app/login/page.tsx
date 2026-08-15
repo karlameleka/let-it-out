@@ -26,7 +26,7 @@ export default async function LoginPage() {
 
       <div className="flex items-center justify-center px-4 py-16 sm:px-6">
         <Container className="mx-auto max-w-sm px-0">
-          <h1 className="font-display text-3xl font-semibold text-brand-900">{t.loginTitle}</h1>
+          <h1 className="font-display text-3xl font-medium text-brand-900">{t.loginTitle}</h1>
           <p className="mt-2 text-sm text-ink/60">{t.loginSubtitle}</p>
           <div className="mt-8">
             <LoginForm dict={dict} />

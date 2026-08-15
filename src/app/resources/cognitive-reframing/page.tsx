@@ -16,7 +16,7 @@ export default function CognitiveReframingPage() {
         <DoodleField />
         <Container className="relative max-w-2xl">
           <Ribbon>Interactive exercise</Ribbon>
-          <h1 className="mt-4 font-display text-3xl font-semibold leading-[1.1] text-brand-900 sm:text-4xl">
+          <h1 className="mt-4 font-display text-3xl font-medium leading-[1.1] text-brand-900 sm:text-4xl">
             Catch the thought. Question it. Reframe it.
           </h1>
           <p className="mt-4 text-lg text-ink/70">

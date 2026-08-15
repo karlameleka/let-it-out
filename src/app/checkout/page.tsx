@@ -101,7 +101,7 @@ export default function CheckoutPage() {
 
   return (
     <Container className="py-16 sm:py-20">
-      <h1 className="font-display text-3xl font-semibold text-brand-900">Checkout</h1>
+      <h1 className="font-display text-3xl font-medium text-brand-900">Checkout</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <form ref={formRef} onSubmit={handleCodSubmit} className="space-y-6 lg:col-span-2">

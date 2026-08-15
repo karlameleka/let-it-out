@@ -15,7 +15,7 @@ export function Container({
 }
 
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-200 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2";
+  "inline-flex items-center justify-center gap-2 rounded px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-200 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2";
 
 const variants = {
   primary:
@@ -76,7 +76,7 @@ export function SectionHeading({
   return (
     <div className={align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h2 className="mt-3 font-display text-3xl font-semibold leading-[1.15] text-brand-900 sm:text-4xl">
+      <h2 className="mt-3 font-display text-3xl font-medium leading-[1.15] text-brand-900 sm:text-4xl">
         {title}
       </h2>
       {description && <p className="mt-4 text-base text-ink/70">{description}</p>}

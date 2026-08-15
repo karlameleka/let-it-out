@@ -54,7 +54,7 @@ export default async function JournalPage() {
           <Container className="relative py-20 sm:py-28">
             <div className="max-w-2xl">
               <Ribbon>Free journaling app</Ribbon>
-              <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
+              <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
                 Let it out,{" "}
                 <span className="mark-swash italic text-brand-700">
                   one page<Swash />
@@ -143,7 +143,7 @@ export default async function JournalPage() {
           />
           <Container className="relative">
             <Ribbon tone="dark">Real prompts from the app</Ribbon>
-            <h2 className="mt-4 max-w-xl font-display text-3xl font-semibold sm:text-4xl">
+            <h2 className="mt-4 max-w-xl font-display text-3xl font-medium sm:text-4xl">
               Never stare at a blank page again
             </h2>
             <p className="mt-4 max-w-lg text-brand-50/85">

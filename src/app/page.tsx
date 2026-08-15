@@ -37,7 +37,7 @@ export default async function HomePage({
         <Container className="relative py-20 sm:py-28">
           <div className="max-w-2xl">
             <Ribbon>{t.heroRibbon}</Ribbon>
-            <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
+            <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
               {t.heroTitlePrefix}
               <span className="mark-swash italic text-brand-700">{t.heroTitleHighlight}<Swash /></span>
               {t.heroTitleSuffix}
@@ -123,7 +123,7 @@ export default async function HomePage({
         <Container className="relative grid items-center gap-10 md:grid-cols-2">
           <div>
             <Ribbon tone="dark">{t.storyRibbon}</Ribbon>
-            <h2 className="mt-4 font-display text-3xl font-semibold sm:text-4xl">
+            <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">
               {t.storyTitle}
             </h2>
             <p className="mt-5 text-brand-50/85">{t.storyDescription}</p>

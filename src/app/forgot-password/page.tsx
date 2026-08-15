@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
 
       <div className="flex items-center justify-center px-4 py-16 sm:px-6">
         <Container className="mx-auto max-w-sm px-0">
-          <h1 className="font-display text-3xl font-semibold text-brand-900">Forgot your password?</h1>
+          <h1 className="font-display text-3xl font-medium text-brand-900">Forgot your password?</h1>
           <p className="mt-2 text-sm text-ink/60">
             Enter your email and we&apos;ll send you a link to reset it.
           </p>

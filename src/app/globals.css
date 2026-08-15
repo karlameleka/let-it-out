@@ -77,21 +77,14 @@ select:focus-visible,
   border-radius: 2px;
 }
 
-/* Hand-set underline marker for emphasized words in headlines */
+/* Emphasized word in headlines — italic + brand color only, no underline
+   decoration (the .mark-swash svg mark itself is hidden below). */
 .mark-swash {
   position: relative;
   white-space: nowrap;
 }
 .mark-swash svg {
-  position: absolute;
-  left: -3%;
-  right: -3%;
-  bottom: -0.12em;
-  width: 106%;
-  height: 0.34em;
-  color: var(--color-brand-400);
-  opacity: 0.6;
-  z-index: -1;
+  display: none;
 }
 
 /* Underline-grow link style used for inline text links */

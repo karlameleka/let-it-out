@@ -27,7 +27,7 @@ export default async function SessionBookingPage({
         <p className="text-sm font-medium text-brand-600">
           {t.sessionWith} {booking.counselor.name}
         </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold text-brand-900">
+        <h1 className="mt-1 font-display text-3xl font-medium text-brand-900">
           {booking.status === "CONFIRMED" ? t.titleConfirmed : t.titlePending}
         </h1>
         <p className="mt-2 inline-flex rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700">

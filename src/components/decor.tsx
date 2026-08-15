@@ -40,7 +40,7 @@ export function WaveDivider({
   );
 }
 
-/** A hand-placed, slightly rotated tag — used for "Est. 2021" and similar callouts. */
+/** A quiet hero label — a hairline-underlined small-caps line, not a badge. */
 export function Ribbon({
   children,
   className = "",
@@ -52,10 +52,10 @@ export function Ribbon({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-semibold tracking-wide ${
+      className={`inline-block border-b pb-2 text-xs font-semibold uppercase tracking-[0.16em] ${
         tone === "light"
-          ? "border-brand-200 bg-white text-brand-700"
-          : "border-white/30 bg-white/10 text-white"
+          ? "border-brand-200 text-brand-600"
+          : "border-white/30 text-white/85"
       } ${className}`}
     >
       {children}

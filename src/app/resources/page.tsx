@@ -16,7 +16,7 @@ export default function ResourcesPage() {
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container>
           <Ribbon>Free resources</Ribbon>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
             Short reads, backed by{" "}
             <span className="mark-swash italic text-brand-700">
               real research<Swash />

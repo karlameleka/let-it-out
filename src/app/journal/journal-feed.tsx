@@ -52,7 +52,7 @@ export default function JournalFeed({ firstName, lockEnabled }: { firstName: str
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">A self-exploration journey</p>
-              <h1 className="mt-2 font-display text-3xl font-semibold text-brand-900 sm:text-4xl">
+              <h1 className="mt-2 font-display text-3xl font-medium text-brand-900 sm:text-4xl">
                 Hi {firstName}, welcome back
               </h1>
             </div>

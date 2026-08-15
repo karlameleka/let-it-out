@@ -25,7 +25,7 @@ export default async function AboutPage() {
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container>
           <Ribbon>{t.ribbon}</Ribbon>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
             {t.titlePrefix}
             <span className="mark-swash italic text-brand-700">
               {t.titleHighlight}<Swash />
@@ -118,7 +118,7 @@ export default async function AboutPage() {
       <section className="relative overflow-hidden bg-brand-800 py-16 text-white sm:py-20">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
         <Container className="text-center">
-          <h2 className="font-display text-3xl font-semibold sm:text-4xl">{t.ctaTitle}</h2>
+          <h2 className="font-display text-3xl font-medium sm:text-4xl">{t.ctaTitle}</h2>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <ButtonLink href="/counseling" variant="bright">
               {t.ctaBook}

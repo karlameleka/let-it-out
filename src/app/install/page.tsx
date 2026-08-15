@@ -15,7 +15,7 @@ export default function InstallPage() {
       <Container className="relative max-w-lg">
         <div className="text-center">
           <Ribbon>Get the app</Ribbon>
-          <h1 className="mt-4 font-display text-3xl font-semibold leading-[1.1] text-brand-900 sm:text-4xl">
+          <h1 className="mt-4 font-display text-3xl font-medium leading-[1.1] text-brand-900 sm:text-4xl">
             Take Let It Out with you.
           </h1>
         </div>

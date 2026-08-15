@@ -30,7 +30,7 @@ export default function PatternsClient() {
   return (
     <Container className="py-16 sm:py-20">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-3xl font-semibold text-brand-900">Mood patterns</h1>
+        <h1 className="font-display text-3xl font-medium text-brand-900">Mood patterns</h1>
         <Link href="/journal" className="text-sm font-medium text-brand-600 link-grow">
           View entries
         </Link>

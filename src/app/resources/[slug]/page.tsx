@@ -34,7 +34,7 @@ export default async function ArticlePage({
       <section className="bg-brand-50 py-16 sm:py-20">
         <Container className="max-w-3xl">
           <Ribbon>{article.category}</Ribbon>
-          <h1 className="mt-4 font-display text-3xl font-semibold leading-[1.15] text-brand-900 sm:text-4xl">
+          <h1 className="mt-4 font-display text-3xl font-medium leading-[1.15] text-brand-900 sm:text-4xl">
             {article.title}
           </h1>
           <p className="mt-4 text-lg text-ink/70">{article.excerpt}</p>

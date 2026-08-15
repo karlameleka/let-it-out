@@ -52,7 +52,7 @@ export default async function ProductPage({
         </div>
 
         <div>
-          <h1 className="font-display text-3xl font-semibold text-brand-900">
+          <h1 className="font-display text-3xl font-medium text-brand-900">
             {product.title}
           </h1>
           <p className="mt-4 text-ink/70 leading-relaxed">{product.description}</p>

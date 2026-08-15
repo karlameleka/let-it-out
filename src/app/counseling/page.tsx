@@ -36,7 +36,7 @@ export default async function CounselingPage() {
         <DoodleField />
         <Container className="relative">
           <Ribbon>{t.ribbon}</Ribbon>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.1] text-brand-900 sm:text-5xl">
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
             {t.titlePrefix}
             <span className="mark-swash italic text-brand-700">
               {t.titleHighlight}<Swash />

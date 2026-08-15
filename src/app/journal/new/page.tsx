@@ -27,7 +27,7 @@ export default async function NewJournalEntryPage() {
           &larr; Back to journal
         </Link>
         <Eyebrow>New entry</Eyebrow>
-        <h1 className="mt-3 font-display text-3xl font-semibold text-brand-900">
+        <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">
           What&apos;s on your{" "}
           <span className="mark-swash italic text-brand-700">
             mind<Swash />

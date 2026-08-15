@@ -25,7 +25,7 @@ export default function CartPage() {
 
   return (
     <Container className="py-16 sm:py-20">
-      <h1 className="font-display text-3xl font-semibold text-brand-900">Your cart</h1>
+      <h1 className="font-display text-3xl font-medium text-brand-900">Your cart</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
