@@ -58,6 +58,12 @@ export default async function OrderConfirmationPage({
               <span>Subtotal</span>
               <span>{formatEGP(order.subtotalEGP)}</span>
             </div>
+            {order.discountEGP > 0 && (
+              <div className="flex justify-between text-brand-700">
+                <span>Discount</span>
+                <span>-{formatEGP(order.discountEGP)}</span>
+              </div>
+            )}
             {order.needsShipping && (
               <div className="flex justify-between text-ink/70">
                 <span>Shipping</span>

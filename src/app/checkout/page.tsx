@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
-import { createOrder, type CreateOrderInput } from "@/lib/order-actions";
+import { createOrder, checkPromoCode, type CreateOrderInput } from "@/lib/order-actions";
 import { Container, Button, ButtonLink } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
 import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
@@ -26,12 +26,37 @@ export default function CheckoutPage() {
   const [country, setCountry] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH_ON_DELIVERY");
   const [paymobOrderId, setPaymobOrderId] = useState<string | null>(null);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState<{ code: string; discountEGP: number; label: string } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
 
   const needsShipping = items.some((i) => i.format === "PHYSICAL");
   const isEgypt = country === "Egypt";
   const shippingCalculatedOnDelivery = needsShipping && country !== "" && !isEgypt;
   const shippingFeeEGP = needsShipping && isEgypt ? EGYPT_SHIPPING_FEE_EGP : 0;
-  const totalEGP = subtotalEGP + shippingFeeEGP;
+  const discountEGP = promoApplied?.discountEGP ?? 0;
+  const totalEGP = subtotalEGP - discountEGP + shippingFeeEGP;
+
+  async function applyPromoCode() {
+    if (!promoInput.trim()) return;
+    setPromoChecking(true);
+    setPromoError(null);
+    const result = await checkPromoCode(promoInput, subtotalEGP);
+    setPromoChecking(false);
+    if (!result.valid) {
+      setPromoError(result.error);
+      setPromoApplied(null);
+      return;
+    }
+    setPromoApplied({ code: result.code, discountEGP: result.discountEGP, label: result.label });
+  }
+
+  function removePromoCode() {
+    setPromoApplied(null);
+    setPromoInput("");
+    setPromoError(null);
+  }
 
   if (items.length === 0) {
     return (
@@ -55,6 +80,7 @@ export default function CheckoutPage() {
       country: String(formData.get("country") || ""),
       governorate: String(formData.get("governorate") || ""),
       paymentMethod: method,
+      promoCode: promoApplied?.code,
     };
   }
 
@@ -251,11 +277,55 @@ export default function CheckoutPage() {
               </li>
             ))}
           </ul>
+          <div className="mt-4 border-t border-brand-100 pt-4">
+            {promoApplied ? (
+              <div className="flex items-center justify-between rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm">
+                <span className="font-medium text-brand-800">
+                  &ldquo;{promoApplied.code}&rdquo; applied — {promoApplied.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={removePromoCode}
+                  className="text-xs font-medium text-ink/50 hover:text-ink/70"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    placeholder="Promo code"
+                    className="w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm uppercase tracking-wide outline-none focus:border-brand-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyPromoCode}
+                    disabled={promoChecking || !promoInput.trim()}
+                    className="shrink-0 rounded-lg border-[1.5px] border-brand-200 px-3 py-2 text-sm font-medium text-brand-700 transition-colors disabled:opacity-50 hover:border-brand-400 hover:bg-brand-50"
+                  >
+                    {promoChecking ? "Checking…" : "Apply"}
+                  </button>
+                </div>
+                {promoError && <p className="mt-1.5 text-xs text-red-600">{promoError}</p>}
+              </div>
+            )}
+          </div>
+
           <div className="mt-4 space-y-2 border-t border-brand-100 pt-4 text-sm">
             <div className="flex justify-between text-ink/70">
               <span>Subtotal</span>
               <span>{formatEGP(subtotalEGP)}</span>
             </div>
+            {discountEGP > 0 && (
+              <div className="flex justify-between text-brand-700">
+                <span>Discount</span>
+                <span>-{formatEGP(discountEGP)}</span>
+              </div>
+            )}
             {needsShipping && (
               <div className="flex justify-between text-ink/70">
                 <span>Shipping</span>

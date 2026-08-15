@@ -109,7 +109,7 @@ export default function SessionBookingFlow({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-600 disabled:opacity-60"
+        className="w-full rounded bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] disabled:opacity-60"
       >
         {pending ? t.justAMoment : t.continueToPayment}
       </button>

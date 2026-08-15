@@ -62,6 +62,9 @@ export default async function ShopPage() {
             {products.map((p) => {
               const price = Math.min(...p.variants.map((v) => v.priceEGP));
               const photo = PRODUCT_PHOTOS[p.slug];
+              const stockCount = p.variants[0]?.stockCount ?? null;
+              const outOfStock = stockCount === 0;
+              const lowStock = stockCount !== null && stockCount > 0 && stockCount <= 5;
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group">
                   {photo && (
@@ -73,6 +76,16 @@ export default async function ShopPage() {
                         sizes="(max-width: 640px) 90vw, 280px"
                         className="object-cover"
                       />
+                      {outOfStock && (
+                        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-ink/60">
+                          Out of stock
+                        </span>
+                      )}
+                      {lowStock && (
+                        <span className="absolute left-3 top-3 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                          Only {stockCount} left
+                        </span>
+                      )}
                     </div>
                   )}
                   <h3 className="mt-5 text-center font-display text-lg font-semibold text-brand-900 group-hover:text-brand-600">

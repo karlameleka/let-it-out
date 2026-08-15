@@ -123,7 +123,15 @@ export default function InteractiveArticle({ article }: { article: Article }) {
                 evidence-based approach.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-3">
-                <ButtonLink href="/counseling">Book a session</ButtonLink>
+                {article.slug === "importance-of-journaling" && (
+                  <ButtonLink href="/shop">Explore our journals</ButtonLink>
+                )}
+                <ButtonLink
+                  href="/counseling"
+                  variant={article.slug === "importance-of-journaling" ? "outline" : "primary"}
+                >
+                  Book a session
+                </ButtonLink>
                 <ButtonLink href="/workshops" variant="outline">
                   Explore workshops
                 </ButtonLink>

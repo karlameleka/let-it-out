@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shuffle, ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui";
-import { REFRAMING_PROMPTS, COGNITIVE_DISTORTIONS, type ReframingPrompt } from "@/lib/content/reframing";
+import { Shuffle, ArrowRight, ArrowLeft, Check, Sparkles, Info } from "lucide-react";
+import { Button, ButtonLink } from "@/components/ui";
+import {
+  REFRAMING_PROMPTS,
+  COGNITIVE_DISTORTIONS,
+  EMOTIONS,
+  INTENSITY_LABELS,
+  type ReframingPrompt,
+} from "@/lib/content/reframing";
 
 const STORAGE_KEY = "lio_reframe_count";
 
@@ -16,8 +22,15 @@ function randomPrompt(excludeSituation?: string): ReframingPrompt {
 type Step = 0 | 1 | 2 | 3 | 4;
 
 export default function ReframingTool() {
-  const [prompt, setPrompt] = useState<ReframingPrompt>(() => randomPrompt());
+  // Starts on a fixed first prompt (not a random one) so server and client
+  // render identically, then shuffles to a random one after mount — using
+  // Math.random() during the initial render would pick different scenarios
+  // on the server vs. the client and cause a hydration mismatch.
+  const [prompt, setPrompt] = useState<ReframingPrompt>(REFRAMING_PROMPTS[0]);
   const [step, setStep] = useState<Step>(0);
+  const [feeling, setFeeling] = useState<string | null>(null);
+  const [intensityBefore, setIntensityBefore] = useState<number | null>(null);
+  const [intensityAfter, setIntensityAfter] = useState<number | null>(null);
   const [distortions, setDistortions] = useState<Set<string>>(new Set());
   const [evidenceFor, setEvidenceFor] = useState("");
   const [evidenceAgainst, setEvidenceAgainst] = useState("");
@@ -27,6 +40,7 @@ export default function ReframingTool() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCount(Number(window.localStorage.getItem(STORAGE_KEY) ?? "0"));
+    setPrompt(randomPrompt());
   }, []);
 
   function shuffle() {
@@ -35,6 +49,9 @@ export default function ReframingTool() {
 
   function startOver(newPrompt: boolean) {
     setStep(0);
+    setFeeling(null);
+    setIntensityBefore(null);
+    setIntensityAfter(null);
     setDistortions(new Set());
     setEvidenceFor("");
     setEvidenceAgainst("");
@@ -58,6 +75,8 @@ export default function ReframingTool() {
     setStep(4);
   }
 
+  const feelingLabel = EMOTIONS.find((e) => e.id === feeling)?.label;
+
   return (
     <div className="overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
       {step < 4 && (
@@ -74,7 +93,18 @@ export default function ReframingTool() {
       <div className="p-6 sm:p-8">
         {step === 0 && (
           <>
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5 rounded-xl bg-brand-50/70 p-4 text-sm text-ink/70">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
+              <p>
+                Automatic thoughts are quick, often harsh reactions our mind produces before we&apos;ve even
+                noticed them arrive. They can feel completely true in the moment — but feeling true and being
+                accurate aren&apos;t the same thing. This walks you through noticing one, checking it against
+                the evidence, and finding a version that fits the facts better. About 3–5 minutes, no wrong way
+                to do it.
+              </p>
+            </div>
+
+            <div className="mt-5 flex items-start justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{prompt.category}</p>
               <button
                 type="button"
@@ -93,8 +123,41 @@ export default function ReframingTool() {
               Pick whichever scenario feels closest to something you&apos;ve actually thought — or shuffle until
               one does.
             </p>
-            <Button onClick={() => setStep(1)} className="mt-6">
-              Start reframing it
+
+            <div className="mt-6 border-t border-brand-100 pt-5">
+              <p className="font-display text-lg font-medium text-brand-900">
+                If you had this thought, what would you feel — and how strongly?
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {EMOTIONS.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => setFeeling(e.id)}
+                    className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      feeling === e.id
+                        ? "border-brand-600 bg-brand-600 text-white"
+                        : "border-brand-200 text-ink/70 hover:border-brand-400 hover:bg-brand-50"
+                    }`}
+                  >
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+              {feeling && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-ink/60">How strong is it?</p>
+                  <IntensityPicker value={intensityBefore} onChange={setIntensityBefore} />
+                </div>
+              )}
+            </div>
+
+            <Button
+              onClick={() => setStep(1)}
+              disabled={!feeling || intensityBefore === null}
+              className="mt-6"
+            >
+              Continue
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Button>
           </>
@@ -102,11 +165,14 @@ export default function ReframingTool() {
 
         {step === 1 && (
           <>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 1 · Spot the trap</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 2 · Spot the trap</p>
             <p className="mt-2 font-display text-lg font-medium text-brand-900">
               Which thinking traps might be shaping this thought?
             </p>
-            <p className="mt-1 text-sm text-ink/60">Pick as many as apply — there&apos;s no wrong answer.</p>
+            <p className="mt-1 text-sm text-ink/60">
+              Optional — pick as many as apply, or none at all if nothing feels obviously right. This step is
+              here to help you recognize patterns, not to grade your thinking.
+            </p>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {COGNITIVE_DISTORTIONS.map((d) => {
                 const active = distortions.has(d.id);
@@ -128,14 +194,18 @@ export default function ReframingTool() {
                 );
               })}
             </div>
-            <StepNav onBack={() => setStep(0)} onNext={() => setStep(2)} />
+            <StepNav onBack={() => setStep(0)} onNext={() => setStep(2)} nextLabel={distortions.size === 0 ? "Skip" : "Next"} />
           </>
         )}
 
         {step === 2 && (
           <>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 2 · Weigh the evidence</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 3 · Weigh the evidence</p>
             <p className="mt-2 font-display text-lg font-medium text-brand-900">What&apos;s the evidence?</p>
+            <p className="mt-1 text-sm text-ink/60">
+              This is the heart of reframing — comparing the thought against what actually happened, not how
+              it feels.
+            </p>
             <div className="mt-4 space-y-4">
               <div>
                 <label htmlFor="evidenceFor" className="mb-1.5 block text-xs font-semibold text-ink/60">
@@ -170,7 +240,7 @@ export default function ReframingTool() {
 
         {step === 3 && (
           <>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 3 · Reframe it</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 4 · Reframe it</p>
             <p className="mt-2 font-display text-lg font-medium text-brand-900">
               Given all that — what&apos;s a more balanced way to see it?
             </p>
@@ -184,6 +254,17 @@ export default function ReframingTool() {
               placeholder="A more balanced thought..."
               className="mt-4 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
             />
+
+            {reframe.trim() && feeling && (
+              <div className="mt-5 border-t border-brand-100 pt-5">
+                <p className="text-sm font-medium text-ink/80">
+                  Now that you&apos;ve reframed it — how {feelingLabel?.toLowerCase()} do you feel, if you
+                  imagine having this new thought instead?
+                </p>
+                <IntensityPicker value={intensityAfter} onChange={setIntensityAfter} />
+              </div>
+            )}
+
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -217,6 +298,20 @@ export default function ReframingTool() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">Original thought</p>
                 <p className="mt-1 italic text-ink/80">&ldquo;{prompt.thought}&rdquo;</p>
               </div>
+              {feeling && intensityBefore !== null && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">How it felt</p>
+                  <p className="mt-1 text-ink/80">
+                    {feelingLabel} — {INTENSITY_LABELS[intensityBefore]}
+                    {intensityAfter !== null && (
+                      <>
+                        {" "}&rarr; <span className="font-medium text-brand-700">{INTENSITY_LABELS[intensityAfter]}</span> after
+                        reframing
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
               {distortions.size > 0 && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">Thinking traps spotted</p>
@@ -238,10 +333,15 @@ export default function ReframingTool() {
               scenario.
             </p>
 
-            <Button onClick={() => startOver(true)} className="mt-6">
-              <Shuffle className="h-4 w-4" strokeWidth={2} />
-              Try another scenario
-            </Button>
+            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Button onClick={() => startOver(true)}>
+                <Shuffle className="h-4 w-4" strokeWidth={2} />
+                Try another scenario
+              </Button>
+              <ButtonLink href="/counseling" variant="text">
+                If this feels heavy, talk it through with a counselor &rarr;
+              </ButtonLink>
+            </div>
           </div>
         )}
       </div>
@@ -249,7 +349,36 @@ export default function ReframingTool() {
   );
 }
 
-function StepNav({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+function IntensityPicker({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
+  return (
+    <div className="mt-2 grid grid-cols-5 gap-1.5">
+      {INTENSITY_LABELS.map((label, i) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => onChange(i)}
+          className={`rounded-lg border px-1.5 py-2 text-center text-[11px] font-medium leading-tight transition-colors ${
+            value === i
+              ? "border-brand-600 bg-brand-600 text-white"
+              : "border-brand-200 text-ink/60 hover:border-brand-400 hover:bg-brand-50"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StepNav({
+  onBack,
+  onNext,
+  nextLabel = "Next",
+}: {
+  onBack: () => void;
+  onNext: () => void;
+  nextLabel?: string;
+}) {
   return (
     <div className="mt-6 flex items-center gap-3">
       <button
@@ -261,7 +390,7 @@ function StepNav({ onBack, onNext }: { onBack: () => void; onNext: () => void })
         Back
       </button>
       <Button onClick={onNext}>
-        Next
+        {nextLabel}
         <ArrowRight className="h-4 w-4" strokeWidth={2} />
       </Button>
     </div>

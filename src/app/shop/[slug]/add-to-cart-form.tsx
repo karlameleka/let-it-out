@@ -10,7 +10,10 @@ type Variant = {
   id: string;
   format: "PHYSICAL" | "EBOOK";
   priceEGP: number;
+  stockCount: number | null;
 };
+
+const LOW_STOCK_THRESHOLD = 5;
 
 export default function AddToCartForm({
   productSlug,
@@ -25,6 +28,9 @@ export default function AddToCartForm({
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
   const router = useRouter();
+
+  const outOfStock = variant.stockCount === 0;
+  const lowStock = variant.stockCount !== null && variant.stockCount > 0 && variant.stockCount <= LOW_STOCK_THRESHOLD;
 
   function handleAdd() {
     addItem({
@@ -44,17 +50,28 @@ export default function AddToCartForm({
         <PriceDisplay egpAmount={variant.priceEGP} />
       </p>
 
+      {outOfStock ? (
+        <p className="inline-flex items-center rounded-full bg-ink/5 px-3 py-1 text-sm font-medium text-ink/50">
+          Out of stock
+        </p>
+      ) : lowStock ? (
+        <p className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">
+          Only {variant.stockCount} left
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap gap-3">
         <Button
           type="button"
+          disabled={outOfStock}
           onClick={() => {
             handleAdd();
             router.push("/cart");
           }}
         >
-          Buy now
+          {outOfStock ? "Out of stock" : "Buy now"}
         </Button>
-        <Button type="button" variant="outline" onClick={handleAdd}>
+        <Button type="button" variant="outline" disabled={outOfStock} onClick={handleAdd}>
           Add to cart
         </Button>
       </div>

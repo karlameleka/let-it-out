@@ -31,7 +31,38 @@ const createOrderSchema = z.object({
   country: z.string().trim().optional(),
   governorate: z.string().trim().optional(),
   paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY", "PAYMOB"]),
+  promoCode: z.string().trim().optional(),
 });
+
+export type PromoCheckResult =
+  | { valid: true; code: string; discountEGP: number; label: string }
+  | { valid: false; error: string };
+
+/** Server-computed discount preview — never trust a client-submitted amount.
+    Re-validated again inside createOrder at the moment the order is placed. */
+export async function checkPromoCode(rawCode: string, subtotalEGP: number): Promise<PromoCheckResult> {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return { valid: false, error: "Enter a code." };
+
+  const promo = await prisma.promoCode.findUnique({ where: { code } });
+  if (!promo || !promo.active) return { valid: false, error: "That code isn't valid." };
+  if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: "That code has expired." };
+  if (promo.maxRedemptions !== null && promo.redemptionCount >= promo.maxRedemptions) {
+    return { valid: false, error: "That code has already been fully redeemed." };
+  }
+  if (promo.minOrderEGP !== null && subtotalEGP < promo.minOrderEGP) {
+    return { valid: false, error: `This code needs a minimum order of ${formatEGP(promo.minOrderEGP)}.` };
+  }
+
+  const discountEGP =
+    promo.discountType === "PERCENT"
+      ? Math.round((subtotalEGP * promo.discountValue) / 100)
+      : Math.min(promo.discountValue, subtotalEGP);
+
+  const label = promo.discountType === "PERCENT" ? `${promo.discountValue}% off` : `${formatEGP(promo.discountValue)} off`;
+
+  return { valid: true, code, discountEGP, label };
+}
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type CreateOrderResult = { error: string } | { orderId: string };
@@ -51,6 +82,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     country,
     governorate,
     paymentMethod,
+    promoCode,
   } = parsed.data;
 
   const variantIds = [...new Set(items.map((i) => i.productVariantId))];
@@ -61,6 +93,18 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
 
   if (variants.length !== variantIds.length) {
     return { error: "One or more items in your cart are no longer available." };
+  }
+
+  for (const i of items) {
+    const v = variants.find((v) => v.id === i.productVariantId)!;
+    if (v.stockCount !== null && v.stockCount < i.quantity) {
+      return {
+        error:
+          v.stockCount === 0
+            ? `${v.product.title} is out of stock.`
+            : `Only ${v.stockCount} of ${v.product.title} left in stock.`,
+      };
+    }
   }
 
   const needsShipping = items.some((i) => {
@@ -107,33 +151,61 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   });
 
   // Shipping fee is always computed server-side from the validated country —
-  // never trust a client-submitted amount.
+  // never trust a client-submitted amount. Same for the promo discount: the
+  // client may have shown a preview, but it's re-validated here from scratch.
   const shippingFeeEGP = needsShipping && country ? computeShippingFeeEGP(country) : 0;
-  const totalEGP = subtotalEGP + shippingFeeEGP;
   const shippingCalculatedOnDelivery = needsShipping && country !== "Egypt";
+
+  let discountEGP = 0;
+  let promoCodeId: string | null = null;
+  if (promoCode) {
+    const check = await checkPromoCode(promoCode, subtotalEGP);
+    if (!check.valid) return { error: check.error };
+    discountEGP = check.discountEGP;
+    promoCodeId = (await prisma.promoCode.findUnique({ where: { code: check.code } }))!.id;
+  }
+
+  const totalEGP = subtotalEGP - discountEGP + shippingFeeEGP;
 
   const user = await getCurrentUser();
 
-  const order = await prisma.order.create({
-    data: {
-      userId: user?.userId,
-      guestName,
-      guestEmail,
-      guestPhone,
-      shippingAddress: needsShipping ? shippingAddress : null,
-      googleMapsLink: needsShipping ? googleMapsLink : null,
-      country: needsShipping ? country : null,
-      governorate: needsShipping && country === "Egypt" ? governorate : null,
-      needsShipping,
-      subtotalEGP,
-      shippingFeeEGP,
-      totalEGP,
-      paymentMethod,
-      // Cash on Delivery has no online payment step to wait on — the order
-      // goes straight to confirmed, and cash is collected on delivery.
-      status: paymentMethod === "CASH_ON_DELIVERY" ? "CONFIRMED" : "PENDING_PAYMENT",
-      items: { create: orderItemsData },
-    },
+  const order = await prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({
+      data: {
+        userId: user?.userId,
+        guestName,
+        guestEmail,
+        guestPhone,
+        shippingAddress: needsShipping ? shippingAddress : null,
+        googleMapsLink: needsShipping ? googleMapsLink : null,
+        country: needsShipping ? country : null,
+        governorate: needsShipping && country === "Egypt" ? governorate : null,
+        needsShipping,
+        subtotalEGP,
+        shippingFeeEGP,
+        promoCodeId,
+        discountEGP,
+        totalEGP,
+        paymentMethod,
+        // Cash on Delivery has no online payment step to wait on — the order
+        // goes straight to confirmed, and cash is collected on delivery.
+        status: paymentMethod === "CASH_ON_DELIVERY" ? "CONFIRMED" : "PENDING_PAYMENT",
+        items: { create: orderItemsData },
+      },
+    });
+    if (promoCodeId) {
+      await tx.promoCode.update({ where: { id: promoCodeId }, data: { redemptionCount: { increment: 1 } } });
+    }
+    for (const i of items) {
+      const v = variants.find((v) => v.id === i.productVariantId)!;
+      if (v.stockCount !== null) {
+        await tx.productVariant.update({
+          where: { id: v.id },
+          data: { stockCount: { decrement: i.quantity } },
+        });
+      }
+    }
+    return created;
   });
 
   const itemsSummary = orderItemsData
@@ -184,6 +256,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       { label: "Phone", value: guestPhone },
       { label: "Items", value: itemsSummary },
       { label: "Subtotal", value: formatEGP(subtotalEGP) },
+      ...(discountEGP > 0 ? [{ label: "Discount", value: `-${formatEGP(discountEGP)}` }] : []),
       { label: "Shipping fee", value: shippingFeeSummary },
       { label: "Total", value: formatEGP(totalEGP) },
       { label: "Payment method", value: paymentMethodLabel },
@@ -207,6 +280,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       { label: "Order #", value: order.id.slice(-8).toUpperCase() },
       { label: "Items", value: itemsSummary },
       { label: "Subtotal", value: formatEGP(subtotalEGP) },
+      ...(discountEGP > 0 ? [{ label: "Discount", value: `-${formatEGP(discountEGP)}` }] : []),
       { label: "Shipping fee", value: shippingFeeSummary },
       { label: "Total", value: formatEGP(totalEGP) },
     ],

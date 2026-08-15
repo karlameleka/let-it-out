@@ -40,7 +40,7 @@ export default function ResourceNotifyBell() {
           <button
             type="submit"
             disabled={pending}
-            className="shrink-0 rounded-full bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-500 disabled:opacity-60"
+            className="shrink-0 rounded bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-500 hover:shadow-[0_0_0_6px_rgba(51,136,164,0.18)] disabled:opacity-60"
           >
             {pending ? "…" : "Notify me"}
           </button>

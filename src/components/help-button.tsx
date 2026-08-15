@@ -15,17 +15,22 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
   if (pathname?.startsWith("/admin")) return null;
 
   return (
-    <div className="fixed bottom-5 end-5 z-50">
+    <div className="fixed bottom-20 end-5 z-50 md:bottom-5">
       {open && (
         <div className="animate-pop-in absolute bottom-[calc(100%+0.75rem)] end-0 w-72 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-xl">
           <p className="font-display font-semibold text-brand-900">{dict.heading}</p>
           <p className="mt-1 text-sm text-ink/60">{dict.subheading}</p>
 
-          <div className="mt-4 rounded-xl bg-red-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-red-700">{dict.crisisLabel}</p>
-            <a href="tel:16328" className="mt-1 block text-sm font-medium text-red-800 hover:underline">
-              {dict.crisisHotline}
-            </a>
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50/60 p-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-brand-600">
+              <Phone className="h-3.5 w-3.5" strokeWidth={2} />
+            </span>
+            <span>
+              <span className="block text-xs font-medium text-ink/50">{dict.crisisLabel}</span>
+              <a href="tel:16328" className="text-sm font-semibold text-brand-800 hover:underline">
+                {dict.crisisHotline}
+              </a>
+            </span>
           </div>
 
           <div className="mt-3 space-y-2">

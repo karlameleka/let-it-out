@@ -6,6 +6,7 @@ import { Container, Eyebrow } from "@/components/ui";
 import ChangePasswordForm from "./change-password-form";
 import ProfileForm from "./profile-form";
 import JournalLockToggle from "./journal-lock-toggle";
+import JournalReminderToggle from "@/components/journal-reminder-toggle";
 import ExportDataButton from "./export-data-button";
 import DeleteAccountForm from "./delete-account-form";
 import LanguageSwitcher from "@/components/language-switcher";
@@ -61,6 +62,14 @@ export default async function AccountPage() {
         <h2 className="font-display font-semibold text-brand-900">{t.journalPrivacyTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.journalPrivacyDescription}</p>
         <JournalLockToggle initialEnabled={user?.journalLockEnabled ?? false} dict={dict} />
+      </div>
+
+      <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-brand-900">{t.notificationsTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.notificationsDescription}</p>
+        <div className="mt-4">
+          <JournalReminderToggle />
+        </div>
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">

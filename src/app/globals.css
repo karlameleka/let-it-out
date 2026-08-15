@@ -58,6 +58,14 @@ h1, h2, h3, h4, .font-display {
   letter-spacing: -0.01em;
 }
 
+/* Arabic is a joined, cursive script — any tracking (Tailwind's
+   tracking-wide/tracking-[...] utilities, used throughout for small
+   uppercase English labels) breaks letter connections and reads as
+   broken, not stylish. Reset it everywhere under RTL. */
+[dir="rtl"] * {
+  letter-spacing: normal;
+}
+
 ::selection {
   background: var(--color-brand-200);
   color: var(--color-brand-900);

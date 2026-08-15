@@ -37,7 +37,7 @@ export default function WorkshopInterestPopup() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm animate-pop-in sm:bottom-6 sm:right-6">
+    <div className="fixed bottom-20 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm animate-pop-in sm:bottom-6 sm:right-6">
       <div className="relative overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
         <button
           type="button"

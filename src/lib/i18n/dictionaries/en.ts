@@ -1,5 +1,6 @@
 const en = {
   nav: {
+    home: "Home",
     about: "About",
     counseling: "Counseling",
     workshops: "Workshops",
@@ -339,6 +340,8 @@ const en = {
     aboutYouDescription: "Optional, and only shared internally to help us understand who we're serving.",
     journalPrivacyTitle: "Journal privacy",
     journalPrivacyDescription: "An extra lock screen for your journal, like Face ID on iPhone.",
+    notificationsTitle: "Notifications",
+    notificationsDescription: "Get a gentle nudge to journal, once a day.",
     lockToggleLabel: "Require password to open your journal",
     lockToggleDescription:
       "Off by default. When on, you'll re-enter your password each time you open the journal in a new tab.",

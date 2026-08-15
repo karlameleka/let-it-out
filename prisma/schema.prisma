@@ -176,6 +176,11 @@ model ProductVariant {
   format     ProductFormat
   priceEGP   Int
   sku        String        @unique
+  // Physical-stock count. Null means untracked/unlimited (e.g. the EBOOK
+  // format, which has no inventory to run out of). When set, the shop
+  // shows "Only N left" under a low-stock threshold and blocks purchase
+  // at 0.
+  stockCount Int?
 
   orderItems OrderItem[]
 
@@ -197,6 +202,30 @@ enum PaymentMethod {
   PAYMOB
 }
 
+enum PromoDiscountType {
+  PERCENT
+  FIXED
+}
+
+// Admin-created discount codes for shop checkout. discountValue is either a
+// percent (1-100) or a fixed EGP amount, per discountType. All limits are
+// optional (null = no limit) so a code can be as simple or as constrained
+// as a given campaign needs.
+model PromoCode {
+  id              String            @id @default(cuid())
+  code            String            @unique
+  discountType    PromoDiscountType
+  discountValue   Int
+  active          Boolean           @default(true)
+  expiresAt       DateTime?
+  maxRedemptions  Int?
+  redemptionCount Int               @default(0)
+  minOrderEGP     Int?
+  createdAt       DateTime          @default(now())
+
+  orders Order[]
+}
+
 model Order {
   id              String        @id @default(cuid())
   user            User?         @relation(fields: [userId], references: [id])
@@ -211,6 +240,9 @@ model Order {
   needsShipping   Boolean       @default(false)
   subtotalEGP     Int
   shippingFeeEGP  Int           @default(0)
+  promoCode       PromoCode?    @relation(fields: [promoCodeId], references: [id])
+  promoCodeId     String?
+  discountEGP     Int           @default(0)
   totalEGP        Int
   paymentMethod   PaymentMethod @default(INSTAPAY)
   status          OrderStatus   @default(PENDING_PAYMENT)

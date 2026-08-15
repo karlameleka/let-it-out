@@ -133,7 +133,56 @@ export const REFRAMING_PROMPTS: ReframingPrompt[] = [
     situation: "You turned down an invitation because you needed to rest.",
     thought: "People are going to stop inviting me altogether now.",
   },
+  // Money
+  {
+    category: "Money",
+    situation: "You checked your bank balance and it was lower than you expected.",
+    thought: "I'm terrible with money and I'll never get this together.",
+  },
+  {
+    category: "Money",
+    situation: "You had to ask a friend to cover you for something small.",
+    thought: "This is embarrassing — they probably think I can't manage my life.",
+  },
+  {
+    category: "Money",
+    situation: "A big, unplanned expense came up this month.",
+    thought: "Something like this always happens right when I start getting ahead.",
+  },
+  // Creative & ambition
+  {
+    category: "Creative & ambition",
+    situation: "You shared something you made and it got barely any response.",
+    thought: "That confirms it — I'm just not good at this.",
+  },
+  {
+    category: "Creative & ambition",
+    situation: "You've been putting off starting a project you actually care about.",
+    thought: "If I really wanted it, I'd have started already. I guess I don't have what it takes.",
+  },
+  {
+    category: "Creative & ambition",
+    situation: "Someone else finished something similar to what you'd been planning.",
+    thought: "There's no point now — mine won't matter.",
+  },
 ];
+
+export type Emotion = { id: string; label: string };
+
+export const EMOTIONS: Emotion[] = [
+  { id: "anxious", label: "Anxious" },
+  { id: "sad", label: "Sad" },
+  { id: "angry", label: "Angry" },
+  { id: "ashamed", label: "Ashamed" },
+  { id: "guilty", label: "Guilty" },
+  { id: "frustrated", label: "Frustrated" },
+  { id: "hurt", label: "Hurt" },
+  { id: "lonely", label: "Lonely" },
+  { id: "embarrassed", label: "Embarrassed" },
+  { id: "overwhelmed", label: "Overwhelmed" },
+];
+
+export const INTENSITY_LABELS = ["A little", "Somewhat", "Moderately", "Quite a bit", "A lot"];
 
 export type CognitiveDistortion = {
   id: string;

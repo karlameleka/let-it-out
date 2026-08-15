@@ -65,6 +65,7 @@ export default async function ProductPage({
                 id: v.id,
                 format: v.format,
                 priceEGP: v.priceEGP,
+                stockCount: v.stockCount,
               }))}
             />
           </div>

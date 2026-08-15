@@ -7,6 +7,7 @@ import WorkshopInterestPopup from "@/components/workshop-interest-popup";
 import EntryGates from "@/components/entry-gates";
 import ServiceWorkerRegister from "@/components/sw-register";
 import HelpButton from "@/components/help-button";
+import BottomTabBar from "@/components/bottom-tab-bar";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { getCurrentUser } from "@/lib/session";
@@ -62,7 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       dir={dirForLocale(locale)}
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-ink">
+      <body className="min-h-full flex flex-col bg-white text-ink pb-16 md:pb-0">
         <CurrencyProvider>
           <CartProvider>
             <SiteHeader user={user} locale={locale} dict={dict} />
@@ -72,6 +73,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <EntryGates />
             <ServiceWorkerRegister />
             <HelpButton dict={dict.helpButton} />
+            <BottomTabBar dict={dict.nav} />
           </CartProvider>
         </CurrencyProvider>
       </body>
