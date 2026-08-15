@@ -9,10 +9,15 @@ import { getNextPrompt } from "@/lib/prompts";
 import { getJournalStats, type JournalStats } from "@/lib/journal-stats";
 import { getMoodPatterns, type MoodPatterns } from "@/lib/mood-patterns";
 
+// A client-compressed data URI — capped well above what the composer's
+// resize step should ever produce, as a defense-in-depth backstop.
+const MAX_PHOTO_LENGTH = 3_000_000;
+
 const entrySchema = z.object({
   content: z.string().trim().min(1, "Write a little something before saving."),
   mood: z.string().trim().optional(),
   promptId: z.string().optional(),
+  photoUrl: z.string().max(MAX_PHOTO_LENGTH, "That photo is too large.").optional(),
 });
 
 export type EntryFormState = { error?: string; success?: boolean } | undefined;
@@ -28,6 +33,7 @@ export async function createJournalEntry(
     content: formData.get("content"),
     mood: formData.get("mood") || undefined,
     promptId: formData.get("promptId") || undefined,
+    photoUrl: formData.get("photoUrl") || undefined,
   });
 
   if (!parsed.success) {
@@ -40,6 +46,7 @@ export async function createJournalEntry(
       content: parsed.data.content,
       mood: parsed.data.mood,
       promptId: parsed.data.promptId,
+      photoUrl: parsed.data.photoUrl,
     },
   });
 
@@ -69,6 +76,7 @@ export type JournalFeedEntry = {
   content: string;
   mood: string | null;
   bookmarked: boolean;
+  photoUrl: string | null;
   createdAt: string;
 };
 
@@ -88,7 +96,7 @@ export async function getJournalFeedData(): Promise<JournalFeedData | null> {
       where: { userId: user.userId },
       orderBy: { createdAt: "desc" },
       take: FEED_ENTRY_LIMIT,
-      select: { id: true, content: true, mood: true, bookmarked: true, createdAt: true },
+      select: { id: true, content: true, mood: true, bookmarked: true, photoUrl: true, createdAt: true },
     }),
     getJournalStats(user.userId),
   ]);
@@ -104,6 +112,7 @@ export type JournalEntryDetail = {
   content: string;
   mood: string | null;
   bookmarked: boolean;
+  photoUrl: string | null;
   createdAt: string;
   prompt: { category: string; text: string } | null;
 };
@@ -123,6 +132,7 @@ export async function getJournalEntryDetail(id: string): Promise<JournalEntryDet
     content: entry.content,
     mood: entry.mood,
     bookmarked: entry.bookmarked,
+    photoUrl: entry.photoUrl,
     createdAt: entry.createdAt.toISOString(),
     prompt: entry.prompt,
   };
@@ -151,6 +161,14 @@ export async function toggleBookmark(entryId: string): Promise<{ success: boolea
   revalidatePath(`/journal/${entryId}`);
 
   return { success: true, bookmarked: updated.bookmarked };
+}
+
+export async function updateJournalLockSetting(enabled: boolean): Promise<{ success: boolean }> {
+  const user = await requireUser().catch(() => null);
+  if (!user) return { success: false };
+
+  await prisma.user.update({ where: { id: user.userId }, data: { journalLockEnabled: enabled } });
+  return { success: true };
 }
 
 export async function verifyJournalLock(password: string): Promise<{ success: boolean; error?: string }> {

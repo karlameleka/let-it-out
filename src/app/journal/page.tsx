@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getCurrentUser } from "@/lib/session";
+import { getJournalLockEnabled } from "@/lib/journal-lock";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
 import JournalLockGate from "@/components/journal-lock-gate";
@@ -191,9 +192,11 @@ export default async function JournalPage() {
     );
   }
 
+  const lockEnabled = await getJournalLockEnabled(user.userId);
+
   return (
-    <JournalLockGate>
-      <JournalFeed firstName={user.name.split(" ")[0]} />
+    <JournalLockGate enabled={lockEnabled}>
+      <JournalFeed firstName={user.name.split(" ")[0]} lockEnabled={lockEnabled} />
     </JournalLockGate>
   );
 }

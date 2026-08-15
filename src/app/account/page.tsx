@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
 import ChangePasswordForm from "./change-password-form";
 import ProfileForm from "./profile-form";
+import JournalLockToggle from "./journal-lock-toggle";
 
 export const metadata: Metadata = { title: "Account Settings" };
 
@@ -14,7 +15,13 @@ export default async function AccountPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { ageRange: true, gender: true, country: true, referralSource: true },
+    select: {
+      ageRange: true,
+      gender: true,
+      country: true,
+      referralSource: true,
+      journalLockEnabled: true,
+    },
   });
 
   return (
@@ -34,6 +41,12 @@ export default async function AccountPage() {
           country={user?.country ?? null}
           referralSource={user?.referralSource ?? null}
         />
+      </div>
+
+      <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-brand-900">Journal privacy</h2>
+        <p className="mt-1 text-sm text-ink/60">An extra lock screen for your journal, like Face ID on iPhone.</p>
+        <JournalLockToggle initialEnabled={user?.journalLockEnabled ?? false} />
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">

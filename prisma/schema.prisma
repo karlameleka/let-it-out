@@ -35,6 +35,9 @@ model User {
   country        String?
   referralSource String?
 
+  // Off by default, matching Apple Journal — opt-in from account settings.
+  journalLockEnabled Boolean @default(false)
+
   journalEntries JournalEntry[]
   bookingRequests BookingRequest[]
   orders         Order[]
@@ -235,6 +238,9 @@ model JournalEntry {
   content    String         @db.Text
   mood       String?
   bookmarked Boolean        @default(false)
+  // A single client-compressed photo, stored as a data URI — there's no
+  // blob storage wired up yet, and this keeps the feature self-contained.
+  photoUrl   String?        @db.Text
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 }

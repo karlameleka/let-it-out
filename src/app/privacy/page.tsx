@@ -100,10 +100,11 @@ export default function PrivacyPolicyPage() {
                 bank details — payment is Cash on Delivery.
               </li>
               <li>
-                <strong>Journal entries:</strong> the content and mood tags
-                you write in our journaling app. This is the most sensitive
-                information we hold, and it is treated accordingly (see
-                Section 5).
+                <strong>Journal entries:</strong> the content, mood tags, and
+                any photo you attach in our journaling app. This is the most
+                sensitive information we hold, and it is treated accordingly
+                (see Section 5). You can also turn on an optional password
+                lock for the journal from account settings.
               </li>
               <li>
                 <strong>Contact messages:</strong> anything you send us

@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { Shuffle } from "lucide-react";
+import { ImagePlus, Shuffle, X } from "lucide-react";
 import { createJournalEntry, shufflePrompt } from "@/lib/journal-actions";
+import { compressImage } from "@/lib/compress-image";
 import { Button } from "@/components/ui";
 import { CORE_EMOTIONS, getSecondaryEmotions, type CoreEmotionId } from "@/lib/moods";
 
@@ -34,6 +35,10 @@ export default function EntryForm({
   const [prompt, setPrompt] = useState(initialPrompt);
   const [celebration] = useState(() => CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)]);
   const [shuffling, startShuffle] = useTransition();
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (state !== lastHandledState) {
     setLastHandledState(state);
@@ -41,7 +46,28 @@ export default function EntryForm({
       setKey((k) => k + 1);
       setMood(null);
       setExpandedCore(null);
+      setPhoto(null);
+      setPhotoError(null);
       onSaved?.();
+    }
+  }
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please choose an image file.");
+      return;
+    }
+    setPhotoError(null);
+    setPhotoProcessing(true);
+    try {
+      setPhoto(await compressImage(file));
+    } catch {
+      setPhotoError("Couldn't process that photo — try a different one.");
+    } finally {
+      setPhotoProcessing(false);
     }
   }
 
@@ -166,6 +192,43 @@ export default function EntryForm({
           className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
         />
 
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">Add a photo (optional)</p>
+          {photo ? (
+            <div className="relative inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer */}
+              <img src={photo} alt="" className="h-28 w-28 rounded-xl border border-brand-200 object-cover" />
+              <button
+                type="button"
+                onClick={() => setPhoto(null)}
+                aria-label="Remove photo"
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={photoProcessing}
+              className="inline-flex items-center gap-2 rounded-xl border border-dashed border-brand-200 px-4 py-3 text-sm text-ink/60 transition-colors hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50"
+            >
+              <ImagePlus className="h-4 w-4" strokeWidth={2} />
+              {photoProcessing ? "Processing…" : "Add photo"}
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          {photoError && <p className="mt-1.5 text-xs text-red-600">{photoError}</p>}
+          <input type="hidden" name="photoUrl" value={photo ?? ""} />
+        </div>
+
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         {state?.success && (
           <p data-testid="entry-saved-message" className="animate-pop-in text-sm font-medium text-brand-600">
@@ -173,7 +236,7 @@ export default function EntryForm({
           </p>
         )}
 
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || photoProcessing}>
           {pending ? "Saving…" : "Save entry"}
         </Button>
       </form>

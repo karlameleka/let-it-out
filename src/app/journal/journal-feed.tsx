@@ -11,7 +11,7 @@ import { moodColor, moodLabel } from "@/lib/moods";
 import { ButtonLink } from "@/components/ui";
 import JournalReminderToggle from "@/components/journal-reminder-toggle";
 
-export default function JournalFeed({ firstName }: { firstName: string }) {
+export default function JournalFeed({ firstName, lockEnabled }: { firstName: string; lockEnabled: boolean }) {
   const [entries, setEntries] = useState<JournalFeedEntry[] | null>(null);
   const [stats, setStats] = useState<JournalStats | null>(null);
   const [query, setQuery] = useState("");
@@ -55,14 +55,16 @@ export default function JournalFeed({ firstName }: { firstName: string }) {
                 Hi {firstName}, welcome back
               </h1>
             </div>
-            <button
-              type="button"
-              onClick={relockJournal}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-xs font-medium text-ink/50 transition-colors hover:border-brand-300 hover:text-ink/70"
-            >
-              <LockKeyhole className="h-3.5 w-3.5" strokeWidth={2} />
-              Lock
-            </button>
+            {lockEnabled && (
+              <button
+                type="button"
+                onClick={relockJournal}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-xs font-medium text-ink/50 transition-colors hover:border-brand-300 hover:text-ink/70"
+              >
+                <LockKeyhole className="h-3.5 w-3.5" strokeWidth={2} />
+                Lock
+              </button>
+            )}
           </div>
 
           <div className="mt-8 flex flex-wrap items-stretch gap-4">
@@ -167,40 +169,50 @@ function EntryCard({ entry, onToggleBookmark }: { entry: JournalFeedEntry; onTog
   return (
     <li
       onClick={() => router.push(`/journal/${entry.id}`)}
-      className="group cursor-pointer rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
+      className="group flex cursor-pointer gap-4 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs text-ink/50">
-          <span>
-            {new Date(entry.createdAt).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </span>
-          {entry.mood && (
-            <span
-              title={moodLabel(entry.mood)}
-              className="h-2.5 w-2.5 rounded-full border border-black/10"
-              style={{ backgroundColor: moodColor(entry.mood) }}
-            />
-          )}
+      {entry.photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer
+        <img
+          src={entry.photoUrl}
+          alt=""
+          className="h-16 w-16 shrink-0 rounded-xl object-cover"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-ink/50">
+            <span>
+              {new Date(entry.createdAt).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+            {entry.mood && (
+              <span
+                title={moodLabel(entry.mood)}
+                className="h-2.5 w-2.5 rounded-full border border-black/10"
+                style={{ backgroundColor: moodColor(entry.mood) }}
+              />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleBookmark();
+            }}
+            aria-label={entry.bookmarked ? "Remove bookmark" : "Bookmark this entry"}
+            className={`shrink-0 rounded-full p-1 transition-colors ${
+              entry.bookmarked ? "text-brand-600" : "text-ink/25 hover:text-ink/50"
+            }`}
+          >
+            <Star className="h-4 w-4" strokeWidth={2} fill={entry.bookmarked ? "currentColor" : "none"} />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleBookmark();
-          }}
-          aria-label={entry.bookmarked ? "Remove bookmark" : "Bookmark this entry"}
-          className={`shrink-0 rounded-full p-1 transition-colors ${
-            entry.bookmarked ? "text-brand-600" : "text-ink/25 hover:text-ink/50"
-          }`}
-        >
-          <Star className="h-4 w-4" strokeWidth={2} fill={entry.bookmarked ? "currentColor" : "none"} />
-        </button>
+        <p className="mt-2 line-clamp-2 text-sm text-ink/80">{entry.content}</p>
       </div>
-      <p className="mt-2 line-clamp-2 text-sm text-ink/80">{entry.content}</p>
     </li>
   );
 }

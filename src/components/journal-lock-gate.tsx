@@ -8,21 +8,32 @@ import { Button } from "@/components/ui";
 const UNLOCK_KEY = "lio_journal_unlocked";
 
 /** Gates journal content behind a re-entered password each browser session
- * — mirrors Apple Journal's Face ID lock. Nothing sensitive is fetched
- * until this passes: pages using this gate fetch their data client-side
- * (after mount, inside the gated children), not in the server-rendered
- * initial page. */
-export default function JournalLockGate({ children }: { children: React.ReactNode }) {
+ * — mirrors Apple Journal's optional Face ID lock, and like that feature is
+ * off by default (`enabled` reflects the user's account setting). Nothing
+ * sensitive is fetched until this passes: pages using this gate fetch their
+ * data client-side (after mount, inside the gated children), not in the
+ * server-rendered initial page. */
+export default function JournalLockGate({
+  enabled,
+  children,
+}: {
+  enabled: boolean;
+  children: React.ReactNode;
+}) {
   const [status, setStatus] = useState<"checking" | "locked" | "unlocked">("checking");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setStatus("unlocked");
+      return;
+    }
     const unlocked = window.sessionStorage.getItem(UNLOCK_KEY) === "1";
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus(unlocked ? "unlocked" : "locked");
-  }, []);
+  }, [enabled]);
 
   async function handleUnlock(e: FormEvent) {
     e.preventDefault();

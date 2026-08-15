@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
+import { getJournalLockEnabled } from "@/lib/journal-lock";
 import { Container, Eyebrow } from "@/components/ui";
 import { Swash } from "@/components/decor";
 import JournalLockGate from "@/components/journal-lock-gate";
@@ -14,10 +15,13 @@ export default async function NewJournalEntryPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const prompt = await getNextPrompt(user.userId);
+  const [prompt, lockEnabled] = await Promise.all([
+    getNextPrompt(user.userId),
+    getJournalLockEnabled(user.userId),
+  ]);
 
   return (
-    <JournalLockGate>
+    <JournalLockGate enabled={lockEnabled}>
       <Container className="max-w-2xl py-16 sm:py-20">
         <Link href="/journal" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
           &larr; Back to journal

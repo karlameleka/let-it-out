@@ -67,6 +67,15 @@ export default function EntryDetailClient({ id }: { id: string }) {
         </div>
 
         <div className="px-6 py-8 sm:px-8">
+          {entry.photoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer
+            <img
+              src={entry.photoUrl}
+              alt=""
+              className="mb-6 max-h-96 w-full rounded-2xl border border-brand-100 object-cover"
+            />
+          )}
+
           {entry.prompt && (
             <div className="rounded-2xl border border-brand-100 bg-brand-50 p-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">

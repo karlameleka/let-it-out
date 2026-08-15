@@ -67,18 +67,10 @@ async function unlockJournal(page, password) {
   log("choosing 'Prefer not to say' clears a previously-set field", genderCleared);
 
   await page.goto(`${BASE}/journal`);
-  await page.waitForSelector("text=Your journal is locked", { timeout: 5000 }).catch(() => {});
-  log("journal shows the privacy lock on first visit", await page.locator("text=Your journal is locked").isVisible().catch(() => false));
+  await page.waitForTimeout(500);
+  log("journal has no privacy lock by default", !(await page.locator("text=Your journal is locked").isVisible().catch(() => false)));
+  log("no manual Lock button when the lock is disabled", !(await page.locator('button:has-text("Lock")').isVisible().catch(() => false)));
 
-  await page.fill('input[type="password"]', "wrong-password");
-  await page.click('button:has-text("Unlock")');
-  await page.waitForTimeout(400);
-  log("wrong password on the journal lock shows an error", await page.locator("text=Incorrect password").isVisible().catch(() => false));
-
-  await unlockJournal(page, "password123");
-  log("correct password unlocks the journal", !(await page.locator("text=Your journal is locked").isVisible().catch(() => false)));
-
-  await page.waitForTimeout(400);
   const emptyStateVisible = await page.locator("text=Your entries will show up here").isVisible().catch(() => false);
   log("journal feed shows the empty state before any entries", emptyStateVisible);
 
@@ -96,6 +88,10 @@ async function unlockJournal(page, password) {
   log("shuffle prompt button changes the prompt", promptBefore !== promptAfterShuffle);
 
   await page.fill("textarea[name=content]", "This is my first journal entry via e2e test.");
+  await page.setInputFiles('input[type="file"]', "public/brand/icon-192.png");
+  await page.waitForSelector('button[aria-label="Remove photo"]', { timeout: 5000 }).catch(() => {});
+  log("photo preview appears after choosing a file", await page.locator('button[aria-label="Remove photo"]').isVisible().catch(() => false));
+
   await page.click('button:has-text("Save entry")');
   await page.waitForSelector('[data-testid="entry-saved-message"]', { timeout: 10000 });
   log("journal entry saves", true);
@@ -106,6 +102,7 @@ async function unlockJournal(page, password) {
   await page.waitForTimeout(500);
   const entryVisible = await page.locator("text=This is my first journal entry").first().isVisible().catch(() => false);
   log("saved entry appears in the feed", entryVisible);
+  log("photo thumbnail shows on the feed card", await page.locator("li img").first().isVisible().catch(() => false));
 
   const streakVisible = await page.locator("text=/day streak/").first().isVisible().catch(() => false);
   log("journal shows streak stat after saving", streakVisible);
@@ -149,13 +146,44 @@ async function unlockJournal(page, password) {
   await page.waitForURL(/\/journal\/[a-zA-Z0-9]+$/, { timeout: 10000 });
   await page.waitForTimeout(400);
   log("entry detail page shows the full entry without re-locking", await page.locator("text=This is my first journal entry").isVisible().catch(() => false));
+  log("entry detail page shows the attached photo", await page.locator(".rounded-3xl.border-brand-100 img").first().isVisible().catch(() => false));
 
   await page.goto(`${BASE}/journal/history`);
   log("/journal/history redirects to the feed", page.url() === `${BASE}/journal`);
 
+  // Enable the optional privacy lock from account settings.
+  await page.goto(`${BASE}/account`);
+  await page.click('button[role="switch"]');
+  await page.waitForTimeout(400);
+
+  await page.goto(`${BASE}/journal`);
+  await page.waitForSelector("text=Your journal is locked", { timeout: 5000 }).catch(() => {});
+  log("journal shows the privacy lock once enabled in settings", await page.locator("text=Your journal is locked").isVisible().catch(() => false));
+
+  await page.fill('input[type="password"]', "wrong-password");
+  await page.click('button:has-text("Unlock")');
+  await page.waitForTimeout(400);
+  log("wrong password on the journal lock shows an error", await page.locator("text=Incorrect password").isVisible().catch(() => false));
+
+  await unlockJournal(page, "password123");
+  log("correct password unlocks the journal", !(await page.locator("text=Your journal is locked").isVisible().catch(() => false)));
+
+  await page.waitForTimeout(400);
+  log("manual Lock button appears once the lock is enabled", await page.locator('button:has-text("Lock")').isVisible().catch(() => false));
+
   await page.click('button:has-text("Lock")');
   await page.waitForTimeout(500);
   log("Lock button re-locks the journal immediately", await page.locator("text=Your journal is locked").isVisible().catch(() => false));
+
+  await unlockJournal(page, "password123");
+
+  // Disabling it again should remove the lock for a fresh page load.
+  await page.goto(`${BASE}/account`);
+  await page.click('button[role="switch"]');
+  await page.waitForTimeout(400);
+  await page.goto(`${BASE}/journal`);
+  await page.waitForTimeout(500);
+  log("disabling the lock removes it again", !(await page.locator("text=Your journal is locked").isVisible().catch(() => false)));
 
   await page.click('button:has-text("Log out")');
   await page.waitForURL(`${BASE}/`, { timeout: 10000 });
@@ -718,7 +746,6 @@ let orderUrl = "";
   await page.fill("#password", "password123");
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
-  await unlockJournal(page, "password123");
 
   await page.goto(`${BASE}/journal/patterns`);
   await page.waitForSelector("text=No mood data yet", { timeout: 5000 }).catch(() => {});
@@ -818,7 +845,6 @@ let orderUrl = "";
   await page.fill("#password", "password123");
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
-  await unlockJournal(page, "password123");
   await page.waitForTimeout(400);
 
   await page.click("text=Enable daily reminders");
