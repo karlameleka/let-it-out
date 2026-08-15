@@ -51,6 +51,7 @@ model Counselor {
   credentials  String
   bio          String   @db.Text
   specialties  String[]
+  languages    String[] @default([])
   photoUrl     String?
   active       Boolean  @default(true)
   sortOrder    Int      @default(0)

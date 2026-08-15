@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 type Counselor = {
@@ -9,6 +10,8 @@ type Counselor = {
   name: string;
   credentials: string;
   specialties: string[];
+  languages: string[];
+  photoUrl: string | null;
 };
 
 // A friendlier, presenting-concern framing of a subset of the specialty
@@ -85,9 +88,19 @@ export default function CounselorFinder({ counselors }: { counselors: Counselor[
               href={`/counseling/${c.slug}`}
               className="group flex flex-col rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-300 hover:shadow-md"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700">
-                {c.name.split(" ").map((n) => n[0]).join("")}
-              </div>
+              {c.photoUrl ? (
+                <Image
+                  src={c.photoUrl}
+                  alt={c.name}
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700">
+                  {c.name.split(" ").map((n) => n[0]).join("")}
+                </div>
+              )}
               <h3 className="mt-4 font-display text-lg font-semibold text-brand-900">{c.name}</h3>
               <p className="mt-1 text-sm text-ink/60">{c.credentials}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
@@ -97,6 +110,11 @@ export default function CounselorFinder({ counselors }: { counselors: Counselor[
                   </span>
                 ))}
               </div>
+              {c.languages.length > 0 && (
+                <p className="mt-3 text-xs text-ink/50">
+                  <span className="font-medium text-ink/60">Speaks:</span> {c.languages.join(", ")}
+                </p>
+              )}
               <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
                 View profile &amp; book &rarr;
               </p>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
@@ -32,9 +33,19 @@ export default async function CounselorPage({
         <div className="md:col-span-3">
           <Eyebrow>Counseling</Eyebrow>
           <div className="mt-4 flex items-center gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-xl font-semibold text-brand-700">
-              {counselor.name.split(" ").map((n) => n[0]).join("")}
-            </div>
+            {counselor.photoUrl ? (
+              <Image
+                src={counselor.photoUrl}
+                alt={counselor.name}
+                width={64}
+                height={64}
+                className="h-16 w-16 shrink-0 rounded-full border-2 border-brand-200 object-cover"
+              />
+            ) : (
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-xl font-semibold text-brand-700">
+                {counselor.name.split(" ").map((n) => n[0]).join("")}
+              </div>
+            )}
             <div>
               <h1 className="font-display text-3xl font-semibold text-brand-900 sm:text-4xl">
                 {counselor.name}
@@ -56,6 +67,12 @@ export default async function CounselorPage({
               </span>
             ))}
           </div>
+
+          {counselor.languages.length > 0 && (
+            <p className="mt-3 text-sm text-ink/60">
+              <span className="font-medium text-ink/70">Speaks:</span> {counselor.languages.join(", ")}
+            </p>
+          )}
 
           <p className="mt-6 whitespace-pre-line text-ink/80 leading-relaxed">
             {counselor.bio}
