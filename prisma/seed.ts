@@ -20,6 +20,7 @@ async function main() {
       sortOrder: 0,
       active: true,
       bookingUrl: "https://cal.com/karlameleka/verna-awad",
+      priceEGP: 1000,
     },
     {
       slug: "karla-meleka",
@@ -30,6 +31,7 @@ async function main() {
       sortOrder: 1,
       active: true,
       bookingUrl: "https://cal.com/karlameleka/counseling-session",
+      priceEGP: 800,
     },
     {
       slug: "lora-samuel",

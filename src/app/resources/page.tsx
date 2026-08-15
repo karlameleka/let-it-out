@@ -3,8 +3,7 @@ import Link from "next/link";
 import { Brain, ArrowRight } from "lucide-react";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
-import { ARTICLES } from "@/lib/content/articles";
-import ArticleProgressBadge from "./article-progress-badge";
+import ArticleFilter from "./article-filter";
 
 export const metadata: Metadata = {
   title: "Resources",
@@ -62,30 +61,7 @@ export default function ResourcesPage() {
       <section className="pb-16 pt-8 sm:pb-20">
         <Container>
           <SectionHeading eyebrow="Read" title="Latest articles" />
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
-            {ARTICLES.map((article) => (
-              <Link
-                key={article.slug}
-                href={`/resources/${article.slug}`}
-                className="group rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
-              >
-                <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500">
-                  {article.category} · {article.readMinutes} min read
-                  <ArticleProgressBadge
-                    slug={article.slug}
-                    totalMilestones={article.sections.length + article.checkIns.length}
-                  />
-                </p>
-                <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 group-hover:text-brand-600">
-                  {article.title}
-                </h3>
-                <p className="mt-2 text-sm text-ink/60">{article.excerpt}</p>
-                <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
-                  Read article &rarr;
-                </p>
-              </Link>
-            ))}
-          </div>
+          <ArticleFilter />
         </Container>
       </section>
     </>

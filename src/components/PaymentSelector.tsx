@@ -7,9 +7,11 @@ export default function PaymentSelector({
   amountEGP,
   getOrderId,
   onRedirect,
+  endpoint = "/api/checkout/paymob",
+  idField = "orderId",
 }: {
   amountEGP: number;
-  /** Resolves to the Order id to pay for (creating it first if needed), or null on failure. */
+  /** Resolves to the record id to pay for (creating it first if needed), or null on failure. */
   getOrderId: () => Promise<string | null>;
   /**
    * Called right before redirecting to the Paymob checkout page — e.g. to
@@ -17,6 +19,10 @@ export default function PaymentSelector({
    * a failed gateway request leaves the page (and cart) intact to retry.
    */
   onRedirect?: () => void;
+  /** Paymob intention route to call — defaults to the shop checkout route. */
+  endpoint?: string;
+  /** JSON body key the resolved id is sent under — defaults to "orderId". */
+  idField?: string;
 }) {
   const [loading, setLoading] = useState<"card" | "wallet" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,10 +38,10 @@ export default function PaymentSelector({
     }
 
     try {
-      const res = await fetch("/api/checkout/paymob", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, paymentMethod }),
+        body: JSON.stringify({ [idField]: orderId, paymentMethod }),
       });
       const data = await res.json();
 

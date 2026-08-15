@@ -1,8 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
+import { MapPin } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { WaveDivider } from "@/components/decor";
 import { SOCIAL_LINKS } from "@/components/social-icons";
+
+const OFFICE_MAPS_URL = "https://maps.app.goo.gl/ym5Dc5zvyxfPVxcZA";
 
 export default function SiteFooter() {
   return (
@@ -49,6 +52,17 @@ export default function SiteFooter() {
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
               <li><Link href="/contact" className="hover:text-white">Contact us</Link></li>
+              <li>
+                <a
+                  href={OFFICE_MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-white"
+                >
+                  <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                  Heliopolis, Cairo, Egypt
+                </a>
+              </li>
               <li className="flex flex-wrap gap-2 pt-1">
                 {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
                   <a

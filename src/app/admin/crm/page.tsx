@@ -9,6 +9,7 @@ const TYPE_FILTERS = [
   { value: "JOURNAL_CUSTOMER", label: "Journal Customers" },
   { value: "GENERAL_INQUIRY", label: "General Inquiries" },
   { value: "ACCOUNT_SIGNUP", label: "Account Signups" },
+  { value: "RESOURCE_NOTIFY", label: "Resource Notify Signups" },
 ];
 
 const TYPE_LABELS: Record<string, string> = {
@@ -17,6 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   JOURNAL_CUSTOMER: "Journal Customer",
   GENERAL_INQUIRY: "General Inquiry",
   ACCOUNT_SIGNUP: "Account Signup",
+  RESOURCE_NOTIFY: "Resource Notify",
 };
 
 const STATUSES = ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"];

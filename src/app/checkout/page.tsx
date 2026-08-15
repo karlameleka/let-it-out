@@ -221,7 +221,7 @@ export default function CheckoutPage() {
                 <span>
                   <span className="block text-sm font-semibold text-brand-800">Card / Mobile Wallet</span>
                   <span className="mt-0.5 block text-xs text-ink/60">
-                    Pay securely online now via Paymob.
+                    Pay securely online now via Paymob. Apple Pay supported where available.
                   </span>
                 </span>
               </label>

@@ -55,6 +55,9 @@ export default async function ShopPage() {
             build healthier relationships with yourself and those around
             you.
           </p>
+          <p className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-4 py-1.5 text-sm font-medium text-brand-700">
+            1,000+ sold copies
+          </p>
         </Container>
       </section>
 

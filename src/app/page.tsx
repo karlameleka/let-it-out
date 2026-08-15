@@ -89,12 +89,14 @@ export default async function HomePage({
               href="/counseling"
               title="Individual Online Counseling"
               description="One-on-one sessions with specialized psychotherapists using CBT, ACT, and DBT frameworks, personalized to you."
+              cta="See counselor profiles"
             />
             <ServiceCard
               index="02"
               href="/workshops"
               title="Trainings and Workshops"
               description="Interactive, evidence-based sessions designed to enhance employee wellbeing — from stress-management to mental health first-aid."
+              cta="See workshop topics"
               offset
             />
             <ServiceCard
@@ -102,6 +104,7 @@ export default async function HomePage({
               href="/shop"
               title="Guided Journals & Digital Resources"
               description="Practical, CBT-informed self-help journals to help you build a healthier relationship with yourself."
+              cta="Browse journals"
             />
           </div>
         </Container>
@@ -244,12 +247,14 @@ function ServiceCard({
   href,
   title,
   description,
+  cta,
   offset,
 }: {
   index: string;
   href: string;
   title: string;
   description: string;
+  cta: string;
   offset?: boolean;
 }) {
   return (
@@ -263,7 +268,7 @@ function ServiceCard({
       <h3 className="mt-2 font-display text-lg font-semibold text-brand-900">{title}</h3>
       <p className="mt-3 flex-1 text-sm text-ink/70">{description}</p>
       <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit">
-        Learn more &rarr;
+        {cta} &rarr;
       </p>
     </Link>
   );

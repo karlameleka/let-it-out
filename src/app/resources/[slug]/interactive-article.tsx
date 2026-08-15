@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ButtonLink } from "@/components/ui";
 import type { Article, ArticleCheckIn, ArticleSection } from "@/lib/content/articles";
 import { getArticleProgress, saveArticleProgress } from "@/lib/article-progress";
+import ResourceNotifyBell from "../resource-notify-bell";
 
 function sectionKey(index: number) {
   return `section-${index}`;
@@ -128,6 +129,8 @@ export default function InteractiveArticle({ article }: { article: Article }) {
                 </ButtonLink>
               </div>
             </div>
+
+            <ResourceNotifyBell />
           </div>
         )}
       </div>

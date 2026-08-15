@@ -1,4 +1,4 @@
-type LeadType = "Workshop Lead" | "Counseling Inquiry" | "Journal Customer" | "General Inquiry";
+type LeadType = "Workshop Lead" | "Counseling Inquiry" | "Journal Customer" | "General Inquiry" | "Resource Notify";
 type LeadStatus = "New" | "Contacted" | "Qualified" | "Converted" | "Lost";
 
 interface AirtableLeadFields {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
 import BookingForm from "./booking-form";
 import CalBooking from "@/components/cal-booking";
+import SessionBookingFlow from "./session-booking-flow";
 
 export async function generateMetadata({
   params,
@@ -63,7 +64,26 @@ export default async function CounselorPage({
 
         <div className="md:col-span-2">
           <div className="sticky top-24 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
-            {counselor.bookingUrl ? (
+            {counselor.bookingUrl && counselor.priceEGP ? (
+              <>
+                <h2 className="font-display text-lg font-semibold text-brand-900">
+                  Book a session
+                </h2>
+                <p className="mt-1 text-sm text-ink/60">
+                  Sessions run 50 minutes over video call. Pick your
+                  preferred day and pay below — you&apos;ll then choose
+                  your exact time slot and get a confirmation with your
+                  video link right away.
+                </p>
+                <div className="mt-4">
+                  <SessionBookingFlow
+                    counselorId={counselor.id}
+                    counselorName={counselor.name}
+                    priceEGP={counselor.priceEGP}
+                  />
+                </div>
+              </>
+            ) : counselor.bookingUrl ? (
               <>
                 <h2 className="font-display text-lg font-semibold text-brand-900">
                   Book a session
