@@ -1,0 +1,81 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LifeBuoy, X, MessageCircle, Phone, HelpCircle } from "lucide-react";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+
+const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=201288200533";
+
+export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  if (pathname?.startsWith("/admin")) return null;
+
+  return (
+    <div className="fixed bottom-5 end-5 z-50">
+      {open && (
+        <div className="animate-pop-in absolute bottom-[calc(100%+0.75rem)] end-0 w-72 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-xl">
+          <p className="font-display font-semibold text-brand-900">{dict.heading}</p>
+          <p className="mt-1 text-sm text-ink/60">{dict.subheading}</p>
+
+          <div className="mt-4 rounded-xl bg-red-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-red-700">{dict.crisisLabel}</p>
+            <a href="tel:16328" className="mt-1 block text-sm font-medium text-red-800 hover:underline">
+              {dict.crisisHotline}
+            </a>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50"
+            >
+              <MessageCircle className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
+              <span>
+                <span className="block text-sm font-medium text-ink/80">{dict.whatsapp}</span>
+                <span className="block text-xs text-ink/50">{dict.whatsappDescription}</span>
+              </span>
+            </a>
+            <Link
+              href="/contact"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50"
+            >
+              <Phone className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
+              <span>
+                <span className="block text-sm font-medium text-ink/80">{dict.contactUs}</span>
+                <span className="block text-xs text-ink/50">{dict.contactDescription}</span>
+              </span>
+            </Link>
+            <Link
+              href="/counseling#faq"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50"
+            >
+              <HelpCircle className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
+              <span>
+                <span className="block text-sm font-medium text-ink/80">{dict.faq}</span>
+                <span className="block text-xs text-ink/50">{dict.faqDescription}</span>
+              </span>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={dict.openLabel}
+        aria-expanded={open}
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg transition-all hover:bg-brand-600 hover:-translate-y-0.5"
+      >
+        {open ? <X className="h-6 w-6" strokeWidth={2} /> : <LifeBuoy className="h-6 w-6" strokeWidth={2} />}
+      </button>
+    </div>
+  );
+}

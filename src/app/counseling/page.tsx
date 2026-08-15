@@ -58,7 +58,7 @@ export default async function CounselingPage() {
         </Container>
       </section>
 
-      <section className="bg-brand-50 py-16 sm:py-20">
+      <section id="faq" className="bg-brand-50 py-16 sm:py-20">
         <Container className="max-w-2xl">
           <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
           <div className="mt-8">

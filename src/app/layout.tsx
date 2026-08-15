@@ -6,6 +6,7 @@ import SiteFooter from "@/components/site-footer";
 import WorkshopInterestPopup from "@/components/workshop-interest-popup";
 import EntryGates from "@/components/entry-gates";
 import ServiceWorkerRegister from "@/components/sw-register";
+import HelpButton from "@/components/help-button";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { getCurrentUser } from "@/lib/session";
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <WorkshopInterestPopup />
             <EntryGates />
             <ServiceWorkerRegister />
+            <HelpButton dict={dict.helpButton} />
           </CartProvider>
         </CurrencyProvider>
       </body>

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { submitBookingRequest } from "@/lib/booking-actions";
 import { Button } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import PrivacyBadge from "@/components/privacy-badge";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -69,6 +70,7 @@ export default function BookingForm({ counselorId, dict }: { counselorId: string
         <textarea id="message" name="message" rows={3} className={inputClass} />
       </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      <PrivacyBadge text={dict.privacyBadge.booking} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? f.sending : t.submit}
       </Button>

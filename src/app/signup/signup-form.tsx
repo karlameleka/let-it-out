@@ -5,6 +5,7 @@ import { signupAction } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
 import { AGE_RANGES, GENDERS, COUNTRIES, REFERRAL_SOURCES } from "@/lib/content/geo";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import PrivacyBadge from "@/components/privacy-badge";
 
 const selectClasses =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500";
@@ -107,6 +108,7 @@ export default function SignupForm({ dict }: { dict: Dictionary }) {
       </div>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      <PrivacyBadge text={dict.privacyBadge.signup} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? t.creatingAccount : t.createAccount}
       </Button>

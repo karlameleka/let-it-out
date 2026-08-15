@@ -6,6 +6,7 @@ import { createSessionBooking } from "@/lib/session-booking-actions";
 import { formatEGP } from "@/lib/format";
 import PaymentSelector from "@/components/PaymentSelector";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import PrivacyBadge from "@/components/privacy-badge";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -104,6 +105,7 @@ export default function SessionBookingFlow({
         <p className="mt-1 text-xs text-ink/45">{t.preferredDayHint}</p>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      <PrivacyBadge text={dict.privacyBadge.booking} />
       <button
         type="submit"
         disabled={pending}
