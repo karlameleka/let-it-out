@@ -44,6 +44,7 @@ export async function createPromoCode(formData: FormData) {
   const expiresAtRaw = String(formData.get("expiresAt") || "");
   const maxRedemptionsRaw = String(formData.get("maxRedemptions") || "");
   const minOrderEGPRaw = String(formData.get("minOrderEGP") || "");
+  const productIds = formData.getAll("productIds").map(String).filter(Boolean);
 
   if (!code || !discountValue || discountValue <= 0) return;
 
@@ -55,6 +56,7 @@ export async function createPromoCode(formData: FormData) {
       expiresAt: expiresAtRaw ? new Date(expiresAtRaw) : null,
       maxRedemptions: maxRedemptionsRaw ? Number(maxRedemptionsRaw) : null,
       minOrderEGP: minOrderEGPRaw ? Number(minOrderEGPRaw) : null,
+      products: { create: productIds.map((productId) => ({ productId })) },
     },
   });
   revalidatePath("/admin/promo-codes");

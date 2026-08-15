@@ -162,6 +162,7 @@ model Product {
 
   variants   ProductVariant[]
   orderItems OrderItem[]
+  promoCodes PromoCodeProduct[]
 }
 
 enum ProductFormat {
@@ -223,7 +224,20 @@ model PromoCode {
   minOrderEGP     Int?
   createdAt       DateTime          @default(now())
 
-  orders Order[]
+  orders   Order[]
+  // Empty = applies to every product. Non-empty = the discount only
+  // counts toward these products' share of the cart.
+  products PromoCodeProduct[]
+}
+
+model PromoCodeProduct {
+  id          String    @id @default(cuid())
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  promoCodeId String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+
+  @@unique([promoCodeId, productId])
 }
 
 model Order {

@@ -42,7 +42,10 @@ export default function CheckoutPage() {
     if (!promoInput.trim()) return;
     setPromoChecking(true);
     setPromoError(null);
-    const result = await checkPromoCode(promoInput, subtotalEGP);
+    const result = await checkPromoCode(
+      promoInput,
+      items.map((i) => ({ productSlug: i.productSlug, priceEGP: i.priceEGP, quantity: i.quantity })),
+    );
     setPromoChecking(false);
     if (!result.valid) {
       setPromoError(result.error);

@@ -3,7 +3,13 @@ import { createPromoCode, togglePromoCodeActive, deletePromoCode } from "@/lib/a
 import { formatEGP } from "@/lib/format";
 
 export default async function AdminPromoCodesPage() {
-  const codes = await prisma.promoCode.findMany({ orderBy: { createdAt: "desc" } });
+  const [codes, products] = await Promise.all([
+    prisma.promoCode.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { products: { include: { product: true } } },
+    }),
+    prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -77,6 +83,23 @@ export default async function AdminPromoCodesPage() {
             />
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
+            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="productIds">
+              Applies to <span className="text-ink/40">(leave nothing selected for every product)</span>
+            </label>
+            <select
+              id="productIds"
+              name="productIds"
+              multiple
+              size={Math.min(4, Math.max(2, products.length))}
+              className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            >
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-ink/40">Cmd/Ctrl-click (or tap and drag on mobile) to select more than one.</p>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
             <button
               type="submit"
               className="rounded bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-900/20 transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)]"
@@ -114,6 +137,8 @@ export default async function AdminPromoCodesPage() {
                 </p>
                 <p className="mt-0.5 text-xs text-ink/40">
                   Used {c.redemptionCount}{c.maxRedemptions ? ` / ${c.maxRedemptions}` : ""} time{c.redemptionCount === 1 ? "" : "s"}
+                  {" · "}
+                  {c.products.length === 0 ? "All products" : c.products.map((p) => p.product.title).join(", ")}
                 </p>
               </div>
               <div className="flex items-center gap-2">

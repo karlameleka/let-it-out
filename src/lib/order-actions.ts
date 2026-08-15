@@ -38,13 +38,23 @@ export type PromoCheckResult =
   | { valid: true; code: string; discountEGP: number; label: string }
   | { valid: false; error: string };
 
+export type PromoCartItem = { productSlug: string; priceEGP: number; quantity: number };
+
 /** Server-computed discount preview — never trust a client-submitted amount.
-    Re-validated again inside createOrder at the moment the order is placed. */
-export async function checkPromoCode(rawCode: string, subtotalEGP: number): Promise<PromoCheckResult> {
+    Re-validated again inside createOrder at the moment the order is placed.
+    A promo scoped to specific products only discounts those products' share
+    of the cart, not the whole subtotal — the minimum-order check still looks
+    at the full cart total, since that's a threshold on the order as a whole. */
+export async function checkPromoCode(rawCode: string, items: PromoCartItem[]): Promise<PromoCheckResult> {
   const code = rawCode.trim().toUpperCase();
   if (!code) return { valid: false, error: "Enter a code." };
 
-  const promo = await prisma.promoCode.findUnique({ where: { code } });
+  const subtotalEGP = items.reduce((sum, i) => sum + i.priceEGP * i.quantity, 0);
+
+  const promo = await prisma.promoCode.findUnique({
+    where: { code },
+    include: { products: { include: { product: true } } },
+  });
   if (!promo || !promo.active) return { valid: false, error: "That code isn't valid." };
   if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: "That code has expired." };
   if (promo.maxRedemptions !== null && promo.redemptionCount >= promo.maxRedemptions) {
@@ -54,10 +64,17 @@ export async function checkPromoCode(rawCode: string, subtotalEGP: number): Prom
     return { valid: false, error: `This code needs a minimum order of ${formatEGP(promo.minOrderEGP)}.` };
   }
 
+  const scopedSlugs = promo.products.map((p) => p.product.slug);
+  const eligibleItems = scopedSlugs.length === 0 ? items : items.filter((i) => scopedSlugs.includes(i.productSlug));
+  const eligibleSubtotalEGP = eligibleItems.reduce((sum, i) => sum + i.priceEGP * i.quantity, 0);
+  if (eligibleSubtotalEGP === 0) {
+    return { valid: false, error: "This code doesn't apply to anything in your cart." };
+  }
+
   const discountEGP =
     promo.discountType === "PERCENT"
-      ? Math.round((subtotalEGP * promo.discountValue) / 100)
-      : Math.min(promo.discountValue, subtotalEGP);
+      ? Math.round((eligibleSubtotalEGP * promo.discountValue) / 100)
+      : Math.min(promo.discountValue, eligibleSubtotalEGP);
 
   const label = promo.discountType === "PERCENT" ? `${promo.discountValue}% off` : `${formatEGP(promo.discountValue)} off`;
 
@@ -159,7 +176,11 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   let discountEGP = 0;
   let promoCodeId: string | null = null;
   if (promoCode) {
-    const check = await checkPromoCode(promoCode, subtotalEGP);
+    const promoItems: PromoCartItem[] = items.map((i) => {
+      const v = variants.find((v) => v.id === i.productVariantId)!;
+      return { productSlug: v.product.slug, priceEGP: v.priceEGP, quantity: i.quantity };
+    });
+    const check = await checkPromoCode(promoCode, promoItems);
     if (!check.valid) return { error: check.error };
     discountEGP = check.discountEGP;
     promoCodeId = (await prisma.promoCode.findUnique({ where: { code: check.code } }))!.id;
