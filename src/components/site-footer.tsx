@@ -35,11 +35,11 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
               {dict.exploreHeading}
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
-              <li><Link href="/about" className="hover:text-white">{dict.aboutUs}</Link></li>
-              <li><Link href="/counseling" className="hover:text-white">{dict.counseling}</Link></li>
-              <li><Link href="/workshops" className="hover:text-white">{dict.workshops}</Link></li>
-              <li><Link href="/shop" className="hover:text-white">{dict.guidedJournals}</Link></li>
-              <li><Link href="/journal" className="hover:text-white">{dict.journalingApp}</Link></li>
+              <li><Link href="/about" className="hover:text-white active:text-white">{dict.aboutUs}</Link></li>
+              <li><Link href="/counseling" className="hover:text-white active:text-white">{dict.counseling}</Link></li>
+              <li><Link href="/workshops" className="hover:text-white active:text-white">{dict.workshops}</Link></li>
+              <li><Link href="/shop" className="hover:text-white active:text-white">{dict.guidedJournals}</Link></li>
+              <li><Link href="/journal" className="hover:text-white active:text-white">{dict.journalingApp}</Link></li>
             </ul>
           </div>
 
@@ -48,13 +48,13 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
               {dict.getInTouchHeading}
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
-              <li><Link href="/contact" className="hover:text-white">{dict.contactUs}</Link></li>
+              <li><Link href="/contact" className="hover:text-white active:text-white">{dict.contactUs}</Link></li>
               <li>
                 <a
                   href={OFFICE_MAPS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-white"
+                  className="inline-flex items-center gap-1.5 hover:text-white active:text-white"
                 >
                   <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                   {dict.officeLocation}
@@ -68,7 +68,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
                     target={href.startsWith("http") ? "_blank" : undefined}
                     rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
                     aria-label={label}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-brand-100 transition-colors hover:border-white/40 hover:bg-white/10 hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-brand-100 transition-colors hover:border-white/40 active:border-white/40 hover:bg-white/10 active:bg-white/10 hover:text-white active:text-white"
                   >
                     <Icon className="h-4 w-4" />
                   </a>
@@ -77,7 +77,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
               <li className="pt-2 text-brand-100/50">{dict.crisisNotice}</li>
               <li className="text-brand-100/70">
                 {dict.crisisHotlineLabel}{" "}
-                <a href="tel:16328" className="font-semibold text-white hover:underline">
+                <a href="tel:16328" className="font-semibold text-white hover:underline active:underline">
                   16328
                 </a>
               </li>
@@ -88,8 +88,8 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
         <div className="relative mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-brand-100/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} {dict.copyright}</p>
           <div className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:text-white">{dict.privacyPolicy}</Link>
-            <Link href="/terms" className="hover:text-white">{dict.terms}</Link>
+            <Link href="/privacy" className="hover:text-white active:text-white">{dict.privacyPolicy}</Link>
+            <Link href="/terms" className="hover:text-white active:text-white">{dict.terms}</Link>
           </div>
           <p className="italic">{dict.motto}</p>
         </div>

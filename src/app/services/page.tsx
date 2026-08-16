@@ -19,7 +19,7 @@ export default async function ServicesPage() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-brand-50 py-16 sm:py-20">
+      <section className="relative overflow-hidden bg-brand-50 pt-10 pb-16 sm:pt-14 sm:pb-20">
         <DoodleField />
         <Container className="relative">
           <Ribbon>{t.ribbon}</Ribbon>
@@ -40,36 +40,36 @@ export default async function ServicesPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               <Link
                 href="/counseling"
-                className="group relative flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-8 transition-colors duration-300 hover:bg-brand-900"
+                className="group relative flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-8 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
               >
-                <span className="font-display text-4xl font-semibold text-brand-100 transition-colors duration-300 group-hover:text-white/10">
+                <span className="font-display text-4xl font-semibold text-brand-100 transition-colors duration-300 group-hover:text-white/10 group-active:text-white/10">
                   01
                 </span>
-                <h2 className="mt-3 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
+                <h2 className="mt-3 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
                   {home.service1Title}
                 </h2>
-                <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70">
+                <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">
                   {home.service1Description}
                 </p>
-                <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
+                <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
                   {home.service1Cta} &rarr;
                 </p>
               </Link>
 
               <Link
                 href="/workshops"
-                className="group relative flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-8 transition-colors duration-300 hover:bg-brand-900"
+                className="group relative flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-8 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
               >
-                <span className="font-display text-4xl font-semibold text-brand-100 transition-colors duration-300 group-hover:text-white/10">
+                <span className="font-display text-4xl font-semibold text-brand-100 transition-colors duration-300 group-hover:text-white/10 group-active:text-white/10">
                   02
                 </span>
-                <h2 className="mt-3 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
+                <h2 className="mt-3 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
                   {home.service2Title}
                 </h2>
-                <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70">
+                <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">
                   {home.service2Description}
                 </p>
-                <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
+                <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
                   {home.service2Cta} &rarr;
                 </p>
               </Link>

@@ -19,7 +19,7 @@ export default function InstallOverlay({ initialOpen }: { initialOpen: boolean }
           type="button"
           onClick={close}
           aria-label="Close"
-          className="absolute -top-3 -right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink/50 shadow-md hover:text-ink"
+          className="absolute -top-3 -right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink/50 shadow-md hover:text-ink active:text-ink"
         >
           ✕
         </button>

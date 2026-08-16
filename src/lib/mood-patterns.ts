@@ -5,8 +5,11 @@ export type MoodPatterns = {
   frequency: { id: string; label: string; color: string; count: number; percent: number }[];
   topMood: { id: string; label: string; color: string; count: number } | null;
   totalWithMood: number;
-  /** Oldest first, aligned to full weeks (Sun–Sat) for a calendar-style grid. */
-  heatmap: { date: string; mood: string | null }[];
+  /** Oldest first, aligned to full weeks (Sun–Sat) for a calendar-style grid.
+   * `moods` holds every mood-tagged entry from that day, in order — a day
+   * with several entries shows every one of their colors, not just the
+   * last one written. */
+  heatmap: { date: string; moods: string[] }[];
 };
 
 const HEATMAP_WEEKS = 12;
@@ -25,14 +28,17 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
     orderBy: { createdAt: "asc" },
   });
 
-  // Last mood recorded per day (for the one-cell-per-day heatmap), and a
-  // separate count across every mood-tagged entry (for the breakdown —
-  // multiple entries in one day should each still count there).
-  const moodByDate = new Map<string, string>();
+  // Every mood-tagged entry, grouped by day (so a day with several entries
+  // shows every one of their colors), and a separate count across every
+  // mood-tagged entry (for the breakdown).
+  const moodsByDate = new Map<string, string[]>();
   const counts = new Map<string, number>();
   for (const e of entries) {
     if (!e.mood) continue;
-    moodByDate.set(e.createdAt.toISOString().slice(0, 10), e.mood);
+    const key = e.createdAt.toISOString().slice(0, 10);
+    const existing = moodsByDate.get(key);
+    if (existing) existing.push(e.mood);
+    else moodsByDate.set(key, [e.mood]);
     counts.set(e.mood, (counts.get(e.mood) ?? 0) + 1);
   }
   const totalWithMood = [...counts.values()].reduce((a, b) => a + b, 0);
@@ -55,7 +61,7 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
   const cursor = new Date(start);
   while (cursor <= today) {
     const key = cursor.toISOString().slice(0, 10);
-    heatmap.push({ date: key, mood: moodByDate.get(key) ?? null });
+    heatmap.push({ date: key, moods: moodsByDate.get(key) ?? [] });
     cursor.setDate(cursor.getDate() + 1);
   }
 

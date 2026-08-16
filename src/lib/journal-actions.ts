@@ -78,6 +78,7 @@ export type JournalFeedEntry = {
   bookmarked: boolean;
   photoUrl: string | null;
   createdAt: string;
+  prompt: { category: string; text: string } | null;
 };
 
 export type JournalFeedData = {
@@ -96,7 +97,15 @@ export async function getJournalFeedData(): Promise<JournalFeedData | null> {
       where: { userId: user.userId },
       orderBy: { createdAt: "desc" },
       take: FEED_ENTRY_LIMIT,
-      select: { id: true, content: true, mood: true, bookmarked: true, photoUrl: true, createdAt: true },
+      select: {
+        id: true,
+        content: true,
+        mood: true,
+        bookmarked: true,
+        photoUrl: true,
+        createdAt: true,
+        prompt: { select: { category: true, text: true } },
+      },
     }),
     getJournalStats(user.userId),
   ]);

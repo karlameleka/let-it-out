@@ -31,3 +31,8 @@ export function saveArticleProgress(slug: string, progress: ArticleProgress) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(storageKey(slug), JSON.stringify(progress));
 }
+
+export function clearArticleProgress(slug: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(storageKey(slug));
+}

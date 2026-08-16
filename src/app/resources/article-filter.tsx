@@ -6,15 +6,20 @@ import { Search } from "lucide-react";
 import { ARTICLES } from "@/lib/content/articles";
 import ArticleProgressBadge from "./article-progress-badge";
 
-export default function ArticleFilter() {
+export default function ArticleFilter({ hiddenSlugs = [] }: { hiddenSlugs?: string[] }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
 
-  const categories = useMemo(() => Array.from(new Set(ARTICLES.map((a) => a.category))), []);
+  const visibleArticles = useMemo(
+    () => ARTICLES.filter((a) => !hiddenSlugs.includes(a.slug)),
+    [hiddenSlugs]
+  );
+
+  const categories = useMemo(() => Array.from(new Set(visibleArticles.map((a) => a.category))), [visibleArticles]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return ARTICLES.filter((a) => {
+    return visibleArticles.filter((a) => {
       if (category && a.category !== category) return false;
       if (!q) return true;
       return (
@@ -23,7 +28,7 @@ export default function ArticleFilter() {
         a.category.toLowerCase().includes(q)
       );
     });
-  }, [query, category]);
+  }, [visibleArticles, query, category]);
 
   return (
     <>
@@ -48,7 +53,7 @@ export default function ArticleFilter() {
             className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
               category === null
                 ? "border-brand-600 bg-brand-600 text-white"
-                : "border-brand-200 text-ink/70 hover:border-brand-400"
+                : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
             }`}
           >
             All topics
@@ -61,7 +66,7 @@ export default function ArticleFilter() {
               className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                 category === c
                   ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-brand-200 text-ink/70 hover:border-brand-400"
+                  : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
               }`}
             >
               {c}
@@ -78,20 +83,20 @@ export default function ArticleFilter() {
             <Link
               key={article.slug}
               href={`/resources/${article.slug}`}
-              className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900"
+              className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
             >
-              <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500 transition-colors duration-300 group-hover:text-white/70">
+              <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">
                 {article.category} · {article.readMinutes} min read
                 <ArticleProgressBadge
                   slug={article.slug}
                   totalMilestones={article.sections.length + article.checkIns.length}
                 />
               </p>
-              <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
+              <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
                 {article.title}
               </h3>
-              <p className="mt-2 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70">{article.excerpt}</p>
-              <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
+              <p className="mt-2 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{article.excerpt}</p>
+              <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
                 Read article &rarr;
               </p>
             </Link>

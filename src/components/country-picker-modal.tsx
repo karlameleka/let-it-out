@@ -59,7 +59,7 @@ export default function CountryPickerModal() {
             <button
               type="button"
               onClick={skip}
-              className="shrink-0 text-sm font-medium text-ink/50 hover:text-ink/70"
+              className="shrink-0 text-sm font-medium text-ink/50 hover:text-ink/70 active:text-ink/70"
             >
               Skip
             </button>

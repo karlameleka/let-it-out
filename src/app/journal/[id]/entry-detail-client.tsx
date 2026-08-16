@@ -77,7 +77,7 @@ export default function EntryDetailClient({ id }: { id: string }) {
               onClick={handleToggleBookmark}
               aria-label={entry.bookmarked ? "Remove bookmark" : "Bookmark this entry"}
               className={`rounded-full p-1.5 transition-colors ${
-                entry.bookmarked ? "text-brand-600" : "text-ink/30 hover:text-ink/50"
+                entry.bookmarked ? "text-brand-600" : "text-ink/30 hover:text-ink/50 active:text-ink/50"
               }`}
             >
               <Star className="h-5 w-5" strokeWidth={2} fill={entry.bookmarked ? "currentColor" : "none"} />
@@ -114,7 +114,7 @@ export default function EntryDetailClient({ id }: { id: string }) {
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="text-xs text-ink/30 transition-colors hover:text-red-500"
+              className="text-xs text-ink/30 transition-colors hover:text-red-500 active:text-red-500"
             >
               Delete entry
             </button>
@@ -125,7 +125,7 @@ export default function EntryDetailClient({ id }: { id: string }) {
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="font-semibold text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
+                className="font-semibold text-red-600 transition-colors hover:text-red-700 active:text-red-700 disabled:opacity-50"
               >
                 {deleting ? "Deleting…" : "Delete"}
               </button>
@@ -133,7 +133,7 @@ export default function EntryDetailClient({ id }: { id: string }) {
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
                 disabled={deleting}
-                className="text-ink/50 transition-colors hover:text-ink/70 disabled:opacity-50"
+                className="text-ink/50 transition-colors hover:text-ink/70 active:text-ink/70 disabled:opacity-50"
               >
                 Cancel
               </button>

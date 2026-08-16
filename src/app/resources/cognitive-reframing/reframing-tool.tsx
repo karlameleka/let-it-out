@@ -109,7 +109,7 @@ export default function ReframingTool() {
               <button
                 type="button"
                 onClick={shuffle}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 hover:bg-brand-50"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
               >
                 <Shuffle className="h-3.5 w-3.5" strokeWidth={2} />
                 Shuffle
@@ -137,7 +137,7 @@ export default function ReframingTool() {
                     className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                       feeling === e.id
                         ? "border-brand-600 bg-brand-600 text-white"
-                        : "border-brand-200 text-ink/70 hover:border-brand-400 hover:bg-brand-50"
+                        : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
                     }`}
                   >
                     {e.label}
@@ -185,7 +185,7 @@ export default function ReframingTool() {
                     className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
                       active
                         ? "border-brand-600 bg-brand-50 text-brand-800"
-                        : "border-brand-200 text-ink/70 hover:border-brand-400 hover:bg-brand-50"
+                        : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
                     }`}
                   >
                     <span className="font-medium">{d.label}</span>
@@ -269,7 +269,7 @@ export default function ReframingTool() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80 active:text-ink/80"
               >
                 <ArrowLeft className="h-4 w-4" strokeWidth={2} />
                 Back
@@ -360,7 +360,7 @@ function IntensityPicker({ value, onChange }: { value: number | null; onChange: 
           className={`rounded-lg border px-1.5 py-2 text-center text-[11px] font-medium leading-tight transition-colors ${
             value === i
               ? "border-brand-600 bg-brand-600 text-white"
-              : "border-brand-200 text-ink/60 hover:border-brand-400 hover:bg-brand-50"
+              : "border-brand-200 text-ink/60 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
           }`}
         >
           {label}
@@ -384,7 +384,7 @@ function StepNav({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80"
+        className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80 active:text-ink/80"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={2} />
         Back

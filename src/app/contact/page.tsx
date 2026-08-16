@@ -15,21 +15,21 @@ export default async function ContactPage() {
   const t = dict.contact;
 
   return (
-    <section className="py-16 sm:py-24">
+    <section className="pt-10 pb-16 sm:pt-14 sm:pb-24">
       <Container className="grid gap-12 md:grid-cols-2">
         <div>
           <SectionHeading eyebrow={t.eyebrow} title={t.title} description={t.description} />
           <div className="mt-8 rounded-2xl border border-brand-100 bg-white p-6 text-sm text-ink/70">
             <p>
               {t.counselingHint}{" "}
-              <Link href="/counseling" className="font-medium text-brand-600 hover:underline">
+              <Link href="/counseling" className="font-medium text-brand-600 hover:underline active:underline">
                 {t.counselingLink}
               </Link>
               .
             </p>
             <p className="mt-2">
               {t.workshopsHint}{" "}
-              <Link href="/workshops" className="font-medium text-brand-600 hover:underline">
+              <Link href="/workshops" className="font-medium text-brand-600 hover:underline active:underline">
                 {t.workshopsLink}
               </Link>
               .

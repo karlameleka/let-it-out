@@ -37,7 +37,7 @@ export default async function HomePage({
       {/* Hero */}
       <section className="relative overflow-hidden bg-brand-50">
         <DoodleField />
-        <Container className="relative py-20 sm:py-28">
+        <Container className="relative pt-14 pb-20 sm:pt-20 sm:pb-28">
           <div className="max-w-2xl">
             <Ribbon>{t.heroRibbon}</Ribbon>
             <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
@@ -158,16 +158,16 @@ export default async function HomePage({
                 <Link
                   key={c.id}
                   href={`/counseling/${c.slug}`}
-                  className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900"
+                  className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
                 >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-hover:bg-white/10 group-hover:text-white">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30 group-hover:bg-white/10 group-active:bg-white/10 group-hover:text-white group-active:text-white">
                     {c.name.split(" ").map((n) => n[0]).join("")}
                   </div>
-                  <h3 className="mt-4 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
+                  <h3 className="mt-4 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
                     {c.name}
                   </h3>
-                  <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70">{c.credentials}</p>
-                  <p className="mt-3 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
+                  <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
+                  <p className="mt-3 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
                     {t.teamViewProfile} &rarr;
                   </p>
                 </Link>
@@ -192,7 +192,7 @@ export default async function HomePage({
                 const price = Math.min(...p.variants.map((v) => v.priceEGP));
                 return (
                   <Link key={p.id} href={`/shop/${p.slug}`} className="group flex items-center gap-6">
-                    <div className="relative w-32 shrink-0 overflow-hidden rounded-xl shadow-md transition-transform group-hover:-translate-y-1">
+                    <div className="relative w-32 shrink-0 overflow-hidden rounded-xl shadow-md transition-transform group-hover:-translate-y-1 group-active:-translate-y-1">
                       {PRODUCT_PHOTOS[p.slug] ? (
                         <div className="relative aspect-[4/5] w-full">
                           <Image
@@ -269,14 +269,14 @@ function ServiceCard({
   return (
     <Link
       href={href}
-      className={`group relative flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-7 transition-colors duration-300 hover:bg-brand-900 ${offset ? "sm:mt-8" : ""}`}
+      className={`group relative flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-7 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900 ${offset ? "sm:mt-8" : ""}`}
     >
-      <span className="font-display text-4xl font-semibold text-brand-100 transition-colors duration-300 group-hover:text-white/10">
+      <span className="font-display text-4xl font-semibold text-brand-100 transition-colors duration-300 group-hover:text-white/10 group-active:text-white/10">
         {index}
       </span>
-      <h3 className="mt-2 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">{title}</h3>
-      <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70">{description}</p>
-      <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white">
+      <h3 className="mt-2 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{title}</h3>
+      <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{description}</p>
+      <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
         {cta} &rarr;
       </p>
     </Link>

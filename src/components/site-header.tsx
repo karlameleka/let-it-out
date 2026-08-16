@@ -11,17 +11,21 @@ import type { SessionPayload } from "@/lib/session";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import LanguageSwitcher from "@/components/language-switcher";
+import SiteSearch from "@/components/site-search";
+import type { SearchItem } from "@/lib/search-index";
 
 export default function SiteHeader({
   user,
   locale,
   dict,
   arabicEnabled = true,
+  searchIndex,
 }: {
   user: SessionPayload | null;
   locale: Locale;
   dict: Dictionary;
   arabicEnabled?: boolean;
+  searchIndex: SearchItem[];
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -48,7 +52,7 @@ export default function SiteHeader({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`link-grow pb-0.5 text-sm font-medium hover:text-brand-700 ${
+                className={`link-grow pb-0.5 text-sm font-medium hover:text-brand-700 active:text-brand-700 ${
                   active ? "text-brand-700 [background-size:100%_1.5px]" : "text-ink/70"
                 }`}
               >
@@ -59,9 +63,10 @@ export default function SiteHeader({
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
+          <SiteSearch index={searchIndex} />
           <Link
             href="/cart"
-            className="relative text-sm font-medium text-ink/70 hover:text-brand-600"
+            className="relative text-sm font-medium text-ink/70 hover:text-brand-600 active:text-brand-600"
           >
             {dict.nav.cart}
             {count > 0 && (
@@ -75,17 +80,17 @@ export default function SiteHeader({
             <div className="flex items-center gap-3">
               <Link
                 href={user.role === "ADMIN" ? "/admin" : "/journal"}
-                className="text-sm font-medium text-ink/70 hover:text-brand-600"
+                className="text-sm font-medium text-ink/70 hover:text-brand-600 active:text-brand-600"
               >
                 {user.name.split(" ")[0]}
               </Link>
-              <Link href="/account" className="text-sm font-medium text-ink/50 hover:text-brand-600">
+              <Link href="/account" className="text-sm font-medium text-ink/50 hover:text-brand-600 active:text-brand-600">
                 {dict.nav.settings}
               </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="text-sm font-medium text-ink/50 hover:text-brand-600"
+                  className="text-sm font-medium text-ink/50 hover:text-brand-600 active:text-brand-600"
                 >
                   {dict.nav.logOut}
                 </button>
@@ -93,12 +98,12 @@ export default function SiteHeader({
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <Link href="/login" className="text-sm font-medium text-ink/70 hover:text-brand-600">
+              <Link href="/login" className="text-sm font-medium text-ink/70 hover:text-brand-600 active:text-brand-600">
                 {dict.nav.logIn}
               </Link>
               <Link
                 href="/counseling"
-                className="rounded bg-brand-700 px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-900/20 transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 md:px-5 md:py-2.5"
+                className="rounded bg-brand-700 px-4 py-2 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-900/20 transition-all duration-300 ease-out hover:bg-brand-600 active:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2 md:px-5 md:py-2.5"
               >
                 {dict.nav.bookASession}
               </Link>
@@ -109,6 +114,7 @@ export default function SiteHeader({
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
+          <SiteSearch index={searchIndex} />
           <Link
             href="/cart"
             aria-label={`${dict.nav.cart}${count > 0 ? `, ${count}` : ""}`}
@@ -147,7 +153,7 @@ export default function SiteHeader({
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
+                className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50"
               >
                 {link.label}
               </Link>
@@ -157,21 +163,21 @@ export default function SiteHeader({
                 <Link
                   href={user.role === "ADMIN" ? "/admin" : "/journal"}
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
+                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50"
                 >
                   {dict.nav.myAccount}
                 </Link>
                 <Link
                   href="/account"
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
+                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50"
                 >
                   {dict.nav.settings}
                 </Link>
                 <form action={logoutAction}>
                   <button
                     type="submit"
-                    className="w-full rounded-md px-2 py-2 text-left text-sm font-medium text-ink/60 hover:bg-brand-50"
+                    className="w-full rounded-md px-2 py-2 text-left text-sm font-medium text-ink/60 hover:bg-brand-50 active:bg-brand-50"
                   >
                     {dict.nav.logOut}
                   </button>
@@ -182,14 +188,14 @@ export default function SiteHeader({
                 <Link
                   href="/login"
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
+                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50"
                 >
                   {dict.nav.logIn}
                 </Link>
                 <Link
                   href="/signup"
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50"
+                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50"
                 >
                   {dict.nav.signUp}
                 </Link>

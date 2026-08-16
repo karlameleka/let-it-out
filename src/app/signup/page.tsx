@@ -24,7 +24,7 @@ export default async function SignupPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center px-4 py-16 sm:px-6">
+      <div className="flex items-center justify-center px-4 pt-10 pb-16 sm:px-6 sm:pt-14">
         <Container className="mx-auto max-w-sm px-0">
           <h1 className="font-display text-3xl font-medium text-brand-900">{t.signupTitle}</h1>
           <p className="mt-2 text-sm text-ink/60">{t.signupSubtitle}</p>

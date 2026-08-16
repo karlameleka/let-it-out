@@ -23,7 +23,7 @@ export default function ResourceNotifyBell() {
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-sm font-medium text-brand-600 transition-colors hover:border-brand-400 hover:bg-brand-50"
+          className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-4 py-2 text-sm font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
         >
           <Bell className="h-4 w-4" strokeWidth={2} />
           Notify me about new resources
@@ -40,7 +40,7 @@ export default function ResourceNotifyBell() {
           <button
             type="submit"
             disabled={pending}
-            className="shrink-0 rounded bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-500 hover:shadow-[0_0_0_6px_rgba(51,136,164,0.18)] disabled:opacity-60"
+            className="shrink-0 rounded bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-500 active:bg-brand-500 hover:shadow-[0_0_0_6px_rgba(51,136,164,0.18)] active:shadow-[0_0_0_6px_rgba(51,136,164,0.18)] disabled:opacity-60"
           >
             {pending ? "…" : "Notify me"}
           </button>

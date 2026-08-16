@@ -64,7 +64,7 @@ export default function PaymentSelector({
         type="button"
         onClick={() => handlePay("card")}
         disabled={loading !== null}
-        className="w-full rounded bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] disabled:opacity-60"
+        className="w-full rounded bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-600 active:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] disabled:opacity-60"
       >
         {loading === "card" ? "Connecting to gateway…" : `Pay ${formatEGP(amountEGP)} with Card`}
       </button>
@@ -72,7 +72,7 @@ export default function PaymentSelector({
         type="button"
         onClick={() => handlePay("wallet")}
         disabled={loading !== null}
-        className="w-full rounded border-2 border-brand-700 px-5 py-3 text-sm font-semibold text-brand-700 transition-all duration-300 hover:bg-brand-50 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] disabled:opacity-60"
+        className="w-full rounded border-2 border-brand-700 px-5 py-3 text-sm font-semibold text-brand-700 transition-all duration-300 hover:bg-brand-50 active:bg-brand-50 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] disabled:opacity-60"
       >
         {loading === "wallet" ? "Connecting to gateway…" : `Pay ${formatEGP(amountEGP)} with Mobile Wallet`}
       </button>

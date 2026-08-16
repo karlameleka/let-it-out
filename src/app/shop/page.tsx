@@ -35,7 +35,7 @@ export default async function ShopPage() {
 
   return (
     <>
-      <section className="bg-brand-50 py-16 sm:py-20">
+      <section className="bg-brand-50 pt-10 pb-16 sm:pt-14 sm:pb-20">
         <Container>
           <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
@@ -68,7 +68,7 @@ export default async function ShopPage() {
               return (
                 <Link key={p.id} href={`/shop/${p.slug}`} className="group">
                   {photo && (
-                    <div className="relative mx-auto aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl shadow-[0_18px_30px_-14px_rgba(18,53,67,0.35)] transition-transform duration-300 group-hover:-translate-y-1.5">
+                    <div className="relative mx-auto aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl shadow-[0_18px_30px_-14px_rgba(18,53,67,0.35)] transition-transform duration-300 group-hover:-translate-y-1.5 group-active:-translate-y-1.5">
                       <Image
                         src={photo}
                         alt={`${p.title} guided journal`}
@@ -88,7 +88,7 @@ export default async function ShopPage() {
                       )}
                     </div>
                   )}
-                  <h3 className="mt-5 text-center font-display text-lg font-semibold text-brand-900 group-hover:text-brand-600">
+                  <h3 className="mt-5 text-center font-display text-lg font-semibold text-brand-900 group-hover:text-brand-600 group-active:text-brand-600">
                     {p.title}
                   </h3>
                   <p className="mx-auto mt-1 max-w-xs text-center text-sm text-ink/60">

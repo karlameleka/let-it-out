@@ -9,7 +9,8 @@ export default async function AdminCounselorsPage() {
     <div className="space-y-4">
       <p className="text-sm text-ink/60">
         Uncheck &ldquo;Visible&rdquo; to archive a counselor without deleting them — their profile and any past
-        bookings stay intact, they just stop showing up on the site. Lower placement numbers show first.
+        bookings stay intact, they just stop showing up on the site. Lower placement numbers show first. Email
+        is notified alongside the admin inbox on every counseling inquiry/booking for that counselor.
       </p>
       {counselors.map((c) => (
         <form
@@ -27,7 +28,17 @@ export default async function AdminCounselorsPage() {
             </Link>
             <p className="text-sm text-ink/60">{c.credentials}</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-ink/70">
+              Email
+              <input
+                type="email"
+                name="email"
+                defaultValue={c.email ?? ""}
+                placeholder="Not set"
+                className="w-48 rounded-lg border border-brand-200 px-2 py-1.5 text-sm outline-none focus:border-brand-500"
+              />
+            </label>
             <label className="flex items-center gap-2 text-sm text-ink/70">
               Placement
               <input

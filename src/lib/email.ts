@@ -27,9 +27,14 @@ function getTransporter() {
 export async function sendSupportNotification({
   subject,
   lines,
+  extraRecipients,
 }: {
   subject: string;
   lines: { label: string; value: string }[];
+  /** Additional addresses to notify alongside the support inbox — e.g. the
+   * specific counselor a booking was made with. Empty/undefined entries are
+   * dropped so a counselor without an email on file is silently skipped. */
+  extraRecipients?: (string | null | undefined)[];
 }) {
   const transport = getTransporter();
   if (!transport) {
@@ -38,6 +43,10 @@ export async function sendSupportNotification({
     );
     return;
   }
+
+  const recipients = [SUPPORT_EMAIL, ...(extraRecipients ?? [])].filter(
+    (r): r is string => Boolean(r && r.trim()),
+  );
 
   const text = lines.map((l) => `${l.label}: ${l.value}`).join("\n");
   const html = `
@@ -60,7 +69,7 @@ export async function sendSupportNotification({
   try {
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
-      to: SUPPORT_EMAIL,
+      to: recipients,
       subject: `Let It Out — ${subject}`,
       text,
       html,

@@ -44,7 +44,7 @@ export default function LanguageSwitcher({
         disabled={pending}
         aria-pressed={locale === "en"}
         className={`rounded-full px-3 py-1 font-medium transition-colors disabled:opacity-60 ${
-          locale === "en" ? "bg-brand-600 text-white" : "text-ink/60 hover:text-brand-700"
+          locale === "en" ? "bg-brand-600 text-white" : "text-ink/60 hover:text-brand-700 active:text-brand-700"
         }`}
       >
         {dict.english}
@@ -55,7 +55,7 @@ export default function LanguageSwitcher({
         disabled={pending}
         aria-pressed={locale === "ar"}
         className={`rounded-full px-3 py-1 font-medium transition-colors disabled:opacity-60 ${
-          locale === "ar" ? "bg-brand-600 text-white" : "text-ink/60 hover:text-brand-700"
+          locale === "ar" ? "bg-brand-600 text-white" : "text-ink/60 hover:text-brand-700 active:text-brand-700"
         }`}
       >
         {dict.arabic}

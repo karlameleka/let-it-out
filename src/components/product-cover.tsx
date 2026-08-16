@@ -52,7 +52,7 @@ export function ProductCover({
       <div className={`absolute inset-0 translate-x-1 translate-y-1.5 rounded-2xl ${dark ? "bg-brand-200/70" : "bg-brand-100"}`} />
 
       <div
-        className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl p-5 shadow-[0_18px_30px_-12px_rgba(18,53,67,0.45)] transition-transform duration-300 group-hover:-translate-y-1 ${
+        className={`relative flex h-full w-full flex-col overflow-hidden rounded-2xl p-5 shadow-[0_18px_30px_-12px_rgba(18,53,67,0.45)] transition-transform duration-300 group-hover:-translate-y-1 group-active:-translate-y-1 ${
           dark ? "bg-brand-700 text-white" : "bg-brand-50 text-brand-800"
         }`}
       >

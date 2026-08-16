@@ -32,7 +32,7 @@ export default async function ProductPage({
   const photo = PRODUCT_PHOTOS[product.slug];
 
   return (
-    <section className="py-16 sm:py-20">
+    <section className="pt-10 pb-16 sm:pt-14 sm:pb-20">
       <Container className="grid gap-12 md:grid-cols-2">
         <div className="mx-auto w-full max-w-sm">
           {photo ? (

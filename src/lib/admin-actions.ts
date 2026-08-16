@@ -150,8 +150,13 @@ export async function updateCounselorPlacement(formData: FormData) {
   const counselorId = String(formData.get("counselorId"));
   const active = formData.get("active") === "on";
   const sortOrder = Number(formData.get("sortOrder") ?? 0);
-  await prisma.counselor.update({ where: { id: counselorId }, data: { active, sortOrder } });
+  const emailRaw = String(formData.get("email") ?? "").trim();
+  await prisma.counselor.update({
+    where: { id: counselorId },
+    data: { active, sortOrder, email: emailRaw || null },
+  });
   revalidatePath("/admin/counselors");
+  revalidatePath("/admin/counselors/[id]", "page");
   revalidatePath("/counseling");
   revalidatePath("/");
 }

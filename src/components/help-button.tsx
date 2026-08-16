@@ -27,7 +27,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
             </span>
             <span>
               <span className="block text-xs font-medium text-ink/50">{dict.crisisLabel}</span>
-              <a href="tel:16328" className="text-sm font-semibold text-brand-800 hover:underline">
+              <a href="tel:16328" className="text-sm font-semibold text-brand-800 hover:underline active:underline">
                 {dict.crisisHotline}
               </a>
             </span>
@@ -38,7 +38,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
               href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50"
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
             >
               <MessageCircle className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
               <span>
@@ -49,7 +49,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
             <Link
               href="/contact"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50"
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
             >
               <Phone className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
               <span>
@@ -60,7 +60,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
             <Link
               href="/counseling#faq"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50"
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
             >
               <HelpCircle className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
               <span>
@@ -77,7 +77,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
         onClick={() => setOpen((o) => !o)}
         aria-label={dict.openLabel}
         aria-expanded={open}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg transition-all hover:bg-brand-600 hover:-translate-y-0.5"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg transition-all hover:bg-brand-600 active:bg-brand-600 hover:-translate-y-0.5 active:-translate-y-0.5"
       >
         {open ? <X className="h-6 w-6" strokeWidth={2} /> : <LifeBuoy className="h-6 w-6" strokeWidth={2} />}
       </button>

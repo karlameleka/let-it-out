@@ -37,7 +37,7 @@ export default function ExportDataButton({ dict }: { dict: Dictionary }) {
         type="button"
         onClick={handleExport}
         disabled={pending}
-        className="rounded border-2 border-brand-600 px-5 py-2.5 text-sm font-semibold text-brand-700 transition-all duration-300 hover:bg-brand-50 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] disabled:opacity-60"
+        className="rounded border-2 border-brand-600 px-5 py-2.5 text-sm font-semibold text-brand-700 transition-all duration-300 hover:bg-brand-50 active:bg-brand-50 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] disabled:opacity-60"
       >
         {pending ? t.preparingExport : t.downloadButton}
       </button>

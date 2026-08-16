@@ -43,7 +43,7 @@ export default function PatternsClient() {
         <p className="mt-10 text-sm text-ink/60">
           No mood data yet — pick a mood next time you save an entry and
           your patterns will show up here.{" "}
-          <Link href="/journal/new" className="font-medium text-brand-600 hover:underline">
+          <Link href="/journal/new" className="font-medium text-brand-600 hover:underline active:underline">
             Write an entry
           </Link>
           .
@@ -79,12 +79,19 @@ export default function PatternsClient() {
                   {heatmap.map((day) => (
                     <div
                       key={day.date}
-                      title={`${day.date}${day.mood ? ` — ${moodLabel(day.mood)}` : ""}`}
-                      className={`h-6 w-6 rounded-md border ${
+                      title={`${day.date}${day.moods.length ? ` — ${day.moods.map(moodLabel).join(", ")}` : ""}`}
+                      className={`flex h-6 w-6 overflow-hidden rounded-md border ${
                         day.date === today ? "ring-2 ring-brand-400" : ""
-                      } ${day.mood ? "border-black/10" : "border-transparent bg-brand-50/60"}`}
-                      style={day.mood ? { backgroundColor: moodColor(day.mood) } : undefined}
-                    />
+                      } ${day.moods.length ? "border-black/10" : "border-transparent bg-brand-50/60"}`}
+                    >
+                      {day.moods.map((mood, i) => (
+                        <span
+                          key={i}
+                          className="h-full flex-1"
+                          style={{ backgroundColor: moodColor(mood) }}
+                        />
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>

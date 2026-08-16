@@ -107,7 +107,7 @@ export default function JournalReminderToggle() {
       className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
         status === "on"
           ? "border-brand-500 bg-brand-50 text-brand-700"
-          : "border-brand-200 text-brand-600 hover:bg-brand-50"
+          : "border-brand-200 text-brand-600 hover:bg-brand-50 active:bg-brand-50"
       }`}
     >
       {status === "on" ? (

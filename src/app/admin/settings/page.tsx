@@ -1,6 +1,7 @@
 import { getSiteSettings, updateSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, updateSiteText } from "@/lib/site-text";
 import en from "@/lib/i18n/dictionaries/en";
+import { ARTICLES } from "@/lib/content/articles";
 
 const HERO_FIELDS: [key: string, label: string][] = [
   ["heroRibbon", "Ribbon text above the headline"],
@@ -112,6 +113,46 @@ export default async function AdminSettingsPage() {
             <option value="TOP">Above the article list (default)</option>
             <option value="BOTTOM">Below the article list</option>
           </select>
+        </div>
+
+        <div className="rounded-2xl border border-brand-100 bg-white p-5">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              name="cbtExerciseHidden"
+              defaultChecked={settings.cbtExerciseHidden}
+              className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-brand-900">Hide the CBT exercise</span>
+              <span className="mt-0.5 block text-xs text-ink/60">
+                Removes the &ldquo;Cognitive Reframing&rdquo; card from the Resources page. The tool itself stays
+                reachable at its direct link.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="rounded-2xl border border-brand-100 bg-white p-5">
+          <p className="text-sm font-semibold text-brand-900">Hide articles</p>
+          <p className="mt-0.5 text-xs text-ink/60">
+            Removes a checked article from the Resources listing. Still reachable at its direct link — this
+            archives it, it doesn&apos;t delete it.
+          </p>
+          <div className="mt-3 space-y-2">
+            {ARTICLES.map((a) => (
+              <label key={a.slug} className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="hiddenArticleSlugs"
+                  value={a.slug}
+                  defaultChecked={settings.hiddenArticleSlugs.includes(a.slug)}
+                  className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+                />
+                <span className="text-sm text-ink/80">{a.title}</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         <button

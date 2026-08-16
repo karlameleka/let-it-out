@@ -100,6 +100,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => items.reduce((sum, i) => sum + i.quantity, 0),
     [items],
   );
+
+  // Badging API — shows the cart count as a red notification badge on the
+  // home-screen icon when installed as a PWA. Not supported everywhere
+  // (notably desktop Safari), so this is best-effort and silently no-ops
+  // where the API doesn't exist.
+  useEffect(() => {
+    if (!hydrated) return;
+    const nav = navigator as Navigator & {
+      setAppBadge?: (count?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    if (count > 0) {
+      nav.setAppBadge?.(count)?.catch(() => {});
+    } else {
+      nav.clearAppBadge?.()?.catch(() => {});
+    }
+  }, [count, hydrated]);
   const subtotalEGP = useMemo(
     () => items.reduce((sum, i) => sum + i.quantity * i.priceEGP, 0),
     [items],

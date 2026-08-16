@@ -51,7 +51,7 @@ export default async function JournalPage() {
         {/* Hero */}
         <section className="relative overflow-hidden bg-brand-50">
           <DoodleField />
-          <Container className="relative py-20 sm:py-28">
+          <Container className="relative pt-14 pb-20 sm:pt-20 sm:pb-28">
             <div className="max-w-2xl">
               <Ribbon>Free journaling app</Ribbon>
               <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
@@ -114,11 +114,11 @@ export default async function JournalPage() {
               {HOW_IT_WORKS.map((item, i) => (
                 <div
                   key={item.step}
-                  className={`group relative rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1.5 hover:border-brand-300 hover:shadow-lg ${
+                  className={`group relative rounded-2xl border-2 border-brand-100 bg-white p-7 shadow-sm transition-all hover:-translate-y-1.5 active:-translate-y-1.5 hover:border-brand-300 active:border-brand-300 hover:shadow-lg active:shadow-lg ${
                     i === 1 ? "sm:mt-8" : ""
                   }`}
                 >
-                  <span className="font-display text-4xl font-semibold text-brand-100 transition-colors group-hover:text-brand-200">
+                  <span className="font-display text-4xl font-semibold text-brand-100 transition-colors group-hover:text-brand-200 group-active:text-brand-200">
                     {item.step}
                   </span>
                   <p className="mt-2 font-display text-lg font-semibold text-brand-900">

@@ -63,7 +63,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <Container className="py-20 text-center">
+      <Container className="pt-14 pb-20 text-center">
         <h1 className="font-display text-2xl font-semibold text-brand-900">Your cart is empty</h1>
         <ButtonLink href="/shop" className="mt-6">Shop journals</ButtonLink>
       </Container>
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <Container className="py-16 sm:py-20">
+    <Container className="pt-10 pb-16 sm:pt-14 sm:pb-20">
       <h1 className="font-display text-3xl font-medium text-brand-900">Checkout</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
@@ -289,7 +289,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={removePromoCode}
-                  className="text-xs font-medium text-ink/50 hover:text-ink/70"
+                  className="text-xs font-medium text-ink/50 hover:text-ink/70 active:text-ink/70"
                 >
                   Remove
                 </button>
@@ -308,7 +308,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={applyPromoCode}
                     disabled={promoChecking || !promoInput.trim()}
-                    className="shrink-0 rounded-lg border-[1.5px] border-brand-200 px-3 py-2 text-sm font-medium text-brand-700 transition-colors disabled:opacity-50 hover:border-brand-400 hover:bg-brand-50"
+                    className="shrink-0 rounded-lg border-[1.5px] border-brand-200 px-3 py-2 text-sm font-medium text-brand-700 transition-colors disabled:opacity-50 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
                   >
                     {promoChecking ? "Checking…" : "Apply"}
                   </button>

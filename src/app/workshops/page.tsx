@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Container, SectionHeading } from "@/components/ui";
+import Link from "next/link";
+import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { getWorkshopTopics } from "@/lib/content/workshops";
 import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
 import WorkshopInquiryForm from "./inquiry-form";
@@ -23,7 +24,7 @@ export default async function WorkshopsPage() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-brand-50 py-16 sm:py-20">
+      <section className="relative overflow-hidden bg-brand-50 pt-10 pb-16 sm:pt-14 sm:pb-20">
         <DoodleField />
         <Container className="relative">
           <Ribbon>{t.ribbon}</Ribbon>
@@ -35,6 +36,9 @@ export default async function WorkshopsPage() {
             {t.titleSuffix}
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-ink/70">{t.description}</p>
+          <ButtonLink href="#request-quote" variant="primary" className="mt-7">
+            {t.heroInquiryCta}
+          </ButtonLink>
         </Container>
       </section>
 
@@ -48,20 +52,20 @@ export default async function WorkshopsPage() {
             {topics.map((topic, i) => (
               <div
                 key={topic.slug}
-                className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900"
+                className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
               >
-                <span className="font-display text-2xl font-semibold text-brand-200 transition-colors duration-300 group-hover:text-white/15">
+                <span className="font-display text-2xl font-semibold text-brand-200 transition-colors duration-300 group-hover:text-white/15 group-active:text-white/15">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h3 className="mt-1 font-display text-base font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white">
+                <h3 className="mt-1 font-display text-base font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
                   {topic.title}
                 </h3>
-                <p className="mt-2 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70">{topic.description}</p>
+                <p className="mt-2 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{topic.description}</p>
                 {topic.stat && (
-                  <div className="mt-4 rounded-xl bg-brand-50 p-3 transition-colors duration-300 group-hover:bg-white/10">
-                    <p className="text-xs font-medium leading-snug text-brand-800 transition-colors duration-300 group-hover:text-white">{topic.stat}</p>
+                  <div className="mt-4 rounded-xl bg-brand-50 p-3 transition-colors duration-300 group-hover:bg-white/10 group-active:bg-white/10">
+                    <p className="text-xs font-medium leading-snug text-brand-800 transition-colors duration-300 group-hover:text-white group-active:text-white">{topic.stat}</p>
                     {topic.statSource && (
-                      <p className="mt-1 text-[11px] text-ink/40 transition-colors duration-300 group-hover:text-white/40">
+                      <p className="mt-1 text-[11px] text-ink/40 transition-colors duration-300 group-hover:text-white/40 group-active:text-white/40">
                         {t.statSourceLabel}: {topic.statSource}
                       </p>
                     )}
@@ -100,6 +104,13 @@ export default async function WorkshopsPage() {
           </Container>
         </Reveal>
       </section>
+
+      <Link
+        href="#request-quote"
+        className="fixed bottom-24 start-5 z-40 hidden rounded-full border-2 border-brand-900 bg-white px-4 py-2.5 text-sm font-semibold text-brand-900 shadow-lg transition-all duration-300 ease-out hover:bg-brand-900 active:bg-brand-900 hover:text-white active:text-white hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] sm:inline-flex sm:items-center md:bottom-5"
+      >
+        {t.heroInquiryCta} &darr;
+      </Link>
     </>
   );
 }

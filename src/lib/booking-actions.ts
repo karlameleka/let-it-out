@@ -99,6 +99,7 @@ export async function submitBookingRequest(
       { label: "Preferred time", value: booking.preferredTime },
       { label: "Message", value: booking.message || "—" },
     ],
+    extraRecipients: [booking.counselor.email],
   });
 
   await sendCustomerConfirmation({

@@ -82,6 +82,9 @@ export default async function AdminCounselorDetailPage({
           <p className="mt-2 text-sm text-ink/60">
             {counselor.priceEGP ? `Session price: ${formatEGP(counselor.priceEGP)}` : "No session price set"}
           </p>
+          <p className="mt-1 text-sm text-ink/60">
+            Notification email: {counselor.email ?? <span className="text-ink/40">Not set</span>}
+          </p>
         </div>
         {counselor.bookingUrl && (
           <a

@@ -15,14 +15,14 @@ export const metadata: Metadata = {
 export default async function ResourcesPage() {
   const settings = await getSiteSettings();
 
-  const exercises = (
+  const exercises = settings.cbtExerciseHidden ? null : (
     <section className="py-8 sm:py-10" key="exercises">
       <Reveal>
         <Container>
           <SectionHeading eyebrow="Practice" title="Interactive exercises" />
           <Link
             href="/resources/cognitive-reframing"
-            className="group mt-10 flex flex-col gap-6 overflow-hidden rounded-3xl border-2 border-brand-700 bg-brand-700 p-6 text-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg sm:flex-row sm:items-center sm:p-8"
+            className="group mt-10 flex flex-col gap-6 overflow-hidden rounded-3xl border-2 border-brand-700 bg-brand-700 p-6 text-white shadow-sm transition-all hover:-translate-y-1 active:-translate-y-1 hover:shadow-lg active:shadow-lg sm:flex-row sm:items-center sm:p-8"
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
               <Brain className="h-6 w-6" strokeWidth={1.75} />
@@ -49,7 +49,7 @@ export default async function ResourcesPage() {
       <Reveal>
         <Container>
           <SectionHeading eyebrow="Read" title="Latest articles" />
-          <ArticleFilter />
+          <ArticleFilter hiddenSlugs={settings.hiddenArticleSlugs} />
         </Container>
       </Reveal>
     </section>
@@ -59,7 +59,7 @@ export default async function ResourcesPage() {
 
   return (
     <>
-      <section className="bg-brand-50 py-16 sm:py-20">
+      <section className="bg-brand-50 pt-10 pb-16 sm:pt-14 sm:pb-20">
         <Container>
           <Ribbon>Free resources</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">

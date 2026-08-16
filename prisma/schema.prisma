@@ -55,6 +55,9 @@ model Counselor {
   photoUrl     String?
   active       Boolean  @default(true)
   sortOrder    Int      @default(0)
+  // Notified alongside the admin inbox on every counseling inquiry/booking
+  // for this counselor. Null skips the counselor notification silently.
+  email        String?
   // Full Cal.com booking link (e.g. "https://cal.com/karla-meleka/50min").
   // When set, the counselor's page embeds live Cal.com scheduling instead
   // of the manual request form.
@@ -387,6 +390,11 @@ model SiteSettings {
   id                   String               @id @default("singleton")
   arabicEnabled        Boolean              @default(true)
   cbtExercisePlacement CbtExercisePlacement @default(TOP)
+  cbtExerciseHidden    Boolean              @default(false)
+  // Article slugs (from lib/content/articles.ts) hidden from the Resources
+  // listing. Still reachable at their direct URL — this is an archive
+  // toggle, not a delete.
+  hiddenArticleSlugs   String[]             @default([])
   updatedAt            DateTime             @updatedAt
 }
 

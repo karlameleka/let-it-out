@@ -34,7 +34,7 @@ export default async function AccountPage() {
   });
 
   return (
-    <Container className="max-w-xl py-16 sm:py-20">
+    <Container className="max-w-xl pt-10 pb-16 sm:pt-14 sm:pb-20">
       <Eyebrow>{t.eyebrow}</Eyebrow>
       <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">{t.title}</h1>
       <p className="mt-2 text-sm text-ink/60">{t.signedInAs} {session.email}</p>

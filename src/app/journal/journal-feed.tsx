@@ -59,7 +59,7 @@ export default function JournalFeed({ firstName, lockEnabled }: { firstName: str
               <button
                 type="button"
                 onClick={relockJournal}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-xs font-medium text-ink/50 transition-colors hover:border-brand-300 hover:text-ink/70"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-xs font-medium text-ink/50 transition-colors hover:border-brand-300 active:border-brand-300 hover:text-ink/70 active:text-ink/70"
               >
                 <LockKeyhole className="h-3.5 w-3.5" strokeWidth={2} />
                 Lock
@@ -92,7 +92,7 @@ export default function JournalFeed({ firstName, lockEnabled }: { firstName: str
               </ButtonLink>
               <Link
                 href="/journal/patterns"
-                className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-100"
+                className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-100 active:bg-brand-100"
               >
                 <BarChart3 className="h-4 w-4" strokeWidth={2} />
                 Mood patterns
@@ -122,7 +122,7 @@ export default function JournalFeed({ firstName, lockEnabled }: { firstName: str
             className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors ${
               bookmarkedOnly
                 ? "border-brand-600 bg-brand-50 text-brand-800"
-                : "border-brand-200 text-ink/60 hover:border-brand-300"
+                : "border-brand-200 text-ink/60 hover:border-brand-300 active:border-brand-300"
             }`}
           >
             <Star className="h-4 w-4" strokeWidth={2} fill={bookmarkedOnly ? "currentColor" : "none"} />
@@ -170,7 +170,7 @@ function EntryCard({ entry, onToggleBookmark }: { entry: JournalFeedEntry; onTog
   return (
     <li
       onClick={() => router.push(`/journal/${entry.id}`)}
-      className="group flex cursor-pointer gap-4 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
+      className="group flex cursor-pointer gap-4 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 active:-translate-y-0.5 hover:border-brand-300 active:border-brand-300 hover:shadow-md active:shadow-md"
     >
       {entry.photoUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer
@@ -206,13 +206,16 @@ function EntryCard({ entry, onToggleBookmark }: { entry: JournalFeedEntry; onTog
             }}
             aria-label={entry.bookmarked ? "Remove bookmark" : "Bookmark this entry"}
             className={`shrink-0 rounded-full p-1 transition-colors ${
-              entry.bookmarked ? "text-brand-600" : "text-ink/25 hover:text-ink/50"
+              entry.bookmarked ? "text-brand-600" : "text-ink/25 hover:text-ink/50 active:text-ink/50"
             }`}
           >
             <Star className="h-4 w-4" strokeWidth={2} fill={entry.bookmarked ? "currentColor" : "none"} />
           </button>
         </div>
-        <p className="mt-2 line-clamp-2 text-sm text-ink/80">{entry.content}</p>
+        {entry.prompt && (
+          <p className="mt-2 line-clamp-1 font-display text-sm italic text-brand-700">{entry.prompt.text}</p>
+        )}
+        <p className="mt-1 line-clamp-2 text-sm text-ink/80">{entry.content}</p>
       </div>
     </li>
   );

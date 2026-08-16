@@ -43,7 +43,7 @@ export default function WorkshopInterestPopup() {
           type="button"
           onClick={dismiss}
           aria-label="Close"
-          className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-ink/50 shadow-sm hover:text-ink"
+          className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-ink/50 shadow-sm hover:text-ink active:text-ink"
         >
           ✕
         </button>

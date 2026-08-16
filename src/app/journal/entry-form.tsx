@@ -132,7 +132,7 @@ export default function EntryForm({
             type="button"
             onClick={handleShuffle}
             disabled={shuffling}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
           >
             <Shuffle className={`h-3.5 w-3.5 ${shuffling ? "animate-spin" : ""}`} strokeWidth={2} />
             {shuffling ? "Shuffling…" : "Shuffle prompt"}
@@ -150,64 +150,66 @@ export default function EntryForm({
         {prompt?.id && <input type="hidden" name="promptId" value={prompt.id} />}
         <input type="hidden" name="mood" value={mood ?? ""} />
 
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-            How are you feeling?
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {CORE_EMOTIONS.map((core) => {
-              const isExactMatch = mood === core.id;
-              const isExpanded = expandedCore === core.id;
-              return (
-                <button
-                  key={core.id}
-                  type="button"
-                  onClick={() => selectCore(core.id)}
-                  className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
-                    isExactMatch
-                      ? "border-brand-600 bg-brand-50 text-brand-800 shadow-[0_2px_0_0_theme(colors.brand.300)]"
-                      : isExpanded
-                        ? "border-brand-300 text-ink/80"
-                        : "border-brand-100 text-ink/70 hover:border-brand-300"
-                  }`}
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full border border-black/10"
-                    style={{ backgroundColor: core.color }}
-                  />
-                  {core.label}
-                </button>
-              );
-            })}
+        <div className="overflow-hidden rounded-xl border border-brand-200 bg-white focus-within:border-brand-500">
+          <div className="border-b border-brand-100 bg-brand-50/50 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
+              How are you feeling?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {CORE_EMOTIONS.map((core) => {
+                const isExactMatch = mood === core.id;
+                const isExpanded = expandedCore === core.id;
+                return (
+                  <button
+                    key={core.id}
+                    type="button"
+                    onClick={() => selectCore(core.id)}
+                    className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
+                      isExactMatch
+                        ? "border-brand-600 bg-brand-50 text-brand-800 shadow-[0_2px_0_0_theme(colors.brand.300)]"
+                        : isExpanded
+                          ? "border-brand-300 text-ink/80"
+                          : "border-brand-100 bg-white text-ink/70 hover:border-brand-300 active:border-brand-300"
+                    }`}
+                  >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full border border-black/10"
+                      style={{ backgroundColor: core.color }}
+                    />
+                    {core.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {expandedCore && (
+              <div className="animate-pop-in mt-3 flex flex-wrap gap-2 rounded-xl border border-dashed border-brand-200 bg-white/60 p-3">
+                {getSecondaryEmotions(expandedCore).map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => selectSecondary(m.id)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                      mood === m.id
+                        ? "border-brand-600 bg-white text-brand-800 shadow-sm"
+                        : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300 active:border-brand-300"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {expandedCore && (
-            <div className="animate-pop-in mt-3 flex flex-wrap gap-2 rounded-xl border border-dashed border-brand-100 bg-brand-50/50 p-3">
-              {getSecondaryEmotions(expandedCore).map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => selectSecondary(m.id)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
-                    mood === m.id
-                      ? "border-brand-600 bg-white text-brand-800 shadow-sm"
-                      : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <textarea
+            name="content"
+            rows={6}
+            required
+            placeholder="Let it out here..."
+            className="w-full border-0 px-4 py-3 text-sm outline-none"
+          />
         </div>
-
-        <textarea
-          name="content"
-          rows={6}
-          required
-          placeholder="Let it out here..."
-          className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
-        />
 
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">Add a photo (optional)</p>
@@ -219,7 +221,7 @@ export default function EntryForm({
                 type="button"
                 onClick={() => setPhoto(null)}
                 aria-label="Remove photo"
-                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink"
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
@@ -229,7 +231,7 @@ export default function EntryForm({
               type="button"
               onClick={requestPhotoAccess}
               disabled={photoProcessing}
-              className="inline-flex items-center gap-2 rounded-xl border border-dashed border-brand-200 px-4 py-3 text-sm text-ink/60 transition-colors hover:border-brand-400 hover:bg-brand-50 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-dashed border-brand-200 px-4 py-3 text-sm text-ink/60 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
             >
               <ImagePlus className="h-4 w-4" strokeWidth={2} />
               {photoProcessing ? "Processing…" : "Add photo"}
@@ -277,14 +279,14 @@ export default function EntryForm({
               <button
                 type="button"
                 onClick={() => setShowPhotoPermission(false)}
-                className="py-3 text-ink/60 transition-colors hover:bg-brand-50"
+                className="py-3 text-ink/60 transition-colors hover:bg-brand-50 active:bg-brand-50"
               >
                 Don&apos;t Allow
               </button>
               <button
                 type="button"
                 onClick={allowPhotoAccess}
-                className="py-3 text-brand-600 transition-colors hover:bg-brand-50"
+                className="py-3 text-brand-600 transition-colors hover:bg-brand-50 active:bg-brand-50"
               >
                 Allow Access
               </button>

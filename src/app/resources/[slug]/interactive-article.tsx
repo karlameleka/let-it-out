@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { RotateCcw } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
 import type { Article, ArticleCheckIn, ArticleSection } from "@/lib/content/articles";
-import { getArticleProgress, saveArticleProgress } from "@/lib/article-progress";
+import { getArticleProgress, saveArticleProgress, clearArticleProgress } from "@/lib/article-progress";
 import ResourceNotifyBell from "../resource-notify-bell";
 
 function sectionKey(index: number) {
@@ -46,6 +47,12 @@ export default function InteractiveArticle({ article }: { article: Article }) {
       saveArticleProgress(article.slug, { completed: [...completed], checkInAnswers: prev.checkInAnswers });
       return { completed, checkInAnswers: prev.checkInAnswers };
     });
+  }
+
+  function handleRestart() {
+    clearArticleProgress(article.slug);
+    setProgress({ completed: new Set(), checkInAnswers: article.checkIns.map(() => null) });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function answerCheckIn(index: number, option: string) {
@@ -122,20 +129,34 @@ export default function InteractiveArticle({ article }: { article: Article }) {
                 Our psychologist-led team offers 1:1 counseling and workplace workshops built on the same
                 evidence-based approach.
               </p>
-              <div className="mt-5 flex flex-wrap justify-center gap-3">
-                {article.slug === "importance-of-journaling" && (
-                  <ButtonLink href="/shop">Explore our journals</ButtonLink>
-                )}
-                <ButtonLink
-                  href="/counseling"
-                  variant={article.slug === "importance-of-journaling" ? "outline" : "primary"}
-                >
-                  Book a session
-                </ButtonLink>
-                <ButtonLink href="/workshops" variant="outline">
-                  Explore workshops
-                </ButtonLink>
-              </div>
+              {article.slug === "stress-management-for-employees" ? (
+                <div className="mt-5 flex flex-col items-center gap-3">
+                  <ButtonLink href="/workshops">Explore workshops</ButtonLink>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <ButtonLink href="/shop" variant="outline">
+                      Explore our journals
+                    </ButtonLink>
+                    <ButtonLink href="/counseling" variant="outline">
+                      Book a session
+                    </ButtonLink>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  {article.slug === "importance-of-journaling" && (
+                    <ButtonLink href="/shop">Explore our journals</ButtonLink>
+                  )}
+                  <ButtonLink
+                    href="/counseling"
+                    variant={article.slug === "importance-of-journaling" ? "outline" : "primary"}
+                  >
+                    Book a session
+                  </ButtonLink>
+                  <ButtonLink href="/workshops" variant="outline">
+                    Explore workshops
+                  </ButtonLink>
+                </div>
+              )}
             </div>
 
             <ResourceNotifyBell />
@@ -143,11 +164,21 @@ export default function InteractiveArticle({ article }: { article: Article }) {
         )}
       </div>
 
-      <p className="mt-8 text-center text-sm">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
         <Link href="/resources" className="font-medium text-brand-600 underline">
           &larr; Back to all resources
         </Link>
-      </p>
+        {progressCount > 0 && (
+          <button
+            type="button"
+            onClick={handleRestart}
+            className="inline-flex items-center gap-1.5 font-medium text-ink/50 transition-colors hover:text-ink/80 active:text-ink/80"
+          >
+            <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+            Retake this article
+          </button>
+        )}
+      </div>
     </>
   );
 }
@@ -175,7 +206,7 @@ function CheckInCard({
                 key={option}
                 type="button"
                 onClick={() => onAnswer(option)}
-                className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-left text-sm text-ink/80 transition-colors hover:border-brand-400 hover:bg-brand-50"
+                className="rounded-xl border border-brand-200 bg-white px-4 py-3 text-left text-sm text-ink/80 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
               >
                 {option}
               </button>

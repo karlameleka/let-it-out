@@ -13,7 +13,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <Container className="py-20 text-center">
+      <Container className="pt-14 pb-20 text-center">
         <h1 className="font-display text-2xl font-semibold text-brand-900">Your cart is empty</h1>
         <p className="mt-2 text-ink/60">Browse our guided journals to get started.</p>
         <ButtonLink href="/shop" className="mt-6">
@@ -24,7 +24,7 @@ export default function CartPage() {
   }
 
   return (
-    <Container className="py-16 sm:py-20">
+    <Container className="pt-10 pb-16 sm:pt-14 sm:pb-20">
       <h1 className="font-display text-3xl font-medium text-brand-900">Your cart</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
@@ -35,7 +35,7 @@ export default function CartPage() {
               className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-brand-100 bg-white p-4"
             >
               <div className="min-w-0 flex-1 basis-40">
-                <Link href={`/shop/${item.productSlug}`} className="font-display font-semibold text-brand-800 hover:underline">
+                <Link href={`/shop/${item.productSlug}`} className="font-display font-semibold text-brand-800 hover:underline active:underline">
                   {item.title}
                 </Link>
                 <p className="text-sm text-ink/50">
@@ -48,7 +48,7 @@ export default function CartPage() {
                   <button
                     type="button"
                     onClick={() => updateQuantity(item.productVariantId, item.quantity - 1)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50 active:bg-brand-50"
                     aria-label="Decrease quantity"
                   >
                     −
@@ -57,7 +57,7 @@ export default function CartPage() {
                   <button
                     type="button"
                     onClick={() => updateQuantity(item.productVariantId, item.quantity + 1)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-200 text-ink/70 hover:bg-brand-50 active:bg-brand-50"
                     aria-label="Increase quantity"
                   >
                     +
@@ -71,7 +71,7 @@ export default function CartPage() {
                 <button
                   type="button"
                   onClick={() => removeItem(item.productVariantId)}
-                  className="shrink-0 text-ink/40 hover:text-brand-500"
+                  className="shrink-0 text-ink/40 hover:text-brand-500 active:text-brand-500"
                   aria-label="Remove item"
                 >
                   ✕

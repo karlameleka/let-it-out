@@ -77,6 +77,7 @@ export async function createSessionBooking(
       { label: "Preferred day", value: booking.preferredDate },
       { label: "Price", value: formatEGP(counselor.priceEGP) },
     ],
+    extraRecipients: [counselor.email],
   });
 
   await sendCustomerConfirmation({

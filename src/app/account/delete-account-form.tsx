@@ -14,7 +14,7 @@ export default function DeleteAccountForm({ dict }: { dict: Dictionary }) {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="mt-5 rounded border-2 border-red-300 px-5 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+        className="mt-5 rounded border-2 border-red-300 px-5 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 active:bg-red-50"
       >
         {t.deleteAccountButton}
       </button>
@@ -45,14 +45,14 @@ export default function DeleteAccountForm({ dict }: { dict: Dictionary }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+          className="rounded bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-700 disabled:opacity-60"
         >
           {pending ? t.deleting : t.permanentlyDelete}
         </button>
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="rounded border border-brand-200 px-5 py-2.5 text-sm font-medium text-ink/60 transition-colors hover:border-brand-300"
+          className="rounded border border-brand-200 px-5 py-2.5 text-sm font-medium text-ink/60 transition-colors hover:border-brand-300 active:border-brand-300"
         >
           {t.cancel}
         </button>

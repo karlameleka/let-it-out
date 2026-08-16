@@ -43,7 +43,7 @@ export default function JournalDataNotice() {
           type="button"
           onClick={dismiss}
           aria-label="Dismiss"
-          className="shrink-0 rounded-full p-1 text-ink/40 transition-colors hover:bg-brand-50 hover:text-ink/60"
+          className="shrink-0 rounded-full p-1 text-ink/40 transition-colors hover:bg-brand-50 active:bg-brand-50 hover:text-ink/60 active:text-ink/60"
         >
           <X className="h-4 w-4" strokeWidth={2} />
         </button>
