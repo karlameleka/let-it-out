@@ -10,13 +10,14 @@ import InstallOverlay from "@/components/install-overlay";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ install?: string }>;
 }) {
-  const [{ install }, counselors, products, locale] = await Promise.all([
+  const [{ install }, counselors, products, locale, overrides] = await Promise.all([
     searchParams,
     prisma.counselor.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
@@ -25,8 +26,9 @@ export default async function HomePage({
       include: { variants: { where: { format: "PHYSICAL" } } },
     }),
     getLocale(),
+    getSiteTextOverrides(),
   ]);
-  const t = getDictionary(locale).home;
+  const t = applyOverrides(getDictionary(locale).home, "home", overrides, locale);
 
   return (
     <>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { updateLeadStatus } from "@/lib/admin-actions";
+import { updateLeadStatus, deleteLead } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 const TYPE_FILTERS = [
   { value: "ALL", label: "All" },
@@ -109,26 +110,37 @@ export default async function AdminCrmPage({
                         </p>
                       </div>
 
-                      <form action={updateLeadStatus} className="flex shrink-0 items-center gap-2">
-                        <input type="hidden" name="leadId" value={lead.id} />
-                        <select
-                          name="status"
-                          defaultValue={lead.status}
-                          className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
-                        >
-                          {STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              {statusLabel(s)}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="submit"
-                          className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
-                        >
-                          Update
-                        </button>
-                      </form>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <form action={updateLeadStatus} className="flex items-center gap-2">
+                          <input type="hidden" name="leadId" value={lead.id} />
+                          <select
+                            name="status"
+                            defaultValue={lead.status}
+                            className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
+                          >
+                            {STATUSES.map((s) => (
+                              <option key={s} value={s}>
+                                {statusLabel(s)}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="submit"
+                            className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+                          >
+                            Update
+                          </button>
+                        </form>
+                        <form action={deleteLead}>
+                          <input type="hidden" name="leadId" value={lead.id} />
+                          <ConfirmSubmitButton
+                            confirmMessage="Delete this lead permanently? This can't be undone."
+                            className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                          >
+                            Delete
+                          </ConfirmSubmitButton>
+                        </form>
+                      </div>
                     </div>
                   </div>
                 ))}

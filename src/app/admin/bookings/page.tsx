@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { updateBookingStatus } from "@/lib/admin-actions";
+import { updateBookingStatus, deleteBookingRequest } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 const STATUSES = ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"];
 
@@ -29,24 +30,35 @@ export default async function AdminBookingsPage() {
             </div>
           </div>
 
-          <form action={updateBookingStatus} className="mt-4 flex items-center gap-2">
-            <input type="hidden" name="bookingId" value={b.id} />
-            <select
-              name="status"
-              defaultValue={b.status}
-              className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              Update
-            </button>
-          </form>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <form action={updateBookingStatus} className="flex items-center gap-2">
+              <input type="hidden" name="bookingId" value={b.id} />
+              <select
+                name="status"
+                defaultValue={b.status}
+                className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                Update
+              </button>
+            </form>
+            <form action={deleteBookingRequest}>
+              <input type="hidden" name="bookingId" value={b.id} />
+              <ConfirmSubmitButton
+                confirmMessage="Delete this booking request permanently? This can't be undone."
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                Delete
+              </ConfirmSubmitButton>
+            </form>
+          </div>
         </div>
       ))}
     </div>

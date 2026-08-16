@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { deleteWorkshopSignup } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 export default async function AdminWorkshopSignupsPage() {
   const signups = await prisma.workshopInterestSignup.findMany({
@@ -20,6 +22,7 @@ export default async function AdminWorkshopSignupsPage() {
               <tr>
                 <th className="px-5 py-3">Email</th>
                 <th className="px-5 py-3">Signed up</th>
+                <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -28,6 +31,17 @@ export default async function AdminWorkshopSignupsPage() {
                   <td className="px-5 py-3">{s.email}</td>
                   <td className="px-5 py-3 text-ink/60">
                     {s.createdAt.toLocaleString("en-GB")}
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <form action={deleteWorkshopSignup}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <ConfirmSubmitButton
+                        confirmMessage="Delete this signup permanently? This can't be undone."
+                        className="rounded-lg border border-red-200 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        Delete
+                      </ConfirmSubmitButton>
+                    </form>
                   </td>
                 </tr>
               ))}

@@ -36,6 +36,51 @@ export async function updateLeadStatus(formData: FormData) {
   revalidatePath("/admin/crm");
 }
 
+export async function deleteOrder(formData: FormData) {
+  await requireAdmin();
+  const orderId = String(formData.get("orderId"));
+  await prisma.$transaction([
+    prisma.orderItem.deleteMany({ where: { orderId } }),
+    prisma.order.delete({ where: { id: orderId } }),
+  ]);
+  revalidatePath("/admin/orders");
+}
+
+export async function deleteBookingRequest(formData: FormData) {
+  await requireAdmin();
+  const bookingId = String(formData.get("bookingId"));
+  await prisma.bookingRequest.delete({ where: { id: bookingId } });
+  revalidatePath("/admin/bookings");
+}
+
+export async function deleteWorkshopInquiry(formData: FormData) {
+  await requireAdmin();
+  const inquiryId = String(formData.get("inquiryId"));
+  await prisma.workshopInquiry.delete({ where: { id: inquiryId } });
+  revalidatePath("/admin/workshops");
+}
+
+export async function deleteWorkshopSignup(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await prisma.workshopInterestSignup.delete({ where: { id } });
+  revalidatePath("/admin/workshop-signups");
+}
+
+export async function deleteContactMessage(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await prisma.contactMessage.delete({ where: { id } });
+  revalidatePath("/admin/messages");
+}
+
+export async function deleteLead(formData: FormData) {
+  await requireAdmin();
+  const leadId = String(formData.get("leadId"));
+  await prisma.lead.delete({ where: { id: leadId } });
+  revalidatePath("/admin/crm");
+}
+
 export async function createPromoCode(formData: FormData) {
   await requireAdmin();
   const code = String(formData.get("code") || "").trim().toUpperCase();

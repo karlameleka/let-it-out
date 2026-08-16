@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
-import { updateOrderStatus } from "@/lib/admin-actions";
+import { updateOrderStatus, deleteOrder } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 const STATUSES = ["PENDING_PAYMENT", "PAYMENT_SUBMITTED", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED"];
 
@@ -81,24 +82,35 @@ export default async function AdminOrdersPage() {
             </p>
           )}
 
-          <form action={updateOrderStatus} className="mt-4 flex items-center gap-2">
-            <input type="hidden" name="orderId" value={order.id} />
-            <select
-              name="status"
-              defaultValue={order.status}
-              className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{s.replaceAll("_", " ")}</option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              Update
-            </button>
-          </form>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <form action={updateOrderStatus} className="flex items-center gap-2">
+              <input type="hidden" name="orderId" value={order.id} />
+              <select
+                name="status"
+                defaultValue={order.status}
+                className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>{s.replaceAll("_", " ")}</option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                Update
+              </button>
+            </form>
+            <form action={deleteOrder}>
+              <input type="hidden" name="orderId" value={order.id} />
+              <ConfirmSubmitButton
+                confirmMessage="Delete this order permanently? This can't be undone."
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                Delete
+              </ConfirmSubmitButton>
+            </form>
+          </div>
         </div>
       ))}
     </div>

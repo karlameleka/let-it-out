@@ -14,6 +14,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getLocale, dirForLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -55,8 +56,14 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [user, locale, settings] = await Promise.all([getCurrentUser(), getLocale(), getSiteSettings()]);
-  const dict = getDictionary(locale);
+  const [user, locale, settings, textOverrides] = await Promise.all([
+    getCurrentUser(),
+    getLocale(),
+    getSiteSettings(),
+    getSiteTextOverrides(),
+  ]);
+  const baseDict = getDictionary(locale);
+  const dict = { ...baseDict, nav: applyOverrides(baseDict.nav, "nav", textOverrides, locale) };
 
   return (
     <html

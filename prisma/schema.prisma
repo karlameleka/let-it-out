@@ -389,3 +389,13 @@ model SiteSettings {
   cbtExercisePlacement CbtExercisePlacement @default(TOP)
   updatedAt            DateTime             @updatedAt
 }
+
+// Admin-editable overrides for specific English UI strings, keyed by
+// dictionary path (e.g. "home.heroCtaBook", "nav.counseling"). A missing
+// key means "use the default from dictionaries/en.ts". Only ever applied
+// when the visitor's locale is English — Arabic strings are untouched.
+model SiteText {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}

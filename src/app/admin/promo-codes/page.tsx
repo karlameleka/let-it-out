@@ -3,13 +3,26 @@ import { createPromoCode, togglePromoCodeActive, deletePromoCode } from "@/lib/a
 import { formatEGP } from "@/lib/format";
 
 export default async function AdminPromoCodesPage() {
-  const [codes, products] = await Promise.all([
+  const [codes, products, orderStats] = await Promise.all([
     prisma.promoCode.findMany({
       orderBy: { createdAt: "desc" },
       include: { products: { include: { product: true } } },
     }),
     prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.order.groupBy({
+      by: ["promoCodeId"],
+      where: { promoCodeId: { not: null }, status: { not: "CANCELLED" } },
+      _sum: { discountEGP: true, totalEGP: true },
+      _count: { _all: true },
+    }),
   ]);
+
+  const statsByCode = new Map(
+    orderStats.map((s) => [
+      s.promoCodeId as string,
+      { orders: s._count._all, discountEGP: s._sum.discountEGP ?? 0, revenueEGP: s._sum.totalEGP ?? 0 },
+    ])
+  );
 
   return (
     <div className="space-y-8">
@@ -115,6 +128,7 @@ export default async function AdminPromoCodesPage() {
         {codes.map((c) => {
           const expired = c.expiresAt ? c.expiresAt < new Date() : false;
           const usedUp = c.maxRedemptions !== null && c.redemptionCount >= c.maxRedemptions;
+          const stats = statsByCode.get(c.id);
           return (
             <div key={c.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-100 bg-white p-5">
               <div>
@@ -139,6 +153,11 @@ export default async function AdminPromoCodesPage() {
                   Used {c.redemptionCount}{c.maxRedemptions ? ` / ${c.maxRedemptions}` : ""} time{c.redemptionCount === 1 ? "" : "s"}
                   {" · "}
                   {c.products.length === 0 ? "All products" : c.products.map((p) => p.product.title).join(", ")}
+                </p>
+                <p className="mt-1.5 text-xs font-medium text-brand-700">
+                  {stats
+                    ? `${stats.orders} paid order${stats.orders === 1 ? "" : "s"} · ${formatEGP(stats.discountEGP)} discounted · ${formatEGP(stats.revenueEGP)} revenue`
+                    : "No completed orders yet"}
                 </p>
               </div>
               <div className="flex items-center gap-2">

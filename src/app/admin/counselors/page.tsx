@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { updateCounselorPlacement } from "@/lib/admin-actions";
 
@@ -18,7 +19,12 @@ export default async function AdminCounselorsPage() {
         >
           <input type="hidden" name="counselorId" value={c.id} />
           <div>
-            <p className="font-display font-semibold text-brand-900">{c.name}</p>
+            <Link
+              href={`/admin/counselors/${c.id}`}
+              className="font-display font-semibold text-brand-900 underline-offset-2 hover:underline"
+            >
+              {c.name}
+            </Link>
             <p className="text-sm text-ink/60">{c.credentials}</p>
           </div>
           <div className="flex items-center gap-4">

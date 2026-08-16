@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { updateWorkshopInquiryStatus } from "@/lib/admin-actions";
+import { updateWorkshopInquiryStatus, deleteWorkshopInquiry } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 const STATUSES = ["NEW", "IN_DISCUSSION", "SCHEDULED", "CLOSED"];
 
@@ -27,24 +28,35 @@ export default async function AdminWorkshopsPage() {
           {i.message && <p className="mt-2 text-sm text-ink/60">&ldquo;{i.message}&rdquo;</p>}
           <p className="mt-1 text-xs text-ink/40">{i.createdAt.toLocaleString("en-GB")}</p>
 
-          <form action={updateWorkshopInquiryStatus} className="mt-4 flex items-center gap-2">
-            <input type="hidden" name="inquiryId" value={i.id} />
-            <select
-              name="status"
-              defaultValue={i.status}
-              className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{s.replaceAll("_", " ")}</option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              Update
-            </button>
-          </form>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <form action={updateWorkshopInquiryStatus} className="flex items-center gap-2">
+              <input type="hidden" name="inquiryId" value={i.id} />
+              <select
+                name="status"
+                defaultValue={i.status}
+                className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm"
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>{s.replaceAll("_", " ")}</option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                Update
+              </button>
+            </form>
+            <form action={deleteWorkshopInquiry}>
+              <input type="hidden" name="inquiryId" value={i.id} />
+              <ConfirmSubmitButton
+                confirmMessage="Delete this workshop inquiry permanently? This can't be undone."
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                Delete
+              </ConfirmSubmitButton>
+            </form>
+          </div>
         </div>
       ))}
     </div>
