@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
 import ChangePasswordForm from "./change-password-form";
-import ProfileForm from "./profile-form";
 import JournalLockToggle from "./journal-lock-toggle";
 import JournalReminderToggle from "@/components/journal-reminder-toggle";
 import ExportDataButton from "./export-data-button";
@@ -24,14 +23,9 @@ export default async function AccountPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: {
-      ageRange: true,
-      gender: true,
-      country: true,
-      referralSource: true,
-      journalLockEnabled: true,
-    },
+    select: { journalLockEnabled: true, passwordHash: true },
   });
+  const hasPassword = user?.passwordHash != null;
 
   return (
     <Container className="max-w-xl pt-6 pb-10 sm:pt-14 sm:pb-20">
@@ -50,18 +44,6 @@ export default async function AccountPage() {
       )}
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-brand-900">{t.aboutYouTitle}</h2>
-        <p className="mt-1 text-sm text-ink/60">{t.aboutYouDescription}</p>
-        <ProfileForm
-          dict={dict}
-          ageRange={user?.ageRange ?? null}
-          gender={user?.gender ?? null}
-          country={user?.country ?? null}
-          referralSource={user?.referralSource ?? null}
-        />
-      </div>
-
-      <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{t.journalPrivacyTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.journalPrivacyDescription}</p>
         <JournalLockToggle initialEnabled={user?.journalLockEnabled ?? false} dict={dict} />
@@ -78,7 +60,7 @@ export default async function AccountPage() {
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{t.changePasswordTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.changePasswordDescription}</p>
-        <ChangePasswordForm dict={dict} />
+        <ChangePasswordForm dict={dict} hasPassword={hasPassword} />
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
@@ -90,7 +72,7 @@ export default async function AccountPage() {
       <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-red-700">{t.dangerZoneTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.dangerZoneDescription}</p>
-        <DeleteAccountForm dict={dict} userId={session.userId} />
+        <DeleteAccountForm dict={dict} userId={session.userId} hasPassword={hasPassword} />
       </div>
     </Container>
   );

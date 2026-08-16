@@ -5,7 +5,7 @@ import { changePasswordAction } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function ChangePasswordForm({ dict }: { dict: Dictionary }) {
+export default function ChangePasswordForm({ dict, hasPassword = true }: { dict: Dictionary; hasPassword?: boolean }) {
   const [state, formAction, pending] = useActionState(changePasswordAction, undefined);
   const [key, setKey] = useState(0);
   const [lastHandledState, setLastHandledState] = useState(state);
@@ -18,19 +18,21 @@ export default function ChangePasswordForm({ dict }: { dict: Dictionary }) {
 
   return (
     <form action={formAction} key={key} className="mt-5 space-y-4">
-      <div>
-        <label htmlFor="currentPassword" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/40">
-          {t.currentPassword}
-        </label>
-        <input
-          id="currentPassword"
-          name="currentPassword"
-          type="password"
-          autoComplete="current-password"
-          required
-          className="w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500"
-        />
-      </div>
+      {hasPassword && (
+        <div>
+          <label htmlFor="currentPassword" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/40">
+            {t.currentPassword}
+          </label>
+          <input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
+            autoComplete="current-password"
+            required
+            className="w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500"
+          />
+        </div>
+      )}
 
       <div>
         <label htmlFor="newPassword" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/40">

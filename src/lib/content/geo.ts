@@ -96,10 +96,7 @@ export const COUNTRIES = [
   "Other",
 ];
 
-/** Optional signup demographics — all skippable, so each list starts with a
- * blank/neutral choice rather than defaulting to a specific answer. */
-export const AGE_RANGES = ["Under 18", "18–24", "25–34", "35–44", "45–54", "55–64", "65+"];
-
+/** Signup demographics — required, collected once at signup. */
 export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"];
 
 export const REFERRAL_SOURCES = [
@@ -109,3 +106,15 @@ export const REFERRAL_SOURCES = [
   "Workshop or employer",
   "Other",
 ];
+
+/** What the person is hoping to use Let It Out for — multi-select at signup. */
+export const SERVICE_INTERESTS = ["Journaling", "Counseling", "Workshops", "Psychoeducation", "Still exploring"];
+
+/** Birth years for the signup dropdown, newest first, covering ages 13–100. */
+const CURRENT_YEAR = new Date().getFullYear();
+const MIN_SIGNUP_AGE = 13;
+const MAX_SIGNUP_AGE = 100;
+export const BIRTH_YEARS = Array.from(
+  { length: MAX_SIGNUP_AGE - MIN_SIGNUP_AGE + 1 },
+  (_, i) => CURRENT_YEAR - MIN_SIGNUP_AGE - i,
+);

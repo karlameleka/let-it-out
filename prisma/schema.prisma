@@ -15,10 +15,16 @@ enum Role {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String
+  // Nullable: accounts created via Google sign-in have no password.
+  passwordHash String?
   name         String
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
+
+  // Set for accounts created or linked via "Sign in with Google" — the
+  // stable Google account id ("sub" claim), used to find the account on
+  // repeat sign-ins without depending on email.
+  googleId String? @unique
 
   // Short human-readable identifier shown on the admin client list (e.g.
   // over phone/email support) — never the raw internal id. Assigned by a
@@ -32,14 +38,16 @@ model User {
   resetTokenHash      String?   @unique
   resetTokenExpiresAt DateTime?
 
-  // Optional demographics, collected (never required) at signup or added
-  // later from account settings. Age is stored as a bucketed range rather
-  // than a birth date, both to avoid needing upkeep and to keep what we
-  // hold on each person to the minimum useful for understanding our users.
-  ageRange       String?
+  // Demographics, required at signup (collected once, not editable later
+  // from account settings). Columns stay nullable so accounts created
+  // before this requirement existed don't break.
+  birthYear      Int?
   gender         String?
   country        String?
   referralSource String?
+  // Which of our services the person is interested in — multi-select at
+  // signup (e.g. ["Journaling", "Counseling"]).
+  serviceInterests String[] @default([])
 
   // Off by default, matching Apple Journal — opt-in from account settings.
   journalLockEnabled Boolean @default(false)

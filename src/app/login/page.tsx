@@ -6,12 +6,26 @@ import { DoodleField } from "@/components/decor";
 import LoginForm from "./login-form";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { isGoogleSignInEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = { title: "Log In" };
 
-export default async function LoginPage() {
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  google_not_configured: "Google sign-in isn't set up yet. Please log in with your email and password.",
+  google_auth_failed: "Google sign-in failed. Please try again.",
+  google_email_unverified: "Your Google email isn't verified. Please verify it with Google first.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const dict = getDictionary(await getLocale());
+  const { error } = await searchParams;
   const t = dict.auth;
+  const googleEnabled = isGoogleSignInEnabled();
+  const errorMessage = error ? GOOGLE_ERROR_MESSAGES[error] : undefined;
 
   return (
     <section className="grid md:min-h-[calc(100vh-73px)] md:grid-cols-2">
@@ -29,7 +43,7 @@ export default async function LoginPage() {
           <h1 className="font-display text-3xl font-medium text-brand-900">{t.loginTitle}</h1>
           <p className="mt-2 text-sm text-ink/60">{t.loginSubtitle}</p>
           <div className="mt-8">
-            <LoginForm dict={dict} />
+            <LoginForm dict={dict} googleEnabled={googleEnabled} error={errorMessage} />
           </div>
           <p className="mt-6 text-sm text-ink/60">
             {t.noAccount}{" "}

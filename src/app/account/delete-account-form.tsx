@@ -6,7 +6,15 @@ import { deleteAccountAction } from "@/lib/auth-actions";
 import { clearAllEntries } from "@/lib/local-journal";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function DeleteAccountForm({ dict, userId }: { dict: Dictionary; userId: string }) {
+export default function DeleteAccountForm({
+  dict,
+  userId,
+  hasPassword = true,
+}: {
+  dict: Dictionary;
+  userId: string;
+  hasPassword?: boolean;
+}) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
@@ -51,22 +59,24 @@ export default function DeleteAccountForm({ dict, userId }: { dict: Dictionary; 
   return (
     <form onSubmit={handleSubmit} className="animate-pop-in mt-5 space-y-4 rounded-xl border-2 border-red-200 bg-red-50 p-5">
       <p className="text-sm font-medium text-red-800">{t.deleteWarning}</p>
-      <div>
-        <label
-          htmlFor="deletePassword"
-          className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-red-700/70"
-        >
-          {t.confirmPasswordLabel}
-        </label>
-        <input
-          id="deletePassword"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          className="w-full rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-red-500"
-        />
-      </div>
+      {hasPassword && (
+        <div>
+          <label
+            htmlFor="deletePassword"
+            className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-red-700/70"
+          >
+            {t.confirmPasswordLabel}
+          </label>
+          <input
+            id="deletePassword"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            className="w-full rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-red-500"
+          />
+        </div>
+      )}
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex flex-wrap gap-3">
         <button

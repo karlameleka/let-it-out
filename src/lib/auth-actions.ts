@@ -19,24 +19,17 @@ async function getBaseUrl() {
   return `${protocol}://${host}`;
 }
 
-// Optional demographic fields collapse an empty string to null (rather than
-// undefined) so that choosing "Prefer not to say" on an already-filled field
-// in account settings actually clears it — Prisma's `update` treats
-// `undefined` as "leave unchanged" but `null` as "set to null".
-const optionalField = z
-  .string()
-  .trim()
-  .optional()
-  .transform((v) => (v ? v : null));
-
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name."),
   email: z.string().trim().email("Please enter a valid email."),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  ageRange: optionalField,
-  gender: optionalField,
-  country: optionalField,
-  referralSource: optionalField,
+  birthYear: z.string().trim().min(1, "Please select your birth year."),
+  gender: z.string().trim().min(1, "Please select your gender."),
+  country: z.string().trim().min(1, "Please select your country."),
+  referralSource: z.string().trim().min(1, "Please tell us how you heard about us."),
+  serviceInterests: z
+    .array(z.string())
+    .min(1, "Please select at least one service you're interested in."),
 });
 
 const loginSchema = z.object({
@@ -54,17 +47,18 @@ export async function signupAction(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
-    ageRange: formData.get("ageRange"),
+    birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
     country: formData.get("country"),
     referralSource: formData.get("referralSource"),
+    serviceInterests: formData.getAll("serviceInterests"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { name, email, password, ageRange, gender, country, referralSource } = parsed.data;
+  const { name, email, password, birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -73,24 +67,32 @@ export async function signupAction(
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash, ageRange, gender, country, referralSource },
+    data: {
+      name,
+      email,
+      passwordHash,
+      birthYear: Number(birthYear),
+      gender,
+      country,
+      referralSource,
+      serviceInterests,
+    },
   });
 
   const demographicNotes = [
-    ageRange && `Age range: ${ageRange}`,
-    gender && `Gender: ${gender}`,
-    country && `Country: ${country}`,
-    referralSource && `Heard about us via: ${referralSource}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    `Birth year: ${birthYear}`,
+    `Gender: ${gender}`,
+    `Country: ${country}`,
+    `Heard about us via: ${referralSource}`,
+    `Interested in: ${serviceInterests.join(", ")}`,
+  ].join("\n");
 
   await createLead({
     name,
     type: "ACCOUNT_SIGNUP",
     email,
     source: "Website",
-    notes: demographicNotes || "No demographic info provided.",
+    notes: demographicNotes,
   });
 
   await createSession({
@@ -123,6 +125,10 @@ export async function loginAction(
     return { error: "Incorrect email or password." };
   }
 
+  if (!user.passwordHash) {
+    return { error: "This account signed up with Google. Please continue with Google below." };
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     return { error: "Incorrect email or password." };
@@ -143,41 +149,9 @@ export async function logoutAction() {
   redirect("/");
 }
 
-const profileSchema = z.object({
-  ageRange: optionalField,
-  gender: optionalField,
-  country: optionalField,
-  referralSource: optionalField,
-});
-
-export type ProfileFormState = { error?: string; success?: boolean } | undefined;
-
-export async function updateProfileAction(
-  _prevState: ProfileFormState,
-  formData: FormData,
-): Promise<ProfileFormState> {
-  const session = await requireUser().catch(() => null);
-  if (!session) return { error: "Please log in to update your profile." };
-
-  const parsed = profileSchema.safeParse({
-    ageRange: formData.get("ageRange"),
-    gender: formData.get("gender"),
-    country: formData.get("country"),
-    referralSource: formData.get("referralSource"),
-  });
-
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
-  }
-
-  await prisma.user.update({ where: { id: session.userId }, data: parsed.data });
-
-  return { success: true };
-}
-
 const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Please enter your current password."),
+    currentPassword: z.string().optional(),
     newPassword: z.string().min(8, "New password must be at least 8 characters."),
     confirmPassword: z.string().min(1, "Please confirm your new password."),
   })
@@ -208,8 +182,15 @@ export async function changePasswordAction(
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return { error: "Account not found." };
 
-  const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
-  if (!valid) return { error: "Current password is incorrect." };
+  // Accounts created via Google sign-in have no password yet — this becomes
+  // a "set a password" flow instead of "change password" for them.
+  if (user.passwordHash) {
+    if (!parsed.data.currentPassword) {
+      return { error: "Please enter your current password." };
+    }
+    const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
+    if (!valid) return { error: "Current password is incorrect." };
+  }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
@@ -218,7 +199,7 @@ export async function changePasswordAction(
 }
 
 const deleteAccountSchema = z.object({
-  password: z.string().min(1, "Please enter your password."),
+  password: z.string().optional(),
 });
 
 export type DeleteAccountFormState = { error?: string; success?: boolean } | undefined;
@@ -238,8 +219,15 @@ export async function deleteAccountAction(
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return { error: "Account not found." };
 
-  const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
-  if (!valid) return { error: "Incorrect password." };
+  // Accounts created via Google sign-in have no password to confirm with —
+  // the session cookie is already the authorization for this request.
+  if (user.passwordHash) {
+    if (!parsed.data.password) {
+      return { error: "Please enter your password." };
+    }
+    const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+    if (!valid) return { error: "Incorrect password." };
+  }
 
   // JournalEntry and PushSubscription require a userId, so those rows are
   // deleted outright. Order and BookingRequest keep userId optional — they

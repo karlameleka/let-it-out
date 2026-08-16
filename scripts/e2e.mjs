@@ -22,6 +22,33 @@ async function newContext() {
   return ctx;
 }
 
+// Fills the now-required signup demographics (birth year, gender, country,
+// referral source, at least one service interest) — every /signup flow
+// needs these or the form won't submit.
+async function fillSignupDemographics(page) {
+  await page.selectOption("#birthYear", "1995");
+  await page.selectOption("#gender", "Non-binary");
+  await page.selectOption("#country", "Egypt");
+  await page.selectOption("#referralSource", "Social media");
+  await page.locator('label[for="service-journaling"]').scrollIntoViewIfNeeded();
+  await page.click('label[for="service-journaling"]', { force: true });
+}
+
+// Dismisses the first-open-only journal privacy modal ("I understand") if
+// it's showing — every fresh browser context lands on it the first time it
+// reaches the journal feed.
+async function dismissJournalNotice(page) {
+  const btn = page.locator('button:has-text("I understand")');
+  const appeared = await btn
+    .waitFor({ state: "visible", timeout: 2000 })
+    .then(() => true)
+    .catch(() => false);
+  if (appeared) {
+    await btn.click();
+    await page.waitForTimeout(200);
+  }
+}
+
 // Unlocks the journal's privacy lock (a per-tab sessionStorage gate) by
 // re-entering the account password — every fresh `page` hitting a journal
 // route for the first time needs this before any entry content is visible.
@@ -44,29 +71,17 @@ async function unlockJournal(page, password) {
   await page.fill("#name", "Test User");
   await page.fill("#email", email);
   await page.fill("#password", "password123");
-  await page.selectOption("#ageRange", "25–34");
-  await page.selectOption("#gender", "Non-binary");
-  await page.selectOption("#country", "Egypt");
-  await page.selectOption("#referralSource", "Social media");
+  await fillSignupDemographics(page);
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
   log("signup redirects to /journal", page.url() === `${BASE}/journal`);
 
-  await page.goto(`${BASE}/account`);
-  const demographicsSaved =
-    (await page.locator("#ageRange").inputValue()) === "25–34" &&
-    (await page.locator("#gender").inputValue()) === "Non-binary" &&
-    (await page.locator("#referralSource").inputValue()) === "Social media";
-  log("optional signup demographics are saved and shown in account settings", demographicsSaved);
+  await dismissJournalNotice(page);
+  log(
+    "journal privacy notice dismisses and stays dismissed",
+    !(await page.locator('button:has-text("I understand")').isVisible().catch(() => false)),
+  );
 
-  await page.selectOption("#gender", "");
-  await page.click('button:has-text("Save")');
-  await page.waitForTimeout(500);
-  await page.reload();
-  const genderCleared = (await page.locator("#gender").inputValue()) === "";
-  log("choosing 'Prefer not to say' clears a previously-set field", genderCleared);
-
-  await page.goto(`${BASE}/journal`);
   await page.waitForTimeout(500);
   log("journal has no privacy lock by default", !(await page.locator("text=Your journal is locked").isVisible().catch(() => false)));
   log("no manual Lock button when the lock is disabled", !(await page.locator('button:has-text("Lock")').isVisible().catch(() => false)));
@@ -156,7 +171,7 @@ async function unlockJournal(page, password) {
   await page.waitForTimeout(300);
 
   await page.click("text=This is my first journal entry");
-  await page.waitForURL(/\/journal\/[a-zA-Z0-9]+$/, { timeout: 10000 });
+  await page.waitForURL(/\/journal\/[a-zA-Z0-9-]+$/, { timeout: 10000 });
   await page.waitForTimeout(400);
   log("entry detail page shows the full entry without re-locking", await page.locator("text=This is my first journal entry").isVisible().catch(() => false));
   log("entry detail page shows the attached photo", await page.locator(".rounded-3xl.border-brand-100 img").first().isVisible().catch(() => false));
@@ -778,8 +793,10 @@ let orderUrl = "";
   await page.fill("#name", "Mood Flow Tester");
   await page.fill("#email", `mood-flow-${rand}@example.com`);
   await page.fill("#password", "password123");
+  await fillSignupDemographics(page);
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  await dismissJournalNotice(page);
 
   await page.goto(`${BASE}/journal/patterns`);
   await page.waitForSelector("text=No mood data yet", { timeout: 5000 }).catch(() => {});
@@ -877,10 +894,14 @@ let orderUrl = "";
   await page.fill("#name", "Push Flow Tester");
   await page.fill("#email", `push-flow-${rand}@example.com`);
   await page.fill("#password", "password123");
+  await fillSignupDemographics(page);
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
   await page.waitForTimeout(400);
+  await dismissJournalNotice(page);
 
+  // The reminder toggle lives in Account settings, not the journal feed itself.
+  await page.goto(`${BASE}/account`);
   await page.click("text=Enable daily reminders");
   await page.waitForTimeout(1000);
   const subscribedState = await page.locator("text=Daily reminders on").first().isVisible().catch(() => false);
@@ -915,6 +936,7 @@ let orderUrl = "";
   await page.fill("#name", "Password Flow Tester");
   await page.fill("#email", email);
   await page.fill("#password", "original-password-123");
+  await fillSignupDemographics(page);
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
 
@@ -967,8 +989,10 @@ let orderUrl = "";
   await page.fill("#name", "Forgot Flow Tester");
   await page.fill("#email", email);
   await page.fill("#password", "original-password-123");
+  await fillSignupDemographics(page);
   await page.click('button[type=submit]');
   await page.waitForURL(`${BASE}/journal`, { timeout: 10000 });
+  await dismissJournalNotice(page);
 
   await page.click('button:has-text("Log out")');
   await page.waitForURL(`${BASE}/`, { timeout: 10000 });

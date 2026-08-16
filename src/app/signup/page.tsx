@@ -6,12 +6,14 @@ import { DoodleField } from "@/components/decor";
 import SignupForm from "./signup-form";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { isGoogleSignInEnabled } from "@/lib/google-auth";
 
 export const metadata: Metadata = { title: "Sign Up" };
 
 export default async function SignupPage() {
   const dict = getDictionary(await getLocale());
   const t = dict.auth;
+  const googleEnabled = isGoogleSignInEnabled();
 
   return (
     <section className="grid md:min-h-[calc(100vh-73px)] md:grid-cols-2">
@@ -29,7 +31,7 @@ export default async function SignupPage() {
           <h1 className="font-display text-3xl font-medium text-brand-900">{t.signupTitle}</h1>
           <p className="mt-2 text-sm text-ink/60">{t.signupSubtitle}</p>
           <div className="mt-8">
-            <SignupForm dict={dict} />
+            <SignupForm dict={dict} googleEnabled={googleEnabled} />
           </div>
           <p className="mt-6 text-sm text-ink/60">
             {t.alreadyHaveAccount}{" "}

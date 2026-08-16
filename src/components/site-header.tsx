@@ -3,34 +3,26 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart } from "lucide-react";
 import { LogoLink } from "@/components/logo";
-import { useCart } from "@/lib/cart-context";
 import { logoutAction } from "@/lib/auth-actions";
 import type { SessionPayload } from "@/lib/session";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import LanguageSwitcher from "@/components/language-switcher";
-import SiteSearch from "@/components/site-search";
-import type { SearchItem } from "@/lib/search-index";
 
 export default function SiteHeader({
   user,
   locale,
   dict,
   arabicEnabled = true,
-  searchIndex,
 }: {
   user: SessionPayload | null;
   locale: Locale;
   dict: Dictionary;
   arabicEnabled?: boolean;
-  searchIndex: SearchItem[];
 }) {
   const [open, setOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const pathname = usePathname();
-  const { count } = useCart();
 
   const NAV_LINKS = [
     { href: "/about", label: dict.nav.about },
@@ -64,19 +56,6 @@ export default function SiteHeader({
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
-          <SiteSearch index={searchIndex} />
-          <Link
-            href="/cart"
-            className="relative text-sm font-medium text-ink/70 hover:text-brand-600 active:text-brand-600"
-          >
-            {dict.nav.cart}
-            {count > 0 && (
-              <span className="absolute -right-3 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-semibold text-white">
-                {count}
-              </span>
-            )}
-          </Link>
-
           {user ? (
             <div className="flex items-center gap-3">
               <Link
@@ -114,39 +93,21 @@ export default function SiteHeader({
           <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} compact arabicEnabled={arabicEnabled} />
         </div>
 
-        <div className={`flex items-center gap-1 md:hidden ${mobileSearchOpen ? "flex-1" : ""}`}>
-          <SiteSearch index={searchIndex} onOpenChange={setMobileSearchOpen} />
-          {!mobileSearchOpen && (
-            <>
-              <Link
-                href="/cart"
-                aria-label={`${dict.nav.cart}${count > 0 ? `, ${count}` : ""}`}
-                className="relative inline-flex items-center justify-center rounded-md p-2 text-ink"
-              >
-                <ShoppingCart className="h-5 w-5" strokeWidth={1.75} />
-                {count > 0 && (
-                  <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-semibold text-white">
-                    {count}
-                  </span>
-                )}
-              </Link>
-
-              <button
-                type="button"
-                onClick={() => setOpen((o) => !o)}
-                className="inline-flex items-center justify-center rounded-md p-2 text-ink"
-                aria-label={dict.nav.toggleMenu}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  {open ? (
-                    <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-                  ) : (
-                    <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-                  )}
-                </svg>
-              </button>
-            </>
-          )}
+        <div className="flex items-center gap-1 md:hidden">
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="inline-flex items-center justify-center rounded-md p-2 text-ink"
+            aria-label={dict.nav.toggleMenu}
+          >
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {open ? (
+                <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+              ) : (
+                <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
 
