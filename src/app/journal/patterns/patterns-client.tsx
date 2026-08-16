@@ -2,19 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getMoodPatternsData } from "@/lib/journal-actions";
+import { getMoodPatterns, type MoodPatterns } from "@/lib/local-journal";
 import { moodColor, moodLabel } from "@/lib/moods";
-import type { MoodPatterns } from "@/lib/mood-patterns";
 import { Container } from "@/components/ui";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export default function PatternsClient() {
+export default function PatternsClient({ userId }: { userId: string }) {
   const [data, setData] = useState<MoodPatterns | null | undefined>(undefined);
 
   useEffect(() => {
-    getMoodPatternsData().then(setData);
-  }, []);
+    getMoodPatterns(userId).then(setData);
+  }, [userId]);
 
   if (data === undefined) return null;
 

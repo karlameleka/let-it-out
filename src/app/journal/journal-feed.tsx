@@ -4,26 +4,36 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BarChart3, BookOpen, LockKeyhole, PlusCircle, Search, Star } from "lucide-react";
-import { getJournalFeedData, toggleBookmark, type JournalFeedEntry } from "@/lib/journal-actions";
-import type { JournalStats } from "@/lib/journal-stats";
+import { exportJournalEntries } from "@/lib/journal-actions";
+import { getFeedData, toggleBookmark, migrateFromServer, type JournalFeedEntry, type JournalStats } from "@/lib/local-journal";
 import { relockJournal } from "@/components/journal-lock-gate";
 import { moodColor, moodLabel } from "@/lib/moods";
 import { ButtonLink } from "@/components/ui";
 import JournalDataNotice from "@/components/journal-data-notice";
 
-export default function JournalFeed({ firstName, lockEnabled }: { firstName: string; lockEnabled: boolean }) {
+export default function JournalFeed({
+  userId,
+  firstName,
+  lockEnabled,
+}: {
+  userId: string;
+  firstName: string;
+  lockEnabled: boolean;
+}) {
   const [entries, setEntries] = useState<JournalFeedEntry[] | null>(null);
   const [stats, setStats] = useState<JournalStats | null>(null);
   const [query, setQuery] = useState("");
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
 
   useEffect(() => {
-    getJournalFeedData().then((data) => {
-      if (!data) return;
+    async function load() {
+      await migrateFromServer(userId, async () => (await exportJournalEntries())?.entries ?? []);
+      const data = await getFeedData(userId);
       setEntries(data.entries);
       setStats(data.stats);
-    });
-  }, []);
+    }
+    load();
+  }, [userId]);
 
   const filtered = useMemo(() => {
     if (!entries) return [];
@@ -37,7 +47,7 @@ export default function JournalFeed({ firstName, lockEnabled }: { firstName: str
 
   async function handleToggleBookmark(id: string) {
     setEntries((prev) => prev?.map((e) => (e.id === id ? { ...e, bookmarked: !e.bookmarked } : e)) ?? prev);
-    const result = await toggleBookmark(id);
+    const result = await toggleBookmark(userId, id);
     if (!result.success) {
       // revert on failure
       setEntries((prev) => prev?.map((e) => (e.id === id ? { ...e, bookmarked: !e.bookmarked } : e)) ?? prev);

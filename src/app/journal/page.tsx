@@ -199,7 +199,7 @@ export default async function JournalPage() {
 
   return (
     <JournalLockGate enabled={lockEnabled}>
-      <JournalFeed firstName={user.name.split(" ")[0]} lockEnabled={lockEnabled} />
+      <JournalFeed userId={user.userId} firstName={user.name.split(" ")[0]} lockEnabled={lockEnabled} />
     </JournalLockGate>
   );
 }

@@ -17,7 +17,7 @@ export default async function JournalEntryPage({
 
   return (
     <JournalLockGate enabled={lockEnabled}>
-      <EntryDetailClient id={id} />
+      <EntryDetailClient userId={user.userId} id={id} />
     </JournalLockGate>
   );
 }

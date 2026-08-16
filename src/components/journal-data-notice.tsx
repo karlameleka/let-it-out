@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 
-const STORAGE_KEY = "lio_journal_notice_dismissed";
+// Bumped from the old generic wording — this now makes a materially
+// different, more specific claim (device-only + encrypted), so previously
+// dismissed users see it again once.
+const STORAGE_KEY = "lio_journal_notice_dismissed_v2";
 
 export default function JournalDataNotice() {
   const [hydrated, setHydrated] = useState(false);
@@ -31,13 +34,13 @@ export default function JournalDataNotice() {
     <div className="animate-pop-in mx-auto mt-6 max-w-3xl px-4 sm:px-6">
       <div className="flex items-start gap-3 rounded-xl border border-brand-200 bg-white px-4 py-3.5 shadow-sm">
         <p className="flex-1 text-sm text-ink/70">
-          Your entries are private to you. If you ever delete your account, your journal
-          entries are permanently deleted along with it — you can download a full copy
-          anytime from{" "}
+          Your journal entries are stored only on this device — encrypted with AES-256-GCM
+          and never sent to our servers. That means they won&apos;t carry over if you switch
+          devices or clear your browser data. You can download a full copy anytime from{" "}
           <Link href="/account" className="font-medium text-brand-600 underline">
             Account settings
           </Link>
-          .
+          , and deleting your account erases everything stored here along with it.
         </p>
         <button
           type="button"

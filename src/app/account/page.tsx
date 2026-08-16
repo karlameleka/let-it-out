@@ -84,13 +84,13 @@ export default async function AccountPage() {
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{t.yourDataTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.yourDataDescription}</p>
-        <ExportDataButton dict={dict} />
+        <ExportDataButton dict={dict} userId={session.userId} />
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-red-700">{t.dangerZoneTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.dangerZoneDescription}</p>
-        <DeleteAccountForm dict={dict} />
+        <DeleteAccountForm dict={dict} userId={session.userId} />
       </div>
     </Container>
   );

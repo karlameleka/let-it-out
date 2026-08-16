@@ -5,35 +5,35 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import {
-  deleteJournalEntry,
-  getJournalEntryDetail,
+  deleteEntry,
+  getEntryDetail,
   toggleBookmark,
   type JournalEntryDetail,
-} from "@/lib/journal-actions";
+} from "@/lib/local-journal";
 import { moodLabel } from "@/lib/moods";
 import { MoodDot } from "@/components/mood-dot";
 import { Container } from "@/components/ui";
 
-export default function EntryDetailClient({ id }: { id: string }) {
+export default function EntryDetailClient({ userId, id }: { userId: string; id: string }) {
   const router = useRouter();
   const [entry, setEntry] = useState<JournalEntryDetail | null | undefined>(undefined);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    getJournalEntryDetail(id).then(setEntry);
-  }, [id]);
+    getEntryDetail(userId, id).then(setEntry);
+  }, [userId, id]);
 
   async function handleToggleBookmark() {
     if (!entry) return;
     setEntry({ ...entry, bookmarked: !entry.bookmarked });
-    const result = await toggleBookmark(id);
+    const result = await toggleBookmark(userId, id);
     if (!result.success) setEntry((prev) => (prev ? { ...prev, bookmarked: !prev.bookmarked } : prev));
   }
 
   async function handleDelete() {
     setDeleting(true);
-    const result = await deleteJournalEntry(id);
+    const result = await deleteEntry(userId, id);
     if (result.success) {
       router.push("/journal");
     } else {

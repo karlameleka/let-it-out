@@ -1,13 +1,40 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { deleteAccountAction } from "@/lib/auth-actions";
+import { clearAllEntries } from "@/lib/local-journal";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function DeleteAccountForm({ dict }: { dict: Dictionary }) {
-  const [state, formAction, pending] = useActionState(deleteAccountAction, undefined);
+export default function DeleteAccountForm({ dict, userId }: { dict: Dictionary; userId: string }) {
+  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const t = dict.account;
+
+  // Called directly (not via <form action>) so this component controls the
+  // exact order of operations: the server only deletes the account once the
+  // password checks out, and only then do we wipe the local journal store —
+  // using <form action> here would let Next's automatic revalidation of
+  // /account (which redirects to /login the instant the session is gone)
+  // race ahead of and cancel the local cleanup.
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const result = await deleteAccountAction(undefined, formData);
+    if (result?.error) {
+      setPending(false);
+      setError(result.error);
+      return;
+    }
+
+    await clearAllEntries(userId);
+    router.push("/");
+  }
 
   if (!confirming) {
     return (
@@ -22,7 +49,7 @@ export default function DeleteAccountForm({ dict }: { dict: Dictionary }) {
   }
 
   return (
-    <form action={formAction} className="animate-pop-in mt-5 space-y-4 rounded-xl border-2 border-red-200 bg-red-50 p-5">
+    <form onSubmit={handleSubmit} className="animate-pop-in mt-5 space-y-4 rounded-xl border-2 border-red-200 bg-red-50 p-5">
       <p className="text-sm font-medium text-red-800">{t.deleteWarning}</p>
       <div>
         <label
@@ -40,7 +67,7 @@ export default function DeleteAccountForm({ dict }: { dict: Dictionary }) {
           className="w-full rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-red-500"
         />
       </div>
-      {state?.error && <p className="text-sm text-red-700">{state.error}</p>}
+      {error && <p className="text-sm text-red-700">{error}</p>}
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
@@ -52,6 +79,7 @@ export default function DeleteAccountForm({ dict }: { dict: Dictionary }) {
         <button
           type="button"
           onClick={() => setConfirming(false)}
+          disabled={pending}
           className="rounded border border-brand-200 px-5 py-2.5 text-sm font-medium text-ink/60 transition-colors hover:border-brand-300 active:border-brand-300"
         >
           {t.cancel}

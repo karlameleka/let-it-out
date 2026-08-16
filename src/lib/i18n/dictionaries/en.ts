@@ -370,7 +370,8 @@ const en = {
     updating: "Updating…",
     passwordUpdated: "Password updated.",
     yourDataTitle: "Your data",
-    yourDataDescription: "Download a complete copy of everything you've written in your journal, as a JSON file.",
+    yourDataDescription:
+      "Your journal is stored only on this device, encrypted with AES-256-GCM — it never reaches our servers. Download a complete copy of everything you've written, as a JSON file.",
     downloadButton: "Download my journal entries (JSON)",
     preparingExport: "Preparing your export…",
     exportError: "Couldn't export your data — please try again.",

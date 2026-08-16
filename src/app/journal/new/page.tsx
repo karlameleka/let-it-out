@@ -35,7 +35,7 @@ export default async function NewJournalEntryPage() {
           ?
         </h1>
         <div className="mt-8">
-          <NewEntryClient initialPrompt={prompt} />
+          <NewEntryClient userId={user.userId} initialPrompt={prompt} />
         </div>
       </Container>
     </JournalLockGate>

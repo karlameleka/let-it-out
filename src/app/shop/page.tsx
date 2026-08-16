@@ -35,7 +35,7 @@ export default async function ShopPage() {
 
   return (
     <>
-      <section className="bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
+      <section className="bg-brand-50 pt-6 pb-4 sm:pt-14 sm:pb-20">
         <Container>
           <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
@@ -54,7 +54,7 @@ export default async function ShopPage() {
 
       <WaveDivider fill="fill-white" />
 
-      <section className="pb-16 pt-4 sm:pb-20">
+      <section className="pb-16 pt-2 sm:pb-20">
         <Reveal>
           <Container>
           <SectionHeading eyebrow={t.ourJournalsEyebrow} title={t.ourJournalsTitle} />

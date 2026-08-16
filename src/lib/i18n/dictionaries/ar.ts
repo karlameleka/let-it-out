@@ -362,7 +362,8 @@ const ar: Dictionary = {
     updating: "جارٍ التحديث…",
     passwordUpdated: "تم تحديث كلمة المرور.",
     yourDataTitle: "بياناتك",
-    yourDataDescription: "حمّل نسخة كاملة من كل ما كتبته في يومياتك، كملف JSON.",
+    yourDataDescription:
+      "تُحفظ يومياتك على هذا الجهاز فقط، مشفّرة بتقنية AES-256-GCM، ولا تصل إلى خوادمنا أبدًا. حمّل نسخة كاملة من كل ما كتبته، كملف JSON.",
     downloadButton: "تحميل تدويناتي (JSON)",
     preparingExport: "جارٍ تجهيز ملفك…",
     exportError: "تعذّر تصدير بياناتك — يرجى المحاولة مرة أخرى.",

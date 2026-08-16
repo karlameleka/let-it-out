@@ -16,7 +16,7 @@ export default async function ResourcesPage() {
   const settings = await getSiteSettings();
 
   const exercises = settings.cbtExerciseHidden ? null : (
-    <section className="py-8 sm:py-10" key="exercises">
+    <section className="pt-2 pb-8 sm:py-10" key="exercises">
       <Reveal>
         <Container>
           <SectionHeading eyebrow="Practice" title="Interactive exercises" />
@@ -45,7 +45,7 @@ export default async function ResourcesPage() {
   );
 
   const articles = (
-    <section className="py-8 sm:py-10" key="articles">
+    <section className="pt-2 pb-8 sm:py-10" key="articles">
       <Reveal>
         <Container>
           <SectionHeading eyebrow="Read" title="Latest articles" />
@@ -59,7 +59,7 @@ export default async function ResourcesPage() {
 
   return (
     <>
-      <section className="bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
+      <section className="bg-brand-50 pt-6 pb-4 sm:pt-14 sm:pb-20">
         <Container>
           <Ribbon>Free resources</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">

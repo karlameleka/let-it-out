@@ -15,7 +15,7 @@ export default async function MoodPatternsPage() {
 
   return (
     <JournalLockGate enabled={lockEnabled}>
-      <PatternsClient />
+      <PatternsClient userId={user.userId} />
     </JournalLockGate>
   );
 }

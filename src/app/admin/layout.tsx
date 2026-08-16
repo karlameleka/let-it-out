@@ -6,6 +6,7 @@ import { Container } from "@/components/ui";
 const TABS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/crm", label: "CRM" },
+  { href: "/admin/clients", label: "Clients" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/counselors", label: "Counselors" },

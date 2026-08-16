@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { ImagePlus, Shuffle, X } from "lucide-react";
-import { createJournalEntry, shufflePrompt } from "@/lib/journal-actions";
+import { shufflePrompt } from "@/lib/journal-actions";
+import { createEntry, type EntryFormState } from "@/lib/local-journal";
 import { compressImage } from "@/lib/compress-image";
 import { Button } from "@/components/ui";
 import { CORE_EMOTIONS, getSecondaryEmotions, type CoreEmotionId } from "@/lib/moods";
@@ -20,21 +21,40 @@ const PHOTO_PERMISSION_KEY = "lio_photo_access_granted";
 type Prompt = { id: string; category: string; text: string } | null;
 
 export default function EntryForm({
+  userId,
   initialPrompt,
   onSaved,
 }: {
+  userId: string;
   initialPrompt: Prompt;
   /** Called once per successful save, in addition to the form's own
    * reset-for-next-entry behavior below — e.g. to navigate back to the
    * feed once the composer is done. */
   onSaved?: () => void;
 }) {
-  const [state, formAction, pending] = useActionState(createJournalEntry, undefined);
   const [mood, setMood] = useState<string | null>(null);
   const [expandedCore, setExpandedCore] = useState<CoreEmotionId | null>(null);
   const [key, setKey] = useState(0);
-  const [lastHandledState, setLastHandledState] = useState(state);
   const [prompt, setPrompt] = useState(initialPrompt);
+
+  async function saveLocally(_prevState: EntryFormState, formData: FormData): Promise<EntryFormState> {
+    const content = String(formData.get("content") ?? "").trim();
+    if (!content) return { error: "Write a little something before saving." };
+    try {
+      await createEntry(userId, {
+        content,
+        mood: (String(formData.get("mood") ?? "") || null),
+        photoUrl: (String(formData.get("photoUrl") ?? "") || null),
+        prompt: prompt ? { category: prompt.category, text: prompt.text } : null,
+      });
+      return { success: true };
+    } catch {
+      return { error: "Couldn't save that entry — try again." };
+    }
+  }
+
+  const [state, formAction, pending] = useActionState(saveLocally, undefined);
+  const [lastHandledState, setLastHandledState] = useState(state);
   const [celebration] = useState(() => CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)]);
   const [shuffling, startShuffle] = useTransition();
   const [photo, setPhoto] = useState<string | null>(null);
@@ -147,7 +167,6 @@ export default function EntryForm({
       </div>
 
       <form action={formAction} key={key} className="space-y-4">
-        {prompt?.id && <input type="hidden" name="promptId" value={prompt.id} />}
         <input type="hidden" name="mood" value={mood ?? ""} />
 
         <div className="overflow-hidden rounded-xl border border-brand-200 bg-white focus-within:border-brand-500">

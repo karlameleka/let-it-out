@@ -221,7 +221,7 @@ const deleteAccountSchema = z.object({
   password: z.string().min(1, "Please enter your password."),
 });
 
-export type DeleteAccountFormState = { error?: string } | undefined;
+export type DeleteAccountFormState = { error?: string; success?: boolean } | undefined;
 
 export async function deleteAccountAction(
   _prevState: DeleteAccountFormState,
@@ -254,7 +254,10 @@ export async function deleteAccountAction(
   ]);
 
   await destroySession();
-  redirect("/");
+  // No server-side redirect() here: the client clears the device-only
+  // journal store first (this account's data, tied to userId, would
+  // otherwise be orphaned in IndexedDB), then navigates itself.
+  return { success: true };
 }
 
 const forgotPasswordSchema = z.object({

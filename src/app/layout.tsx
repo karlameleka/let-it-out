@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { ViewTransition } from "react";
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/site-header";
@@ -83,7 +84,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               arabicEnabled={settings.arabicEnabled}
               searchIndex={searchIndex}
             />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1">
+              <ViewTransition name="page-content">{children}</ViewTransition>
+            </main>
             <SiteFooter locale={locale} dict={dict.footer} />
             <WorkshopInterestPopup />
             <EntryGates />

@@ -165,3 +165,23 @@ select:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+/* Page-to-page crossfade (see the ViewTransition wrapping <main> in
+   layout.tsx) — keeps the page interactive mid-transition and honors
+   reduced-motion, since the pseudo-elements below aren't matched by the
+   `*` rule above. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(page-content),
+::view-transition-new(page-content) {
+  animation-duration: 0.18s;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+  }
+}

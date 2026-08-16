@@ -5,13 +5,23 @@ import Link from "next/link";
 import { Search, X } from "lucide-react";
 import type { SearchItem } from "@/lib/search-index";
 
-export default function SiteSearch({ index }: { index: SearchItem[] }) {
+export default function SiteSearch({
+  index,
+  onOpenChange,
+}: {
+  index: SearchItem[];
+  /** Lets the header hide neighboring icons (cart, menu) while the mobile
+   * search box is open, so it can take the full row width predictably
+   * instead of fighting for space via flex-grow. */
+  onOpenChange?: (open: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    onOpenChange?.(open);
     if (!open) return;
     const raf = requestAnimationFrame(() => inputRef.current?.focus());
     function onKey(e: KeyboardEvent) {
@@ -27,7 +37,7 @@ export default function SiteSearch({ index }: { index: SearchItem[] }) {
       window.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onClickOutside);
     };
-  }, [open]);
+  }, [open, onOpenChange]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,7 +62,7 @@ export default function SiteSearch({ index }: { index: SearchItem[] }) {
           <Search className="h-5 w-5" strokeWidth={1.75} />
         </button>
       ) : (
-        <div className="flex w-full items-center gap-2 rounded-full border-[1.5px] border-brand-300 bg-white py-1.5 pl-3.5 pr-2 shadow-sm transition-all md:w-64 lg:w-72">
+        <div className="animate-pop-in flex w-full items-center gap-2 rounded-full border-[1.5px] border-brand-300 bg-white py-1.5 pl-3.5 pr-2 shadow-sm md:w-64 lg:w-72">
           <Search className="h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
           <input
             ref={inputRef}
@@ -74,7 +84,7 @@ export default function SiteSearch({ index }: { index: SearchItem[] }) {
       )}
 
       {open && query.trim() !== "" && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-xl sm:w-96">
+        <div className="animate-pop-in absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm origin-top overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-xl sm:w-96">
           <div className="max-h-[60vh] overflow-y-auto p-2">
             {results.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-ink/50">

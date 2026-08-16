@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { exportJournalEntries } from "@/lib/journal-actions";
+import { exportEntries } from "@/lib/local-journal";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function ExportDataButton({ dict }: { dict: Dictionary }) {
+export default function ExportDataButton({ dict, userId }: { dict: Dictionary; userId: string }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = dict.account;
@@ -13,12 +13,15 @@ export default function ExportDataButton({ dict }: { dict: Dictionary }) {
     setPending(true);
     setError(null);
 
-    const data = await exportJournalEntries();
-    setPending(false);
-    if (!data) {
+    let data;
+    try {
+      data = await exportEntries(userId);
+    } catch {
+      setPending(false);
       setError(t.exportError);
       return;
     }
+    setPending(false);
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
