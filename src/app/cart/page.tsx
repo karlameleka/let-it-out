@@ -13,7 +13,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <Container className="pt-14 pb-20 text-center">
+      <Container className="pt-8 pb-14 text-center sm:pt-14 sm:pb-20">
         <h1 className="font-display text-2xl font-semibold text-brand-900">Your cart is empty</h1>
         <p className="mt-2 text-ink/60">Browse our guided journals to get started.</p>
         <ButtonLink href="/shop" className="mt-6">
@@ -24,7 +24,7 @@ export default function CartPage() {
   }
 
   return (
-    <Container className="pt-10 pb-16 sm:pt-14 sm:pb-20">
+    <Container className="pt-6 pb-10 sm:pt-14 sm:pb-20">
       <h1 className="font-display text-3xl font-medium text-brand-900">Your cart</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">

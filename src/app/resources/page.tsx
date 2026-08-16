@@ -59,7 +59,7 @@ export default async function ResourcesPage() {
 
   return (
     <>
-      <section className="bg-brand-50 pt-10 pb-16 sm:pt-14 sm:pb-20">
+      <section className="bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
         <Container>
           <Ribbon>Free resources</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">

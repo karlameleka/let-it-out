@@ -37,7 +37,7 @@ export default async function HomePage({
       {/* Hero */}
       <section className="relative overflow-hidden bg-brand-50">
         <DoodleField />
-        <Container className="relative pt-14 pb-20 sm:pt-20 sm:pb-28">
+        <Container className="relative pt-8 pb-14 sm:pt-20 sm:pb-28">
           <div className="max-w-2xl">
             <Ribbon>{t.heroRibbon}</Ribbon>
             <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>

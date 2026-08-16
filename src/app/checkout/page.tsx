@@ -63,7 +63,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <Container className="pt-14 pb-20 text-center">
+      <Container className="pt-8 pb-14 text-center sm:pt-14 sm:pb-20">
         <h1 className="font-display text-2xl font-semibold text-brand-900">Your cart is empty</h1>
         <ButtonLink href="/shop" className="mt-6">Shop journals</ButtonLink>
       </Container>
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <Container className="pt-10 pb-16 sm:pt-14 sm:pb-20">
+    <Container className="pt-6 pb-10 sm:pt-14 sm:pb-20">
       <h1 className="font-display text-3xl font-medium text-brand-900">Checkout</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">

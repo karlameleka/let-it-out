@@ -15,7 +15,7 @@ export default async function ContactPage() {
   const t = dict.contact;
 
   return (
-    <section className="pt-10 pb-16 sm:pt-14 sm:pb-24">
+    <section className="pt-6 pb-10 sm:pt-14 sm:pb-24">
       <Container className="grid gap-12 md:grid-cols-2">
         <div>
           <SectionHeading eyebrow={t.eyebrow} title={t.title} description={t.description} />

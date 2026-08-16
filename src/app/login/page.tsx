@@ -14,7 +14,7 @@ export default async function LoginPage() {
   const t = dict.auth;
 
   return (
-    <section className="grid min-h-[calc(100vh-73px)] md:grid-cols-2">
+    <section className="grid md:min-h-[calc(100vh-73px)] md:grid-cols-2">
       <div className="relative hidden items-center justify-center overflow-hidden bg-brand-800 p-12 text-white md:flex">
         <DoodleField />
         <div className="relative max-w-sm">
@@ -24,7 +24,7 @@ export default async function LoginPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center px-4 pt-10 pb-16 sm:px-6 sm:pt-14">
+      <div className="flex justify-center px-4 pt-6 pb-10 sm:px-6 sm:pt-14 sm:pb-16 md:items-center">
         <Container className="mx-auto max-w-sm px-0">
           <h1 className="font-display text-3xl font-medium text-brand-900">{t.loginTitle}</h1>
           <p className="mt-2 text-sm text-ink/60">{t.loginSubtitle}</p>

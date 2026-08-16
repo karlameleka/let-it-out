@@ -24,7 +24,7 @@ export default async function WorkshopsPage() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-brand-50 pt-10 pb-16 sm:pt-14 sm:pb-20">
+      <section className="relative overflow-hidden bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
         <DoodleField />
         <Container className="relative">
           <Ribbon>{t.ribbon}</Ribbon>
