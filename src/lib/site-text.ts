@@ -10,18 +10,19 @@ export const getSiteTextOverrides = cache(async (): Promise<Map<string, string>>
 });
 
 // Merges admin-entered overrides over a dictionary slice, matched by
-// "<prefix>.<objectKey>". Only applied for English — Arabic strings are
-// never touched, since overrides are always typed in English.
+// "<prefix>.<objectKey>" for English and "<prefix>.<objectKey>.ar" for
+// Arabic — each language is stored and applied independently.
 export function applyOverrides<T extends Record<string, string>>(
   base: T,
   prefix: string,
   overrides: Map<string, string>,
   locale: string
 ): T {
-  if (locale !== "en" || overrides.size === 0) return base;
+  if (overrides.size === 0) return base;
+  const suffix = locale === "ar" ? ".ar" : "";
   const result = { ...base };
   for (const key of Object.keys(base)) {
-    const value = overrides.get(`${prefix}.${key}`);
+    const value = overrides.get(`${prefix}.${key}${suffix}`);
     if (value) (result as Record<string, string>)[key] = value;
   }
   return result;

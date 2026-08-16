@@ -205,6 +205,8 @@ const en = {
     viewProfileCta: "View profile & book",
     speaks: "Speaks",
     sessionLengthBadge: "50-minute session",
+    waitlistBadge: "Waitlist",
+    unavailableBadge: "Unavailable",
     faqEyebrow: "Good to know",
     faqTitle: "Frequently asked questions",
     faq1Q: "Is what I share in session confidential?",
@@ -237,6 +239,13 @@ const en = {
     almostThere: "Almost there — pay",
     almostThereSuffix: "to unlock the scheduler and pick your exact time with",
     justAMoment: "Just a moment…",
+    waitlistHeading: "Currently on the waitlist",
+    waitlistDescription:
+      "This counselor's calendar is full right now. Reach out through our contact page and we'll notify you as soon as a spot opens up.",
+    unavailableHeading: "Not accepting new clients right now",
+    unavailableDescription:
+      "This counselor isn't taking new bookings at the moment. Browse our other counselors, or reach out through our contact page and we'll help you find the right fit.",
+    contactCta: "Contact us",
   },
   bookingForm: {
     receivedTitle: "Request received",

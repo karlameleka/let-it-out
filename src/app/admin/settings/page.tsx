@@ -1,6 +1,7 @@
 import { getSiteSettings, updateSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, updateSiteText } from "@/lib/site-text";
 import en from "@/lib/i18n/dictionaries/en";
+import ar from "@/lib/i18n/dictionaries/ar";
 import { ARTICLES } from "@/lib/content/articles";
 
 const HERO_FIELDS: [key: string, label: string][] = [
@@ -41,27 +42,44 @@ function TextOverrideField({
   fieldKey,
   label,
   defaultText,
+  defaultTextAr,
   overrides,
 }: {
   prefix: string;
   fieldKey: string;
   label: string;
   defaultText: string;
+  defaultTextAr: string;
   overrides: Map<string, string>;
 }) {
   const name = `text.${prefix}.${fieldKey}`;
+  const nameAr = `${name}.ar`;
   return (
     <div>
       <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={name}>
         {label}
       </label>
-      <input
-        id={name}
-        name={name}
-        defaultValue={overrides.get(`${prefix}.${fieldKey}`) ?? ""}
-        placeholder={defaultText}
-        className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
-      />
+      <div className="flex items-center gap-2">
+        <span className="w-6 shrink-0 text-center text-[10px] font-semibold uppercase text-ink/30">EN</span>
+        <input
+          id={name}
+          name={name}
+          defaultValue={overrides.get(`${prefix}.${fieldKey}`) ?? ""}
+          placeholder={defaultText}
+          className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+        />
+      </div>
+      <div className="mt-1.5 flex items-center gap-2">
+        <span className="w-6 shrink-0 text-center text-[10px] font-semibold uppercase text-ink/30">AR</span>
+        <input
+          id={nameAr}
+          name={nameAr}
+          dir="rtl"
+          defaultValue={overrides.get(`${prefix}.${fieldKey}.ar`) ?? ""}
+          placeholder={defaultTextAr}
+          className="w-full rounded-lg border border-brand-200 bg-brand-50/40 px-3 py-2 text-right text-sm outline-none focus:border-brand-500"
+        />
+      </div>
     </div>
   );
 }
@@ -167,8 +185,8 @@ export default async function AdminSettingsPage() {
       <div>
         <h2 className="font-display text-lg font-semibold text-brand-900">Homepage &amp; navigation text</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Override specific English text on the site without touching code. Leave a field blank to use the
-          default shown as its placeholder. These overrides only apply in English — Arabic pages are unaffected.
+          Override specific text on the site without touching code, in either language. Leave a field blank to
+          use the default shown as its placeholder — English and Arabic are saved and applied independently.
         </p>
 
         <form action={updateSiteText} className="mt-5 space-y-8">
@@ -182,6 +200,7 @@ export default async function AdminSettingsPage() {
                   fieldKey={key}
                   label={label}
                   defaultText={en.home[key as keyof typeof en.home]}
+                  defaultTextAr={ar.home[key as keyof typeof ar.home]}
                   overrides={textOverrides}
                 />
               ))}
@@ -198,6 +217,7 @@ export default async function AdminSettingsPage() {
                   fieldKey={key}
                   label={label}
                   defaultText={en.home[key as keyof typeof en.home]}
+                  defaultTextAr={ar.home[key as keyof typeof ar.home]}
                   overrides={textOverrides}
                 />
               ))}
@@ -217,6 +237,7 @@ export default async function AdminSettingsPage() {
                   fieldKey={key}
                   label={label}
                   defaultText={en.nav[key as keyof typeof en.nav]}
+                  defaultTextAr={ar.nav[key as keyof typeof ar.nav]}
                   overrides={textOverrides}
                 />
               ))}

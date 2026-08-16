@@ -160,3 +160,22 @@ export async function updateCounselorPlacement(formData: FormData) {
   revalidatePath("/counseling");
   revalidatePath("/");
 }
+
+export async function updateCounselorDetails(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const priceRaw = String(formData.get("priceEGP") ?? "").trim();
+  const availabilityStatus = String(formData.get("availabilityStatus") ?? "AVAILABLE");
+  await prisma.counselor.update({
+    where: { id: counselorId },
+    data: {
+      priceEGP: priceRaw === "" ? null : Math.max(0, Number(priceRaw)),
+      availabilityStatus: availabilityStatus as never,
+    },
+  });
+  revalidatePath("/admin/counselors");
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
+  revalidatePath("/counseling/[slug]", "page");
+  revalidatePath("/");
+}

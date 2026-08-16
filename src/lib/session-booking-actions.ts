@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
+import { sendIntakeFormLink } from "@/lib/intake-actions";
 import { formatEGP } from "@/lib/format";
 
 const createSessionBookingSchema = z.object({
@@ -90,6 +91,14 @@ export async function createSessionBooking(
       { label: "Preferred day", value: booking.preferredDate },
       { label: "Price", value: formatEGP(counselor.priceEGP) },
     ],
+  });
+
+  await sendIntakeFormLink({
+    clientName: booking.name,
+    clientEmail: booking.email,
+    counselorId: counselor.id,
+    counselorName: counselor.name,
+    counselorEmail: counselor.email,
   });
 
   return { sessionBookingId: booking.id };

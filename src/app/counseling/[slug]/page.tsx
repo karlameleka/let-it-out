@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
@@ -55,9 +56,24 @@ export default async function CounselorPage({
               </div>
             )}
             <div>
-              <h1 className="font-display text-3xl font-medium text-brand-900 sm:text-4xl">
-                {counselor.name}
-              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="font-display text-3xl font-medium text-brand-900 sm:text-4xl">
+                  {counselor.name}
+                </h1>
+                {counselor.availabilityStatus !== "AVAILABLE" && (
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                      counselor.availabilityStatus === "WAITLIST"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-ink/10 text-ink/60"
+                    }`}
+                  >
+                    {counselor.availabilityStatus === "WAITLIST"
+                      ? dict.counseling.waitlistBadge
+                      : dict.counseling.unavailableBadge}
+                  </span>
+                )}
+              </div>
               <p className="text-sm font-medium text-brand-600">{counselor.credentials}</p>
             </div>
           </div>
@@ -90,7 +106,26 @@ export default async function CounselorPage({
 
         <div className="md:col-span-2">
           <div className="sticky top-24 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
-            {counselor.bookingUrl && counselor.priceEGP ? (
+            {counselor.availabilityStatus !== "AVAILABLE" ? (
+              <>
+                <h2 className="font-display text-lg font-semibold text-brand-900">
+                  {counselor.availabilityStatus === "WAITLIST"
+                    ? dict.counselorProfile.waitlistHeading
+                    : dict.counselorProfile.unavailableHeading}
+                </h2>
+                <p className="mt-2 text-sm text-ink/60">
+                  {counselor.availabilityStatus === "WAITLIST"
+                    ? dict.counselorProfile.waitlistDescription
+                    : dict.counselorProfile.unavailableDescription}
+                </p>
+                <Link
+                  href="/contact"
+                  className="mt-4 inline-block rounded bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-900/20 transition-all duration-300 ease-out hover:bg-brand-600"
+                >
+                  {dict.counselorProfile.contactCta}
+                </Link>
+              </>
+            ) : counselor.bookingUrl && counselor.priceEGP ? (
               <>
                 <h2 className="font-display text-lg font-semibold text-brand-900">
                   {t.bookHeading}

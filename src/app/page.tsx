@@ -28,7 +28,9 @@ export default async function HomePage({
     getLocale(),
     getSiteTextOverrides(),
   ]);
-  const t = applyOverrides(getDictionary(locale).home, "home", overrides, locale);
+  const dict = getDictionary(locale);
+  const t = applyOverrides(dict.home, "home", overrides, locale);
+  const ct = dict.counseling;
 
   return (
     <>
@@ -160,12 +162,33 @@ export default async function HomePage({
                   href={`/counseling/${c.slug}`}
                   className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
                 >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30 group-hover:bg-white/10 group-active:bg-white/10 group-hover:text-white group-active:text-white">
-                    {c.name.split(" ").map((n) => n[0]).join("")}
+                  {c.photoUrl ? (
+                    <Image
+                      src={c.photoUrl}
+                      alt={c.name}
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30"
+                    />
+                  ) : (
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30 group-hover:bg-white/10 group-active:bg-white/10 group-hover:text-white group-active:text-white">
+                      {c.name.split(" ").map((n) => n[0]).join("")}
+                    </div>
+                  )}
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
+                      {c.name}
+                    </h3>
+                    {c.availabilityStatus !== "AVAILABLE" && (
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                          c.availabilityStatus === "WAITLIST" ? "bg-amber-100 text-amber-800" : "bg-ink/10 text-ink/60"
+                        }`}
+                      >
+                        {c.availabilityStatus === "WAITLIST" ? ct.waitlistBadge : ct.unavailableBadge}
+                      </span>
+                    )}
                   </div>
-                  <h3 className="mt-4 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
-                    {c.name}
-                  </h3>
                   <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
                   <p className="mt-3 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
                     {t.teamViewProfile} &rarr;

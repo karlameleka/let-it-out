@@ -204,6 +204,8 @@ const ar: Dictionary = {
     viewProfileCta: "عرض الملف الشخصي والحجز",
     speaks: "يتحدث",
     sessionLengthBadge: "جلسة مدتها 50 دقيقة",
+    waitlistBadge: "قائمة الانتظار",
+    unavailableBadge: "غير متاح",
     faqEyebrow: "معلومات مفيدة",
     faqTitle: "الأسئلة الشائعة",
     faq1Q: "هل ما أشاركه في الجلسة سري؟",
@@ -234,6 +236,13 @@ const ar: Dictionary = {
     almostThere: "اقتربنا — ادفع",
     almostThereSuffix: "لفتح الجدول واختيار موعدك الدقيق مع",
     justAMoment: "لحظة من فضلك…",
+    waitlistHeading: "على قائمة الانتظار حاليًا",
+    waitlistDescription:
+      "جدول هذا المعالج ممتلئ حاليًا. تواصل معنا عبر صفحة التواصل وسنخطرك بمجرد توفر موعد.",
+    unavailableHeading: "لا يستقبل عملاء جدد حاليًا",
+    unavailableDescription:
+      "هذا المعالج لا يستقبل حجوزات جديدة في الوقت الحالي. تصفح معالجينا الآخرين، أو تواصل معنا عبر صفحة التواصل وسنساعدك في إيجاد الأنسب لك.",
+    contactCta: "تواصل معنا",
   },
   bookingForm: {
     receivedTitle: "تم استلام الطلب",

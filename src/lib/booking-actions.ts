@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
+import { sendIntakeFormLink } from "@/lib/intake-actions";
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   INDIVIDUAL_COUNSELING: "Individual",
@@ -113,6 +114,14 @@ export async function submitBookingRequest(
       { label: "Preferred date", value: booking.preferredDate },
       { label: "Preferred time", value: booking.preferredTime },
     ],
+  });
+
+  await sendIntakeFormLink({
+    clientName: booking.name,
+    clientEmail: booking.email,
+    counselorId: booking.counselor.id,
+    counselorName: booking.counselor.name,
+    counselorEmail: booking.counselor.email,
   });
 
   return { success: true };

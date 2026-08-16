@@ -81,9 +81,18 @@ model Counselor {
   // bookingUrl is set but this is null, Cal.com is shown directly (no
   // payment step yet).
   priceEGP     Int?
+  // Controls whether the booking UI on this counselor's page is live.
+  // WAITLIST/UNAVAILABLE both show a badge and hide the booking form.
+  availabilityStatus AvailabilityStatus @default(AVAILABLE)
 
   bookingRequests BookingRequest[]
   sessionBookings SessionBooking[]
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  WAITLIST
+  UNAVAILABLE
 }
 
 enum SessionBookingStatus {
@@ -108,6 +117,25 @@ model SessionBooking {
   paymentNote   String?              @db.Text
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
+}
+
+// Tracks an emailed intake-form link without ever storing the answers
+// themselves — only enough metadata to validate the link and route the
+// eventual submission. The token itself is only ever known as a raw value
+// in the emailed URL; here it's stored hashed, same pattern as password
+// reset. Counselor name/email are snapshotted at creation so a later
+// counselor-record change can't affect where an in-flight link is delivered.
+model IntakeFormToken {
+  id             String    @id @default(cuid())
+  tokenHash      String    @unique
+  clientName     String
+  clientEmail    String
+  counselorId    String
+  counselorName  String
+  counselorEmail String?
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  usedAt         DateTime?
 }
 
 enum SessionType {

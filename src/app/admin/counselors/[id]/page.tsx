@@ -3,6 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatEGP } from "@/lib/format";
+import { updateCounselorDetails } from "@/lib/admin-actions";
+
+const AVAILABILITY_OPTIONS = [
+  { value: "AVAILABLE", label: "Available" },
+  { value: "WAITLIST", label: "Waitlist" },
+  { value: "UNAVAILABLE", label: "Unavailable" },
+] as const;
 
 function countByStatus<T extends string>(rows: { status: T }[]) {
   const counts: Record<string, number> = {};
@@ -79,9 +86,6 @@ export default async function AdminCounselorDetailPage({
           {counselor.languages.length > 0 && (
             <p className="mt-2 text-sm text-ink/60">Languages: {counselor.languages.join(", ")}</p>
           )}
-          <p className="mt-2 text-sm text-ink/60">
-            {counselor.priceEGP ? `Session price: ${formatEGP(counselor.priceEGP)}` : "No session price set"}
-          </p>
           <p className="mt-1 text-sm text-ink/60">
             Notification email: {counselor.email ?? <span className="text-ink/40">Not set</span>}
           </p>
@@ -96,6 +100,54 @@ export default async function AdminCounselorDetailPage({
             Open Cal.com dashboard →
           </a>
         )}
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <h2 className="font-display font-semibold text-brand-900">Price &amp; availability</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Controls what visitors see and whether the booking form is live on this counselor&rsquo;s public page.
+        </p>
+        <form action={updateCounselorDetails} className="mt-4 flex flex-wrap items-end gap-4">
+          <input type="hidden" name="counselorId" value={counselor.id} />
+          <label className="text-sm text-ink/70">
+            <span className="mb-1 block font-medium text-ink/80">Session price (EGP)</span>
+            <input
+              type="number"
+              name="priceEGP"
+              min={0}
+              defaultValue={counselor.priceEGP ?? ""}
+              placeholder="Not set"
+              className="w-40 rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            />
+          </label>
+          <label className="text-sm text-ink/70">
+            <span className="mb-1 block font-medium text-ink/80">Availability</span>
+            <select
+              name="availabilityStatus"
+              defaultValue={counselor.availabilityStatus}
+              className="w-40 rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500"
+            >
+              {AVAILABILITY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            Save
+          </button>
+        </form>
+        <p className="mt-3 text-xs text-ink/50">
+          {counselor.priceEGP ? `Currently: ${formatEGP(counselor.priceEGP)}` : "Currently: no session price set"}
+          {" · "}
+          {counselor.availabilityStatus === "AVAILABLE"
+            ? "Bookable now"
+            : counselor.availabilityStatus === "WAITLIST"
+              ? "Showing a Waitlist badge, booking hidden"
+              : "Showing an Unavailable badge, booking hidden"}
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

@@ -4,20 +4,13 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { createSession, destroySession, requireUser } from "@/lib/session";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { createLead } from "@/lib/leads";
+import { getBaseUrl } from "@/lib/base-url";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-async function getBaseUrl() {
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const protocol = host.startsWith("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
-}
 
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name."),

@@ -14,7 +14,27 @@ type Counselor = {
   specialties: string[];
   languages: string[];
   photoUrl: string | null;
+  availabilityStatus: "AVAILABLE" | "WAITLIST" | "UNAVAILABLE";
 };
+
+function AvailabilityBadge({
+  status,
+  dict,
+}: {
+  status: Counselor["availabilityStatus"];
+  dict: Dictionary["counseling"];
+}) {
+  if (status === "AVAILABLE") return null;
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+        status === "WAITLIST" ? "bg-amber-100 text-amber-800" : "bg-ink/10 text-ink/60"
+      }`}
+    >
+      {status === "WAITLIST" ? dict.waitlistBadge : dict.unavailableBadge}
+    </span>
+  );
+}
 
 type Step = "concern" | "language" | "results";
 
@@ -105,7 +125,10 @@ export default function CounselorFinder({
                 {c.name.split(" ").map((n) => n[0]).join("")}
               </div>
             )}
-            <h3 className="mt-4 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.name}</h3>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.name}</h3>
+              <AvailabilityBadge status={c.availabilityStatus} dict={t} />
+            </div>
             <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {c.specialties.slice(0, 3).map((s) => (
@@ -233,7 +256,10 @@ export default function CounselorFinder({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-display text-sm font-semibold text-brand-900">{c.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-display text-sm font-semibold text-brand-900">{c.name}</p>
+                              <AvailabilityBadge status={c.availabilityStatus} dict={t} />
+                            </div>
                             <p className="truncate text-xs text-ink/60">{c.credentials}</p>
                           </div>
                         </Link>
