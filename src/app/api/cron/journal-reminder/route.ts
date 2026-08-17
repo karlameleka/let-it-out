@@ -12,9 +12,16 @@ const MESSAGES = [
 export async function GET(req: NextRequest) {
   // Vercel Cron automatically sends this bearer token when CRON_SECRET is
   // set on the project — this also lets you trigger it manually for testing.
+  // Fails closed: this endpoint fans out a push notification to every
+  // subscribed user, so an unset secret must refuse the request rather than
+  // leave it open to anyone who finds the URL.
   const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error("[cron/journal-reminder] CRON_SECRET is not configured — refusing to run.");
+    return NextResponse.json({ error: "Not configured." }, { status: 500 });
+  }
   const authHeader = req.headers.get("authorization");
-  if (secret && authHeader !== `Bearer ${secret}`) {
+  if (authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

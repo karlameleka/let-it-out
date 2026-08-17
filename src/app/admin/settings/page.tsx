@@ -3,6 +3,9 @@ import { getSiteTextOverrides, updateSiteText } from "@/lib/site-text";
 import en from "@/lib/i18n/dictionaries/en";
 import ar from "@/lib/i18n/dictionaries/ar";
 import { ARTICLES } from "@/lib/content/articles";
+import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/db";
+import TwoFactorSettings from "@/components/two-factor-settings";
 
 const HERO_FIELDS: [key: string, label: string][] = [
   ["heroRibbon", "Ribbon text above the headline"],
@@ -85,11 +88,24 @@ function TextOverrideField({
 }
 
 export default async function AdminSettingsPage() {
-  const [settings, textOverrides] = await Promise.all([getSiteSettings(), getSiteTextOverrides()]);
+  const session = await getCurrentUser();
+  const [settings, textOverrides, currentUser] = await Promise.all([
+    getSiteSettings(),
+    getSiteTextOverrides(),
+    session ? prisma.user.findUnique({ where: { id: session.userId }, select: { totpEnabled: true } }) : null,
+  ]);
 
   return (
     <div className="max-w-3xl space-y-10">
       <div className="max-w-xl space-y-6">
+      <div>
+        <h2 className="font-display text-lg font-semibold text-brand-900">Your account security</h2>
+        <p className="mt-1 text-sm text-ink/60">Applies to the admin account you&apos;re logged in as.</p>
+        <div className="mt-3">
+          <TwoFactorSettings enabled={currentUser?.totpEnabled ?? false} />
+        </div>
+      </div>
+
       <p className="text-sm text-ink/60">
         Sitewide toggles — changes apply immediately, no redeploy needed.
       </p>

@@ -37,6 +37,22 @@ model User {
   // hash of it — so a database leak can't be used to reset accounts.
   resetTokenHash      String?   @unique
   resetTokenExpiresAt DateTime?
+  // Throttles forgot-password requests per account so the form can't be
+  // used to email-bomb someone's inbox.
+  lastPasswordResetRequestAt DateTime?
+
+  // Brute-force login lockout: counts consecutive failed password checks,
+  // reset to 0 on a successful login. lockedUntil is set once the count
+  // crosses the threshold and cleared automatically once it elapses.
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  // Optional TOTP two-factor authentication, currently offered to ADMIN
+  // accounts only (the highest-privilege role). totpSecret is stored
+  // AES-256-GCM encrypted at rest (see src/lib/totp.ts), never in plaintext.
+  totpSecret            String?
+  totpEnabled           Boolean  @default(false)
+  totpBackupCodeHashes  String[] @default([])
 
   // Demographics, required at signup (collected once, not editable later
   // from account settings). Columns stay nullable so accounts created
