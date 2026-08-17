@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatEGP } from "@/lib/format";
-import { updateCounselorDetails } from "@/lib/admin-actions";
+import { updateCounselorDetails, deleteCounselorClient } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 const AVAILABILITY_OPTIONS = [
   { value: "AVAILABLE", label: "Available" },
@@ -186,6 +187,7 @@ export default async function AdminCounselorDetailPage({
                   <th className="px-5 py-3">Email</th>
                   <th className="px-5 py-3">Phone</th>
                   <th className="px-5 py-3">Last contact</th>
+                  <th className="px-5 py-3"></th>
                 </tr>
               </thead>
               <tbody>
@@ -195,6 +197,18 @@ export default async function AdminCounselorDetailPage({
                     <td className="px-5 py-3 text-ink/70">{c.email}</td>
                     <td className="px-5 py-3 text-ink/70">{c.phone}</td>
                     <td className="px-5 py-3 text-ink/60">{c.lastContact.toLocaleString("en-GB")}</td>
+                    <td className="px-5 py-3 text-right">
+                      <form action={deleteCounselorClient}>
+                        <input type="hidden" name="counselorId" value={counselor.id} />
+                        <input type="hidden" name="email" value={c.email} />
+                        <ConfirmSubmitButton
+                          confirmMessage={`Delete ${c.name}'s booking history with ${counselor.name}? This removes their booking requests and paid session bookings with this counselor and can't be undone.`}
+                          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                        >
+                          Delete
+                        </ConfirmSubmitButton>
+                      </form>
+                    </td>
                   </tr>
                 ))}
               </tbody>

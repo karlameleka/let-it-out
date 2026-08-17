@@ -81,6 +81,21 @@ export async function deleteLead(formData: FormData) {
   revalidatePath("/admin/crm");
 }
 
+// The "Clients" list on a counselor's admin detail page is derived (grouped
+// by email) from that counselor's booking requests + paid session bookings,
+// not a single row — so "deleting a client" means clearing all of their
+// booking history with this specific counselor.
+export async function deleteCounselorClient(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const email = String(formData.get("email"));
+  await prisma.$transaction([
+    prisma.bookingRequest.deleteMany({ where: { counselorId, email } }),
+    prisma.sessionBooking.deleteMany({ where: { counselorId, email } }),
+  ]);
+  revalidatePath("/admin/counselors/[id]", "page");
+}
+
 export async function createPromoCode(formData: FormData) {
   await requireAdmin();
   const code = String(formData.get("code") || "").trim().toUpperCase();
