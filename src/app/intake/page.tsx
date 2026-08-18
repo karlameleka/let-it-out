@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui";
 import { validateIntakeToken } from "@/lib/intake-actions";
+import { getIntakeSections } from "@/lib/intake-form-config";
 import IntakeForm from "./intake-form";
 
 export const metadata: Metadata = {
@@ -27,5 +28,9 @@ export default async function IntakePage({
     );
   }
 
-  return <IntakeForm token={token} clientName={info.clientName} counselorName={info.counselorName} />;
+  const sections = await getIntakeSections();
+
+  return (
+    <IntakeForm token={token} clientName={info.clientName} counselorName={info.counselorName} sections={sections} />
+  );
 }

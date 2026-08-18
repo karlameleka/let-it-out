@@ -3,16 +3,22 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import { ARTICLES } from "@/lib/content/articles";
+import type { Article } from "@/lib/content/articles";
 import ArticleProgressBadge from "./article-progress-badge";
 
-export default function ArticleFilter({ hiddenSlugs = [] }: { hiddenSlugs?: string[] }) {
+export default function ArticleFilter({
+  articles,
+  hiddenSlugs = [],
+}: {
+  articles: Article[];
+  hiddenSlugs?: string[];
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
 
   const visibleArticles = useMemo(
-    () => ARTICLES.filter((a) => !hiddenSlugs.includes(a.slug)),
-    [hiddenSlugs]
+    () => articles.filter((a) => !hiddenSlugs.includes(a.slug)),
+    [articles, hiddenSlugs]
   );
 
   const categories = useMemo(() => Array.from(new Set(visibleArticles.map((a) => a.category))), [visibleArticles]);

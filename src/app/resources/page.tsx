@@ -6,6 +6,7 @@ import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import ArticleFilter from "./article-filter";
 import { Reveal } from "@/components/reveal";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getArticles } from "@/lib/content/articles";
 
 export const metadata: Metadata = {
   title: "Resources",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ResourcesPage() {
-  const settings = await getSiteSettings();
+  const [settings, articleList] = await Promise.all([getSiteSettings(), getArticles()]);
 
   const exercises = settings.cbtExerciseHidden ? null : (
     <section className="pt-2 pb-8 sm:py-10" key="exercises">
@@ -49,7 +50,7 @@ export default async function ResourcesPage() {
       <Reveal>
         <Container>
           <SectionHeading eyebrow="Read" title="Latest articles" />
-          <ArticleFilter hiddenSlugs={settings.hiddenArticleSlugs} />
+          <ArticleFilter articles={articleList} hiddenSlugs={settings.hiddenArticleSlugs} />
         </Container>
       </Reveal>
     </section>

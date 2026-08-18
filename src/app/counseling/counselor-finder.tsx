@@ -38,7 +38,14 @@ function AvailabilityBadge({
 
 type Step = "concern" | "language" | "results";
 
-export default function CounselorFinder({
+/**
+ * The "not sure who to pick" trigger + quiz modal, split out from the
+ * counselor grid below so it can be mounted higher up the page (right under
+ * the section heading, above the grid) — on mobile the grid pushes it far
+ * down the page otherwise. Fully self-contained: the grid never filters by
+ * quiz state, so there's nothing to share between the two.
+ */
+export function CounselorQuiz({
   counselors,
   dict,
 }: {
@@ -51,10 +58,6 @@ export default function CounselorFinder({
   const [concern, setConcern] = useState<string | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
 
-  // A friendlier, presenting-concern framing of a subset of the specialty
-  // tags — not every specialty is something a visitor would self-identify
-  // with (e.g. "CBT" or "Adult Mental Health" describe a method or scope,
-  // not a concern), so this is curated rather than derived automatically.
   const CONCERNS = [
     { label: t.concernStress, specialty: "Stress & Burnout" },
     { label: t.concernDepression, specialty: "Depression" },
@@ -100,54 +103,11 @@ export default function CounselorFinder({
       <button
         type="button"
         onClick={openQuiz}
-        className="mt-4 text-sm font-medium text-brand-600 underline decoration-brand-300 underline-offset-4 hover:text-brand-700"
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-100 active:border-brand-400 active:bg-brand-100"
       >
-        {t.notSureLink}
+        <span className="text-sm font-semibold text-brand-800">{t.notSureLink}</span>
+        <span className="shrink-0 text-sm font-medium text-brand-600">&rarr;</span>
       </button>
-
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {counselors.map((c) => (
-          <Link
-            key={c.id}
-            href={`/counseling/${c.slug}`}
-            className="group flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-7 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
-          >
-            {c.photoUrl ? (
-              <Image
-                src={c.photoUrl}
-                alt={c.name}
-                width={56}
-                height={56}
-                className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30"
-              />
-            ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-hover:bg-white/10 group-hover:text-white group-active:border-white/30 group-active:bg-white/10 group-active:text-white">
-                {c.name.split(" ").map((n) => n[0]).join("")}
-              </div>
-            )}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.name}</h3>
-              <AvailabilityBadge status={c.availabilityStatus} dict={t} />
-            </div>
-            <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {c.specialties.slice(0, 3).map((s) => (
-                <span key={s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors duration-300 group-hover:bg-white/10 group-hover:text-white group-active:bg-white/10 group-active:text-white">
-                  {s}
-                </span>
-              ))}
-            </div>
-            {c.languages.length > 0 && (
-              <p className="mt-3 text-xs text-ink/50 transition-colors duration-300 group-hover:text-white/60 group-active:text-white/60">
-                <span className="font-medium text-ink/60 transition-colors duration-300 group-hover:text-white/80 group-active:text-white/80">{t.speaks}:</span> {c.languages.join(", ")}
-              </p>
-            )}
-            <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-              {t.viewProfileCta} &rarr;
-            </p>
-          </Link>
-        ))}
-      </div>
 
       {open && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/50 p-4 backdrop-blur-sm sm:items-center">
@@ -280,5 +240,61 @@ export default function CounselorFinder({
         </div>
       )}
     </>
+  );
+}
+
+export default function CounselorFinder({
+  counselors,
+  dict,
+}: {
+  counselors: Counselor[];
+  dict: Dictionary;
+}) {
+  const t = dict.counseling;
+
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {counselors.map((c) => (
+        <Link
+          key={c.id}
+          href={`/counseling/${c.slug}`}
+          className="group flex flex-col rounded-2xl border-[1.5px] border-brand-900 bg-white p-7 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
+        >
+          {c.photoUrl ? (
+            <Image
+              src={c.photoUrl}
+              alt={c.name}
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30"
+            />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-hover:bg-white/10 group-hover:text-white group-active:border-white/30 group-active:bg-white/10 group-active:text-white">
+              {c.name.split(" ").map((n) => n[0]).join("")}
+            </div>
+          )}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.name}</h3>
+            <AvailabilityBadge status={c.availabilityStatus} dict={t} />
+          </div>
+          <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {c.specialties.slice(0, 3).map((s) => (
+              <span key={s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors duration-300 group-hover:bg-white/10 group-hover:text-white group-active:bg-white/10 group-active:text-white">
+                {s}
+              </span>
+            ))}
+          </div>
+          {c.languages.length > 0 && (
+            <p className="mt-3 text-xs text-ink/50 transition-colors duration-300 group-hover:text-white/60 group-active:text-white/60">
+              <span className="font-medium text-ink/60 transition-colors duration-300 group-hover:text-white/80 group-active:text-white/80">{t.speaks}:</span> {c.languages.join(", ")}
+            </p>
+          )}
+          <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
+            {t.viewProfileCta} &rarr;
+          </p>
+        </Link>
+      ))}
+    </div>
   );
 }

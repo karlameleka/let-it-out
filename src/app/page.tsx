@@ -11,13 +11,14 @@ import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ install?: string }>;
 }) {
-  const [{ install }, counselors, products, locale, overrides] = await Promise.all([
+  const [{ install }, counselors, products, locale, overrides, settings] = await Promise.all([
     searchParams,
     prisma.counselor.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
@@ -27,6 +28,7 @@ export default async function HomePage({
     }),
     getLocale(),
     getSiteTextOverrides(),
+    getSiteSettings(),
   ]);
   const dict = getDictionary(locale);
   const t = applyOverrides(dict.home, "home", overrides, locale);
@@ -70,10 +72,15 @@ export default async function HomePage({
                 {t.heroPromptLabel}
               </p>
             </div>
-            <div className="flex items-center gap-4 rounded-lg bg-brand-700 px-6 py-5 text-white sm:max-w-xs">
-              <Logo variant="icon-white" height={40} className="shrink-0" />
-              <p className="font-display text-base italic leading-snug">{t.heroCardQuote}</p>
-            </div>
+            {!settings.hideJournalTaglineButton && (
+              <Link
+                href="/journal"
+                className="group flex items-center gap-4 rounded-lg bg-brand-700 px-6 py-5 text-white transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:bg-brand-600 active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] sm:max-w-xs"
+              >
+                <Logo variant="icon-white" height={40} className="shrink-0" />
+                <p className="font-display text-base italic leading-snug">{t.heroCardQuote}</p>
+              </Link>
+            )}
           </div>
         </Container>
       </section>

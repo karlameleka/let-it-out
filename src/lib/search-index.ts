@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { ARTICLES } from "@/lib/content/articles";
+import { getArticles } from "@/lib/content/articles";
 import { getWorkshopTopics } from "@/lib/content/workshops";
 import { getSiteSettings } from "@/lib/site-settings";
 import type { Locale } from "@/lib/i18n/locale";
@@ -14,13 +14,14 @@ export type SearchItem = {
 };
 
 export async function getSearchIndex(locale: Locale): Promise<SearchItem[]> {
-  const [settings, products, counselors] = await Promise.all([
+  const [settings, products, counselors, articleList] = await Promise.all([
     getSiteSettings(),
     prisma.product.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.counselor.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    getArticles(),
   ]);
 
-  const articles: SearchItem[] = ARTICLES.filter((a) => !settings.hiddenArticleSlugs.includes(a.slug)).map(
+  const articles: SearchItem[] = articleList.filter((a) => !settings.hiddenArticleSlugs.includes(a.slug)).map(
     (a) => ({
       type: "article",
       typeLabel: "Article",

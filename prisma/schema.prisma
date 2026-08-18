@@ -449,11 +449,41 @@ model SiteSettings {
   arabicEnabled        Boolean              @default(true)
   cbtExercisePlacement CbtExercisePlacement @default(TOP)
   cbtExerciseHidden    Boolean              @default(false)
-  // Article slugs (from lib/content/articles.ts) hidden from the Resources
-  // listing. Still reachable at their direct URL — this is an archive
-  // toggle, not a delete.
+  // Article slugs hidden from the Resources listing. Still reachable at
+  // their direct URL — this is an archive toggle, not a delete.
   hiddenArticleSlugs   String[]             @default([])
+  // Hides the "Let it out. One page at a time." teal card / journal-app
+  // button on the homepage.
+  hideJournalTaglineButton Boolean          @default(false)
   updatedAt            DateTime             @updatedAt
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String   @db.Text
+  category    String
+  readMinutes Int      @default(5)
+  // ArticleSection[] / ArticleCheckIn[] (see src/lib/content/articles.ts) —
+  // stored as JSON since each article's section/check-in shape is
+  // free-form, admin-authored content, not a fixed relational shape.
+  sections    Json
+  checkIns    Json
+  references  String[] @default([])
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Singleton row holding the counseling intake form's questions (see
+// src/lib/intake-form-schema.ts for the IntakeSection[] shape) — editable
+// from /admin/intake-form instead of being hardcoded, since it's clinical
+// content the practice owner needs to be able to adjust without a deploy.
+model IntakeFormConfig {
+  id        String   @id @default("singleton")
+  sections  Json
+  updatedAt DateTime @updatedAt
 }
 
 // Admin-editable overrides for specific English UI strings, keyed by

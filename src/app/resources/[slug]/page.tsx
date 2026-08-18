@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui";
 import { Ribbon } from "@/components/decor";
-import { ARTICLES } from "@/lib/content/articles";
+import { getArticles, getArticleBySlug } from "@/lib/content/articles";
 import InteractiveArticle from "./interactive-article";
 
 export async function generateStaticParams() {
-  return ARTICLES.map((a) => ({ slug: a.slug }));
+  const articles = await getArticles();
+  return articles.map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({
@@ -15,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = ARTICLES.find((a) => a.slug === slug);
+  const article = await getArticleBySlug(slug);
   if (!article) return {};
   return { title: article.title, description: article.excerpt };
 }
@@ -26,7 +27,7 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = ARTICLES.find((a) => a.slug === slug);
+  const article = await getArticleBySlug(slug);
   if (!article) notFound();
 
   return (

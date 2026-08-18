@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { ShieldCheck, CheckCircle2 } from "lucide-react";
 import { Container, Button } from "@/components/ui";
 import { submitIntakeFormAction } from "@/lib/intake-actions";
-import { INTAKE_SECTIONS, INTAKE_CONSENT_FIELD_NAME, type IntakeField } from "@/lib/intake-form-schema";
+import { INTAKE_CONSENT_FIELD_NAME, type IntakeField, type IntakeSection } from "@/lib/intake-form-schema";
 
 const inputClasses =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -99,10 +99,12 @@ export default function IntakeForm({
   token,
   clientName,
   counselorName,
+  sections,
 }: {
   token: string;
   clientName: string;
   counselorName: string;
+  sections: IntakeSection[];
 }) {
   const [state, formAction, pending] = useActionState(submitIntakeFormAction, undefined);
 
@@ -141,7 +143,7 @@ export default function IntakeForm({
       <form action={formAction} className="mt-8 space-y-8">
         <input type="hidden" name="token" value={token} />
 
-        {INTAKE_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.id} className="rounded-2xl border border-brand-100 bg-white p-5 sm:p-6">
             <h2 className="font-display text-lg font-semibold text-brand-900">{section.title}</h2>
             {section.description && <p className="mt-1 text-sm text-ink/60">{section.description}</p>}

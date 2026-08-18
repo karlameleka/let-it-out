@@ -6,6 +6,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { sendIntakeFormRequestEmail, sendIntakeSubmissionEmail } from "@/lib/email";
 import { generateIntakeInsights } from "@/lib/ai-insights";
 import { buildIntakeAnswers, INTAKE_CONSENT_FIELD_NAME } from "@/lib/intake-form-schema";
+import { getIntakeSections } from "@/lib/intake-form-config";
 
 const INTAKE_TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
@@ -92,7 +93,8 @@ export async function submitIntakeFormAction(
     return { error: "Please confirm you understand how this information is used before submitting." };
   }
 
-  const answers = buildIntakeAnswers(formData);
+  const sections = await getIntakeSections();
+  const answers = buildIntakeAnswers(sections, formData);
 
   const aiSummary = await generateIntakeInsights(answers);
 

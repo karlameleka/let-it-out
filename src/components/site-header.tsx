@@ -3,12 +3,30 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ShoppingCart } from "lucide-react";
 import { LogoLink } from "@/components/logo";
 import { logoutAction } from "@/lib/auth-actions";
+import { useCart } from "@/lib/cart-context";
 import type { SessionPayload } from "@/lib/session";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import LanguageSwitcher from "@/components/language-switcher";
+
+function CartIconLink({ count, className = "" }: { count: number; className?: string }) {
+  if (count === 0) return null;
+  return (
+    <Link
+      href="/cart"
+      aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
+      className={`relative inline-flex items-center justify-center rounded-md p-2 text-ink hover:text-brand-700 active:text-brand-700 ${className}`}
+    >
+      <ShoppingCart className="h-5 w-5" strokeWidth={2} />
+      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-700 px-1 text-[10px] font-semibold leading-none text-white">
+        {count}
+      </span>
+    </Link>
+  );
+}
 
 export default function SiteHeader({
   user,
@@ -23,6 +41,7 @@ export default function SiteHeader({
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { count: cartCount } = useCart();
 
   const NAV_LINKS = [
     { href: "/about", label: dict.nav.about },
@@ -90,10 +109,12 @@ export default function SiteHeader({
             </div>
           )}
 
+          <CartIconLink count={cartCount} />
           <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} compact arabicEnabled={arabicEnabled} />
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
+          <CartIconLink count={cartCount} />
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}

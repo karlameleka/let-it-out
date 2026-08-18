@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { getSiteSettings, updateSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, updateSiteText } from "@/lib/site-text";
 import en from "@/lib/i18n/dictionaries/en";
 import ar from "@/lib/i18n/dictionaries/ar";
-import { ARTICLES } from "@/lib/content/articles";
+import { getArticles } from "@/lib/content/articles";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import TwoFactorSettings from "@/components/two-factor-settings";
@@ -28,6 +29,18 @@ const BUTTON_FIELDS: [key: string, label: string][] = [
   ["teamViewProfile", "Counselor card link"],
   ["shopNow", "Shop item link"],
   ["journalCta", "Journal app CTA button"],
+];
+
+const COUNSELING_QUIZ_FIELDS: [key: string, label: string][] = [
+  ["notSureLink", "\"Not sure who to pick\" button"],
+  ["quizPrompt", "Step 1 question (concern)"],
+  ["concernStress", "Option: Stress & burnout"],
+  ["concernDepression", "Option: Depression"],
+  ["concernAnxiety", "Option: Anxiety"],
+  ["concernEmotional", "Option: Emotional dysregulation"],
+  ["concernRelationship", "Option: Relationship/psychosexual"],
+  ["quizLanguagePrompt", "Step 2 question (language)"],
+  ["quizLanguageAny", "\"Any language\" option"],
 ];
 
 const NAV_FIELDS: [key: string, label: string][] = [
@@ -89,10 +102,11 @@ function TextOverrideField({
 
 export default async function AdminSettingsPage() {
   const session = await getCurrentUser();
-  const [settings, textOverrides, currentUser] = await Promise.all([
+  const [settings, textOverrides, currentUser, articleList] = await Promise.all([
     getSiteSettings(),
     getSiteTextOverrides(),
     session ? prisma.user.findUnique({ where: { id: session.userId }, select: { totpEnabled: true } }) : null,
+    getArticles(),
   ]);
 
   return (
@@ -103,6 +117,25 @@ export default async function AdminSettingsPage() {
         <p className="mt-1 text-sm text-ink/60">Applies to the admin account you&apos;re logged in as.</p>
         <div className="mt-3">
           <TwoFactorSettings enabled={currentUser?.totpEnabled ?? false} />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <p className="text-sm font-semibold text-brand-900">Content editors</p>
+        <p className="mt-0.5 text-xs text-ink/60">Manage structured content that doesn&apos;t fit a simple text field.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href="/admin/articles"
+            className="rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+          >
+            Resource articles &rarr;
+          </Link>
+          <Link
+            href="/admin/intake-form"
+            className="rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+          >
+            Counseling intake form &rarr;
+          </Link>
         </div>
       </div>
 
@@ -125,6 +158,26 @@ export default async function AdminSettingsPage() {
                 Turn off to hide the language switcher and serve every page in English, even for visitors who
                 previously chose Arabic. Their choice isn&apos;t lost — turning this back on picks it back up
                 automatically.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="rounded-2xl border border-brand-100 bg-white p-5">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              name="hideJournalTaglineButton"
+              defaultChecked={settings.hideJournalTaglineButton}
+              className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-brand-900">
+                Hide the &ldquo;Let it out&rdquo; journal button
+              </span>
+              <span className="mt-0.5 block text-xs text-ink/60">
+                The dark teal card on the homepage that links to the journal app. Checking this removes it
+                entirely from the homepage.
               </span>
             </span>
           </label>
@@ -174,7 +227,7 @@ export default async function AdminSettingsPage() {
             archives it, it doesn&apos;t delete it.
           </p>
           <div className="mt-3 space-y-2">
-            {ARTICLES.map((a) => (
+            {articleList.map((a) => (
               <label key={a.slug} className="flex items-start gap-3">
                 <input
                   type="checkbox"
@@ -234,6 +287,24 @@ export default async function AdminSettingsPage() {
                   label={label}
                   defaultText={en.home[key as keyof typeof en.home]}
                   defaultTextAr={ar.home[key as keyof typeof ar.home]}
+                  overrides={textOverrides}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-brand-100 bg-white p-5">
+            <h3 className="font-display font-semibold text-brand-900">Counseling: &ldquo;not sure who to pick&rdquo; quiz</h3>
+            <p className="mt-0.5 text-xs text-ink/60">The prompt, options, and language step shown in the quiz popup.</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {COUNSELING_QUIZ_FIELDS.map(([key, label]) => (
+                <TextOverrideField
+                  key={key}
+                  prefix="counseling"
+                  fieldKey={key}
+                  label={label}
+                  defaultText={en.counseling[key as keyof typeof en.counseling]}
+                  defaultTextAr={ar.counseling[key as keyof typeof ar.counseling]}
                   overrides={textOverrides}
                 />
               ))}

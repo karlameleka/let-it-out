@@ -4,9 +4,10 @@ import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, DoodleField } from "@/components/decor";
 import { FaqList } from "@/components/faq";
 import { Reveal } from "@/components/reveal";
-import CounselorFinder from "./counselor-finder";
+import CounselorFinder, { CounselorQuiz } from "./counselor-finder";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
 
 export const metadata: Metadata = {
   title: "Counseling",
@@ -15,9 +16,10 @@ export const metadata: Metadata = {
 };
 
 export default async function CounselingPage() {
-  const locale = await getLocale();
-  const dict = getDictionary(locale);
-  const t = dict.counseling;
+  const [locale, overrides] = await Promise.all([getLocale(), getSiteTextOverrides()]);
+  const baseDict = getDictionary(locale);
+  const t = applyOverrides(baseDict.counseling, "counseling", overrides, locale);
+  const dict = { ...baseDict, counseling: t };
 
   const counselors = await prisma.counselor.findMany({
     where: { active: true },
@@ -33,7 +35,7 @@ export default async function CounselingPage() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
+      <section className="relative overflow-hidden bg-brand-50 pt-6 pb-6 sm:pt-14 sm:pb-10">
         <DoodleField />
         <Container className="relative">
           <Ribbon>{t.ribbon}</Ribbon>
@@ -48,15 +50,22 @@ export default async function CounselingPage() {
         </Container>
       </section>
 
-      <section className="py-16 sm:py-20">
+      <section className="pb-16 pt-6 sm:pb-20 sm:pt-8">
+        <Container>
+          <CounselorQuiz counselors={counselors} dict={dict} />
+        </Container>
         <Reveal>
           <Container>
-            <SectionHeading
-              eyebrow={t.chooseEyebrow}
-              title={t.chooseTitle}
-              description={t.chooseDescription}
-            />
-            <CounselorFinder counselors={counselors} dict={dict} />
+            <div className="mt-10 sm:mt-12">
+              <SectionHeading
+                eyebrow={t.chooseEyebrow}
+                title={t.chooseTitle}
+                description={t.chooseDescription}
+              />
+            </div>
+            <div className="mt-12">
+              <CounselorFinder counselors={counselors} dict={dict} />
+            </div>
           </Container>
         </Reveal>
       </section>

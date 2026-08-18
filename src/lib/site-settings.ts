@@ -9,6 +9,7 @@ export type SiteSettingsData = {
   cbtExercisePlacement: "TOP" | "BOTTOM";
   cbtExerciseHidden: boolean;
   hiddenArticleSlugs: string[];
+  hideJournalTaglineButton: boolean;
 };
 
 const DEFAULTS: SiteSettingsData = {
@@ -16,6 +17,7 @@ const DEFAULTS: SiteSettingsData = {
   cbtExercisePlacement: "TOP",
   cbtExerciseHidden: false,
   hiddenArticleSlugs: [],
+  hideJournalTaglineButton: false,
 };
 
 /** Memoized per-request — most pages only need this once, and several call
@@ -28,6 +30,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData> => {
     cbtExercisePlacement: row.cbtExercisePlacement,
     cbtExerciseHidden: row.cbtExerciseHidden,
     hiddenArticleSlugs: row.hiddenArticleSlugs,
+    hideJournalTaglineButton: row.hideJournalTaglineButton,
   };
 });
 
@@ -38,11 +41,19 @@ export async function updateSiteSettings(formData: FormData) {
   const cbtExercisePlacement = formData.get("cbtExercisePlacement") === "BOTTOM" ? "BOTTOM" : "TOP";
   const cbtExerciseHidden = formData.get("cbtExerciseHidden") === "on";
   const hiddenArticleSlugs = formData.getAll("hiddenArticleSlugs").map(String).filter(Boolean);
+  const hideJournalTaglineButton = formData.get("hideJournalTaglineButton") === "on";
 
   await prisma.siteSettings.upsert({
     where: { id: "singleton" },
-    create: { id: "singleton", arabicEnabled, cbtExercisePlacement, cbtExerciseHidden, hiddenArticleSlugs },
-    update: { arabicEnabled, cbtExercisePlacement, cbtExerciseHidden, hiddenArticleSlugs },
+    create: {
+      id: "singleton",
+      arabicEnabled,
+      cbtExercisePlacement,
+      cbtExerciseHidden,
+      hiddenArticleSlugs,
+      hideJournalTaglineButton,
+    },
+    update: { arabicEnabled, cbtExercisePlacement, cbtExerciseHidden, hiddenArticleSlugs, hideJournalTaglineButton },
   });
 
   revalidatePath("/", "layout");
