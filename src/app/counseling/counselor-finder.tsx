@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { X } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { CounselingQuizConfigData } from "@/lib/counseling-quiz-config";
 
 type Counselor = {
   id: string;
@@ -48,23 +49,17 @@ type Step = "concern" | "language" | "results";
 export function CounselorQuiz({
   counselors,
   dict,
+  config,
 }: {
   counselors: Counselor[];
   dict: Dictionary;
+  config: CounselingQuizConfigData;
 }) {
   const t = dict.counseling;
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>("concern");
   const [concern, setConcern] = useState<string | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
-
-  const CONCERNS = [
-    { label: t.concernStress, specialty: "Stress & Burnout" },
-    { label: t.concernDepression, specialty: "Depression" },
-    { label: t.concernAnxiety, specialty: "Anxiety" },
-    { label: t.concernEmotional, specialty: "Emotional Dysregulation" },
-    { label: t.concernRelationship, specialty: "Psychosexual Therapy" },
-  ];
 
   const languageOptions = useMemo(
     () => [...new Set(counselors.flatMap((c) => c.languages))],
@@ -105,7 +100,7 @@ export function CounselorQuiz({
         onClick={openQuiz}
         className="flex w-full items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-100 active:border-brand-400 active:bg-brand-100"
       >
-        <span className="text-sm font-semibold text-brand-800">{t.notSureLink}</span>
+        <span className="text-sm font-semibold text-brand-800">{config.triggerLabel}</span>
         <span className="shrink-0 text-sm font-medium text-brand-600">&rarr;</span>
       </button>
 
@@ -135,9 +130,9 @@ export function CounselorQuiz({
             <div className="max-h-[70vh] overflow-y-auto p-5">
               {step === "concern" && (
                 <>
-                  <p className="text-sm font-medium text-ink/80">{t.quizPrompt}</p>
+                  <p className="text-sm font-medium text-ink/80">{config.prompt}</p>
                   <div className="mt-3 flex flex-col gap-2">
-                    {CONCERNS.map((c) => (
+                    {config.options.map((c) => (
                       <button
                         key={c.specialty}
                         type="button"
@@ -153,7 +148,7 @@ export function CounselorQuiz({
 
               {step === "language" && (
                 <>
-                  <p className="text-sm font-medium text-ink/80">{t.quizLanguagePrompt}</p>
+                  <p className="text-sm font-medium text-ink/80">{config.languagePrompt}</p>
                   <div className="mt-3 flex flex-col gap-2">
                     {languageOptions.map((lang) => (
                       <button
@@ -170,7 +165,7 @@ export function CounselorQuiz({
                       onClick={() => pickLanguage(null)}
                       className="rounded-xl border border-dashed border-brand-200 px-4 py-3 text-left text-sm font-medium text-ink/60 transition-colors hover:border-brand-400 hover:bg-brand-50 active:border-brand-400 active:bg-brand-50"
                     >
-                      {t.quizLanguageAny}
+                      {config.languageAnyLabel}
                     </button>
                   </div>
                   <button

@@ -3,16 +3,23 @@ import { createPromoCode, togglePromoCodeActive, deletePromoCode } from "@/lib/a
 import { formatEGP } from "@/lib/format";
 
 export default async function AdminPromoCodesPage() {
-  const [codes, products, orderStats] = await Promise.all([
+  const [codes, products, counselors, orderStats, sessionStats] = await Promise.all([
     prisma.promoCode.findMany({
       orderBy: { createdAt: "desc" },
-      include: { products: { include: { product: true } } },
+      include: { products: { include: { product: true } }, counselors: { include: { counselor: true } } },
     }),
     prisma.product.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.counselor.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.order.groupBy({
       by: ["promoCodeId"],
       where: { promoCodeId: { not: null }, status: { not: "CANCELLED" } },
       _sum: { discountEGP: true, totalEGP: true },
+      _count: { _all: true },
+    }),
+    prisma.sessionBooking.groupBy({
+      by: ["promoCodeId"],
+      where: { promoCodeId: { not: null }, status: { not: "PENDING_PAYMENT" } },
+      _sum: { discountEGP: true, priceEGP: true },
       _count: { _all: true },
     }),
   ]);
@@ -21,6 +28,16 @@ export default async function AdminPromoCodesPage() {
     orderStats.map((s) => [
       s.promoCodeId as string,
       { orders: s._count._all, discountEGP: s._sum.discountEGP ?? 0, revenueEGP: s._sum.totalEGP ?? 0 },
+    ])
+  );
+  const sessionStatsByCode = new Map(
+    sessionStats.map((s) => [
+      s.promoCodeId as string,
+      {
+        bookings: s._count._all,
+        discountEGP: s._sum.discountEGP ?? 0,
+        revenueEGP: (s._sum.priceEGP ?? 0) - (s._sum.discountEGP ?? 0),
+      },
     ])
   );
 
@@ -113,6 +130,25 @@ export default async function AdminPromoCodesPage() {
             <p className="mt-1 text-xs text-ink/40">Cmd/Ctrl-click (or tap and drag on mobile) to select more than one.</p>
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
+            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="counselorIds">
+              Applies to therapists <span className="text-ink/40">(leave nothing selected for every therapist)</span>
+            </label>
+            <select
+              id="counselorIds"
+              name="counselorIds"
+              multiple
+              size={Math.min(4, Math.max(2, counselors.length))}
+              className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            >
+              {counselors.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-ink/40">
+              Applies to a therapist&rsquo;s paid session price (pay-first booking flow only).
+            </p>
+          </div>
+          <div className="sm:col-span-2 lg:col-span-3">
             <button
               type="submit"
               className="rounded bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-900/20 transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)]"
@@ -129,6 +165,7 @@ export default async function AdminPromoCodesPage() {
           const expired = c.expiresAt ? c.expiresAt < new Date() : false;
           const usedUp = c.maxRedemptions !== null && c.redemptionCount >= c.maxRedemptions;
           const stats = statsByCode.get(c.id);
+          const sessionStats = sessionStatsByCode.get(c.id);
           return (
             <div key={c.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-100 bg-white p-5">
               <div>
@@ -153,11 +190,18 @@ export default async function AdminPromoCodesPage() {
                   Used {c.redemptionCount}{c.maxRedemptions ? ` / ${c.maxRedemptions}` : ""} time{c.redemptionCount === 1 ? "" : "s"}
                   {" · "}
                   {c.products.length === 0 ? "All products" : c.products.map((p) => p.product.title).join(", ")}
+                  {" · "}
+                  {c.counselors.length === 0 ? "All therapists" : c.counselors.map((pc) => pc.counselor.name).join(", ")}
                 </p>
                 <p className="mt-1.5 text-xs font-medium text-brand-700">
                   {stats
                     ? `${stats.orders} paid order${stats.orders === 1 ? "" : "s"} · ${formatEGP(stats.discountEGP)} discounted · ${formatEGP(stats.revenueEGP)} revenue`
                     : "No completed orders yet"}
+                </p>
+                <p className="mt-0.5 text-xs font-medium text-brand-700">
+                  {sessionStats
+                    ? `${sessionStats.bookings} therapy session${sessionStats.bookings === 1 ? "" : "s"} · ${formatEGP(sessionStats.discountEGP)} discounted · ${formatEGP(sessionStats.revenueEGP)} revenue`
+                    : "No confirmed therapy sessions yet"}
                 </p>
               </div>
               <div className="flex items-center gap-2">

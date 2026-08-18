@@ -27,6 +27,18 @@ export function Reveal({
     const el = ref.current;
     if (!el) return;
     setArmed(true);
+
+    // On small screens the viewport is short enough that requiring a
+    // scroll just to trigger the reveal makes content below the fold feel
+    // hidden/broken rather than intentional — show it immediately instead.
+    // Deferred a tick (rather than set synchronously in the effect body) to
+    // avoid cascading renders, matching how the IntersectionObserver path
+    // below also only ever updates state from an async callback.
+    if (window.matchMedia("(max-width: 639px)").matches) {
+      queueMicrotask(() => setVisible(true));
+      return;
+    }
+
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

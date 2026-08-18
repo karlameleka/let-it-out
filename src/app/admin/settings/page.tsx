@@ -31,18 +31,6 @@ const BUTTON_FIELDS: [key: string, label: string][] = [
   ["journalCta", "Journal app CTA button"],
 ];
 
-const COUNSELING_QUIZ_FIELDS: [key: string, label: string][] = [
-  ["notSureLink", "\"Not sure who to pick\" button"],
-  ["quizPrompt", "Step 1 question (concern)"],
-  ["concernStress", "Option: Stress & burnout"],
-  ["concernDepression", "Option: Depression"],
-  ["concernAnxiety", "Option: Anxiety"],
-  ["concernEmotional", "Option: Emotional dysregulation"],
-  ["concernRelationship", "Option: Relationship/psychosexual"],
-  ["quizLanguagePrompt", "Step 2 question (language)"],
-  ["quizLanguageAny", "\"Any language\" option"],
-];
-
 const NAV_FIELDS: [key: string, label: string][] = [
   ["about", "About"],
   ["counseling", "Counseling"],
@@ -135,6 +123,12 @@ export default async function AdminSettingsPage() {
             className="rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
           >
             Counseling intake form &rarr;
+          </Link>
+          <Link
+            href="/admin/counseling-quiz"
+            className="rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+          >
+            &ldquo;Not sure who to pick&rdquo; quiz &rarr;
           </Link>
         </div>
       </div>
@@ -287,24 +281,6 @@ export default async function AdminSettingsPage() {
                   label={label}
                   defaultText={en.home[key as keyof typeof en.home]}
                   defaultTextAr={ar.home[key as keyof typeof ar.home]}
-                  overrides={textOverrides}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-brand-100 bg-white p-5">
-            <h3 className="font-display font-semibold text-brand-900">Counseling: &ldquo;not sure who to pick&rdquo; quiz</h3>
-            <p className="mt-0.5 text-xs text-ink/60">The prompt, options, and language step shown in the quiz popup.</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {COUNSELING_QUIZ_FIELDS.map(([key, label]) => (
-                <TextOverrideField
-                  key={key}
-                  prefix="counseling"
-                  fieldKey={key}
-                  label={label}
-                  defaultText={en.counseling[key as keyof typeof en.counseling]}
-                  defaultTextAr={ar.counseling[key as keyof typeof ar.counseling]}
                   overrides={textOverrides}
                 />
               ))}

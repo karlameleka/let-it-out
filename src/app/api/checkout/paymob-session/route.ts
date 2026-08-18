@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Card payment is not available right now." }, { status: 503 });
   }
 
-  const amountInPiastres = Math.round(booking.priceEGP * 100);
+  const amountInPiastres = Math.round((booking.priceEGP - booking.discountEGP) * 100);
   const [firstName, ...rest] = booking.name.trim().split(/\s+/);
   const origin = new URL(req.url).origin;
 

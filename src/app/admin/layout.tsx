@@ -17,6 +17,7 @@ const TABS = [
   { href: "/admin/messages", label: "Contact messages" },
   { href: "/admin/articles", label: "Articles" },
   { href: "/admin/intake-form", label: "Intake form" },
+  { href: "/admin/counseling-quiz", label: "Counseling quiz" },
   { href: "/admin/settings", label: "Site settings" },
   { href: "/account", label: "My account" },
 ];

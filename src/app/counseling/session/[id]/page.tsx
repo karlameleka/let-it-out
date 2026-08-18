@@ -39,9 +39,21 @@ export default async function SessionBookingPage({
             <span className="text-ink/70">{t.preferredDay}</span>
             <span className="font-medium">{booking.preferredDate}</span>
           </div>
+          {booking.discountEGP > 0 && (
+            <>
+              <div className="mt-2 flex justify-between border-t border-brand-100 pt-2 text-sm">
+                <span className="text-ink/70">{t.price}</span>
+                <span>{formatEGP(booking.priceEGP)}</span>
+              </div>
+              <div className="mt-1 flex justify-between text-sm text-brand-700">
+                <span>Discount</span>
+                <span>-{formatEGP(booking.discountEGP)}</span>
+              </div>
+            </>
+          )}
           <div className="mt-2 flex justify-between border-t border-brand-100 pt-2 text-sm font-semibold">
-            <span>{t.price}</span>
-            <span>{formatEGP(booking.priceEGP)}</span>
+            <span>{booking.discountEGP > 0 ? "Total" : t.price}</span>
+            <span>{formatEGP(booking.priceEGP - booking.discountEGP)}</span>
           </div>
         </div>
 
@@ -50,7 +62,7 @@ export default async function SessionBookingPage({
             <h2 className="font-display font-semibold text-brand-900">{t.completePaymentHeading}</h2>
             <p className="mt-3 text-sm text-ink/80">{t.completePaymentText}</p>
             <div className="mt-6">
-              <RetrySessionPayment sessionBookingId={booking.id} amountEGP={booking.priceEGP} />
+              <RetrySessionPayment sessionBookingId={booking.id} amountEGP={booking.priceEGP - booking.discountEGP} />
             </div>
           </div>
         )}

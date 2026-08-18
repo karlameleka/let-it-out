@@ -8,6 +8,7 @@ import CounselorFinder, { CounselorQuiz } from "./counselor-finder";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
+import { getCounselingQuizConfig } from "@/lib/counseling-quiz-config";
 
 export const metadata: Metadata = {
   title: "Counseling",
@@ -16,7 +17,11 @@ export const metadata: Metadata = {
 };
 
 export default async function CounselingPage() {
-  const [locale, overrides] = await Promise.all([getLocale(), getSiteTextOverrides()]);
+  const [locale, overrides, quizConfig] = await Promise.all([
+    getLocale(),
+    getSiteTextOverrides(),
+    getCounselingQuizConfig(),
+  ]);
   const baseDict = getDictionary(locale);
   const t = applyOverrides(baseDict.counseling, "counseling", overrides, locale);
   const dict = { ...baseDict, counseling: t };
@@ -51,18 +56,25 @@ export default async function CounselingPage() {
       </section>
 
       <section className="pb-16 pt-6 sm:pb-20 sm:pt-8">
-        <Container>
-          <CounselorQuiz counselors={counselors} dict={dict} />
-        </Container>
+        {quizConfig.placement === "ABOVE_LIST" && (
+          <Container>
+            <CounselorQuiz counselors={counselors} dict={dict} config={quizConfig} />
+          </Container>
+        )}
         <Reveal>
           <Container>
-            <div className="mt-10 sm:mt-12">
+            <div className={quizConfig.placement === "ABOVE_LIST" ? "mt-10 sm:mt-12" : ""}>
               <SectionHeading
                 eyebrow={t.chooseEyebrow}
                 title={t.chooseTitle}
                 description={t.chooseDescription}
               />
             </div>
+            {quizConfig.placement === "BELOW_LIST" && (
+              <div className="mt-6">
+                <CounselorQuiz counselors={counselors} dict={dict} config={quizConfig} />
+              </div>
+            )}
             <div className="mt-12">
               <CounselorFinder counselors={counselors} dict={dict} />
             </div>

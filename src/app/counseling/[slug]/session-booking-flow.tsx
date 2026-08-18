@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSessionBooking } from "@/lib/session-booking-actions";
+import { createSessionBooking, checkCounselingPromoCode } from "@/lib/session-booking-actions";
 import { formatEGP } from "@/lib/format";
 import PaymentSelector from "@/components/PaymentSelector";
 import type { Dictionary } from "@/lib/i18n/dictionary";
@@ -31,6 +31,31 @@ export default function SessionBookingFlow({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionBookingId, setSessionBookingId] = useState<string | null>(null);
+  const [finalPriceEGP, setFinalPriceEGP] = useState(priceEGP);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoApplied, setPromoApplied] = useState<{ code: string; discountEGP: number; label: string } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoChecking, setPromoChecking] = useState(false);
+
+  async function applyPromoCode() {
+    if (!promoInput.trim()) return;
+    setPromoChecking(true);
+    setPromoError(null);
+    const result = await checkCounselingPromoCode(promoInput, counselorId, priceEGP);
+    setPromoChecking(false);
+    if (!result.valid) {
+      setPromoError(result.error);
+      setPromoApplied(null);
+      return;
+    }
+    setPromoApplied({ code: result.code, discountEGP: result.discountEGP, label: result.label });
+  }
+
+  function removePromoCode() {
+    setPromoApplied(null);
+    setPromoInput("");
+    setPromoError(null);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,6 +71,7 @@ export default function SessionBookingFlow({
       email: String(formData.get("email") || ""),
       phone: String(formData.get("phone") || ""),
       preferredDate: String(formData.get("preferredDate") || ""),
+      promoCode: promoApplied?.code,
     });
 
     setPending(false);
@@ -53,6 +79,7 @@ export default function SessionBookingFlow({
       setError(result.error);
       return;
     }
+    setFinalPriceEGP(priceEGP - (promoApplied?.discountEGP ?? 0));
     setSessionBookingId(result.sessionBookingId);
   }
 
@@ -60,11 +87,11 @@ export default function SessionBookingFlow({
     return (
       <div>
         <p className="text-sm text-ink/70">
-          {t.almostThere} <strong>{formatEGP(priceEGP)}</strong> {t.almostThereSuffix} {counselorName}.
+          {t.almostThere} <strong>{formatEGP(finalPriceEGP)}</strong> {t.almostThereSuffix} {counselorName}.
         </p>
         <div className="mt-4">
           <PaymentSelector
-            amountEGP={priceEGP}
+            amountEGP={finalPriceEGP}
             getOrderId={async () => sessionBookingId}
             endpoint="/api/checkout/paymob-session"
             idField="sessionBookingId"
@@ -77,9 +104,49 @@ export default function SessionBookingFlow({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-800">
-        {t.sessionPrice}: {formatEGP(priceEGP)}
-      </p>
+      <div className="rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-800">
+        {promoApplied ? (
+          <div className="flex items-center justify-between gap-2">
+            <span>
+              {t.sessionPrice}: <s className="text-brand-800/50">{formatEGP(priceEGP)}</s>{" "}
+              {formatEGP(priceEGP - promoApplied.discountEGP)} &middot; &ldquo;{promoApplied.code}&rdquo; {promoApplied.label}
+            </span>
+            <button
+              type="button"
+              onClick={removePromoCode}
+              className="shrink-0 text-xs font-medium text-brand-700/70 hover:text-brand-700"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <span>
+            {t.sessionPrice}: {formatEGP(priceEGP)}
+          </span>
+        )}
+      </div>
+      {!promoApplied && (
+        <div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={promoInput}
+              onChange={(e) => setPromoInput(e.target.value)}
+              placeholder="Promo code (optional)"
+              className="w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm uppercase tracking-wide outline-none focus:border-brand-500"
+            />
+            <button
+              type="button"
+              onClick={applyPromoCode}
+              disabled={promoChecking || !promoInput.trim()}
+              className="shrink-0 rounded-xl border-[1.5px] border-brand-200 px-4 py-2.5 text-sm font-medium text-brand-700 transition-colors disabled:opacity-50 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
+            >
+              {promoChecking ? "Checking…" : "Apply"}
+            </button>
+          </div>
+          {promoError && <p className="mt-1.5 text-xs text-red-600">{promoError}</p>}
+        </div>
+      )}
       <div>
         <label className={labelClass} htmlFor="name">{f.name}</label>
         <input id="name" name="name" required className={inputClass} />

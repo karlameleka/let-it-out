@@ -103,6 +103,7 @@ model Counselor {
 
   bookingRequests BookingRequest[]
   sessionBookings SessionBooking[]
+  promoCodes      PromoCodeCounselor[]
 }
 
 enum AvailabilityStatus {
@@ -127,7 +128,12 @@ model SessionBooking {
   email         String
   phone         String
   preferredDate String
+  // Full session price before any discount — the amount actually charged
+  // is priceEGP - discountEGP.
   priceEGP      Int
+  promoCode     PromoCode?           @relation(fields: [promoCodeId], references: [id])
+  promoCodeId   String?
+  discountEGP   Int                  @default(0)
   status        SessionBookingStatus @default(PENDING_PAYMENT)
   paymentRef    String?
   paymentNote   String?              @db.Text
@@ -285,10 +291,14 @@ model PromoCode {
   minOrderEGP     Int?
   createdAt       DateTime          @default(now())
 
-  orders   Order[]
+  orders          Order[]
+  sessionBookings SessionBooking[]
   // Empty = applies to every product. Non-empty = the discount only
   // counts toward these products' share of the cart.
-  products PromoCodeProduct[]
+  products   PromoCodeProduct[]
+  // Empty = applies to every therapist's session price. Non-empty = only
+  // valid when booking one of these counselors.
+  counselors PromoCodeCounselor[]
 }
 
 model PromoCodeProduct {
@@ -299,6 +309,16 @@ model PromoCodeProduct {
   productId   String
 
   @@unique([promoCodeId, productId])
+}
+
+model PromoCodeCounselor {
+  id          String    @id @default(cuid())
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  promoCodeId String
+  counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  counselorId String
+
+  @@unique([promoCodeId, counselorId])
 }
 
 model Order {
@@ -484,6 +504,27 @@ model IntakeFormConfig {
   id        String   @id @default("singleton")
   sections  Json
   updatedAt DateTime @updatedAt
+}
+
+enum QuizPlacement {
+  ABOVE_LIST
+  BELOW_LIST
+}
+
+// The "not sure who to pick?" counseling quiz — trigger label, the two
+// questions asked, and where the trigger sits relative to the counselor
+// list. options is CounselingQuizOption[] (see counseling-quiz-config.ts):
+// each { label, specialty } pairs a visitor-facing choice with the exact
+// specialty tag it filters counselors by.
+model CounselingQuizConfig {
+  id               String        @id @default("singleton")
+  triggerLabel     String
+  prompt           String
+  options          Json
+  languagePrompt   String
+  languageAnyLabel String
+  placement        QuizPlacement @default(ABOVE_LIST)
+  updatedAt        DateTime      @updatedAt
 }
 
 // Admin-editable overrides for specific English UI strings, keyed by

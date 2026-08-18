@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
         to: existingSessionBooking.email,
         name: existingSessionBooking.name,
         subject: "Payment received — pick your session time",
-        intro: `Thanks! We've received your payment of ${formatEGP(existingSessionBooking.priceEGP)} for a session with ${existingSessionBooking.counselor.name}. Head back to pick your exact time.`,
+        intro: `Thanks! We've received your payment of ${formatEGP(existingSessionBooking.priceEGP - existingSessionBooking.discountEGP)} for a session with ${existingSessionBooking.counselor.name}. Head back to pick your exact time.`,
         lines: [{ label: "Counselor", value: existingSessionBooking.counselor.name }],
       });
     } else {
