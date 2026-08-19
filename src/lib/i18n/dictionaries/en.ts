@@ -183,12 +183,7 @@ const en = {
     chooseTitle: "Meet our psychotherapists",
     chooseDescription:
       "Every counselor is a licensed psychologist. Pick a profile to view their background and request a session.",
-    quizBack: "Back",
-    quizResultsTitle: "Recommended for you",
-    quizStartOver: "Start over",
-    quizStep: "Step",
-    quizOf: "of",
-    showingResultsPrefix: "Showing counselors who work with",
+    searchPlaceholder: "Search by concern, specialty, or name (e.g. anxiety, CBT, family)",
     clear: "Clear",
     emptyStateText: "No counselor matches that specifically, but reach out through our",
     emptyStateLink: "contact page",

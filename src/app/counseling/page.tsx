@@ -4,11 +4,10 @@ import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, DoodleField } from "@/components/decor";
 import { FaqList } from "@/components/faq";
 import { Reveal } from "@/components/reveal";
-import CounselorFinder, { CounselorQuiz } from "./counselor-finder";
+import CounselorFinder from "./counselor-finder";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
-import { getCounselingQuizConfig } from "@/lib/counseling-quiz-config";
 
 export const metadata: Metadata = {
   title: "Counseling",
@@ -17,10 +16,9 @@ export const metadata: Metadata = {
 };
 
 export default async function CounselingPage() {
-  const [locale, overrides, quizConfig] = await Promise.all([
+  const [locale, overrides] = await Promise.all([
     getLocale(),
     getSiteTextOverrides(),
-    getCounselingQuizConfig(),
   ]);
   const baseDict = getDictionary(locale);
   const t = applyOverrides(baseDict.counseling, "counseling", overrides, locale);
@@ -56,26 +54,14 @@ export default async function CounselingPage() {
       </section>
 
       <section className="pb-16 pt-6 sm:pb-20 sm:pt-8">
-        {quizConfig.placement === "ABOVE_LIST" && (
-          <Container>
-            <CounselorQuiz counselors={counselors} dict={dict} config={quizConfig} />
-          </Container>
-        )}
         <Reveal>
           <Container>
-            <div className={quizConfig.placement === "ABOVE_LIST" ? "mt-10 sm:mt-12" : ""}>
-              <SectionHeading
-                eyebrow={t.chooseEyebrow}
-                title={t.chooseTitle}
-                description={t.chooseDescription}
-              />
-            </div>
-            {quizConfig.placement === "BELOW_LIST" && (
-              <div className="mt-6">
-                <CounselorQuiz counselors={counselors} dict={dict} config={quizConfig} />
-              </div>
-            )}
-            <div className="mt-12">
+            <SectionHeading
+              eyebrow={t.chooseEyebrow}
+              title={t.chooseTitle}
+              description={t.chooseDescription}
+            />
+            <div className="mt-8">
               <CounselorFinder counselors={counselors} dict={dict} />
             </div>
           </Container>

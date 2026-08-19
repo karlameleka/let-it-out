@@ -124,12 +124,6 @@ export default async function AdminSettingsPage() {
           >
             Counseling intake form &rarr;
           </Link>
-          <Link
-            href="/admin/counseling-quiz"
-            className="rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
-          >
-            &ldquo;Not sure who to pick&rdquo; quiz &rarr;
-          </Link>
         </div>
       </div>
 

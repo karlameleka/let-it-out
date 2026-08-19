@@ -506,27 +506,6 @@ model IntakeFormConfig {
   updatedAt DateTime @updatedAt
 }
 
-enum QuizPlacement {
-  ABOVE_LIST
-  BELOW_LIST
-}
-
-// The "not sure who to pick?" counseling quiz — trigger label, the two
-// questions asked, and where the trigger sits relative to the counselor
-// list. options is CounselingQuizOption[] (see counseling-quiz-config.ts):
-// each { label, specialty } pairs a visitor-facing choice with the exact
-// specialty tag it filters counselors by.
-model CounselingQuizConfig {
-  id               String        @id @default("singleton")
-  triggerLabel     String
-  prompt           String
-  options          Json
-  languagePrompt   String
-  languageAnyLabel String
-  placement        QuizPlacement @default(ABOVE_LIST)
-  updatedAt        DateTime      @updatedAt
-}
-
 // Admin-editable overrides for specific English UI strings, keyed by
 // dictionary path (e.g. "home.heroCtaBook", "nav.counseling"). A missing
 // key means "use the default from dictionaries/en.ts". Only ever applied

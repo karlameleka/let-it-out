@@ -7,6 +7,7 @@ import SiteFooter from "@/components/site-footer";
 import WorkshopInterestPopup from "@/components/workshop-interest-popup";
 import EntryGates from "@/components/entry-gates";
 import ServiceWorkerRegister from "@/components/sw-register";
+import InitialSplash from "@/components/initial-splash";
 import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
 import { CartProvider } from "@/lib/cart-context";
@@ -73,6 +74,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-ink pb-20 md:pb-0">
+        <InitialSplash />
         <CurrencyProvider>
           <CartProvider>
             <SiteHeader
