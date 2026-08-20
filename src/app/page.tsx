@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
-import { JournalIcon } from "@/components/lio-icons";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
 import InstallOverlay from "@/components/install-overlay";
@@ -86,31 +85,17 @@ export default async function HomePage({
       <WaveDivider fill="fill-white" />
 
       {/* Daily journaling, free */}
-      <section className="relative overflow-hidden py-24">
-        <Image
-          src="/brand/logo-icon-teal.png"
-          alt=""
-          width={783}
-          height={765}
-          className="pointer-events-none absolute -right-16 -top-10 h-72 w-72 opacity-[0.05]"
-        />
+      <section className="pb-12 pt-2 sm:pb-14">
         <Reveal>
-          <Container className="relative grid items-center gap-10 md:grid-cols-2">
-            <div>
-              <Ribbon>{t.journalEyebrow}</Ribbon>
-              <h2 className="mt-4 font-display text-3xl font-medium text-brand-900 sm:text-4xl">
-                {t.journalTitle}
-              </h2>
-              <p className="mt-5 text-ink/70">{t.journalDescription}</p>
-              <ButtonLink href="/signup" variant="primary" className="mt-7">
-                {t.journalCta}
-              </ButtonLink>
-            </div>
-            <div className="flex justify-center">
-              <div className="flex h-64 w-64 items-center justify-center rounded-full bg-brand-50 sm:h-80 sm:w-80">
-                <JournalIcon className="h-28 w-28 text-brand-700 sm:h-36 sm:w-36" />
-              </div>
-            </div>
+          <Container>
+            <Ribbon>{t.journalEyebrow}</Ribbon>
+            <h2 className="mt-4 max-w-xl font-display text-3xl font-medium text-brand-900 sm:text-4xl">
+              {t.journalTitle}
+            </h2>
+            <p className="mt-4 max-w-xl text-ink/70">{t.journalDescription}</p>
+            <ButtonLink href="/signup" variant="primary" className="mt-6">
+              {t.journalCta}
+            </ButtonLink>
           </Container>
         </Reveal>
       </section>

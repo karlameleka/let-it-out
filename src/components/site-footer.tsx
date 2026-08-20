@@ -23,8 +23,8 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
           className="pointer-events-none absolute -bottom-16 -right-12 h-64 w-64 rotate-6 opacity-[0.05] sm:h-80 sm:w-80"
         />
 
-        <div className="relative grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4">
-          <div className="col-span-2">
+        <div className="relative grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+          <div className="md:col-span-2">
             <Logo variant="horizontal-white" height={32} />
             <p className="mt-4 max-w-sm text-sm text-brand-100/80">{dict.tagline}</p>
             <p className="mt-2 max-w-sm text-sm text-brand-100/60">{dict.servicesLine}</p>
@@ -36,8 +36,8 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
               <li><Link href="/about" className="hover:text-white active:text-white">{dict.aboutUs}</Link></li>
-              <li><Link href="/services" className="hover:text-white active:text-white">{dict.ourServices}</Link></li>
-              <li><Link href="/resources" className="hover:text-white active:text-white">{dict.resources}</Link></li>
+              <li><Link href="/counseling" className="hover:text-white active:text-white">{dict.counseling}</Link></li>
+              <li><Link href="/workshops" className="hover:text-white active:text-white">{dict.workshops}</Link></li>
               <li><Link href="/shop" className="hover:text-white active:text-white">{dict.guidedJournals}</Link></li>
               <li><Link href="/journal" className="hover:text-white active:text-white">{dict.journalingApp}</Link></li>
             </ul>
