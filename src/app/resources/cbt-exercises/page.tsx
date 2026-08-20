@@ -5,6 +5,7 @@ import { Container } from "@/components/ui";
 import { Ribbon, DoodleField } from "@/components/decor";
 import CbtStreakStats from "./cbt-streak-stats";
 import CbtHistoryList from "./cbt-history-list";
+import CbtThinkingPatterns from "./cbt-thinking-patterns";
 
 export const metadata: Metadata = {
   title: "CBT Exercises",
@@ -82,6 +83,7 @@ export default function CbtExercisesPage() {
             ))}
           </div>
 
+          <CbtThinkingPatterns />
           <CbtHistoryList />
         </Container>
       </section>

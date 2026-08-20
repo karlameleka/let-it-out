@@ -54,3 +54,24 @@ export function deleteCbtEntry(id: string): void {
 export function clearCbtHistory(): void {
   window.localStorage.removeItem(HISTORY_KEY);
 }
+
+export type DistortionFrequency = { label: string; count: number };
+
+/** Tallies how often each thinking trap has been flagged across saved
+ * Cognitive Reframing sessions — a lightweight "what am I struggling
+ * with" signal, distinct from the streak. Reads the comma-separated
+ * `distortions` field each reframing entry saves. */
+export function getDistortionFrequency(): DistortionFrequency[] {
+  const counts = new Map<string, number>();
+  for (const entry of readAll()) {
+    if (entry.type !== "reframing") continue;
+    const raw = entry.data.distortions;
+    if (!raw) continue;
+    for (const label of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+}

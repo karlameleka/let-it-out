@@ -4,7 +4,7 @@ import { useEffect, useReducer } from "react";
 import { Info, Play, RotateCcw, Sparkles, Square } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui";
 import { BREATHING_PATTERNS, CYCLE_OPTIONS, type BreathingPattern, type BreathingPhaseLabel } from "@/lib/breathing-patterns";
-import { recordBreathingCompletion } from "@/lib/breathing-streak";
+import { recordBreathingCompletion, type BreathingStreakStats } from "@/lib/breathing-streak";
 
 const STORAGE_KEY = "lio_breathing_count";
 
@@ -25,6 +25,7 @@ type State = {
   cyclesDone: number;
   circleScale: number;
   count: number | null;
+  streak: number | null;
 };
 
 type Action =
@@ -44,6 +45,7 @@ const initialState: State = {
   cyclesDone: 0,
   circleScale: 1,
   count: null,
+  streak: null,
 };
 
 // A reducer (rather than several useState calls) so every tick of the timer
@@ -81,8 +83,8 @@ function reducer(state: State, action: Action): State {
         if (nextCycles >= state.targetCycles) {
           const nextCount = (state.count ?? 0) + 1;
           window.localStorage.setItem(STORAGE_KEY, String(nextCount));
-          recordBreathingCompletion();
-          return { ...state, stage: "done", cyclesDone: nextCycles, count: nextCount };
+          const { streak }: BreathingStreakStats = recordBreathingCompletion();
+          return { ...state, stage: "done", cyclesDone: nextCycles, count: nextCount, streak };
         }
         return {
           ...state,
@@ -217,6 +219,7 @@ export default function BreathingTool() {
             {state.targetCycles} cycles of {state.pattern.name.toLowerCase()}, done.
           </p>
           <p className="mt-1 text-sm text-ink/60">
+            {state.streak !== null && state.streak > 1 && `${state.streak} day streak. `}
             {state.count !== null && state.count > 0 && `${state.count} session${state.count === 1 ? "" : "s"} so far. `}
             Saved privately on this device — never on our servers.
           </p>

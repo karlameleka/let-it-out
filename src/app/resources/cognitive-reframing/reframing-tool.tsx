@@ -38,6 +38,7 @@ export default function ReframingTool() {
   const [evidenceAgainst, setEvidenceAgainst] = useState("");
   const [reframe, setReframe] = useState("");
   const [count, setCount] = useState<number | null>(null);
+  const [streak, setStreak] = useState<number | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -74,7 +75,7 @@ export default function ReframingTool() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
-    recordCbtCompletion();
+    setStreak(recordCbtCompletion().streak);
     saveCbtEntry({
       type: "reframing",
       summary: reframe.trim(),
@@ -307,6 +308,7 @@ export default function ReframingTool() {
             </span>
             <p className="mt-3 font-display text-lg font-semibold text-brand-900">Nice work.</p>
             <p className="mt-1 text-sm text-ink/60">
+              {streak !== null && streak > 1 && `${streak} day streak. `}
               {count !== null && count > 0 && `${count} reframe${count === 1 ? "" : "s"} so far. `}
               Here&apos;s what you worked through:
             </p>

@@ -20,6 +20,7 @@ export default function GroundingTool() {
   const [step, setStep] = useState(0);
   const [notes, setNotes] = useState<string[]>(SENSES.map(() => ""));
   const [count, setCount] = useState<number | null>(null);
+  const [streak, setStreak] = useState<number | null>(null);
   const done = step >= SENSES.length;
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function GroundingTool() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
-    recordCbtCompletion();
+    setStreak(recordCbtCompletion().streak);
     saveCbtEntry({
       type: "grounding",
       summary: notes.find((n) => n.trim()) ?? "5-4-3-2-1 grounding session",
@@ -117,6 +118,7 @@ export default function GroundingTool() {
             </span>
             <p className="mt-3 font-display text-lg font-semibold text-brand-900">Nicely grounded.</p>
             <p className="mt-1 text-sm text-ink/60">
+              {streak !== null && streak > 1 && `${streak} day streak. `}
               {count !== null && count > 0 && `${count} session${count === 1 ? "" : "s"} so far. `}
               Notice how much of the present moment you just took in.
             </p>

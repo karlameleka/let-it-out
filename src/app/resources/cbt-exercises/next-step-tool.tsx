@@ -18,6 +18,7 @@ export default function NextStepTool() {
   const [tinyStep, setTinyStep] = useState("");
   const [when, setWhen] = useState<string | null>(null);
   const [count, setCount] = useState<number | null>(null);
+  const [streak, setStreak] = useState<number | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -28,7 +29,7 @@ export default function NextStepTool() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
-    recordCbtCompletion();
+    setStreak(recordCbtCompletion().streak);
     saveCbtEntry({
       type: "next-step",
       summary: tinyStep.trim(),
@@ -162,6 +163,7 @@ export default function NextStepTool() {
             </span>
             <p className="mt-3 font-display text-lg font-semibold text-brand-900">That&apos;s the move.</p>
             <p className="mt-1 text-sm text-ink/60">
+              {streak !== null && streak > 1 && `${streak} day streak. `}
               {count !== null && count > 0 && `${count} tiny step${count === 1 ? "" : "s"} so far. `}
               Here&apos;s what you committed to:
             </p>
