@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session";
 import { createLead } from "@/lib/leads";
+import { sendWelcomeEmail } from "@/lib/email";
 import { getGoogleOAuthConfig } from "@/lib/google-auth";
 
 const STATE_COOKIE = "lio_google_oauth_state";
@@ -93,6 +94,8 @@ export async function GET(request: NextRequest) {
         source: "Website",
         notes: "Signed up via Google.",
       });
+      const baseUrl = new URL(request.url).origin;
+      await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
     }
 
     await createSession({ userId: user.id, email: user.email, name: user.name, role: user.role });

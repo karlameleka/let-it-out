@@ -156,6 +156,105 @@ export async function sendCustomerConfirmation({
 }
 
 /**
+ * Sent once, right after a new account is created (password signup or
+ * Google sign-in) — a warm welcome plus a plain-language, accurate summary
+ * of how the account's data is protected. Every claim here mirrors the
+ * Privacy Policy and the in-app journal privacy notice; never overstate
+ * beyond what those pages actually promise. Same fail-silently behavior as
+ * the other senders — a missing email config should never block signup.
+ */
+export async function sendWelcomeEmail({
+  to,
+  name,
+  privacyUrl,
+}: {
+  to: string;
+  name: string;
+  privacyUrl: string;
+}) {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] Skipped welcome email to ${to} — not configured.`);
+    return;
+  }
+
+  const text = [
+    `Hi ${name},`,
+    "",
+    "Welcome to Let It Out. We're glad you're here.",
+    "",
+    "Signing up for a mental health platform takes a real leap of trust, and we don't take that lightly — so before anything else, here's exactly how your information is protected:",
+    "",
+    "Your journal stays yours. Entries are encrypted on your own device (AES-256-GCM) and never sent to or stored on our servers, so no one at Let It Out can read them.",
+    "",
+    "Your password is never visible to anyone. It's one-way hashed the moment you set it — not even our team can see it.",
+    "",
+    "We never sell your data. No tracking cookies, no ad profiles, no third parties buying access to anything about you.",
+    "",
+    "You're always in control. Export or permanently delete your data at any time from Account settings — no waiting, no explanation needed.",
+    "",
+    "You can read the full details of how we handle your data here:",
+    privacyUrl,
+    "",
+    "If anything about this ever feels unclear, just reply to this email or reach us at letitoutsupport@gmail.com — a real person will answer.",
+    "",
+    "Warmly,\nThe Let It Out team",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+      <p>Hi ${escapeHtml(name)},</p>
+      <p>Welcome to Let It Out. We're glad you're here.</p>
+      <p>Signing up for a mental health platform takes a real leap of trust, and we don't take that lightly — so before anything else, here's exactly how your information is protected.</p>
+      <table cellpadding="0" cellspacing="0" style="width: 100%; margin: 20px 0; border-collapse: separate; border-spacing: 0 10px;">
+        <tr>
+          <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+            <strong>Your journal stays yours.</strong> Entries are encrypted on your own device (AES-256-GCM)
+            and never sent to or stored on our servers — no one at Let It Out can read them.
+          </td>
+        </tr>
+        <tr>
+          <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+            <strong>Your password is never visible to anyone.</strong> It's one-way hashed the moment you set
+            it — not even our team can see it.
+          </td>
+        </tr>
+        <tr>
+          <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+            <strong>We never sell your data.</strong> No tracking cookies, no ad profiles, no third parties
+            buying access to anything about you.
+          </td>
+        </tr>
+        <tr>
+          <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+            <strong>You're always in control.</strong> Export or permanently delete your data at any time
+            from Account settings — no waiting, no explanation needed.
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 24px 0;">
+        <a href="${privacyUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Read our full Privacy Policy</a>
+      </p>
+      <p style="color: #6b7c80; font-size: 13px;">If anything about this ever feels unclear, just reply to this email or reach us at letitoutsupport@gmail.com — a real person will answer.</p>
+      <p>Warmly,<br />The Let It Out team</p>
+    </div>
+  `;
+
+  try {
+    await transport.sendMail({
+      from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: "Welcome to Let It Out — and a quick word on privacy",
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error(`[email] Failed to send welcome email to ${to}:`, err);
+  }
+}
+
+/**
  * Sends a password-reset link. Same fail-silently behavior as the other
  * senders, but the caller must still return a generic success response
  * regardless — never reveal whether an email is registered.

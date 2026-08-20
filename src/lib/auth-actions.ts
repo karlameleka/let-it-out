@@ -14,7 +14,7 @@ import {
   clearPendingTwoFactorSession,
 } from "@/lib/session";
 import { verifyTotpCode, decryptTotpSecret, hashBackupCode } from "@/lib/totp";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";
 import { createLead } from "@/lib/leads";
 import { getBaseUrl } from "@/lib/base-url";
 
@@ -99,6 +99,9 @@ export async function signupAction(
     source: "Website",
     notes: demographicNotes,
   });
+
+  const baseUrl = await getBaseUrl();
+  await sendWelcomeEmail({ to: email, name, privacyUrl: `${baseUrl}/privacy` });
 
   await createSession({
     userId: user.id,
