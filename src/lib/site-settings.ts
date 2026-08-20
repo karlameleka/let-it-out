@@ -6,16 +6,16 @@ import { revalidatePath } from "next/cache";
 
 export type SiteSettingsData = {
   arabicEnabled: boolean;
-  cbtExercisePlacement: "TOP" | "BOTTOM";
-  cbtExerciseHidden: boolean;
+  resourcesPromoPlacement: "TOP" | "BOTTOM";
+  resourcesPromoHidden: boolean;
   hiddenArticleSlugs: string[];
   hideJournalTaglineButton: boolean;
 };
 
 const DEFAULTS: SiteSettingsData = {
   arabicEnabled: true,
-  cbtExercisePlacement: "TOP",
-  cbtExerciseHidden: false,
+  resourcesPromoPlacement: "TOP",
+  resourcesPromoHidden: false,
   hiddenArticleSlugs: [],
   hideJournalTaglineButton: false,
 };
@@ -27,8 +27,8 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData> => {
   if (!row) return DEFAULTS;
   return {
     arabicEnabled: row.arabicEnabled,
-    cbtExercisePlacement: row.cbtExercisePlacement,
-    cbtExerciseHidden: row.cbtExerciseHidden,
+    resourcesPromoPlacement: row.resourcesPromoPlacement,
+    resourcesPromoHidden: row.resourcesPromoHidden,
     hiddenArticleSlugs: row.hiddenArticleSlugs,
     hideJournalTaglineButton: row.hideJournalTaglineButton,
   };
@@ -38,8 +38,8 @@ export async function updateSiteSettings(formData: FormData) {
   "use server";
   await requireAdmin();
   const arabicEnabled = formData.get("arabicEnabled") === "on";
-  const cbtExercisePlacement = formData.get("cbtExercisePlacement") === "BOTTOM" ? "BOTTOM" : "TOP";
-  const cbtExerciseHidden = formData.get("cbtExerciseHidden") === "on";
+  const resourcesPromoPlacement = formData.get("resourcesPromoPlacement") === "BOTTOM" ? "BOTTOM" : "TOP";
+  const resourcesPromoHidden = formData.get("resourcesPromoHidden") === "on";
   const hiddenArticleSlugs = formData.getAll("hiddenArticleSlugs").map(String).filter(Boolean);
   const hideJournalTaglineButton = formData.get("hideJournalTaglineButton") === "on";
 
@@ -48,12 +48,12 @@ export async function updateSiteSettings(formData: FormData) {
     create: {
       id: "singleton",
       arabicEnabled,
-      cbtExercisePlacement,
-      cbtExerciseHidden,
+      resourcesPromoPlacement,
+      resourcesPromoHidden,
       hiddenArticleSlugs,
       hideJournalTaglineButton,
     },
-    update: { arabicEnabled, cbtExercisePlacement, cbtExerciseHidden, hiddenArticleSlugs, hideJournalTaglineButton },
+    update: { arabicEnabled, resourcesPromoPlacement, resourcesPromoHidden, hiddenArticleSlugs, hideJournalTaglineButton },
   });
 
   revalidatePath("/", "layout");

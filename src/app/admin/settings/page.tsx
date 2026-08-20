@@ -14,8 +14,7 @@ const HERO_FIELDS: [key: string, label: string][] = [
   ["heroTitleHighlight", "Headline — highlighted word"],
   ["heroTitleSuffix", "Headline — after the highlighted word"],
   ["heroDescription", "Description paragraph"],
-  ["heroCtaBook", "Primary button"],
-  ["heroCtaShop", "Secondary link"],
+  ["heroCtaServices", "Primary button"],
   ["heroPromptQuote", "Today's-prompt quote"],
   ["heroPromptLabel", "Today's-prompt label"],
   ["heroCardQuote", "Dark quote card"],
@@ -172,17 +171,16 @@ export default async function AdminSettingsPage() {
         </div>
 
         <div className="rounded-2xl border border-brand-100 bg-white p-5">
-          <label className="block text-sm font-semibold text-brand-900" htmlFor="cbtExercisePlacement">
-            Cognitive reframing exercise placement
+          <label className="block text-sm font-semibold text-brand-900" htmlFor="resourcesPromoPlacement">
+            Journal promo placement
           </label>
           <p className="mt-0.5 text-xs text-ink/60">
-            Where the &ldquo;Interactive exercises&rdquo; card sits on the Resources page, relative to the
-            article list.
+            Where the journaling-app promo card sits on the Resources page, relative to the article list.
           </p>
           <select
-            id="cbtExercisePlacement"
-            name="cbtExercisePlacement"
-            defaultValue={settings.cbtExercisePlacement}
+            id="resourcesPromoPlacement"
+            name="resourcesPromoPlacement"
+            defaultValue={settings.resourcesPromoPlacement}
             className="mt-3 w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
           >
             <option value="TOP">Above the article list (default)</option>
@@ -194,15 +192,14 @@ export default async function AdminSettingsPage() {
           <label className="flex items-start gap-3">
             <input
               type="checkbox"
-              name="cbtExerciseHidden"
-              defaultChecked={settings.cbtExerciseHidden}
+              name="resourcesPromoHidden"
+              defaultChecked={settings.resourcesPromoHidden}
               className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
             />
             <span>
-              <span className="block text-sm font-semibold text-brand-900">Hide the CBT exercise</span>
+              <span className="block text-sm font-semibold text-brand-900">Hide the journal promo card</span>
               <span className="mt-0.5 block text-xs text-ink/60">
-                Removes the &ldquo;Cognitive Reframing&rdquo; card from the Resources page. The tool itself stays
-                reachable at its direct link.
+                Removes the journaling-app promo card from the Resources page.
               </span>
             </span>
           </label>

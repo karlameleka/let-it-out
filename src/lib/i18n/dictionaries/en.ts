@@ -69,8 +69,7 @@ const en = {
     heroTitleSuffix: " journey, with you every step of the way.",
     heroDescription:
       "Let It Out enhances wellbeing through evidence-based research, practical tools, and compassionate care — through one-on-one counseling, guided journals, and workshops for workplaces and communities.",
-    heroCtaBook: "Book a session",
-    heroCtaShop: "Explore guided journals",
+    heroCtaServices: "Explore our services",
     heroPromptQuote:
       "“What is one thing your body did for you today that you didn’t thank it for?”",
     heroPromptLabel: "Today's prompt",
@@ -111,10 +110,11 @@ const en = {
   },
   services: {
     ribbon: "Our services",
-    titlePrefix: "Two ways to ",
+    titlePrefix: "Three ways to ",
     titleHighlight: "work with us",
     titleSuffix: ".",
-    description: "Whichever fits where you are right now — one-on-one support, or a session for your team.",
+    description:
+      "Whichever fits where you are right now — one-on-one support, a session for your team, or a guided journal to work through on your own.",
   },
   about: {
     ribbon: "Who we are",

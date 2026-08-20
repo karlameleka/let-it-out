@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Brain, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
+import { JournalIcon } from "@/components/lio-icons";
 import ArticleFilter from "./article-filter";
 import { Reveal } from "@/components/reveal";
 import { getSiteSettings } from "@/lib/site-settings";
@@ -16,28 +17,28 @@ export const metadata: Metadata = {
 export default async function ResourcesPage() {
   const [settings, articleList] = await Promise.all([getSiteSettings(), getArticles()]);
 
-  const exercises = settings.cbtExerciseHidden ? null : (
-    <section className="pt-2 pb-8 sm:py-10" key="exercises">
+  const journalPromo = settings.resourcesPromoHidden ? null : (
+    <section className="pt-2 pb-8 sm:py-10" key="journal-promo">
       <Reveal>
         <Container>
-          <SectionHeading eyebrow="Practice" title="Interactive exercises" />
+          <SectionHeading eyebrow="Practice" title="Make it a daily habit" />
           <Link
-            href="/resources/cognitive-reframing"
+            href="/journal"
             className="group mt-10 flex flex-col gap-6 overflow-hidden rounded-3xl border-2 border-brand-700 bg-brand-700 p-6 text-white shadow-sm transition-all hover:-translate-y-1 active:-translate-y-1 hover:shadow-lg active:shadow-lg sm:flex-row sm:items-center sm:p-8"
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
-              <Brain className="h-6 w-6" strokeWidth={1.75} />
+              <JournalIcon className="h-7 w-7" />
             </span>
             <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-200">CBT exercise</p>
-              <h3 className="mt-1 font-display text-xl font-semibold">Cognitive Reframing</h3>
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-200">Journaling app</p>
+              <h3 className="mt-1 font-display text-xl font-semibold">Let it out. One page at a time.</h3>
               <p className="mt-1.5 text-sm text-brand-50/85">
-                Shuffle through everyday scenarios, spot the thinking trap, and practice landing on a more
-                balanced thought.
+                A private, guided space to process your thoughts, track your mood, and build a daily
+                reflection habit.
               </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold link-grow w-fit">
-              Try it <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              Start journaling <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </span>
           </Link>
         </Container>
@@ -56,7 +57,7 @@ export default async function ResourcesPage() {
     </section>
   );
 
-  const sections = settings.cbtExercisePlacement === "BOTTOM" ? [articles, exercises] : [exercises, articles];
+  const sections = settings.resourcesPromoPlacement === "BOTTOM" ? [articles, journalPromo] : [journalPromo, articles];
 
   return (
     <>

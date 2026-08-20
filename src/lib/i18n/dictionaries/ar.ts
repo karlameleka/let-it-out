@@ -71,8 +71,7 @@ const ar: Dictionary = {
     heroTitleSuffix: "، نسير فيها معك خطوة بخطوة.",
     heroDescription:
       "يهتم Let It Out بصحتك النفسية عبر أبحاث علمية وأدوات عملية ورعاية إنسانية — من خلال استشارات فردية، ويوميات إرشادية، وورش عمل لأماكن العمل والمجتمعات.",
-    heroCtaBook: "احجز جلسة",
-    heroCtaShop: "استكشف اليوميات الإرشادية",
+    heroCtaServices: "استكشف خدماتنا",
     heroPromptQuote: "«ما هو الشيء الذي فعله جسدك من أجلك اليوم ولم تشكره عليه؟»",
     heroPromptLabel: "سؤال اليوم",
     heroCardQuote: "أخرِج ما بداخلك. صفحة في كل مرة.",
@@ -112,10 +111,10 @@ const ar: Dictionary = {
   },
   services: {
     ribbon: "خدماتنا",
-    titlePrefix: "طريقتان ",
+    titlePrefix: "ثلاث طرق ",
     titleHighlight: "للعمل معنا",
     titleSuffix: ".",
-    description: "أيًا كان ما يناسبك الآن — دعم فردي، أو جلسة لفريقك.",
+    description: "أيًا كان ما يناسبك الآن — دعم فردي، أو جلسة لفريقك، أو يومية إرشادية تعمل عليها بنفسك.",
   },
   about: {
     ribbon: "من نحن",

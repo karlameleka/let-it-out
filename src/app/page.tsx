@@ -53,11 +53,8 @@ export default async function HomePage({
               {t.heroDescription}
             </p>
             <div className="animate-rise mt-9 flex flex-wrap items-center gap-x-8 gap-y-4" style={{ animationDelay: "0.28s" }}>
-              <ButtonLink href="/counseling" variant="primary">
-                {t.heroCtaBook}
-              </ButtonLink>
-              <ButtonLink href="/shop" variant="text">
-                {t.heroCtaShop} &rarr;
+              <ButtonLink href="/services" variant="primary">
+                {t.heroCtaServices}
               </ButtonLink>
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HomeIcon, JournalIcon, ServicesIcon, ResourcesIcon, ShopIcon } from "@/components/lio-icons";
+import { HomeIcon, ServicesIcon, ResourcesIcon, ShopIcon } from "@/components/lio-icons";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
@@ -12,7 +12,6 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
 
   const TABS = [
     { href: "/", label: dict.home, icon: HomeIcon, matches: ["/"] },
-    { href: "/journal", label: dict.journal, icon: JournalIcon, matches: ["/journal"] },
     { href: "/services", label: dict.ourServices, icon: ServicesIcon, matches: ["/services", "/counseling", "/workshops"] },
     { href: "/resources", label: dict.resources, icon: ResourcesIcon, matches: ["/resources"] },
     { href: "/shop", label: dict.shop, icon: ShopIcon, matches: ["/shop"] },

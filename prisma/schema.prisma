@@ -456,7 +456,7 @@ model Lead {
   updatedAt     DateTime   @updatedAt
 }
 
-enum CbtExercisePlacement {
+enum ResourcesPromoPlacement {
   TOP
   BOTTOM
 }
@@ -465,17 +465,20 @@ enum CbtExercisePlacement {
 // change or redeploy. Single row, always looked up by the fixed id
 // "singleton" — see src/lib/site-settings.ts.
 model SiteSettings {
-  id                   String               @id @default("singleton")
-  arabicEnabled        Boolean              @default(true)
-  cbtExercisePlacement CbtExercisePlacement @default(TOP)
-  cbtExerciseHidden    Boolean              @default(false)
+  id                      String                  @id @default("singleton")
+  arabicEnabled           Boolean                 @default(true)
+  // Placement/visibility of the promo card on the Resources page (currently
+  // promotes the journaling app; named generically since what it promotes
+  // has changed before and may again).
+  resourcesPromoPlacement ResourcesPromoPlacement @default(TOP)
+  resourcesPromoHidden    Boolean                 @default(false)
   // Article slugs hidden from the Resources listing. Still reachable at
   // their direct URL — this is an archive toggle, not a delete.
-  hiddenArticleSlugs   String[]             @default([])
+  hiddenArticleSlugs      String[]                @default([])
   // Hides the "Let it out. One page at a time." teal card / journal-app
   // button on the homepage.
-  hideJournalTaglineButton Boolean          @default(false)
-  updatedAt            DateTime             @updatedAt
+  hideJournalTaglineButton Boolean                @default(false)
+  updatedAt               DateTime                @updatedAt
 }
 
 model Article {
