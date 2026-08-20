@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HomeIcon, ServicesIcon, ResourcesIcon, ShopIcon } from "@/components/lio-icons";
+import { Home, HeartHandshake, Newspaper, ShoppingBag } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
@@ -11,10 +11,10 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   if (pathname?.startsWith("/admin")) return null;
 
   const TABS = [
-    { href: "/", label: dict.home, icon: HomeIcon, matches: ["/"] },
-    { href: "/services", label: dict.ourServices, icon: ServicesIcon, matches: ["/services", "/counseling", "/workshops"] },
-    { href: "/resources", label: dict.resources, icon: ResourcesIcon, matches: ["/resources"] },
-    { href: "/shop", label: dict.shop, icon: ShopIcon, matches: ["/shop"] },
+    { href: "/", label: dict.home, icon: Home, matches: ["/"] },
+    { href: "/services", label: dict.ourServices, icon: HeartHandshake, matches: ["/services", "/counseling", "/workshops"] },
+    { href: "/resources", label: dict.resources, icon: Newspaper, matches: ["/resources"] },
+    { href: "/shop", label: dict.shop, icon: ShoppingBag, matches: ["/shop"] },
   ];
 
   return (
@@ -32,7 +32,7 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
               active ? "text-brand-700" : "text-ink/40"
             }`}
           >
-            <Icon className="h-7 w-7" />
+            <Icon className="h-7 w-7" strokeWidth={active ? 2.5 : 1.9} />
             {label}
           </Link>
         );

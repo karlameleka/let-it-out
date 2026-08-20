@@ -87,7 +87,7 @@ const en = {
     service2Cta: "See workshop topics",
     service3Title: "Guided Journals & Digital Resources",
     service3Description:
-      "Practical, CBT-informed self-help journals to help you build a healthier relationship with yourself.",
+      "Practical, CBT-informed self-help journals to help you build a healthier relationship with yourself and others.",
     service3Cta: "Browse journals",
     storyRibbon: "Our story",
     storyTitle: "Founded to make quality mental health care reachable.",

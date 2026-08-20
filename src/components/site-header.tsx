@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ShoppingCart } from "lucide-react";
 import { CartIcon } from "@/components/lio-icons";
 import { LogoLink } from "@/components/logo";
 import { logoutAction } from "@/lib/auth-actions";
@@ -12,7 +13,15 @@ import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import LanguageSwitcher from "@/components/language-switcher";
 
-function CartIconLink({ count, className = "" }: { count: number; className?: string }) {
+function CartIconLink({
+  count,
+  className = "",
+  icon: Icon,
+}: {
+  count: number;
+  className?: string;
+  icon: ComponentType<{ className?: string }>;
+}) {
   if (count === 0) return null;
   return (
     <Link
@@ -20,7 +29,7 @@ function CartIconLink({ count, className = "" }: { count: number; className?: st
       aria-label={`Cart, ${count} item${count === 1 ? "" : "s"}`}
       className={`relative inline-flex items-center justify-center rounded-md p-2 text-ink hover:text-brand-700 active:text-brand-700 ${className}`}
     >
-      <CartIcon className="h-5 w-5" />
+      <Icon className="h-5 w-5" />
       <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-700 px-1 text-[10px] font-semibold leading-none text-white">
         {count}
       </span>
@@ -109,12 +118,12 @@ export default function SiteHeader({
             </div>
           )}
 
-          <CartIconLink count={cartCount} />
+          <CartIconLink count={cartCount} icon={CartIcon} />
           <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} compact arabicEnabled={arabicEnabled} />
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
-          <CartIconLink count={cartCount} />
+          <CartIconLink count={cartCount} icon={ShoppingCart} />
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}

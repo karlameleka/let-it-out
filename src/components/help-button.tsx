@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, MessageCircle, Phone, HelpCircle } from "lucide-react";
+import { X, LifeBuoy, MessageCircle, Phone, HelpCircle } from "lucide-react";
 import { QuestionMarkIcon } from "@/components/lio-icons";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
@@ -80,7 +80,14 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
         aria-expanded={open}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg transition-all hover:bg-brand-600 active:bg-brand-600 hover:-translate-y-0.5 active:-translate-y-0.5"
       >
-        {open ? <X className="h-6 w-6" strokeWidth={2} /> : <QuestionMarkIcon className="h-6 w-6" />}
+        {open ? (
+          <X className="h-6 w-6" strokeWidth={2} />
+        ) : (
+          <>
+            <LifeBuoy className="h-6 w-6 sm:hidden" strokeWidth={2} />
+            <QuestionMarkIcon className="hidden h-6 w-6 sm:block" />
+          </>
+        )}
       </button>
     </div>
   );
