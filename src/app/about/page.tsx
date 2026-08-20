@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, Swash } from "@/components/decor";
@@ -19,6 +20,49 @@ export default async function AboutPage() {
     { label: t.value2Label, description: t.value2Text },
     { label: t.value3Label, description: t.value3Text },
     { label: t.value4Label, description: t.value4Text },
+  ];
+
+  const trustedByLogos = [
+    { name: "e&", src: "/brand/trusted-by/e-and.png", width: 388, height: 262 },
+    { name: "Nestlé", src: "/brand/trusted-by/nestle.png", width: 640, height: 176 },
+    {
+      name: "The American University in Cairo",
+      src: "/brand/trusted-by/american-university-cairo.png",
+      width: 225,
+      height: 225,
+    },
+    {
+      name: "The British University in Egypt",
+      src: "/brand/trusted-by/british-university-egypt.png",
+      width: 694,
+      height: 290,
+    },
+    {
+      name: "Bibliotheca Alexandrina",
+      src: "/brand/trusted-by/bibliotheca-alexandrina.png",
+      width: 220,
+      height: 93,
+    },
+    { name: "Fahim Foundation", src: "/brand/trusted-by/fahim-foundation.png", width: 349, height: 89 },
+    {
+      name: "Ministry of Youth and Sports",
+      src: "/brand/trusted-by/ministry-of-youth-and-sports.png",
+      width: 203,
+      height: 203,
+    },
+    { name: "St. Fatima", src: "/brand/trusted-by/st-fatima.png", width: 218, height: 135 },
+    {
+      name: "Smash Sporting Club",
+      src: "/brand/trusted-by/smash-sporting-club.png",
+      width: 466,
+      height: 116,
+    },
+    {
+      name: "Haya Karima Foundation",
+      src: "/brand/trusted-by/haya-karima-foundation.png",
+      width: 132,
+      height: 165,
+    },
   ];
 
   return (
@@ -45,21 +89,16 @@ export default async function AboutPage() {
             <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-ink/40">
               {t.trustedByLabel}
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-              {[
-                "e&",
-                "Coca-Cola",
-                "Nestlé",
-                "BeReal Global",
-                "Fahim Foundation",
-                "Ministry of Youth",
-              ].map((org) => (
-                <span
-                  key={org}
-                  className="font-display text-lg font-semibold text-brand-800/70 sm:text-xl"
-                >
-                  {org}
-                </span>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-6 sm:gap-x-10">
+              {trustedByLogos.map((logo) => (
+                <Image
+                  key={logo.name}
+                  src={logo.src}
+                  alt={logo.name}
+                  width={logo.width}
+                  height={logo.height}
+                  className="h-10 w-auto object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 sm:h-12"
+                />
               ))}
             </div>
           </Container>
