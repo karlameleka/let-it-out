@@ -101,7 +101,7 @@ export default async function HomePage({
       </section>
 
       {/* Story teaser */}
-      <section className="relative overflow-hidden bg-brand-800 py-24 text-white">
+      <section className="relative overflow-hidden bg-brand-800 pb-24 pt-14 text-white">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
         <Image
           src="/brand/logo-icon-white.png"
@@ -130,7 +130,7 @@ export default async function HomePage({
       </section>
 
       {/* Services */}
-      <section className="relative overflow-hidden bg-brand-50 py-24">
+      <section className="relative overflow-hidden bg-brand-50 pb-24 pt-14">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-50" />
         <Reveal>
           <Container>
@@ -168,7 +168,7 @@ export default async function HomePage({
       </section>
 
       {/* Counselors */}
-      <section className="py-24">
+      <section className="pb-24 pt-14">
         <Reveal>
           <Container>
             <SectionHeading
@@ -222,7 +222,7 @@ export default async function HomePage({
       </section>
 
       {/* Shop teaser */}
-      <section className="relative overflow-hidden bg-brand-50 py-24">
+      <section className="relative overflow-hidden bg-brand-50 pb-24 pt-14">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-50" />
         <Reveal>
           <Container>
