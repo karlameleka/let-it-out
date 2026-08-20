@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LifeBuoy, X, MessageCircle, Phone, HelpCircle } from "lucide-react";
+import { X, MessageCircle, Phone, HelpCircle } from "lucide-react";
+import { QuestionMarkIcon } from "@/components/lio-icons";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=201288200533";
@@ -79,7 +80,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
         aria-expanded={open}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg transition-all hover:bg-brand-600 active:bg-brand-600 hover:-translate-y-0.5 active:-translate-y-0.5"
       >
-        {open ? <X className="h-6 w-6" strokeWidth={2} /> : <LifeBuoy className="h-6 w-6" strokeWidth={2} />}
+        {open ? <X className="h-6 w-6" strokeWidth={2} /> : <QuestionMarkIcon className="h-6 w-6" />}
       </button>
     </div>
   );

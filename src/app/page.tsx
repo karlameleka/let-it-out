@@ -62,17 +62,17 @@ export default async function HomePage({
             </div>
           </div>
 
-          <div
-            className="animate-rise mt-16 grid gap-8 border-t border-brand-200 pt-10 sm:grid-cols-[1fr_auto] sm:items-center"
-            style={{ animationDelay: "0.4s" }}
-          >
-            <div className="max-w-md">
-              <p className="font-display text-lg italic leading-snug text-brand-900">{t.heroPromptQuote}</p>
-              <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
-                {t.heroPromptLabel}
-              </p>
-            </div>
-            {!settings.hideJournalTaglineButton && (
+          {!settings.hideJournalTaglineButton && (
+            <div
+              className="animate-rise mt-16 grid gap-8 border-t border-brand-200 pt-10 sm:grid-cols-[1fr_auto] sm:items-center"
+              style={{ animationDelay: "0.4s" }}
+            >
+              <div className="max-w-md">
+                <p className="font-display text-lg italic leading-snug text-brand-900">{t.heroPromptQuote}</p>
+                <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
+                  {t.heroPromptLabel}
+                </p>
+              </div>
               <Link
                 href="/journal"
                 className="group flex items-center gap-4 rounded-lg bg-brand-700 px-6 py-5 text-white transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:bg-brand-600 active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] sm:max-w-xs"
@@ -80,8 +80,8 @@ export default async function HomePage({
                 <Logo variant="icon-white" height={40} className="shrink-0" />
                 <p className="font-display text-base italic leading-snug">{t.heroCardQuote}</p>
               </Link>
-            )}
-          </div>
+            </div>
+          )}
         </Container>
       </section>
 
