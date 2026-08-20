@@ -89,7 +89,7 @@ export default async function AboutPage() {
             <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-ink/40">
               {t.trustedByLabel}
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-6 sm:gap-x-10">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-4 sm:gap-x-8">
               {trustedByLogos.map((logo) => (
                 <Image
                   key={logo.name}
@@ -97,7 +97,7 @@ export default async function AboutPage() {
                   alt={logo.name}
                   width={logo.width}
                   height={logo.height}
-                  className="h-10 w-auto object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 sm:h-12"
+                  className="h-6 w-auto object-contain opacity-90 transition hover:opacity-100 sm:h-7"
                 />
               ))}
             </div>
