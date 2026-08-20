@@ -59,18 +59,22 @@ export default function InstallCard() {
               On iPhone or iPad (Safari)
             </p>
             <ol className="mt-3 space-y-3">
-              <li className="flex items-center gap-3 text-sm text-ink/75">
+              <li className="flex items-start gap-3 text-sm text-ink/75">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
                   <Share className="h-4 w-4" strokeWidth={2} />
                 </span>
-                Tap the <span className="font-medium text-ink/90">Share</span> button in Safari&apos;s toolbar.
+                <span>
+                  Tap the <span className="font-medium text-ink/90">Share</span> button in Safari&apos;s toolbar.
+                </span>
               </li>
-              <li className="flex items-center gap-3 text-sm text-ink/75">
+              <li className="flex items-start gap-3 text-sm text-ink/75">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
                   <SquarePlus className="h-4 w-4" strokeWidth={2} />
                 </span>
-                Scroll down and tap{" "}
-                <span className="font-medium text-ink/90">&ldquo;Add to Home Screen&rdquo;</span>.
+                <span>
+                  Scroll down and tap{" "}
+                  <span className="font-medium text-ink/90">&ldquo;Add to Home Screen&rdquo;</span>.
+                </span>
               </li>
             </ol>
           </div>

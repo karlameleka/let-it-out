@@ -9,7 +9,7 @@ export default function InstallPreview() {
       <PhoneFrame label="Your daily journal">
         <div className="bg-brand-50 px-4 pb-4 pt-8">
           <p className="text-[9px] font-semibold uppercase tracking-wide text-brand-500">A self-exploration journey</p>
-          <p className="mt-1 font-display text-base font-medium text-brand-900">Hi Karla, welcome back</p>
+          <p className="mt-1 font-display text-base font-medium text-brand-900">Hi Nour, welcome back</p>
           <div className="mt-3 flex gap-2">
             <div className="rounded-lg border border-brand-100 bg-white px-3 py-1.5">
               <p className="font-display text-sm font-semibold leading-none text-brand-900">12</p>
