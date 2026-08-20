@@ -84,8 +84,59 @@ export default async function HomePage({
 
       <WaveDivider fill="fill-white" />
 
+      {/* Daily journaling, free */}
+      <section className="py-24">
+        <Reveal>
+          <Container className="relative overflow-hidden rounded-3xl border-2 border-brand-100 bg-white px-6 py-16 text-center sm:px-16">
+            <DoodleField />
+            <div className="relative">
+              <SectionHeading
+                align="center"
+                eyebrow={t.journalEyebrow}
+                title={t.journalTitle}
+                description={t.journalDescription}
+              />
+              <div className="mt-8 flex justify-center gap-4">
+                <ButtonLink href="/signup" variant="primary">
+                  {t.journalCta}
+                </ButtonLink>
+              </div>
+            </div>
+          </Container>
+        </Reveal>
+      </section>
+
+      {/* Story teaser */}
+      <section className="relative overflow-hidden bg-brand-800 py-24 text-white">
+        <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
+        <Image
+          src="/brand/logo-icon-white.png"
+          alt=""
+          width={852}
+          height={829}
+          className="pointer-events-none absolute -bottom-20 -left-16 h-72 w-72 opacity-[0.06]"
+        />
+        <Reveal>
+          <Container className="relative grid items-center gap-10 md:grid-cols-2">
+            <div>
+              <Ribbon tone="dark">{t.storyRibbon}</Ribbon>
+              <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">
+                {t.storyTitle}
+              </h2>
+              <p className="mt-5 text-brand-50/85">{t.storyDescription}</p>
+              <ButtonLink href="/about" variant="bright" className="mt-7">
+                {t.storyCta}
+              </ButtonLink>
+            </div>
+            <div className="flex justify-center">
+              <Logo variant="icon-white" height={200} className="drop-shadow-xl" />
+            </div>
+          </Container>
+        </Reveal>
+      </section>
+
       {/* Services */}
-      <section className="pb-24 pt-4 sm:pb-28">
+      <section className="py-24">
         <Reveal>
           <Container>
             <SectionHeading
@@ -116,35 +167,6 @@ export default async function HomePage({
                 description={t.service3Description}
                 cta={t.service3Cta}
               />
-            </div>
-          </Container>
-        </Reveal>
-      </section>
-
-      {/* Story teaser */}
-      <section className="relative overflow-hidden bg-brand-800 py-24 text-white">
-        <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
-        <Image
-          src="/brand/logo-icon-white.png"
-          alt=""
-          width={852}
-          height={829}
-          className="pointer-events-none absolute -bottom-20 -left-16 h-72 w-72 opacity-[0.06]"
-        />
-        <Reveal>
-          <Container className="relative grid items-center gap-10 md:grid-cols-2">
-            <div>
-              <Ribbon tone="dark">{t.storyRibbon}</Ribbon>
-              <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">
-                {t.storyTitle}
-              </h2>
-              <p className="mt-5 text-brand-50/85">{t.storyDescription}</p>
-              <ButtonLink href="/about" variant="bright" className="mt-7">
-                {t.storyCta}
-              </ButtonLink>
-            </div>
-            <div className="flex justify-center">
-              <Logo variant="icon-white" height={200} className="drop-shadow-xl" />
             </div>
           </Container>
         </Reveal>
@@ -248,28 +270,6 @@ export default async function HomePage({
                   </Link>
                 );
               })}
-            </div>
-          </Container>
-        </Reveal>
-      </section>
-
-      {/* Journal app CTA */}
-      <section className="py-24">
-        <Reveal>
-          <Container className="relative overflow-hidden rounded-3xl border-2 border-brand-100 bg-white px-6 py-16 text-center sm:px-16">
-            <DoodleField />
-            <div className="relative">
-              <SectionHeading
-                align="center"
-                eyebrow={t.journalEyebrow}
-                title={t.journalTitle}
-                description={t.journalDescription}
-              />
-              <div className="mt-8 flex justify-center gap-4">
-                <ButtonLink href="/signup" variant="primary">
-                  {t.journalCta}
-                </ButtonLink>
-              </div>
             </div>
           </Container>
         </Reveal>

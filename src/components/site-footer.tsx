@@ -36,8 +36,8 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
               <li><Link href="/about" className="hover:text-white active:text-white">{dict.aboutUs}</Link></li>
-              <li><Link href="/counseling" className="hover:text-white active:text-white">{dict.counseling}</Link></li>
-              <li><Link href="/workshops" className="hover:text-white active:text-white">{dict.workshops}</Link></li>
+              <li><Link href="/services" className="hover:text-white active:text-white">{dict.ourServices}</Link></li>
+              <li><Link href="/resources" className="hover:text-white active:text-white">{dict.resources}</Link></li>
               <li><Link href="/shop" className="hover:text-white active:text-white">{dict.guidedJournals}</Link></li>
               <li><Link href="/journal" className="hover:text-white active:text-white">{dict.journalingApp}</Link></li>
             </ul>
