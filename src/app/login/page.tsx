@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui";
 import { Logo } from "@/components/logo";
-import { DoodleField } from "@/components/decor";
+import { DoodleField, Ribbon } from "@/components/decor";
 import LoginForm from "./login-form";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -38,20 +38,27 @@ export default async function LoginPage({
         </div>
       </div>
 
-      <div className="flex justify-center px-4 pt-6 pb-10 sm:px-6 sm:pt-14 sm:pb-16 md:items-center">
-        <Container className="mx-auto max-w-sm px-0">
-          <h1 className="font-display text-3xl font-medium text-brand-900">{t.loginTitle}</h1>
-          <p className="mt-2 text-sm text-ink/60">{t.loginSubtitle}</p>
-          <div className="mt-8">
-            <LoginForm dict={dict} googleEnabled={googleEnabled} error={errorMessage} />
-          </div>
-          <p className="mt-6 text-sm text-ink/60">
-            {t.noAccount}{" "}
-            <Link href="/signup" className="font-medium text-brand-600 link-grow">
-              {dict.nav.signUp}
-            </Link>
-          </p>
-        </Container>
+      <div className="flex flex-col md:justify-center">
+        <div className="bg-brand-50 px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 md:bg-transparent md:px-0 md:pt-14 md:pb-0">
+          <Container className="mx-auto max-w-sm px-0">
+            <Ribbon className="md:hidden">{dict.nav.logIn}</Ribbon>
+            <h1 className="mt-3 font-display text-3xl font-medium text-brand-900 md:mt-0">{t.loginTitle}</h1>
+            <p className="mt-2 text-sm text-ink/60">{t.loginSubtitle}</p>
+          </Container>
+        </div>
+        <div className="flex justify-center px-4 pb-10 sm:px-6 sm:pb-16">
+          <Container className="mx-auto max-w-sm px-0">
+            <div className="mt-6 md:mt-8">
+              <LoginForm dict={dict} googleEnabled={googleEnabled} error={errorMessage} />
+            </div>
+            <p className="mt-6 text-sm text-ink/60">
+              {t.noAccount}{" "}
+              <Link href="/signup" className="font-medium text-brand-600 link-grow">
+                {dict.nav.signUp}
+              </Link>
+            </p>
+          </Container>
+        </div>
       </div>
     </section>
   );
