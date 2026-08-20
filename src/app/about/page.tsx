@@ -23,19 +23,19 @@ export default async function AboutPage() {
   ];
 
   const trustedByLogos = [
-    { name: "e&", src: "/brand/trusted-by/e-and.png", width: 388, height: 262 },
+    { name: "e&", src: "/brand/trusted-by/e-and.png", width: 102, height: 96 },
     { name: "Nestlé", src: "/brand/trusted-by/nestle.png", width: 640, height: 176 },
     {
       name: "The American University in Cairo",
       src: "/brand/trusted-by/american-university-cairo.png",
-      width: 225,
-      height: 225,
+      width: 401,
+      height: 75,
     },
     {
       name: "The British University in Egypt",
       src: "/brand/trusted-by/british-university-egypt.png",
-      width: 694,
-      height: 290,
+      width: 425,
+      height: 152,
     },
     {
       name: "Bibliotheca Alexandrina",
