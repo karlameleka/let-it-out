@@ -4,6 +4,7 @@ import { Brain, Footprints, Wind } from "lucide-react";
 import { Container } from "@/components/ui";
 import { Ribbon, DoodleField } from "@/components/decor";
 import CbtStreakStats from "./cbt-streak-stats";
+import CbtHistoryList from "./cbt-history-list";
 
 export const metadata: Metadata = {
   title: "CBT Exercises",
@@ -46,7 +47,7 @@ export default function CbtExercisesPage() {
           </h1>
           <p className="mt-4 text-lg text-ink/70">
             Short, evidence-based exercises drawn from cognitive behavioral therapy — pick whichever fits how
-            you&apos;re feeling right now. Nothing here is saved or shared; it&apos;s just for you.
+            you&apos;re feeling right now. Your answers stay private, saved only on this device.
           </p>
           <div className="mt-6">
             <CbtStreakStats />
@@ -80,6 +81,8 @@ export default function CbtExercisesPage() {
               </Link>
             ))}
           </div>
+
+          <CbtHistoryList />
         </Container>
       </section>
     </>

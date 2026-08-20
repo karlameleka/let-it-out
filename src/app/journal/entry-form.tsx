@@ -32,7 +32,7 @@ export default function EntryForm({
    * feed once the composer is done. */
   onSaved?: () => void;
 }) {
-  const [mood, setMood] = useState<string | null>(null);
+  const [moods, setMoods] = useState<string[]>([]);
   const [expandedCore, setExpandedCore] = useState<CoreEmotionId | null>(null);
   const [key, setKey] = useState(0);
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -43,7 +43,9 @@ export default function EntryForm({
     try {
       await createEntry(userId, {
         content,
-        mood: (String(formData.get("mood") ?? "") || null),
+        moods: String(formData.get("moods") ?? "")
+          .split(",")
+          .filter(Boolean),
         photoUrl: (String(formData.get("photoUrl") ?? "") || null),
         prompt: prompt ? { category: prompt.category, text: prompt.text } : null,
       });
@@ -67,7 +69,7 @@ export default function EntryForm({
     setLastHandledState(state);
     if (state?.success) {
       setKey((k) => k + 1);
-      setMood(null);
+      setMoods([]);
       setExpandedCore(null);
       setPhoto(null);
       setPhotoError(null);
@@ -108,18 +110,13 @@ export default function EntryForm({
     }
   }
 
-  function selectCore(coreId: CoreEmotionId) {
-    if (mood === coreId && expandedCore === coreId) {
-      setMood(null);
-      setExpandedCore(null);
-    } else {
-      setMood(coreId);
-      setExpandedCore(coreId);
-    }
+  function toggleMood(id: string) {
+    setMoods((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]));
   }
 
-  function selectSecondary(id: string) {
-    setMood(mood === id ? null : id);
+  function toggleCore(coreId: CoreEmotionId) {
+    toggleMood(coreId);
+    setExpandedCore((prev) => (prev === coreId ? null : coreId));
   }
 
   function handleShuffle() {
@@ -167,24 +164,24 @@ export default function EntryForm({
       </div>
 
       <form action={formAction} key={key} className="space-y-4">
-        <input type="hidden" name="mood" value={mood ?? ""} />
+        <input type="hidden" name="moods" value={moods.join(",")} />
 
         <div className="overflow-hidden rounded-xl border border-brand-200 bg-white focus-within:border-brand-500">
           <div className="border-b border-brand-100 bg-brand-50/50 p-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-              How are you feeling?
+              How are you feeling? <span className="font-normal normal-case text-ink/35">pick as many as apply</span>
             </p>
             <div className="flex flex-wrap gap-2">
               {CORE_EMOTIONS.map((core) => {
-                const isExactMatch = mood === core.id;
+                const isSelected = moods.includes(core.id);
                 const isExpanded = expandedCore === core.id;
                 return (
                   <button
                     key={core.id}
                     type="button"
-                    onClick={() => selectCore(core.id)}
+                    onClick={() => toggleCore(core.id)}
                     className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
-                      isExactMatch
+                      isSelected
                         ? "border-brand-600 bg-brand-50 text-brand-800 shadow-[0_2px_0_0_theme(colors.brand.300)]"
                         : isExpanded
                           ? "border-brand-300 text-ink/80"
@@ -207,9 +204,9 @@ export default function EntryForm({
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => selectSecondary(m.id)}
+                    onClick={() => toggleMood(m.id)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
-                      mood === m.id
+                      moods.includes(m.id)
                         ? "border-brand-600 bg-white text-brand-800 shadow-sm"
                         : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300 active:border-brand-300"
                     }`}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Brain, Users } from "lucide-react";
 import { Container } from "@/components/ui";
 import { Ribbon, DoodleField } from "@/components/decor";
 import ReframingTool from "./reframing-tool";
@@ -23,6 +24,33 @@ export default function CognitiveReframingPage() {
             A short CBT technique called cognitive reframing — pick a scenario, spot the thinking trap, weigh the
             evidence, and land on something more balanced. Shuffle for a new scenario any time.
           </p>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border-2 border-brand-100 bg-white p-5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                <Brain className="h-4 w-4" strokeWidth={1.75} />
+              </span>
+              <p className="mt-3 font-display text-base font-semibold text-brand-900">What&apos;s an automatic thought?</p>
+              <p className="mt-1.5 text-sm text-ink/65">
+                The split-second reaction your brain fires off before you&apos;ve had a chance to think —
+                &ldquo;I&apos;m going to fail this,&rdquo; &ldquo;they&apos;re judging me.&rdquo; It arrives so
+                fast and feels so certain that we rarely stop to question it, even though it&apos;s usually
+                shaped more by mood and old habits than by what&apos;s actually happening.
+              </p>
+            </div>
+            <div className="rounded-2xl border-2 border-brand-100 bg-white p-5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                <Users className="h-4 w-4" strokeWidth={1.75} />
+              </span>
+              <p className="mt-3 font-display text-base font-semibold text-brand-900">You&apos;re not the only one</p>
+              <p className="mt-1.5 text-sm text-ink/65">
+                The patterns these thoughts fall into — psychologists call them thinking traps, or cognitive
+                distortions — are ones basically everyone runs into sometimes, especially when tired or
+                stressed. Spotting yours isn&apos;t a flaw to fix. It&apos;s a skill, and it&apos;s exactly
+                what this exercise helps you practice.
+              </p>
+            </div>
+          </div>
         </Container>
       </section>
 

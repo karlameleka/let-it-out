@@ -21,7 +21,9 @@ export default function NextStepPage() {
           >
             &larr; Back to CBT exercises
           </Link>
-          <Ribbon className="mt-4">Interactive exercise</Ribbon>
+          <div className="mt-4">
+            <Ribbon>Interactive exercise</Ribbon>
+          </div>
           <h1 className="mt-4 font-display text-3xl font-medium leading-[1.1] text-brand-900 sm:text-4xl">
             Stuck? Shrink it down.
           </h1>

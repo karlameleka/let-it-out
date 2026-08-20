@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Info, RotateCcw, Sparkles } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui";
 import { recordCbtCompletion } from "@/lib/cbt-streak";
+import { saveCbtEntry } from "@/lib/cbt-history";
 
 const STORAGE_KEY = "lio_next_step_count";
 
@@ -28,6 +29,11 @@ export default function NextStepTool() {
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     recordCbtCompletion();
+    saveCbtEntry({
+      type: "next-step",
+      summary: tinyStep.trim(),
+      data: { stuckOn, tinyStep, when: when ?? "" },
+    });
     setStep(3);
   }
 
@@ -172,7 +178,7 @@ export default function NextStepTool() {
             </div>
 
             <p className="mt-4 text-xs text-ink/40">
-              This isn&apos;t saved anywhere — it&apos;s just for you, right now.
+              Saved privately on this device only — never on our servers.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">

@@ -19,7 +19,7 @@ export type JournalPrompt = { category: string; text: string } | null;
 export type JournalFeedEntry = {
   id: string;
   content: string;
-  mood: string | null;
+  moods: string[];
   bookmarked: boolean;
   photoUrl: string | null;
   createdAt: string;
@@ -49,12 +49,20 @@ type StoredEntry = {
   id: string;
   encContent: { iv: string; data: string };
   encPhoto: { iv: string; data: string } | null;
-  mood: string | null;
+  // Legacy entries (written before multi-mood support) stored a single
+  // string here; new entries always store an array. Normalized on read via
+  // normalizeMoods() so both shapes coexist in the same object store.
+  mood: string[] | string | null;
   bookmarked: boolean;
   createdAt: string;
   updatedAt: string;
   prompt: JournalPrompt;
 };
+
+function normalizeMoods(raw: string[] | string | null | undefined): string[] {
+  if (!raw) return [];
+  return Array.isArray(raw) ? raw : [raw];
+}
 
 const DB_VERSION = 1;
 const ENTRIES_STORE = "entries";
@@ -137,7 +145,7 @@ async function decryptEntry(key: CryptoKey, stored: StoredEntry): Promise<Journa
   return {
     id: stored.id,
     content,
-    mood: stored.mood,
+    moods: normalizeMoods(stored.mood),
     bookmarked: stored.bookmarked,
     photoUrl,
     createdAt: stored.createdAt,
@@ -182,7 +190,7 @@ export async function getEntryDetail(userId: string, id: string): Promise<Journa
 
 export async function createEntry(
   userId: string,
-  input: { content: string; mood: string | null; photoUrl: string | null; prompt: JournalPrompt },
+  input: { content: string; moods: string[]; photoUrl: string | null; prompt: JournalPrompt },
 ): Promise<void> {
   const db = await openDb(userId);
   const key = await getKey(db);
@@ -191,7 +199,7 @@ export async function createEntry(
     id: crypto.randomUUID(),
     encContent: await encryptString(key, input.content),
     encPhoto: input.photoUrl ? await encryptString(key, input.photoUrl) : null,
-    mood: input.mood,
+    mood: input.moods,
     bookmarked: false,
     createdAt: now,
     updatedAt: now,
@@ -236,13 +244,27 @@ export async function clearAllEntries(userId: string): Promise<void> {
   });
 }
 
+/** Shape of entries as they were written by the old server-side journal
+ * (single `mood` string, pre-multi-select) — kept distinct from the local
+ * `JournalExportEntry` type above, which now carries `moods: string[]`. */
+type LegacyServerEntry = {
+  id: string;
+  content: string;
+  mood: string | null;
+  bookmarked: boolean;
+  photoUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  prompt: JournalPrompt;
+};
+
 /** Copies entries the server still has (written before device-only storage
  * shipped) into local storage, once. Never deletes the server-side rows —
  * they stay as a backup. Safe to call on every load; it no-ops after the
  * first successful run. */
 export async function migrateFromServer(
   userId: string,
-  fetchServerEntries: () => Promise<JournalExportEntry[]>,
+  fetchServerEntries: () => Promise<LegacyServerEntry[]>,
 ): Promise<void> {
   const db = await openDb(userId);
   const done = await tx<{ id: string } | undefined>(db, META_STORE, "readonly", (s) => s.get(MIGRATION_RECORD_ID));
@@ -255,7 +277,7 @@ export async function migrateFromServer(
       id: e.id,
       encContent: await encryptString(key, e.content),
       encPhoto: e.photoUrl ? await encryptString(key, e.photoUrl) : null,
-      mood: e.mood,
+      mood: e.mood ? [e.mood] : [],
       bookmarked: e.bookmarked,
       createdAt: e.createdAt,
       updatedAt: e.updatedAt,
@@ -284,12 +306,13 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
   const moodsByDate = new Map<string, string[]>();
   const counts = new Map<string, number>();
   for (const e of inRange) {
-    if (!e.mood) continue;
+    const moods = normalizeMoods(e.mood);
+    if (moods.length === 0) continue;
     const key = e.createdAt.slice(0, 10);
     const existing = moodsByDate.get(key);
-    if (existing) existing.push(e.mood);
-    else moodsByDate.set(key, [e.mood]);
-    counts.set(e.mood, (counts.get(e.mood) ?? 0) + 1);
+    if (existing) existing.push(...moods);
+    else moodsByDate.set(key, [...moods]);
+    for (const m of moods) counts.set(m, (counts.get(m) ?? 0) + 1);
   }
   const totalWithMood = [...counts.values()].reduce((a, b) => a + b, 0);
 

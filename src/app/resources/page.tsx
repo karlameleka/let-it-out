@@ -66,7 +66,7 @@ export default async function ResourcesPage() {
               <h3 className="mt-1 font-display text-xl font-semibold">Prefer a quick technique instead?</h3>
               <p className="mt-1.5 text-sm text-brand-50/85">
                 Short, evidence-based CBT exercises — reframe a thought, ground yourself, or take one tiny
-                step. A couple of minutes, no writing required.
+                step. A couple of minutes, saved privately on this device.
               </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold link-grow w-fit">

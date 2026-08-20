@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Info, RotateCcw, Sparkles } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui";
 import { recordCbtCompletion } from "@/lib/cbt-streak";
+import { saveCbtEntry } from "@/lib/cbt-history";
 
 const STORAGE_KEY = "lio_grounding_count";
 
@@ -35,6 +36,11 @@ export default function GroundingTool() {
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     recordCbtCompletion();
+    saveCbtEntry({
+      type: "grounding",
+      summary: notes.find((n) => n.trim()) ?? "5-4-3-2-1 grounding session",
+      data: Object.fromEntries(SENSES.map((s, i) => [s.label, notes[i]])),
+    });
     setStep(SENSES.length);
   }
 
@@ -116,7 +122,7 @@ export default function GroundingTool() {
             </p>
 
             <p className="mt-4 text-xs text-ink/40">
-              This isn&apos;t saved anywhere — it&apos;s just for you, right now.
+              Saved privately on this device only — never on our servers.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">

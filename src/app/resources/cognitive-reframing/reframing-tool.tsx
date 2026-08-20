@@ -11,6 +11,7 @@ import {
   type ReframingPrompt,
 } from "@/lib/content/reframing";
 import { recordCbtCompletion } from "@/lib/cbt-streak";
+import { saveCbtEntry } from "@/lib/cbt-history";
 
 const STORAGE_KEY = "lio_reframe_count";
 
@@ -74,6 +75,21 @@ export default function ReframingTool() {
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     recordCbtCompletion();
+    saveCbtEntry({
+      type: "reframing",
+      summary: reframe.trim(),
+      data: {
+        situation: prompt.situation,
+        automaticThought: prompt.thought,
+        feeling: EMOTIONS.find((e) => e.id === feeling)?.label ?? "",
+        distortions: COGNITIVE_DISTORTIONS.filter((d) => distortions.has(d.id))
+          .map((d) => d.label)
+          .join(", "),
+        evidenceFor,
+        evidenceAgainst,
+        reframe,
+      },
+    });
     setStep(4);
   }
 
@@ -331,7 +347,7 @@ export default function ReframingTool() {
             </div>
 
             <p className="mt-4 text-xs text-ink/40">
-              This isn&apos;t saved anywhere — it&apos;s just for you, right now. Come back any time for another
+              Saved privately on this device only — never on our servers. Come back any time for another
               scenario.
             </p>
 
@@ -353,13 +369,13 @@ export default function ReframingTool() {
 
 function IntensityPicker({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
   return (
-    <div className="mt-2 grid grid-cols-5 gap-1.5">
+    <div className="mt-2 flex flex-wrap gap-1.5">
       {INTENSITY_LABELS.map((label, i) => (
         <button
           key={label}
           type="button"
           onClick={() => onChange(i)}
-          className={`rounded-lg border px-1.5 py-2 text-center text-[11px] font-medium leading-tight transition-colors ${
+          className={`grow basis-[30%] rounded-lg border px-2 py-2 text-center text-xs font-medium leading-tight transition-colors ${
             value === i
               ? "border-brand-600 bg-brand-600 text-white"
               : "border-brand-200 text-ink/60 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"

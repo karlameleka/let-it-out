@@ -41,7 +41,7 @@ export default function JournalFeed({
     return entries.filter((e) => {
       if (bookmarkedOnly && !e.bookmarked) return false;
       if (!q) return true;
-      return e.content.toLowerCase().includes(q) || (e.mood ? moodLabel(e.mood).toLowerCase().includes(q) : false);
+      return e.content.toLowerCase().includes(q) || e.moods.some((m) => moodLabel(m).toLowerCase().includes(q));
     });
   }, [entries, query, bookmarkedOnly]);
 
@@ -200,12 +200,17 @@ function EntryCard({ entry, onToggleBookmark }: { entry: JournalFeedEntry; onTog
                 year: "numeric",
               })}
             </span>
-            {entry.mood && (
-              <span
-                title={moodLabel(entry.mood)}
-                className="h-2.5 w-2.5 rounded-full border border-black/10"
-                style={{ backgroundColor: moodColor(entry.mood) }}
-              />
+            {entry.moods.length > 0 && (
+              <span className="flex items-center gap-1">
+                {entry.moods.map((m) => (
+                  <span
+                    key={m}
+                    title={moodLabel(m)}
+                    className="h-2.5 w-2.5 rounded-full border border-black/10"
+                    style={{ backgroundColor: moodColor(m) }}
+                  />
+                ))}
+              </span>
             )}
           </div>
           <button

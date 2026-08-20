@@ -66,10 +66,14 @@ export default function EntryDetailClient({ userId, id }: { userId: string; id: 
             {new Date(entry.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
           </p>
           <div className="flex items-center gap-3">
-            {entry.mood && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-brand-700">{moodLabel(entry.mood)}</span>
-                <MoodDot mood={entry.mood} size="md" />
+            {entry.moods.length > 0 && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {entry.moods.map((m) => (
+                  <div key={m} className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-brand-700">{moodLabel(m)}</span>
+                    <MoodDot mood={m} size="md" />
+                  </div>
+                ))}
               </div>
             )}
             <button
