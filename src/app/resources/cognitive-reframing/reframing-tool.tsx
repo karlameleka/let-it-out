@@ -10,6 +10,7 @@ import {
   INTENSITY_LABELS,
   type ReframingPrompt,
 } from "@/lib/content/reframing";
+import { recordCbtCompletion } from "@/lib/cbt-streak";
 
 const STORAGE_KEY = "lio_reframe_count";
 
@@ -72,6 +73,7 @@ export default function ReframingTool() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
+    recordCbtCompletion();
     setStep(4);
   }
 

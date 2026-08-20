@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Brain } from "lucide-react";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import { JournalIcon } from "@/components/lio-icons";
 import ArticleFilter from "./article-filter";
 import { Reveal } from "@/components/reveal";
+import CbtStreakBadge from "@/components/cbt-streak-badge";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getArticles } from "@/lib/content/articles";
 
@@ -46,6 +47,37 @@ export default async function ResourcesPage() {
     </section>
   );
 
+  const cbtPromo = (
+    <section className="pt-2 pb-8 sm:py-10" key="cbt-promo">
+      <Reveal>
+        <Container>
+          <Link
+            href="/resources/cbt-exercises"
+            className="group flex flex-col gap-6 overflow-hidden rounded-3xl border-2 border-brand-900 bg-brand-900 p-6 text-white shadow-sm transition-all hover:-translate-y-1 active:-translate-y-1 hover:shadow-lg active:shadow-lg sm:flex-row sm:items-center sm:p-8"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+              <Brain className="h-6 w-6" strokeWidth={1.75} />
+            </span>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-200">CBT toolkit</p>
+                <CbtStreakBadge />
+              </div>
+              <h3 className="mt-1 font-display text-xl font-semibold">Prefer a quick technique instead?</h3>
+              <p className="mt-1.5 text-sm text-brand-50/85">
+                Short, evidence-based CBT exercises — reframe a thought, ground yourself, or take one tiny
+                step. A couple of minutes, no writing required.
+              </p>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold link-grow w-fit">
+              Try an exercise <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            </span>
+          </Link>
+        </Container>
+      </Reveal>
+    </section>
+  );
+
   const articles = (
     <section className="pt-2 pb-8 sm:py-10" key="articles">
       <Reveal>
@@ -57,7 +89,10 @@ export default async function ResourcesPage() {
     </section>
   );
 
-  const sections = settings.resourcesPromoPlacement === "BOTTOM" ? [articles, journalPromo] : [journalPromo, articles];
+  const sections =
+    settings.resourcesPromoPlacement === "BOTTOM"
+      ? [articles, journalPromo, cbtPromo]
+      : [journalPromo, cbtPromo, articles];
 
   return (
     <>

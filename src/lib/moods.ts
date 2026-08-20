@@ -21,12 +21,27 @@ export const CORE_EMOTIONS: { id: CoreEmotionId; label: string; color: string }[
 /** More specific feelings revealed when a core emotion is picked — a small
  * feelings-wheel, not a fixed six. */
 const SECONDARY_LABELS: Record<CoreEmotionId, string[]> = {
-  happy: ["Content", "Proud", "Grateful", "Optimistic", "Playful", "Excited"],
-  sad: ["Lonely", "Disappointed", "Hurt", "Discouraged", "Guilty", "Numb"],
-  angry: ["Frustrated", "Irritated", "Resentful", "Defensive", "Jealous", "Overwhelmed"],
-  fearful: ["Anxious", "Nervous", "Insecure", "Worried", "Vulnerable", "Helpless"],
-  surprised: ["Confused", "Amazed", "Startled", "Curious", "Energized", "Hopeful"],
-  disgusted: ["Embarrassed", "Ashamed", "Uncomfortable", "Judgmental", "Rejected", "Withdrawn"],
+  happy: [
+    "Calm",
+    "Content",
+    "Peaceful",
+    "Amused",
+    "Brave",
+    "Confident",
+    "Excited",
+    "Grateful",
+    "Hopeful",
+    "Joyful",
+    "Passionate",
+    "Proud",
+    "Relieved",
+    "Satisfied",
+  ],
+  sad: ["Drained", "Indifferent", "Disappointed", "Discouraged", "Lonely", "Hopeless"],
+  angry: ["Annoyed", "Frustrated", "Irritated", "Jealous", "Overwhelmed", "Stressed"],
+  fearful: ["Anxious", "Embarrassed", "Scared", "Worried"],
+  surprised: ["Amazed"],
+  disgusted: ["Guilty", "Ashamed"],
 };
 
 function slugify(label: string): string {

@@ -26,7 +26,9 @@ export default async function NewJournalEntryPage() {
         <Link href="/journal" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
           &larr; Back to journal
         </Link>
-        <Eyebrow>New entry</Eyebrow>
+        <div className="mt-4">
+          <Eyebrow>New entry</Eyebrow>
+        </div>
         <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">
           What&apos;s on your{" "}
           <span className="mark-swash italic text-brand-700">
