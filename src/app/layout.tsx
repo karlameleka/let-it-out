@@ -40,7 +40,10 @@ export const metadata: Metadata = {
     "Let It Out is a psychologist-led mental health service founded in 2021, offering online counseling, guided journals, and trainings and workshops rooted in evidence-based care.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/brand/icon-192.png",
+    // Transparent-background mark for the browser tab — the filled teal
+    // square (icon-192.png) is reserved for app-icon contexts (PWA install,
+    // Android home screen) where a solid background is expected/required.
+    icon: "/brand/favicon-teal.png",
     apple: "/brand/icon-180.png",
   },
   appleWebApp: {
