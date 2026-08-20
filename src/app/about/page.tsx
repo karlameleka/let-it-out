@@ -83,7 +83,7 @@ export default async function AboutPage() {
 
       <WaveDivider fill="fill-white" />
 
-      <section className="border-b border-brand-100 py-10">
+      <section className="border-b border-brand-100 pt-4 pb-10 sm:py-10">
         <Reveal>
           <Container>
             <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-ink/40">

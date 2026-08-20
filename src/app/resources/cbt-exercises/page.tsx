@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Brain, Footprints, Wind } from "lucide-react";
+import { Brain, Compass, Footprints } from "lucide-react";
 import { Container } from "@/components/ui";
 import { Ribbon, DoodleField } from "@/components/decor";
 import CbtStreakStats from "./cbt-streak-stats";
@@ -21,7 +21,7 @@ const EXERCISES = [
   },
   {
     href: "/resources/cbt-exercises/grounding",
-    icon: Wind,
+    icon: Compass,
     duration: "~2 min",
     title: "5-4-3-2-1 Grounding",
     description: "A sensory check-in that pulls your attention back into the present when your mind is racing.",

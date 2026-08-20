@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Brain, Footprints, Wind, X } from "lucide-react";
+import { Brain, Compass, Footprints, X } from "lucide-react";
 import { getCbtHistory, deleteCbtEntry, type CbtHistoryEntry, type CbtExerciseType } from "@/lib/cbt-history";
 
 const TYPE_META: Record<CbtExerciseType, { label: string; icon: typeof Brain }> = {
   reframing: { label: "Cognitive Reframing", icon: Brain },
-  grounding: { label: "5-4-3-2-1 Grounding", icon: Wind },
+  grounding: { label: "5-4-3-2-1 Grounding", icon: Compass },
   "next-step": { label: "Tiny Next Step", icon: Footprints },
 };
 
