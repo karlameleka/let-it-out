@@ -18,7 +18,6 @@ export default function LoginForm({
 }) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
   const t = dict.auth;
-  const f = dict.forms;
 
   return (
     <div className="space-y-4">
@@ -36,13 +35,14 @@ export default function LoginForm({
 
       <form action={formAction} className="space-y-4">
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-ink/80">
-            {f.email}
+          <label htmlFor="identifier" className="mb-1 block text-sm font-medium text-ink/80">
+            {t.emailOrPhone}
           </label>
           <input
-            id="email"
-            name="email"
-            type="email"
+            id="identifier"
+            name="identifier"
+            type="text"
+            autoComplete="username"
             required
             className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
           />

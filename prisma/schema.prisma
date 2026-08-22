@@ -15,6 +15,10 @@ enum Role {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
+  // Nullable: accounts created via Google sign-in don't collect a phone
+  // number. Required for accounts created through the email/password
+  // signup form, where it also doubles as an alternate login identifier.
+  phone        String?  @unique
   // Nullable: accounts created via Google sign-in have no password.
   passwordHash String?
   name         String

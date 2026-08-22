@@ -20,6 +20,7 @@ export type SessionPayload = {
   userId: string;
   email: string;
   name: string;
+  phone: string | null;
   role: "USER" | "ADMIN";
 };
 
@@ -56,6 +57,7 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
       userId: payload.userId as string,
       email: payload.email as string,
       name: payload.name as string,
+      phone: (payload.phone as string | null) ?? null,
       role: payload.role as "USER" | "ADMIN",
     };
   } catch {

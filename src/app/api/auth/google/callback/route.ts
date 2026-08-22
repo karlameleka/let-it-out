@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
     }
 
-    await createSession({ userId: user.id, email: user.email, name: user.name, role: user.role });
+    await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });
 
     const response = NextResponse.redirect(new URL(user.role === "ADMIN" ? "/admin" : "/journal", request.url));
     response.cookies.delete(STATE_COOKIE);

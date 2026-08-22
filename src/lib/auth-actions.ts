@@ -27,6 +27,7 @@ const BCRYPT_COST = 12;
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name."),
   email: z.string().trim().email("Please enter a valid email."),
+  phone: z.string().trim().min(5, "Please enter a valid phone number."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   birthYear: z.string().trim().min(1, "Please select your birth year."),
   gender: z.string().trim().min(1, "Please select your gender."),
@@ -38,7 +39,7 @@ const signupSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().trim().email("Please enter a valid email."),
+  identifier: z.string().trim().min(1, "Please enter your email or phone number."),
   password: z.string().min(1, "Please enter your password."),
 });
 
@@ -51,6 +52,7 @@ export async function signupAction(
   const parsed = signupSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
     birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
@@ -63,11 +65,16 @@ export async function signupAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { name, email, password, birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
+  const { name, email, phone, password, birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
   if (existing) {
-    return { error: "An account with this email already exists." };
+    return {
+      error:
+        existing.email === email
+          ? "An account with this email already exists."
+          : "An account with this phone number already exists.",
+    };
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
@@ -75,6 +82,7 @@ export async function signupAction(
     data: {
       name,
       email,
+      phone,
       passwordHash,
       birthYear: Number(birthYear),
       gender,
@@ -96,6 +104,7 @@ export async function signupAction(
     name,
     type: "ACCOUNT_SIGNUP",
     email,
+    phone,
     source: "Website",
     notes: demographicNotes,
   });
@@ -107,6 +116,7 @@ export async function signupAction(
     userId: user.id,
     email: user.email,
     name: user.name,
+    phone: user.phone,
     role: user.role,
   });
 
@@ -118,7 +128,7 @@ export async function loginAction(
   formData: FormData,
 ): Promise<AuthFormState> {
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
+    identifier: formData.get("identifier"),
     password: formData.get("password"),
   });
 
@@ -126,11 +136,11 @@ export async function loginAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { email, password } = parsed.data;
+  const { identifier, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { phone: identifier }] } });
   if (!user) {
-    return { error: "Incorrect email or password." };
+    return { error: "Incorrect email/phone or password." };
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -151,7 +161,7 @@ export async function loginAction(
         lockedUntil: attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
       },
     });
-    return { error: "Incorrect email or password." };
+    return { error: "Incorrect email/phone or password." };
   }
 
   if (user.failedLoginAttempts > 0 || user.lockedUntil) {
@@ -170,6 +180,7 @@ export async function loginAction(
     userId: user.id,
     email: user.email,
     name: user.name,
+    phone: user.phone,
     role: user.role,
   });
 
@@ -430,6 +441,6 @@ export async function verifyTwoFactorAction(
   });
 
   await clearPendingTwoFactorSession();
-  await createSession({ userId: user.id, email: user.email, name: user.name, role: user.role });
+  await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });
   redirect("/admin");
 }

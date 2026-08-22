@@ -16,7 +16,7 @@ const inputClass =
 const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
 type PaymentMethod = "CASH_ON_DELIVERY" | "PAYMOB";
-type Account = { name: string; email: string; country: string | null };
+type Account = { name: string; email: string; phone: string | null; country: string | null };
 
 export default function CheckoutForm({ account }: { account: Account | null }) {
   const { items, subtotalEGP, clear } = useCart();
@@ -25,6 +25,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [country, setCountry] = useState(account?.country ?? "");
+  const [useAccount, setUseAccount] = useState(!!account);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH_ON_DELIVERY");
   const [paymobOrderId, setPaymobOrderId] = useState<string | null>(null);
   const [promoInput, setPromoInput] = useState("");
@@ -136,15 +137,37 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <form ref={formRef} onSubmit={handleCodSubmit} className="space-y-6 lg:col-span-2">
           <div className="space-y-4">
-            {account ? (
-              <div className="flex items-center justify-between rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm">
-                <span className="text-ink/70">
-                  Ordering as <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
-                </span>
-                <input type="hidden" name="guestName" value={account.name} />
-                <input type="hidden" name="guestEmail" value={account.email} />
+            {account && (
+              <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-ink/70">
+                    {useAccount ? (
+                      <>
+                        Ordering as <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
+                        {account.phone ? ` · ${account.phone}` : ""}
+                      </>
+                    ) : (
+                      "Entering details manually"
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setUseAccount((v) => !v)}
+                    className="shrink-0 text-xs font-medium text-brand-600 link-grow"
+                  >
+                    {useAccount ? "Not you?" : "Use my details"}
+                  </button>
+                </div>
+                {useAccount && (
+                  <>
+                    <input type="hidden" name="guestName" value={account.name} />
+                    <input type="hidden" name="guestEmail" value={account.email} />
+                    {account.phone && <input type="hidden" name="guestPhone" value={account.phone} />}
+                  </>
+                )}
               </div>
-            ) : (
+            )}
+            {(!account || !useAccount) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelClass} htmlFor="guestName">Full name</label>
@@ -156,10 +179,12 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                 </div>
               </div>
             )}
-            <div>
-              <label className={labelClass} htmlFor="guestPhone">Phone</label>
-              <input id="guestPhone" name="guestPhone" type="tel" required className={inputClass} />
-            </div>
+            {(!account || !useAccount || !account.phone) && (
+              <div>
+                <label className={labelClass} htmlFor="guestPhone">Phone</label>
+                <input id="guestPhone" name="guestPhone" type="tel" required className={inputClass} />
+              </div>
+            )}
             {needsShipping && (
               <>
                 <div>

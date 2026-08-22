@@ -8,6 +8,7 @@ export default async function CheckoutPage() {
     ? {
         name: session.name,
         email: session.email,
+        phone: session.phone,
         country: (await prisma.user.findUnique({ where: { id: session.userId }, select: { country: true } }))?.country ?? null,
       }
     : null;

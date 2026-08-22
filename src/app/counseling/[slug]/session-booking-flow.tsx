@@ -25,11 +25,12 @@ export default function SessionBookingFlow({
   counselorName: string;
   priceEGP: number;
   dict: Dictionary;
-  account?: { name: string; email: string } | null;
+  account?: { name: string; email: string; phone: string | null } | null;
 }) {
   const t = dict.counselorProfile;
   const f = dict.forms;
   const router = useRouter();
+  const [useAccount, setUseAccount] = useState(!!account);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionBookingId, setSessionBookingId] = useState<string | null>(null);
@@ -149,13 +150,37 @@ export default function SessionBookingFlow({
           {promoError && <p className="mt-1.5 text-xs text-red-600">{promoError}</p>}
         </div>
       )}
-      {account ? (
-        <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm text-ink/70">
-          {t.bookingAs} <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
-          <input type="hidden" name="name" value={account.name} />
-          <input type="hidden" name="email" value={account.email} />
+      {account && (
+        <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-ink/70">
+              {useAccount ? (
+                <>
+                  {t.bookingAs} <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
+                  {account.phone ? ` · ${account.phone}` : ""}
+                </>
+              ) : (
+                t.enteringManually
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => setUseAccount((v) => !v)}
+              className="shrink-0 text-xs font-medium text-brand-600 link-grow"
+            >
+              {useAccount ? t.notYou : t.useMyDetails}
+            </button>
+          </div>
+          {useAccount && (
+            <>
+              <input type="hidden" name="name" value={account.name} />
+              <input type="hidden" name="email" value={account.email} />
+              {account.phone && <input type="hidden" name="phone" value={account.phone} />}
+            </>
+          )}
         </div>
-      ) : (
+      )}
+      {(!account || !useAccount) && (
         <>
           <div>
             <label className={labelClass} htmlFor="name">{f.name}</label>
@@ -167,10 +192,12 @@ export default function SessionBookingFlow({
           </div>
         </>
       )}
-      <div>
-        <label className={labelClass} htmlFor="phone">{f.phone}</label>
-        <input id="phone" name="phone" type="tel" required className={inputClass} />
-      </div>
+      {(!account || !useAccount || !account.phone) && (
+        <div>
+          <label className={labelClass} htmlFor="phone">{f.phone}</label>
+          <input id="phone" name="phone" type="tel" required className={inputClass} />
+        </div>
+      )}
       <div>
         <label className={labelClass} htmlFor="preferredDate">{t.preferredDay}</label>
         <input

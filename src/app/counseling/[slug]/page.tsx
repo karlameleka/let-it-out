@@ -37,7 +37,7 @@ export default async function CounselorPage({
 
   const dict = getDictionary(locale);
   const t = dict.counselorProfile;
-  const account = session ? { name: session.name, email: session.email } : null;
+  const account = session ? { name: session.name, email: session.email, phone: session.phone } : null;
 
   return (
     <section className="pt-6 pb-10 sm:pt-14 sm:pb-20">
