@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { UserRound, Compass } from "lucide-react";
-import { signupAction } from "@/lib/auth-actions";
+import { requestSignupOtp, verifySignupOtp, resendSignupOtp } from "@/lib/auth-actions";
 import { Button, Eyebrow } from "@/components/ui";
 import { BIRTH_YEARS, GENDERS, COUNTRIES, REFERRAL_SOURCES, SERVICE_INTERESTS } from "@/lib/content/geo";
 import type { Dictionary } from "@/lib/i18n/dictionary";
@@ -36,17 +36,95 @@ function Pill({
   );
 }
 
-export default function SignupForm({ dict, googleEnabled = false }: { dict: Dictionary; googleEnabled?: boolean }) {
-  const [state, formAction, pending] = useActionState(signupAction, undefined);
+function OtpStep({
+  pendingSignupId,
+  channel,
+  destination,
+  dict,
+}: {
+  pendingSignupId: string;
+  channel: "EMAIL" | "PHONE";
+  destination: string;
+  dict: Dictionary;
+}) {
+  const [verifyState, verifyAction, verifying] = useActionState(verifySignupOtp, undefined);
+  const [resendState, resendAction, resending] = useActionState(resendSignupOtp, undefined);
+  const t = dict.auth;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4 text-sm text-ink/70">
+        {channel === "EMAIL" ? t.otpSentEmail : t.otpSentPhone}{" "}
+        <span className="font-medium text-ink/90">{destination}</span>
+      </div>
+      <form action={verifyAction} className="space-y-4">
+        <input type="hidden" name="pendingSignupId" value={pendingSignupId} />
+        <div>
+          <label htmlFor="code" className="sr-only">{t.otpCodeLabel}</label>
+          <input
+            id="code"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            required
+            placeholder="••••••"
+            className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-brand-500"
+          />
+        </div>
+        {verifyState?.error && <p className="text-sm text-red-600">{verifyState.error}</p>}
+        <Button type="submit" disabled={verifying} className="w-full">
+          {verifying ? t.verifying : t.verifyAndCreateAccount}
+        </Button>
+      </form>
+      <form action={resendAction}>
+        <input type="hidden" name="pendingSignupId" value={pendingSignupId} />
+        <button
+          type="submit"
+          disabled={resending}
+          className="text-sm font-medium text-brand-600 link-grow disabled:opacity-50"
+        >
+          {resending ? t.resending : t.resendCode}
+        </button>
+        {resendState?.error && <p className="mt-1.5 text-xs text-red-600">{resendState.error}</p>}
+        {resendState?.success && <p className="mt-1.5 text-xs text-brand-700">{t.codeResent}</p>}
+      </form>
+    </div>
+  );
+}
+
+export default function SignupForm({
+  dict,
+  googleEnabled = false,
+  smsOtpEnabled = false,
+}: {
+  dict: Dictionary;
+  googleEnabled?: boolean;
+  smsOtpEnabled?: boolean;
+}) {
+  const [state, formAction, pending] = useActionState(requestSignupOtp, undefined);
   const [interests, setInterests] = useState<string[]>([]);
   const [gender, setGender] = useState("");
   const [referralSource, setReferralSource] = useState("");
+  const [otpChannel, setOtpChannel] = useState<"EMAIL" | "PHONE">("EMAIL");
   const t = dict.auth;
   const f = dict.forms;
 
   function toggleInterest(interest: string) {
     setInterests((prev) =>
       prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest],
+    );
+  }
+
+  if (state && "pendingSignupId" in state) {
+    return (
+      <OtpStep
+        pendingSignupId={state.pendingSignupId}
+        channel={state.channel}
+        destination={state.destination}
+        dict={dict}
+      />
     );
   }
 
@@ -114,6 +192,34 @@ export default function SignupForm({ dict, googleEnabled = false }: { dict: Dict
           />
           <p className="mt-1 text-xs text-ink/50">{t.passwordHint}</p>
         </div>
+
+        {smsOtpEnabled ? (
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-ink/60">{t.otpChannelLabel}</p>
+            <div className="flex gap-2">
+              <Pill
+                type="radio"
+                name="otpChannel"
+                value="EMAIL"
+                checked={otpChannel === "EMAIL"}
+                onChange={() => setOtpChannel("EMAIL")}
+              >
+                {t.otpChannelEmail}
+              </Pill>
+              <Pill
+                type="radio"
+                name="otpChannel"
+                value="PHONE"
+                checked={otpChannel === "PHONE"}
+                onChange={() => setOtpChannel("PHONE")}
+              >
+                {t.otpChannelPhone}
+              </Pill>
+            </div>
+          </div>
+        ) : (
+          <input type="hidden" name="otpChannel" value="EMAIL" />
+        )}
 
         <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
           <Eyebrow>{t.aboutYouLabel}</Eyebrow>

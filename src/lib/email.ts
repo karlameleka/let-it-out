@@ -255,6 +255,59 @@ export async function sendWelcomeEmail({
 }
 
 /**
+ * Sends a signup verification code. Unlike the other senders, a failed send
+ * here is surfaced to the caller (returns false) — the person can't finish
+ * signing up if the code never arrives, so requestSignupOtp needs to know.
+ */
+export async function sendOtpEmail({
+  to,
+  name,
+  code,
+}: {
+  to: string;
+  name: string;
+  code: string;
+}): Promise<boolean> {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] Skipped OTP email to ${to} — not configured.`);
+    return false;
+  }
+
+  const text = [
+    `Hi ${name},`,
+    "",
+    `Your Let It Out verification code is: ${code}`,
+    "",
+    "This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+      <p>Hi ${escapeHtml(name)},</p>
+      <p>Your verification code is:</p>
+      <p style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1e5b73; margin: 20px 0;">${escapeHtml(code)}</p>
+      <p style="color: #6b7c80; font-size: 13px;">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
+    </div>
+  `;
+
+  try {
+    await transport.sendMail({
+      from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: `${code} is your Let It Out verification code`,
+      text,
+      html,
+    });
+    return true;
+  } catch (err) {
+    console.error(`[email] Failed to send OTP email to ${to}:`, err);
+    return false;
+  }
+}
+
+/**
  * Sends a password-reset link. Same fail-silently behavior as the other
  * senders, but the caller must still return a generic success response
  * regardless — never reveal whether an email is registered.

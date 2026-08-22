@@ -14,7 +14,8 @@ import {
   clearPendingTwoFactorSession,
 } from "@/lib/session";
 import { verifyTotpCode, decryptTotpSecret, hashBackupCode } from "@/lib/totp";
-import { sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendWelcomeEmail, sendOtpEmail } from "@/lib/email";
+import { sendSms, isSmsOtpEnabled } from "@/lib/sms";
 import { createLead } from "@/lib/leads";
 import { getBaseUrl } from "@/lib/base-url";
 
@@ -23,6 +24,9 @@ const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
 const MAX_FAILED_LOGIN_ATTEMPTS = 8;
 const LOGIN_LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
 const BCRYPT_COST = 12;
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const OTP_RESEND_COOLDOWN_MS = 45 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
 
 const signupSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name."),
@@ -36,6 +40,7 @@ const signupSchema = z.object({
   serviceInterests: z
     .array(z.string())
     .min(1, "Please select at least one service you're interested in."),
+  otpChannel: z.enum(["EMAIL", "PHONE"]),
 });
 
 const loginSchema = z.object({
@@ -45,10 +50,47 @@ const loginSchema = z.object({
 
 export type AuthFormState = { error?: string } | undefined;
 
-export async function signupAction(
-  _prevState: AuthFormState,
+function generateOtpCode(): string {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+}
+
+function hashOtpCode(code: string): string {
+  return crypto.createHash("sha256").update(code).digest("hex");
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  return `${local.slice(0, 1)}${"*".repeat(Math.max(local.length - 1, 1))}@${domain}`;
+}
+
+function maskPhone(phone: string): string {
+  const last4 = phone.slice(-4);
+  return `${"•".repeat(Math.max(phone.length - 4, 0))}${last4}`;
+}
+
+async function sendOtpCode(
+  channel: "EMAIL" | "PHONE",
+  { email, phone, name, code }: { email: string; phone: string; name: string; code: string },
+): Promise<boolean> {
+  if (channel === "EMAIL") {
+    return sendOtpEmail({ to: email, name, code });
+  }
+  return sendSms({ to: phone, body: `Your Let It Out verification code is ${code}. It expires in 10 minutes.` });
+}
+
+export type SignupFormState =
+  | { error: string }
+  | { pendingSignupId: string; channel: "EMAIL" | "PHONE"; destination: string }
+  | undefined;
+
+/** Step 1 of signup: validates the form, stashes it as a PendingSignup (no
+ * User row yet — the email/phone aren't "claimed" until verified), and
+ * sends a 6-digit code to the chosen channel. */
+export async function requestSignupOtp(
+  _prevState: SignupFormState,
   formData: FormData,
-): Promise<AuthFormState> {
+): Promise<SignupFormState> {
   const parsed = signupSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -59,26 +101,38 @@ export async function signupAction(
     country: formData.get("country"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
+    otpChannel: formData.get("otpChannel") || "EMAIL",
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { name, email, phone, password, birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
+  const { name, email, phone, password, birthYear, gender, country, referralSource, serviceInterests, otpChannel } =
+    parsed.data;
 
-  const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
-  if (existing) {
+  if (otpChannel === "PHONE" && !isSmsOtpEnabled()) {
+    return { error: "SMS verification isn't available right now — please use email instead." };
+  }
+
+  const existingUser = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
+  if (existingUser) {
     return {
       error:
-        existing.email === email
+        existingUser.email === email
           ? "An account with this email already exists."
           : "An account with this phone number already exists.",
     };
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
-  const user = await prisma.user.create({
+  const code = generateOtpCode();
+
+  // Replace, don't update — any previous unfinished attempt for this
+  // email/phone is superseded by this one.
+  await prisma.pendingSignup.deleteMany({ where: { OR: [{ email }, { phone }] } });
+
+  const pending = await prisma.pendingSignup.create({
     data: {
       name,
       email,
@@ -89,28 +143,115 @@ export async function signupAction(
       country,
       referralSource,
       serviceInterests,
+      otpChannel,
+      otpCodeHash: hashOtpCode(code),
+      otpExpiresAt: new Date(Date.now() + OTP_TTL_MS),
     },
   });
 
+  const sent = await sendOtpCode(otpChannel, { email, phone, name, code });
+  if (!sent) {
+    await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+    return { error: "We couldn't send your verification code. Please try again." };
+  }
+
+  return {
+    pendingSignupId: pending.id,
+    channel: otpChannel,
+    destination: otpChannel === "EMAIL" ? maskEmail(email) : maskPhone(phone),
+  };
+}
+
+const otpVerifySchema = z.object({
+  pendingSignupId: z.string().min(1),
+  code: z.string().trim().min(1, "Please enter the verification code."),
+});
+
+export type OtpVerifyState = { error?: string } | undefined;
+
+/** Step 2 of signup: checks the code against the PendingSignup, and only on
+ * success creates the real User (and its welcome email, CRM lead, session). */
+export async function verifySignupOtp(
+  _prevState: OtpVerifyState,
+  formData: FormData,
+): Promise<OtpVerifyState> {
+  const parsed = otpVerifySchema.safeParse({
+    pendingSignupId: formData.get("pendingSignupId"),
+    code: formData.get("code"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const { pendingSignupId, code } = parsed.data;
+  const pending = await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } });
+  if (!pending) {
+    return { error: "This signup session has expired. Please start over." };
+  }
+  if (pending.otpExpiresAt < new Date()) {
+    await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+    return { error: "This code has expired. Please start over to get a new one." };
+  }
+  if (pending.attempts >= MAX_OTP_ATTEMPTS) {
+    await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+    return { error: "Too many incorrect attempts. Please start over." };
+  }
+
+  if (hashOtpCode(code) !== pending.otpCodeHash) {
+    await prisma.pendingSignup.update({ where: { id: pending.id }, data: { attempts: { increment: 1 } } });
+    return { error: "That code isn't right. Please try again." };
+  }
+
+  // Re-check uniqueness in case the email/phone got claimed by someone else
+  // while this signup sat unverified.
+  const existingUser = await prisma.user.findFirst({
+    where: { OR: [{ email: pending.email }, { phone: pending.phone }] },
+  });
+  if (existingUser) {
+    await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+    return {
+      error:
+        existingUser.email === pending.email
+          ? "An account with this email already exists."
+          : "An account with this phone number already exists.",
+    };
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      name: pending.name,
+      email: pending.email,
+      phone: pending.phone,
+      passwordHash: pending.passwordHash,
+      birthYear: pending.birthYear,
+      gender: pending.gender,
+      country: pending.country,
+      referralSource: pending.referralSource,
+      serviceInterests: pending.serviceInterests,
+    },
+  });
+
+  await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+
   const demographicNotes = [
-    `Birth year: ${birthYear}`,
-    `Gender: ${gender}`,
-    `Country: ${country}`,
-    `Heard about us via: ${referralSource}`,
-    `Interested in: ${serviceInterests.join(", ")}`,
+    `Birth year: ${pending.birthYear}`,
+    `Gender: ${pending.gender}`,
+    `Country: ${pending.country}`,
+    `Heard about us via: ${pending.referralSource}`,
+    `Interested in: ${pending.serviceInterests.join(", ")}`,
   ].join("\n");
 
   await createLead({
-    name,
+    name: user.name,
     type: "ACCOUNT_SIGNUP",
-    email,
-    phone,
+    email: user.email,
+    phone: user.phone ?? undefined,
     source: "Website",
     notes: demographicNotes,
   });
 
   const baseUrl = await getBaseUrl();
-  await sendWelcomeEmail({ to: email, name, privacyUrl: `${baseUrl}/privacy` });
+  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
 
   await createSession({
     userId: user.id,
@@ -121,6 +262,43 @@ export async function signupAction(
   });
 
   redirect("/");
+}
+
+export type OtpResendState = { error?: string; success?: boolean } | undefined;
+
+export async function resendSignupOtp(
+  _prevState: OtpResendState,
+  formData: FormData,
+): Promise<OtpResendState> {
+  const pendingSignupId = String(formData.get("pendingSignupId") || "");
+  const pending = pendingSignupId
+    ? await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } })
+    : null;
+  if (!pending) {
+    return { error: "This signup session has expired. Please start over." };
+  }
+
+  if (Date.now() - pending.otpSentAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
+    return { error: "Please wait a moment before requesting another code." };
+  }
+
+  const code = generateOtpCode();
+  const sent = await sendOtpCode(pending.otpChannel, {
+    email: pending.email,
+    phone: pending.phone,
+    name: pending.name,
+    code,
+  });
+  if (!sent) {
+    return { error: "We couldn't resend your verification code. Please try again." };
+  }
+
+  await prisma.pendingSignup.update({
+    where: { id: pending.id },
+    data: { otpCodeHash: hashOtpCode(code), otpExpiresAt: new Date(Date.now() + OTP_TTL_MS), otpSentAt: new Date(), attempts: 0 },
+  });
+
+  return { success: true };
 }
 
 export async function loginAction(
