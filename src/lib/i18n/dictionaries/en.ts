@@ -211,13 +211,11 @@ const en = {
   counselorProfile: {
     bookHeading: "Book a session",
     bookDescription:
-      "Sessions run 50 minutes over video call. Pick your preferred day and pay below — you'll then choose your exact time slot and get a confirmation with your video link right away.",
+      "Pick a day and pay below, then choose your exact time slot and get your video link right away.",
     calBookHeading: "Book a session",
-    calBookDescription:
-      "Sessions run 50 minutes over video call. Pick an open slot below — you'll get a confirmation with your video link right away.",
+    calBookDescription: "Pick an open slot below and get your video link right away.",
     requestHeading: "Request a session",
-    requestDescription:
-      "Sessions run 50 minutes. Tell us a bit about what you're looking for and your preferred timing, and we'll reach out to confirm.",
+    requestDescription: "Tell us what you're looking for and your preferred timing, and we'll confirm.",
     sessionPrice: "Session price",
     bookingAs: "Booking as",
     continueToPayment: "Continue to payment",

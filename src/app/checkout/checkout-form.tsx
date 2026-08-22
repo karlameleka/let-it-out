@@ -168,7 +168,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                 </div>
                 <div>
                   <label className={labelClass} htmlFor="googleMapsLink">
-                    Google Maps location link <span className="font-normal text-ink/40">(optional, helps our courier find you)</span>
+                    Google Maps link <span className="font-normal text-ink/40">(optional)</span>
                   </label>
                   <input
                     id="googleMapsLink"
@@ -212,15 +212,13 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
           </div>
 
           {needsShipping && (
-            <div className="rounded-xl border-2 border-brand-100 bg-brand-50 p-4">
-              <p className="text-sm font-semibold text-brand-800">Shipping</p>
-              <p className="mt-1 text-sm text-ink/60">
-                {isEgypt
-                  ? `Flat shipping fee of ${formatEGP(EGYPT_SHIPPING_FEE_EGP)} anywhere in Egypt.`
-                  : shippingCalculatedOnDelivery
-                    ? "Shipping outside Egypt is calculated upon delivery."
-                    : "Select your country to see shipping details."}
-              </p>
+            <div className="rounded-xl border-2 border-brand-100 bg-brand-50 px-4 py-3 text-sm text-ink/70">
+              <span className="font-semibold text-brand-800">Shipping —</span>{" "}
+              {isEgypt
+                ? `flat ${formatEGP(EGYPT_SHIPPING_FEE_EGP)} anywhere in Egypt.`
+                : shippingCalculatedOnDelivery
+                  ? "calculated upon delivery outside Egypt."
+                  : "select your country to see the fee."}
             </div>
           )}
 
@@ -241,9 +239,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                 />
                 <span>
                   <span className="block text-sm font-semibold text-brand-800">Cash on Delivery</span>
-                  <span className="mt-0.5 block text-xs text-ink/60">
-                    No payment needed now — pay in cash when your journal arrives.
-                  </span>
+                  <span className="mt-0.5 block text-xs text-ink/60">Pay in cash on arrival.</span>
                 </span>
               </label>
               <label
@@ -260,9 +256,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                 />
                 <span>
                   <span className="block text-sm font-semibold text-brand-800">Card / Mobile Wallet</span>
-                  <span className="mt-0.5 block text-xs text-ink/60">
-                    Pay securely online now via Paymob. Apple Pay supported where available.
-                  </span>
+                  <span className="mt-0.5 block text-xs text-ink/60">Pay online — cards and Apple Pay.</span>
                 </span>
               </label>
             </div>
