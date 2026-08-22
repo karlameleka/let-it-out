@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Cake, UserRound, Globe, Compass } from "lucide-react";
+import { UserRound, Compass } from "lucide-react";
 import { signupAction } from "@/lib/auth-actions";
 import { Button, Eyebrow } from "@/components/ui";
 import { BIRTH_YEARS, GENDERS, COUNTRIES, REFERRAL_SOURCES, SERVICE_INTERESTS } from "@/lib/content/geo";
@@ -9,8 +9,13 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 import PrivacyBadge from "@/components/privacy-badge";
 import GoogleAuthButton from "@/components/google-auth-button";
 
+// Plain, unstyled native <select> — matching the sitewide convention used
+// everywhere else (checkout, etc.). A leading icon + custom padding was
+// tried here before and broke on real Safari: WebKit doesn't reliably
+// honor padding-inline-start on native <select> text, so the icon and
+// the option text overlapped. Native form controls stay unstyled.
 const selectClasses =
-  "w-full rounded-xl border border-brand-200 bg-white py-2.5 ps-9 pe-3 text-sm text-ink outline-none focus:border-brand-500";
+  "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-brand-500";
 
 function Pill({
   checked,
@@ -114,8 +119,7 @@ export default function SignupForm({ dict, googleEnabled = false }: { dict: Dict
           <Eyebrow>{t.aboutYouLabel}</Eyebrow>
 
           <div className="mt-3 grid grid-cols-2 gap-2.5">
-            <div className="relative">
-              <Cake className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" strokeWidth={2} />
+            <div>
               <label htmlFor="birthYear" className="sr-only">{t.birthYear}</label>
               <select id="birthYear" name="birthYear" defaultValue="" required className={selectClasses}>
                 <option value="" disabled>{t.birthYear}</option>
@@ -124,8 +128,7 @@ export default function SignupForm({ dict, googleEnabled = false }: { dict: Dict
                 ))}
               </select>
             </div>
-            <div className="relative">
-              <Globe className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" strokeWidth={2} />
+            <div>
               <label htmlFor="country" className="sr-only">{t.country}</label>
               <select id="country" name="country" defaultValue="" required className={selectClasses}>
                 <option value="" disabled>{t.country}</option>
