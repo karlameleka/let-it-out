@@ -10,7 +10,15 @@ const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
 const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
-export default function BookingForm({ counselorId, dict }: { counselorId: string; dict: Dictionary }) {
+export default function BookingForm({
+  counselorId,
+  dict,
+  account,
+}: {
+  counselorId: string;
+  dict: Dictionary;
+  account?: { name: string; email: string } | null;
+}) {
   const [state, formAction, pending] = useActionState(submitBookingRequest, undefined);
   const t = dict.bookingForm;
   const f = dict.forms;
@@ -34,14 +42,24 @@ export default function BookingForm({ counselorId, dict }: { counselorId: string
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="counselorId" value={counselorId} />
-      <div>
-        <label className={labelClass} htmlFor="name">{f.name}</label>
-        <input id="name" name="name" required className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="email">{f.email}</label>
-        <input id="email" name="email" type="email" required className={inputClass} />
-      </div>
+      {account ? (
+        <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm text-ink/70">
+          {dict.counselorProfile.bookingAs} <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
+          <input type="hidden" name="name" value={account.name} />
+          <input type="hidden" name="email" value={account.email} />
+        </div>
+      ) : (
+        <>
+          <div>
+            <label className={labelClass} htmlFor="name">{f.name}</label>
+            <input id="name" name="name" required className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="email">{f.email}</label>
+            <input id="email" name="email" type="email" required className={inputClass} />
+          </div>
+        </>
+      )}
       <div>
         <label className={labelClass} htmlFor="phone">{f.phone}</label>
         <input id="phone" name="phone" type="tel" required className={inputClass} />

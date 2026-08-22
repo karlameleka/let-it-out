@@ -9,6 +9,7 @@ import CalBooking from "@/components/cal-booking";
 import SessionBookingFlow from "./session-booking-flow";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { getCurrentUser } from "@/lib/session";
 
 export async function generateMetadata({
   params,
@@ -27,14 +28,16 @@ export default async function CounselorPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [counselor, locale] = await Promise.all([
+  const [counselor, locale, session] = await Promise.all([
     prisma.counselor.findUnique({ where: { slug } }),
     getLocale(),
+    getCurrentUser(),
   ]);
   if (!counselor || !counselor.active) notFound();
 
   const dict = getDictionary(locale);
   const t = dict.counselorProfile;
+  const account = session ? { name: session.name, email: session.email } : null;
 
   return (
     <section className="pt-6 pb-10 sm:pt-14 sm:pb-20">
@@ -137,6 +140,7 @@ export default async function CounselorPage({
                     counselorName={counselor.name}
                     priceEGP={counselor.priceEGP}
                     dict={dict}
+                    account={account}
                   />
                 </div>
               </>
@@ -157,7 +161,7 @@ export default async function CounselorPage({
                 </h2>
                 <p className="mt-1 text-sm text-ink/60">{t.requestDescription}</p>
                 <div className="mt-6">
-                  <BookingForm counselorId={counselor.id} dict={dict} />
+                  <BookingForm counselorId={counselor.id} dict={dict} account={account} />
                 </div>
               </>
             )}

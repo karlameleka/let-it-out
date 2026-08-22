@@ -10,7 +10,7 @@ import PrivacyBadge from "@/components/privacy-badge";
 import GoogleAuthButton from "@/components/google-auth-button";
 
 const selectClasses =
-  "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
+  "w-full rounded-xl border border-brand-200 bg-white py-2.5 ps-9 pe-3 text-sm text-ink outline-none focus:border-brand-500";
 
 export default function SignupForm({ dict, googleEnabled = false }: { dict: Dictionary; googleEnabled?: boolean }) {
   const [state, formAction, pending] = useActionState(signupAction, undefined);
@@ -79,51 +79,42 @@ export default function SignupForm({ dict, googleEnabled = false }: { dict: Dict
 
         <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
           <Eyebrow>{t.aboutYouLabel}</Eyebrow>
-          <p className="mt-2 text-xs text-ink/50">{t.aboutYouHint}</p>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="birthYear" className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink/60">
-                <Cake className="h-3.5 w-3.5 text-brand-400" strokeWidth={2} />
-                {t.birthYear}
-              </label>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <div className="relative">
+              <Cake className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" strokeWidth={2} />
+              <label htmlFor="birthYear" className="sr-only">{t.birthYear}</label>
               <select id="birthYear" name="birthYear" defaultValue="" required className={selectClasses}>
-                <option value="" disabled>{t.selectPlaceholder}</option>
+                <option value="" disabled>{t.birthYear}</option>
                 {BIRTH_YEARS.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label htmlFor="gender" className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink/60">
-                <UserRound className="h-3.5 w-3.5 text-brand-400" strokeWidth={2} />
-                {t.gender}
-              </label>
+            <div className="relative">
+              <UserRound className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" strokeWidth={2} />
+              <label htmlFor="gender" className="sr-only">{t.gender}</label>
               <select id="gender" name="gender" defaultValue="" required className={selectClasses}>
-                <option value="" disabled>{t.selectPlaceholder}</option>
+                <option value="" disabled>{t.gender}</option>
                 {GENDERS.map((g) => (
                   <option key={g} value={g}>{g}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label htmlFor="country" className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink/60">
-                <Globe className="h-3.5 w-3.5 text-brand-400" strokeWidth={2} />
-                {t.country}
-              </label>
+            <div className="relative">
+              <Globe className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" strokeWidth={2} />
+              <label htmlFor="country" className="sr-only">{t.country}</label>
               <select id="country" name="country" defaultValue="" required className={selectClasses}>
-                <option value="" disabled>{t.selectPlaceholder}</option>
+                <option value="" disabled>{t.country}</option>
                 {COUNTRIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label htmlFor="referralSource" className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink/60">
-                <Compass className="h-3.5 w-3.5 text-brand-400" strokeWidth={2} />
-                {t.referralSource}
-              </label>
+            <div className="relative">
+              <Compass className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" strokeWidth={2} />
+              <label htmlFor="referralSource" className="sr-only">{t.referralSource}</label>
               <select id="referralSource" name="referralSource" defaultValue="" required className={selectClasses}>
-                <option value="" disabled>{t.selectPlaceholder}</option>
+                <option value="" disabled>{t.referralSource}</option>
                 {REFERRAL_SOURCES.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
@@ -131,7 +122,7 @@ export default function SignupForm({ dict, googleEnabled = false }: { dict: Dict
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3">
             <p className="mb-1.5 block text-xs font-medium text-ink/60">{t.serviceInterests}</p>
             <div className="flex flex-wrap gap-2">
               {SERVICE_INTERESTS.map((s) => {

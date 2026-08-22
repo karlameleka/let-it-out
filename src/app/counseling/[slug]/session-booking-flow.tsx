@@ -19,11 +19,13 @@ export default function SessionBookingFlow({
   counselorName,
   priceEGP,
   dict,
+  account,
 }: {
   counselorId: string;
   counselorName: string;
   priceEGP: number;
   dict: Dictionary;
+  account?: { name: string; email: string } | null;
 }) {
   const t = dict.counselorProfile;
   const f = dict.forms;
@@ -147,14 +149,24 @@ export default function SessionBookingFlow({
           {promoError && <p className="mt-1.5 text-xs text-red-600">{promoError}</p>}
         </div>
       )}
-      <div>
-        <label className={labelClass} htmlFor="name">{f.name}</label>
-        <input id="name" name="name" required className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass} htmlFor="email">{f.email}</label>
-        <input id="email" name="email" type="email" required className={inputClass} />
-      </div>
+      {account ? (
+        <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm text-ink/70">
+          {t.bookingAs} <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
+          <input type="hidden" name="name" value={account.name} />
+          <input type="hidden" name="email" value={account.email} />
+        </div>
+      ) : (
+        <>
+          <div>
+            <label className={labelClass} htmlFor="name">{f.name}</label>
+            <input id="name" name="name" required className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="email">{f.email}</label>
+            <input id="email" name="email" type="email" required className={inputClass} />
+          </div>
+        </>
+      )}
       <div>
         <label className={labelClass} htmlFor="phone">{f.phone}</label>
         <input id="phone" name="phone" type="tel" required className={inputClass} />
