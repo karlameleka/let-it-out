@@ -120,7 +120,7 @@ export async function signupAction(
     role: user.role,
   });
 
-  redirect("/journal");
+  redirect("/");
 }
 
 export async function loginAction(
@@ -184,7 +184,7 @@ export async function loginAction(
     role: user.role,
   });
 
-  redirect(user.role === "ADMIN" ? "/admin" : "/journal");
+  redirect(user.role === "ADMIN" ? "/admin" : "/");
 }
 
 export async function logoutAction() {

@@ -14,7 +14,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
     <footer className="relative mt-24 bg-brand-900 text-brand-50">
       <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />
 
-      <div className="relative mx-auto max-w-6xl overflow-hidden px-4 py-14 sm:px-6">
+      <div className="relative mx-auto max-w-6xl overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
         <Image
           src="/brand/logo-icon-white.png"
           alt=""
@@ -23,14 +23,14 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
           className="pointer-events-none absolute -bottom-16 -right-12 h-64 w-64 rotate-6 opacity-[0.05] sm:h-80 sm:w-80"
         />
 
-        <div className="relative grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+        <div className="relative grid gap-8 sm:grid-cols-2 sm:gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
             <Logo variant="horizontal-white" height={32} />
             <p className="mt-4 max-w-sm text-sm text-brand-100/80">{dict.tagline}</p>
             <p className="mt-2 max-w-sm text-sm text-brand-100/60">{dict.servicesLine}</p>
           </div>
 
-          <div>
+          <div className="hidden sm:block">
             <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-200">
               {dict.exploreHeading}
             </h3>

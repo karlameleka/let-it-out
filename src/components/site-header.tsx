@@ -60,6 +60,7 @@ export default function SiteHeader({
     { href: "/journal", label: dict.nav.journal },
     { href: "/resources", label: dict.nav.resources },
   ];
+  const MOBILE_NAV_LINKS = NAV_LINKS.filter((link) => link.href !== "/journal");
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -144,7 +145,7 @@ export default function SiteHeader({
       {open && (
         <div className="border-t border-brand-100 bg-white px-4 pb-4 md:hidden">
           <nav className="flex flex-col gap-1 pt-2">
-            {NAV_LINKS.map((link) => (
+            {MOBILE_NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -156,13 +157,6 @@ export default function SiteHeader({
             ))}
             {user ? (
               <>
-                <Link
-                  href={user.role === "ADMIN" ? "/admin" : "/journal"}
-                  onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50"
-                >
-                  {dict.nav.myAccount}
-                </Link>
                 <Link
                   href="/account"
                   onClick={() => setOpen(false)}

@@ -10,7 +10,6 @@ const en = {
     resources: "Resources",
     cart: "Cart",
     settings: "Settings",
-    myAccount: "My account",
     logOut: "Log out",
     logIn: "Log in",
     signUp: "Sign up",

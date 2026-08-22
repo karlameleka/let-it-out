@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });
 
-    const response = NextResponse.redirect(new URL(user.role === "ADMIN" ? "/admin" : "/journal", request.url));
+    const response = NextResponse.redirect(new URL(user.role === "ADMIN" ? "/admin" : "/", request.url));
     response.cookies.delete(STATE_COOKIE);
     return response;
   } catch {

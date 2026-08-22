@@ -12,7 +12,6 @@ const ar: Dictionary = {
     resources: "الموارد",
     cart: "السلة",
     settings: "الإعدادات",
-    myAccount: "حسابي",
     logOut: "تسجيل الخروج",
     logIn: "تسجيل الدخول",
     signUp: "إنشاء حساب",
