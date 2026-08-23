@@ -39,6 +39,7 @@ const en = {
     copyright: "Let It Out. Est. 2021. All rights reserved.",
     privacyPolicy: "Privacy Policy",
     terms: "Terms & Conditions",
+    shopPolicy: "Shop Policy",
     motto: "A self-exploration journey.",
   },
   helpButton: {

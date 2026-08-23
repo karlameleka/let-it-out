@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin } from "lucide-react";
+import { MapPin, Phone, Mail } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { WaveDivider } from "@/components/decor";
 import { SOCIAL_LINKS } from "@/components/social-icons";
@@ -8,6 +8,9 @@ import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const OFFICE_MAPS_URL = "https://maps.app.goo.gl/ym5Dc5zvyxfPVxcZA";
+const CONTACT_PHONE = "+20 128 8200533";
+const CONTACT_PHONE_HREF = "tel:+201288200533";
+const CONTACT_EMAIL = "letitoutsupport@gmail.com";
 
 export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary["footer"] }) {
   return (
@@ -51,6 +54,24 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
               <li><Link href="/contact" className="hover:text-white active:text-white">{dict.contactUs}</Link></li>
               <li>
                 <a
+                  href={CONTACT_PHONE_HREF}
+                  className="inline-flex items-center gap-1.5 hover:text-white active:text-white"
+                >
+                  <Phone className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                  {CONTACT_PHONE}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="inline-flex items-center gap-1.5 hover:text-white active:text-white"
+                >
+                  <Mail className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                  {CONTACT_EMAIL}
+                </a>
+              </li>
+              <li>
+                <a
                   href={OFFICE_MAPS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -90,6 +111,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="hover:text-white active:text-white">{dict.privacyPolicy}</Link>
             <Link href="/terms" className="hover:text-white active:text-white">{dict.terms}</Link>
+            <Link href="/shop-policy" className="hover:text-white active:text-white">{dict.shopPolicy}</Link>
           </div>
           <p className="italic">{dict.motto}</p>
         </div>

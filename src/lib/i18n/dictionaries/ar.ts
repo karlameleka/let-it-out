@@ -41,6 +41,7 @@ const ar: Dictionary = {
     copyright: "Let It Out. تأسست عام 2021. جميع الحقوق محفوظة.",
     privacyPolicy: "سياسة الخصوصية",
     terms: "الشروط والأحكام",
+    shopPolicy: "سياسة المتجر",
     motto: "رحلة لاكتشاف الذات.",
   },
   helpButton: {
