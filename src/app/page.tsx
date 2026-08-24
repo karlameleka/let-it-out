@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
+import StoryTeaser from "@/components/story-teaser";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
 import InstallOverlay from "@/components/install-overlay";
@@ -98,34 +99,15 @@ export default async function HomePage({
         </Reveal>
       </section>
 
-      {/* Story teaser */}
-      <section className="relative overflow-hidden bg-brand-800 pb-24 pt-8 text-white sm:pt-14">
-        <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-800" />
-        <Image
-          src="/brand/logo-icon-white.png"
-          alt=""
-          width={852}
-          height={829}
-          className="pointer-events-none absolute -bottom-20 -left-16 h-72 w-72 opacity-[0.06]"
-        />
-        <Reveal>
-          <Container className="relative grid items-center gap-10 md:grid-cols-2">
-            <div>
-              <Ribbon tone="dark">{t.storyRibbon}</Ribbon>
-              <h2 className="mt-4 font-display text-3xl font-medium sm:text-4xl">
-                {t.storyTitle}
-              </h2>
-              <p className="mt-5 text-brand-50/85">{t.storyDescription}</p>
-              <ButtonLink href="/about" variant="bright" className="mt-7">
-                {t.storyCta}
-              </ButtonLink>
-            </div>
-            <div className="flex justify-center">
-              <Logo variant="icon-white" height={200} className="drop-shadow-xl" />
-            </div>
-          </Container>
-        </Reveal>
-      </section>
+      {/* Story teaser — desktop only; on mobile this content leads the
+          About page instead (see about/page.tsx). */}
+      <StoryTeaser
+        className="hidden sm:block"
+        ribbon={t.storyRibbon}
+        title={t.storyTitle}
+        description={t.storyDescription}
+        cta={{ label: t.storyCta, href: "/about" }}
+      />
 
       {/* Services */}
       <section className="relative overflow-hidden bg-brand-50 pb-24 pt-8 sm:pt-14">

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, Swash } from "@/components/decor";
+import StoryTeaser from "@/components/story-teaser";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -13,7 +14,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
-  const t = getDictionary(await getLocale()).about;
+  const dict = getDictionary(await getLocale());
+  const t = dict.about;
+  const home = dict.home;
 
   const values = [
     { label: t.value1Label, description: t.value1Text },
@@ -67,7 +70,21 @@ export default async function AboutPage() {
 
   return (
     <>
-      <section className="bg-brand-50 py-16 sm:py-20">
+      {/* Mobile only: the "our story" teaser leads the About page instead of
+          appearing on the homepage — see story-teaser.tsx and the desktop
+          instance of this component on page.tsx. */}
+      <StoryTeaser
+        className="sm:hidden"
+        ribbon={home.storyRibbon}
+        title={home.storyTitle}
+        description={home.storyDescription}
+      />
+
+      <section className="relative overflow-hidden bg-brand-50 py-16 sm:py-20">
+        <WaveDivider
+          className="absolute -top-px left-0 -translate-y-full sm:hidden"
+          fill="fill-brand-50"
+        />
         <Container>
           <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
