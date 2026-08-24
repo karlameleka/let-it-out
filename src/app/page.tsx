@@ -18,9 +18,8 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ install?: string }>;
 }) {
-  const [{ install }, counselors, products, locale, overrides, settings] = await Promise.all([
+  const [{ install }, products, locale, overrides, settings] = await Promise.all([
     searchParams,
-    prisma.counselor.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
       where: { active: true },
       orderBy: { sortOrder: "asc" },
@@ -32,7 +31,6 @@ export default async function HomePage({
   ]);
   const dict = getDictionary(locale);
   const t = applyOverrides(dict.home, "home", overrides, locale);
-  const ct = dict.counseling;
 
   return (
     <>
@@ -93,7 +91,7 @@ export default async function HomePage({
               {t.journalTitle}
             </h2>
             <p className="mt-4 max-w-xl text-ink/70">{t.journalDescription}</p>
-            <ButtonLink href="/signup" variant="primary" className="mt-6">
+            <ButtonLink href="/resources#journal-promo" variant="primary" className="mt-6">
               {t.journalCta}
             </ButtonLink>
           </Container>
@@ -162,60 +160,6 @@ export default async function HomePage({
                 description={t.service3Description}
                 cta={t.service3Cta}
               />
-            </div>
-          </Container>
-        </Reveal>
-      </section>
-
-      {/* Counselors */}
-      <section className="pb-24 pt-8 sm:pt-14">
-        <Reveal>
-          <Container>
-            <SectionHeading
-              eyebrow={t.teamEyebrow}
-              title={t.teamTitle}
-              description={t.teamDescription}
-            />
-            <div className="mt-14 grid gap-6 sm:grid-cols-3">
-              {counselors.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/counseling/${c.slug}`}
-                  className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
-                >
-                  {c.photoUrl ? (
-                    <Image
-                      src={c.photoUrl}
-                      alt={c.name}
-                      width={56}
-                      height={56}
-                      className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30"
-                    />
-                  ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30 group-hover:bg-white/10 group-active:bg-white/10 group-hover:text-white group-active:text-white">
-                      {c.name.split(" ").map((n) => n[0]).join("")}
-                    </div>
-                  )}
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
-                      {c.name}
-                    </h3>
-                    {c.availabilityStatus !== "AVAILABLE" && (
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          c.availabilityStatus === "WAITLIST" ? "bg-amber-100 text-amber-800" : "bg-ink/10 text-ink/60"
-                        }`}
-                      >
-                        {c.availabilityStatus === "WAITLIST" ? ct.waitlistBadge : ct.unavailableBadge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
-                  <p className="mt-3 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                    {t.teamViewProfile} &rarr;
-                  </p>
-                </Link>
-              ))}
             </div>
           </Container>
         </Reveal>

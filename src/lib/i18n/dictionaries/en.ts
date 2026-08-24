@@ -104,10 +104,6 @@ const en = {
     storyDescription:
       "Founded by Egyptian psychologist Karla Meleka, Let It Out delivers professional mental health support tailored to your community's needs, reducing stigma, one mind at a time.",
     storyCta: "Read our story",
-    teamEyebrow: "Meet the team",
-    teamTitle: "Psychologist-led, evidence-based care",
-    teamDescription: "Every session is led by a licensed, specialized psychotherapist.",
-    teamViewProfile: "View profile",
     shopEyebrow: "Guided journals",
     shopTitle: "Self-help tools you can hold onto",
     shopDescription: "CBT-informed guided journals, paid on delivery.",
@@ -283,6 +279,7 @@ const en = {
     description:
       "Interactive, evidence-based sessions designed and tailored to enhance employee and community wellbeing — building awareness and giving practical tools people actually use.",
     heroInquiryCta: "Request a workshop",
+    catalogueCta: "Download catalogue",
     topicsEyebrow: "Topics",
     topicsTitle: "Popular workshop topics",
     statSourceLabel: "Source",

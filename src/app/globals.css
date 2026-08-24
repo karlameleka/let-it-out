@@ -71,6 +71,18 @@ h1, h2, h3, h4, .font-display {
   color: var(--color-brand-900);
 }
 
+/* iOS/Android automatically zoom the whole page in when a form field is
+   focused with a computed font-size under 16px — several inputs sitewide
+   use Tailwind's text-sm (14px). Force 16px on mobile viewports specifically
+   (where this actually happens); desktop keeps its designed sizing. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* A crisp, consistent focus ring for any interactive element that doesn't
    define its own — keyboard navigation should always be visible without
    relying on each component to remember to add one. */

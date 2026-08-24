@@ -18,7 +18,7 @@ export default async function ResourcesPage() {
   const [settings, articleList] = await Promise.all([getSiteSettings(), getArticles()]);
 
   const journalPromo = settings.resourcesPromoHidden ? null : (
-    <section className="pt-2 pb-8 sm:py-10" key="journal-promo">
+    <section className="pt-2 pb-8 sm:py-10 scroll-mt-24" id="journal-promo" key="journal-promo">
       <Reveal>
         <Container>
           <SectionHeading eyebrow="Practice" title="Make it a daily habit" />

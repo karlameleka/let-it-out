@@ -25,7 +25,6 @@ const BUTTON_FIELDS: [key: string, label: string][] = [
   ["service2Cta", "Workshops card button"],
   ["service3Cta", "Shop card button"],
   ["storyCta", "\"Our story\" section button"],
-  ["teamViewProfile", "Counselor card link"],
   ["shopNow", "Shop item link"],
   ["journalCta", "Journal app CTA button"],
 ];

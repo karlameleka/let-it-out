@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { getWorkshopTopics } from "@/lib/content/workshops";
 import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
@@ -36,9 +37,19 @@ export default async function WorkshopsPage() {
             {t.titleSuffix}
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-ink/70">{t.description}</p>
-          <ButtonLink href="#request-quote" variant="primary" className="mt-7">
-            {t.heroInquiryCta}
-          </ButtonLink>
+          <div className="mt-7 flex flex-wrap items-center gap-4">
+            <ButtonLink href="#request-quote" variant="primary">
+              {t.heroInquiryCta}
+            </ButtonLink>
+            <ButtonLink
+              href="/downloads/let-it-out-workshops-catalogue.pdf"
+              download
+              variant="outline"
+            >
+              <Download className="h-4 w-4" strokeWidth={2} />
+              {t.catalogueCta}
+            </ButtonLink>
+          </div>
         </Container>
       </section>
 
