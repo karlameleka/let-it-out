@@ -1,28 +1,15 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { SESSION_COOKIE, verifySessionToken, getSessionSecretKey, type SessionPayload } from "@/lib/session-edge";
 
-const SESSION_COOKIE = "lio_session";
+export { SESSION_COOKIE, verifySessionToken, type SessionPayload };
+
+const getSecretKey = getSessionSecretKey;
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 const PENDING_2FA_COOKIE = "lio_2fa_pending";
 const PENDING_2FA_MAX_AGE_SECONDS = 5 * 60; // 5 minutes to enter the code
-
-function getSecretKey() {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) {
-    throw new Error("SESSION_SECRET is not set");
-  }
-  return new TextEncoder().encode(secret);
-}
-
-export type SessionPayload = {
-  userId: string;
-  email: string;
-  name: string;
-  phone: string | null;
-  role: "USER" | "ADMIN";
-};
 
 export async function createSession(payload: SessionPayload) {
   const token = await new SignJWT({ ...payload })
@@ -50,19 +37,7 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-
-  try {
-    const { payload } = await jwtVerify(token, getSecretKey());
-    return {
-      userId: payload.userId as string,
-      email: payload.email as string,
-      name: payload.name as string,
-      phone: (payload.phone as string | null) ?? null,
-      role: payload.role as "USER" | "ADMIN",
-    };
-  } catch {
-    return null;
-  }
+  return verifySessionToken(token);
 }
 
 export async function requireUser(): Promise<SessionPayload> {

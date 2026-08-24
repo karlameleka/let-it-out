@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session-edge";
 
 /**
  * Sets a strict, nonce-based Content-Security-Policy on every page request.
@@ -18,8 +19,27 @@ import type { NextRequest } from "next/server";
  * standard, widely-used tradeoff for CSP in real apps: script injection is
  * the dangerous case and stays strict; inline style injection is a much
  * lower-severity risk.
+ *
+ * This also carries a defense-in-depth admin-role check for /admin: the
+ * `admin/layout.tsx` Server Component already redirects non-admins away
+ * from every admin page, but a layout only protects the React page tree —
+ * it does nothing for a future route.ts (API handler) added under /admin
+ * that forgets to call requireAdmin() itself. Running the same role check
+ * here, at the edge, before any admin route (page or API) executes, closes
+ * that gap regardless of what gets added later.
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    const session = token ? await verifySessionToken(token) : null;
+    if (!session) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    if (session.role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
 
