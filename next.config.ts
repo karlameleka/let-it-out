@@ -24,6 +24,16 @@ const nextConfig: NextConfig = withSerwist({
   experimental: {
     useOffline: true,
   },
+  // Every <Image> then requests its raw /public path directly instead of a
+  // dynamically-generated /_next/image?... variant. The service worker
+  // precaches every file under public/ by default (counselor photos,
+  // product covers, brand marks) — routing images through the raw path is
+  // what makes those precached files actually the ones the page requests,
+  // so pictures are available offline from a fresh install, not only after
+  // being viewed once online.
+  images: {
+    unoptimized: true,
+  },
   async headers() {
     return [
       {

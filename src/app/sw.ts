@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/turbopack/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { NetworkOnly, Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -14,11 +14,35 @@ const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
+  // Left off deliberately: navigation preload races the browser's own
+  // in-flight network fetch alongside the NetworkOnly override below for
+  // checkout/cart/booking/admin — the two can disagree about connectivity,
+  // which is exactly the one place this app can't afford ambiguity. The
+  // fetch handler below is fast enough without it.
+  navigationPreload: false,
   // Cache-first for static build assets, network-first (falling back to
   // cache) for pages/API calls — see @serwist/turbopack/worker's source
-  // for the exact per-resource-type strategy list.
-  runtimeCaching: defaultCache,
+  // for the exact per-resource-type strategy list. Booking, payment, and
+  // admin routes are carved out ahead of that: a stale cached checkout page
+  // that can't actually charge a card, or a cached admin dashboard holding
+  // someone else's data, is worse than the honest /offline fallback below —
+  // these must always hit the network, never a cache.
+  runtimeCaching: [
+    {
+      matcher({ url: { pathname } }) {
+        return (
+          pathname === "/checkout" ||
+          pathname === "/cart" ||
+          pathname.startsWith("/counseling/session/") ||
+          pathname.startsWith("/api/checkout/") ||
+          pathname.startsWith("/api/webhooks/") ||
+          pathname.startsWith("/admin")
+        );
+      },
+      handler: new NetworkOnly(),
+    },
+    ...defaultCache,
+  ],
   // A navigation that fails on both the network and the runtime cache
   // (a page never visited before this connection drop) lands here instead
   // of the browser's built-in offline error page.

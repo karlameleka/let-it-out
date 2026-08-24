@@ -23,6 +23,8 @@ const en = {
   },
   offline: {
     bannerMessage: "You're offline. We'll reconnect automatically.",
+    bookingNeedsConnection: "You're offline — reconnect to complete your booking.",
+    reconnectToContinue: "Offline — reconnect to continue",
     eyebrow: "Offline",
     pageTitle: "You're offline",
     heading: "No connection right now",

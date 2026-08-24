@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useOffline } from "next/offline";
 import { createSessionBooking, checkCounselingPromoCode } from "@/lib/session-booking-actions";
 import { formatEGP } from "@/lib/format";
 import PaymentSelector from "@/components/PaymentSelector";
@@ -30,6 +31,7 @@ export default function SessionBookingFlow({
   const t = dict.counselorProfile;
   const f = dict.forms;
   const router = useRouter();
+  const isOffline = useOffline();
   const [useAccount, setUseAccount] = useState(!!account);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +67,16 @@ export default function SessionBookingFlow({
     if (!e.currentTarget.reportValidity()) return;
 
     const formData = new FormData(e.currentTarget);
+
+    // createSessionBooking is a Server Action — with experimental.useOffline
+    // on, calling it with no network leaves the promise pending indefinitely
+    // instead of rejecting, so the button would otherwise spin forever with
+    // no explanation. Fail fast with a clear message instead.
+    if (isOffline) {
+      setError(dict.offline.bookingNeedsConnection);
+      return;
+    }
+
     setPending(true);
     setError(null);
 
@@ -214,10 +226,10 @@ export default function SessionBookingFlow({
       <PrivacyBadge text={dict.privacyBadge.booking} />
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || isOffline}
         className="w-full rounded bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-600 active:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] disabled:opacity-60"
       >
-        {pending ? t.justAMoment : t.continueToPayment}
+        {isOffline ? dict.offline.reconnectToContinue : pending ? t.justAMoment : t.continueToPayment}
       </button>
     </form>
   );

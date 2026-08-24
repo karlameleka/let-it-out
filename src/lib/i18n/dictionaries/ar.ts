@@ -25,6 +25,8 @@ const ar: Dictionary = {
   },
   offline: {
     bannerMessage: "أنت غير متصل بالإنترنت. سنعيد الاتصال تلقائيًا.",
+    bookingNeedsConnection: "أنت غير متصل بالإنترنت — أعد الاتصال لإتمام حجزك.",
+    reconnectToContinue: "غير متصل — أعد الاتصال للمتابعة",
     eyebrow: "غير متصل",
     pageTitle: "أنت غير متصل بالإنترنت",
     heading: "لا يوجد اتصال بالإنترنت الآن",

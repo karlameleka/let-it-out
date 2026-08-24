@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useOffline } from "next/offline";
 import { useCart } from "@/lib/cart-context";
 import { createOrder, checkPromoCode, type CreateOrderInput } from "@/lib/order-actions";
 import { Container, Button, ButtonLink } from "@/components/ui";
@@ -21,6 +22,7 @@ type Account = { name: string; email: string; phone: string | null; country: str
 export default function CheckoutForm({ account }: { account: Account | null }) {
   const { items, subtotalEGP, clear } = useCart();
   const router = useRouter();
+  const isOffline = useOffline();
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -94,6 +96,16 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
     const input = buildOrderInput("CASH_ON_DELIVERY");
     if (!input) return;
 
+    // createOrder is a Server Action — with experimental.useOffline on,
+    // calling it with no network leaves the promise pending indefinitely
+    // (retrying once connectivity returns) instead of rejecting, so the
+    // button would otherwise spin forever with no explanation. Fail fast
+    // with a clear message instead.
+    if (isOffline) {
+      setError("You're offline — reconnect to place your order.");
+      return;
+    }
+
     setPending(true);
     setError(null);
     const result = await createOrder(input);
@@ -114,6 +126,10 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
     if (paymobOrderId) return paymobOrderId;
 
     setError(null);
+    if (isOffline) {
+      setError("You're offline — reconnect to pay online.");
+      return null;
+    }
     const input = buildOrderInput("PAYMOB");
     if (!input) return null;
 
@@ -290,8 +306,8 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {paymentMethod === "CASH_ON_DELIVERY" ? (
-            <Button type="submit" disabled={pending} className="w-full">
-              {pending ? "Placing order…" : "Place order"}
+            <Button type="submit" disabled={pending || isOffline} className="w-full">
+              {isOffline ? "Offline — reconnect to order" : pending ? "Placing order…" : "Place order"}
             </Button>
           ) : (
             <PaymentSelector amountEGP={totalEGP} getOrderId={handleCreatePaymobOrder} onRedirect={clear} />
