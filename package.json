@@ -17,6 +17,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@serwist/turbopack": "^9.5.12",
     "@stripe/stripe-js": "^9.13.0",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.8",
@@ -28,6 +29,7 @@
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "serwist": "^9.5.12",
     "stripe": "^22.5.0",
     "web-push": "^3.6.7",
     "zod": "^4.4.3"
@@ -43,6 +45,7 @@
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "dotenv": "^17.4.2",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "playwright": "^1.62.1",

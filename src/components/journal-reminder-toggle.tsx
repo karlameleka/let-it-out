@@ -32,7 +32,7 @@ export default function JournalReminderToggle() {
     }
 
     navigator.serviceWorker
-      .register("/sw.js")
+      .register("/serwist/sw.js")
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setStatus(sub ? "on" : "off"))
       .catch(() => setStatus("unsupported"));

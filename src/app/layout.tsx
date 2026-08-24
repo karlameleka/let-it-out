@@ -6,7 +6,8 @@ import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import WorkshopInterestPopup from "@/components/workshop-interest-popup";
 import EntryGates from "@/components/entry-gates";
-import ServiceWorkerRegister from "@/components/sw-register";
+import { SerwistProvider } from "@serwist/turbopack/react";
+import OfflineBanner from "@/components/offline-banner";
 import InitialSplash from "@/components/initial-splash";
 import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
@@ -78,6 +79,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-white text-ink pb-20 md:pb-0">
         <InitialSplash />
+        <OfflineBanner message={dict.offline.bannerMessage} />
         <CurrencyProvider>
           <CartProvider>
             <SiteHeader
@@ -92,7 +94,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <SiteFooter locale={locale} dict={dict.footer} />
             <WorkshopInterestPopup />
             <EntryGates />
-            <ServiceWorkerRegister />
+            <SerwistProvider swUrl="/serwist/sw.js" />
             <HelpButton dict={dict.helpButton} />
             <BottomTabBar dict={dict.nav} />
           </CartProvider>

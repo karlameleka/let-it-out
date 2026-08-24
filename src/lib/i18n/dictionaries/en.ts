@@ -21,6 +21,14 @@ const en = {
     english: "English",
     arabic: "العربية",
   },
+  offline: {
+    bannerMessage: "You're offline. We'll reconnect automatically.",
+    eyebrow: "Offline",
+    pageTitle: "You're offline",
+    heading: "No connection right now",
+    body: "This page needs an internet connection to load. Check your connection and try again — we'll take you right back to where you were.",
+    retryButton: "Try again",
+  },
   footer: {
     tagline: "Enhancing Mental Health using Evidence-based Research since 2021",
     servicesLine: "Online Counseling • Guided Journals • Trainings and Workshops",
