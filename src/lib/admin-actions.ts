@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
+import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 
 const PORTAL_SETUP_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -99,6 +100,19 @@ export async function deleteCounselorClient(formData: FormData) {
     prisma.sessionBooking.deleteMany({ where: { counselorId, email } }),
   ]);
   revalidatePath("/admin/counselors/[id]", "page");
+}
+
+// Same complete-deletion behavior as a client's own "Delete my account" —
+// the account and everything that only makes sense tied to it (journal
+// entries, push subscriptions, live-chat transcripts) is gone outright;
+// past orders and session requests are kept for our records but
+// disassociated. If the client is logged in elsewhere, their session
+// becomes invalid on their very next request (see getCurrentUser).
+export async function deleteClientAccount(formData: FormData) {
+  await requireAdmin();
+  const userId = String(formData.get("userId"));
+  await deleteUserAccountCompletely(userId);
+  revalidatePath("/admin/clients");
 }
 
 export async function createPromoCode(formData: FormData) {

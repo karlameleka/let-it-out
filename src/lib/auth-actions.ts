@@ -18,6 +18,7 @@ import { sendPasswordResetEmail, sendWelcomeEmail, sendOtpEmail } from "@/lib/em
 import { sendSms, isSmsOtpEnabled } from "@/lib/sms";
 import { createLead } from "@/lib/leads";
 import { getBaseUrl } from "@/lib/base-url";
+import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -450,17 +451,7 @@ export async function deleteAccountAction(
     if (!valid) return { error: "Incorrect password." };
   }
 
-  // JournalEntry and PushSubscription require a userId, so those rows are
-  // deleted outright. Order and BookingRequest keep userId optional — they
-  // represent real business records (a paid order, a session request), so
-  // they're kept and just disassociated from the deleted account.
-  await prisma.$transaction([
-    prisma.journalEntry.deleteMany({ where: { userId: user.id } }),
-    prisma.pushSubscription.deleteMany({ where: { userId: user.id } }),
-    prisma.order.updateMany({ where: { userId: user.id }, data: { userId: null } }),
-    prisma.bookingRequest.updateMany({ where: { userId: user.id }, data: { userId: null } }),
-    prisma.user.delete({ where: { id: user.id } }),
-  ]);
+  await deleteUserAccountCompletely(user.id);
 
   await destroySession();
   // No server-side redirect() here: the client clears the device-only

@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { deleteClientAccount } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 export default async function AdminClientsPage() {
   const clients = await prisma.user.findMany({
@@ -22,6 +24,7 @@ export default async function AdminClientsPage() {
               <th className="px-5 py-3">Account code</th>
               <th className="px-5 py-3">Email</th>
               <th className="px-5 py-3">Joined</th>
+              <th className="px-5 py-3" />
             </tr>
           </thead>
           <tbody>
@@ -35,6 +38,17 @@ export default async function AdminClientsPage() {
                 </td>
                 <td className="px-5 py-3 text-ink/70">{c.email}</td>
                 <td className="px-5 py-3 text-ink/60">{c.createdAt.toLocaleDateString("en-GB")}</td>
+                <td className="px-5 py-3 text-right">
+                  <form action={deleteClientAccount}>
+                    <input type="hidden" name="userId" value={c.id} />
+                    <ConfirmSubmitButton
+                      confirmMessage={`Permanently delete ${c.name}'s account (${c.email})? Their journal entries, push subscriptions, and live-chat history are deleted outright; past orders and session requests are kept for our records but no longer linked to them. If they're logged in, they'll be signed out automatically. This can't be undone.`}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </ConfirmSubmitButton>
+                  </form>
+                </td>
               </tr>
             ))}
           </tbody>

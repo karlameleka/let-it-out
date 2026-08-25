@@ -1,6 +1,7 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/db";
 import { SESSION_COOKIE, verifySessionToken, getSessionSecretKey, type SessionPayload } from "@/lib/session-edge";
 
 export { SESSION_COOKIE, verifySessionToken, type SessionPayload };
@@ -37,7 +38,26 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifySessionToken(token);
+
+  const session = await verifySessionToken(token);
+  if (!session) return null;
+
+  // The JWT itself stays valid for its full lifetime regardless of what
+  // happens to the account, so a deleted account (e.g. by an admin, from a
+  // different browser) would otherwise keep working until the cookie
+  // expires. Checking existence here — the single funnel every page/action
+  // reads the session through — makes deletion take effect immediately on
+  // that account's very next request instead.
+  const exists = await prisma.user.findUnique({ where: { id: session.userId }, select: { id: true } });
+  if (!exists) {
+    // Clearing the cookie only works from a Server Function/Route Handler,
+    // not while a Server Component is rendering — swallow that case since
+    // returning null already treats this request as logged out either way.
+    await destroySession().catch(() => {});
+    return null;
+  }
+
+  return session;
 }
 
 export async function requireUser(): Promise<SessionPayload> {
