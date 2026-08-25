@@ -415,3 +415,106 @@ export async function acknowledgeReferral(formData: FormData) {
 
   revalidatePath("/therapist/referrals");
 }
+
+export type AssignResourceFormState = { error?: string; success?: boolean } | undefined;
+
+export async function assignResourceLink(
+  _prevState: AssignResourceFormState,
+  formData: FormData,
+): Promise<AssignResourceFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
+
+  if (!clientEmail) return { error: "Missing client." };
+  if (!title) return { error: "Please give it a title." };
+  if (!url) return { error: "Please add a link." };
+  try {
+    new URL(url);
+  } catch {
+    return { error: "That link doesn't look valid — include https://" };
+  }
+
+  await prisma.assignedResource.create({
+    data: { counselorId: session.counselorId, clientEmail, title, description: description || null, kind: "LINK", url },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  return { success: true };
+}
+
+export async function assignResourcePdf(
+  _prevState: AssignResourceFormState,
+  formData: FormData,
+): Promise<AssignResourceFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const fileData = String(formData.get("fileData") ?? "");
+  const fileName = String(formData.get("fileName") ?? "").trim();
+
+  if (!clientEmail) return { error: "Missing client." };
+  if (!title) return { error: "Please give it a title." };
+  if (!fileData.startsWith("data:application/pdf")) return { error: "Please attach a PDF file." };
+  if (dataUriByteSize(fileData) > MAX_TOOLKIT_PDF_BYTES) {
+    return { error: `That PDF is too large — please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
+  }
+
+  await prisma.assignedResource.create({
+    data: {
+      counselorId: session.counselorId,
+      clientEmail,
+      title,
+      description: description || null,
+      kind: "PDF",
+      fileData,
+      fileName: fileName || `${title}.pdf`,
+    },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  return { success: true };
+}
+
+export async function assignResourceNote(
+  _prevState: AssignResourceFormState,
+  formData: FormData,
+): Promise<AssignResourceFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const content = String(formData.get("content") ?? "").trim();
+  const isAssignment = formData.get("isAssignment") === "on";
+
+  if (!clientEmail) return { error: "Missing client." };
+  if (!title) return { error: "Please give it a title." };
+  if (!content) return { error: "Please write something for your client to see." };
+
+  await prisma.assignedResource.create({
+    data: { counselorId: session.counselorId, clientEmail, title, kind: isAssignment ? "ASSIGNMENT" : "TEXT", content },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  return { success: true };
+}
+
+export async function removeAssignedResource(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const itemId = String(formData.get("itemId") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+
+  await prisma.assignedResource.deleteMany({ where: { id: itemId, counselorId: session.counselorId } });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+}

@@ -164,6 +164,7 @@ model Counselor {
   toolkitItems      ToolkitItem[]
   referralsSent     Referral[]           @relation("ReferralsSent")
   referralsReceived Referral[]           @relation("ReferralsReceived")
+  assignedResources AssignedResource[]
 }
 
 enum AvailabilityStatus {
@@ -341,6 +342,46 @@ model Referral {
 
   @@index([toCounselorId])
   @@index([fromCounselorId])
+}
+
+enum AssignedResourceKind {
+  LINK
+  PDF
+  TEXT
+  ASSIGNMENT
+}
+
+// A resource a therapist has sent directly to one specific client — visible
+// only to that client, surfaced in their own logged-in account under
+// Resources > "My tools" (matched by clientEmail against their session
+// email; see getMyAssignedResources). Distinct from ToolkitItem (a
+// therapist's own private toolbox, never client-facing) and from
+// CLIENT_TOOLS (public self-serve exercises anyone can open) — this is the
+// first place a counselor's own content reaches a client's logged-in
+// account UI.
+model AssignedResource {
+  id          String               @id @default(cuid())
+  counselor   Counselor            @relation(fields: [counselorId], references: [id])
+  counselorId String
+  clientEmail String
+  title       String
+  description String?              @db.Text
+  kind        AssignedResourceKind
+  // Set for LINK — either a hand-typed URL or one of the built-in
+  // CLIENT_TOOLS, quick-picked in the therapist portal.
+  url         String?              @db.Text
+  // Set for PDF (a data: URI, same storage pattern as ToolkitItem).
+  fileData    String?              @db.Text
+  fileName    String?
+  // Set for TEXT/ASSIGNMENT — the free-text note or instructions.
+  content     String?              @db.Text
+  // ASSIGNMENT only — set when the client marks it done from their own
+  // account. Always null for the other three kinds.
+  completedAt DateTime?
+  createdAt   DateTime             @default(now())
+
+  @@index([counselorId])
+  @@index([clientEmail])
 }
 
 enum SessionType {

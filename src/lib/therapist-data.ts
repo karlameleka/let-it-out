@@ -177,3 +177,14 @@ export type ReferralIntakeSnapshot = {
   aiSummary: string | null;
   submittedAt: string;
 };
+
+/** Everything this counselor has sent to one specific client — shown on
+ * that client's profile page so the therapist can see what's already been
+ * shared before sending more. Scoped by counselorId, same ownership
+ * pattern as every other client-record query in this file. */
+export async function getAssignedResourcesForClient(counselorId: string, clientEmail: string) {
+  return prisma.assignedResource.findMany({
+    where: { counselorId, clientEmail },
+    orderBy: { createdAt: "desc" },
+  });
+}

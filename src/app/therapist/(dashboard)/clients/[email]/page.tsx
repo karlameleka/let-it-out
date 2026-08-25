@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Download, X } from "lucide-react";
 import { requireCounselor } from "@/lib/therapist-session";
-import { getClientProfile, getOtherActiveCounselors, type IntakeAnswerEntry } from "@/lib/therapist-data";
+import {
+  getClientProfile,
+  getOtherActiveCounselors,
+  getAssignedResourcesForClient,
+  type IntakeAnswerEntry,
+} from "@/lib/therapist-data";
+import { removeAssignedResource } from "@/lib/therapist-actions";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
 import ClientNoteForm from "./note-form";
 import ClientNoteItem from "./note-item";
 import ReferClientForm from "./refer-form";
+import AssignResourceForm from "./assign-resource-form";
 
 export default async function TherapistClientProfilePage({
   params,
@@ -18,9 +25,10 @@ export default async function TherapistClientProfilePage({
   const { email: encodedEmail } = await params;
   const email = decodeURIComponent(encodedEmail);
 
-  const [client, colleagues] = await Promise.all([
+  const [client, colleagues, assignedResources] = await Promise.all([
     getClientProfile(session.counselorId, email),
     getOtherActiveCounselors(session.counselorId),
+    getAssignedResourcesForClient(session.counselorId, email),
   ]);
   if (!client) notFound();
 
@@ -134,6 +142,63 @@ export default async function TherapistClientProfilePage({
                 </div>
               )}
             </div>
+          </div>
+
+          <div>
+            <AssignResourceForm clientEmail={client.email} />
+            {assignedResources.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {assignedResources.map((item) => (
+                  <div key={item.id} className="flex items-start justify-between gap-3 rounded-2xl border border-brand-100 bg-white p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-brand-900">{item.title}</p>
+                        {item.kind === "ASSIGNMENT" && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                              item.completedAt ? "bg-brand-50 text-brand-700" : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {item.completedAt ? "Done" : "Assignment"}
+                          </span>
+                        )}
+                      </div>
+                      {item.description && <p className="mt-1 text-sm text-ink/60">{item.description}</p>}
+                      {item.kind === "PDF" && (
+                        <a
+                          href={item.fileData ?? undefined}
+                          download={item.fileName ?? undefined}
+                          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 link-grow"
+                        >
+                          <Download className="h-3.5 w-3.5" strokeWidth={2} />
+                          Download PDF
+                        </a>
+                      )}
+                      {item.kind === "LINK" && (
+                        <a href={item.url ?? undefined} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs font-semibold text-brand-600 link-grow">
+                          Open link →
+                        </a>
+                      )}
+                      {(item.kind === "TEXT" || item.kind === "ASSIGNMENT") && (
+                        <p className="mt-2 whitespace-pre-line text-sm text-ink/70">{item.content}</p>
+                      )}
+                    </div>
+                    <form action={removeAssignedResource}>
+                      <input type="hidden" name="itemId" value={item.id} />
+                      <input type="hidden" name="clientEmail" value={client.email} />
+                      <button
+                        type="submit"
+                        aria-label="Remove"
+                        title="Remove"
+                        className="shrink-0 rounded-lg p-1.5 text-ink/40 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <X className="h-4 w-4" strokeWidth={2} />
+                      </button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

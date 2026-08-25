@@ -8,6 +8,9 @@ import ArticleFilter from "./article-filter";
 import { Reveal } from "@/components/reveal";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getArticles } from "@/lib/content/articles";
+import { getCurrentUser } from "@/lib/session";
+import { getMyAssignedResources } from "@/lib/client-resources";
+import MyToolsItem from "./my-tools-item";
 
 export const metadata: Metadata = {
   title: "Resources",
@@ -15,7 +18,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ResourcesPage() {
-  const [settings, articleList] = await Promise.all([getSiteSettings(), getArticles()]);
+  const [settings, articleList, user] = await Promise.all([getSiteSettings(), getArticles(), getCurrentUser()]);
+  const myTools = user ? await getMyAssignedResources(user.email) : [];
 
   const journalPromo = settings.resourcesPromoHidden ? null : (
     <section className="pt-2 pb-8 sm:py-10 scroll-mt-24" id="journal-promo" key="journal-promo">
@@ -118,6 +122,27 @@ export default async function ResourcesPage() {
       ? [articles, journalPromo, cbtPromo, breathingPromo]
       : [journalPromo, cbtPromo, breathingPromo, articles];
 
+  const myToolsSection = user ? (
+    <section className="pt-2 pb-8 sm:py-10" key="my-tools" id="my-tools">
+      <Reveal>
+        <Container>
+          <SectionHeading eyebrow="Just for you" title="My tools" />
+          {myTools.length === 0 ? (
+            <p className="mt-6 text-sm text-ink/60">
+              Nothing here yet — your therapist can send you tools, PDFs, and assignments here after a session.
+            </p>
+          ) : (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {myTools.map((item) => (
+                <MyToolsItem key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </Container>
+      </Reveal>
+    </section>
+  ) : null;
+
   return (
     <>
       <section className="bg-brand-50 pt-6 pb-4 sm:pt-14 sm:pb-20">
@@ -139,6 +164,8 @@ export default async function ResourcesPage() {
       </section>
 
       <WaveDivider fill="fill-white" />
+
+      {myToolsSection}
 
       {sections}
     </>
