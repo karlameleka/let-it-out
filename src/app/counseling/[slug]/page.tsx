@@ -10,6 +10,7 @@ import SessionBookingFlow from "./session-booking-flow";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getCurrentUser } from "@/lib/session";
+import { getAvailableSlots } from "@/lib/availability";
 
 export async function generateMetadata({
   params,
@@ -38,6 +39,7 @@ export default async function CounselorPage({
   const dict = getDictionary(locale);
   const t = dict.counselorProfile;
   const account = session ? { name: session.name, email: session.email, phone: session.phone } : null;
+  const slots = counselor.bookingUrl ? [] : await getAvailableSlots(counselor.id);
 
   return (
     <section className="pt-6 pb-10 sm:pt-14 sm:pb-20">
@@ -161,7 +163,7 @@ export default async function CounselorPage({
                 </h2>
                 <p className="mt-1 text-sm text-ink/60">{t.requestDescription}</p>
                 <div className="mt-6">
-                  <BookingForm counselorId={counselor.id} dict={dict} account={account} />
+                  <BookingForm counselorId={counselor.id} dict={dict} locale={locale} account={account} slots={slots} />
                 </div>
               </>
             )}

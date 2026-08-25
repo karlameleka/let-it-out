@@ -3,11 +3,16 @@ import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { requireCounselor } from "@/lib/therapist-session";
 import { getOwnCounselorWithBookings, deriveAppointments, todayISO } from "@/lib/therapist-data";
+import { prisma } from "@/lib/db";
 import StatusBadge from "../../status-badge";
+import AvailabilityManager from "./availability-manager";
 
 export default async function TherapistCalendarPage() {
   const session = await requireCounselor();
-  const counselor = await getOwnCounselorWithBookings(session.counselorId);
+  const [counselor, availabilityWindows] = await Promise.all([
+    getOwnCounselorWithBookings(session.counselorId),
+    prisma.counselorAvailability.findMany({ where: { counselorId: session.counselorId } }),
+  ]);
   if (!counselor) notFound();
 
   const appointments = deriveAppointments(counselor).filter((a) => a.status !== "CANCELLED");
@@ -42,6 +47,8 @@ export default async function TherapistCalendarPage() {
           </a>
         </div>
       )}
+
+      {!counselor.bookingUrl && <AvailabilityManager windows={availabilityWindows} />}
 
       <div>
         <h2 className="font-display font-semibold text-brand-900">Upcoming</h2>

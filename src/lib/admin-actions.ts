@@ -111,7 +111,7 @@ export async function deleteCounselorClient(formData: FormData) {
 export async function deleteClientAccount(formData: FormData) {
   await requireAdmin();
   const userId = String(formData.get("userId"));
-  await deleteUserAccountCompletely(userId);
+  await deleteUserAccountCompletely(userId, "admin");
   revalidatePath("/admin/clients");
 }
 

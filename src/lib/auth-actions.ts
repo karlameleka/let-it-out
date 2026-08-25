@@ -451,7 +451,7 @@ export async function deleteAccountAction(
     if (!valid) return { error: "Incorrect password." };
   }
 
-  await deleteUserAccountCompletely(user.id);
+  await deleteUserAccountCompletely(user.id, "self");
 
   await destroySession();
   // No server-side redirect() here: the client clears the device-only

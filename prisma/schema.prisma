@@ -157,15 +157,16 @@ model Counselor {
   // features, just personally toggled off rather than deleted.
   hiddenDefaultTools String[] @default([])
 
-  bookingRequests   BookingRequest[]
-  sessionBookings   SessionBooking[]
-  promoCodes        PromoCodeCounselor[]
-  intakeSubmissions IntakeSubmission[]
-  clientNotes       ClientNote[]
-  toolkitItems      ToolkitItem[]
-  referralsSent     Referral[]           @relation("ReferralsSent")
-  referralsReceived Referral[]           @relation("ReferralsReceived")
-  assignedResources AssignedResource[]
+  bookingRequests     BookingRequest[]
+  sessionBookings     SessionBooking[]
+  promoCodes          PromoCodeCounselor[]
+  intakeSubmissions   IntakeSubmission[]
+  clientNotes         ClientNote[]
+  toolkitItems        ToolkitItem[]
+  referralsSent       Referral[]              @relation("ReferralsSent")
+  referralsReceived   Referral[]              @relation("ReferralsReceived")
+  assignedResources   AssignedResource[]
+  availabilityWindows CounselorAvailability[]
 }
 
 enum AvailabilityStatus {
@@ -418,6 +419,28 @@ model BookingRequest {
   message        String?       @db.Text
   status         BookingStatus @default(PENDING)
   createdAt      DateTime      @default(now())
+}
+
+// A recurring weekly window (e.g. "Monday 09:00–17:00") a counselor without
+// their own Cal.com link has opened up for bookings. The public counselor
+// page slices these into concrete 50-minute slots for the next couple of
+// weeks (see availability.ts) so a client picks a real open time instead of
+// submitting a free-text "preferred" date/time that has to be manually
+// confirmed. Counselors who use Cal.com (bookingUrl set) manage their real
+// availability there instead — this only applies to the manual-request
+// fallback path.
+model CounselorAvailability {
+  id          String    @id @default(cuid())
+  counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  counselorId String
+  // 0 = Sunday … 6 = Saturday, matching JS Date#getDay().
+  dayOfWeek   Int
+  // 24-hour "HH:mm", e.g. "09:00" / "17:00". No timezone — like the rest of
+  // this app, times are plain Cairo-local values, never converted.
+  startTime   String
+  endTime     String
+
+  @@index([counselorId])
 }
 
 enum InquiryStatus {

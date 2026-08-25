@@ -249,6 +249,11 @@ const ar: Dictionary = {
     dateTimeHint: "التاريخ والوقت المفضلان لديك غير مضمونين — سنؤكد الموعد الفعلي معك مباشرة.",
     messageLabel: "هل هناك ما تود إخبارنا به؟ (اختياري)",
     submit: "طلب جلسة",
+    pickTimeHeading: "اختر موعدًا",
+    pickTimeHint: "كل المواعيد جلسات مدتها 50 دقيقة، بتوقيت القاهرة.",
+    noSlotsMessage: "لا توجد مواعيد متاحة حاليًا.",
+    useCustomTimeLink: "لا يناسبك أي من هذه المواعيد؟ اطلب موعدًا مختلفًا",
+    useSlotsLink: "← العودة إلى المواعيد المتاحة",
   },
   sessionStatus: {
     sessionWith: "جلسة مع",

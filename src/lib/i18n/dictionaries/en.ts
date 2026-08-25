@@ -255,6 +255,11 @@ const en = {
     dateTimeHint: "Your preferred date and time aren't guaranteed — we'll confirm actual availability with you directly.",
     messageLabel: "Anything you'd like us to know? (optional)",
     submit: "Request session",
+    pickTimeHeading: "Pick a time",
+    pickTimeHint: "All times are 50-minute sessions, shown in Cairo time.",
+    noSlotsMessage: "No upcoming times are open right now.",
+    useCustomTimeLink: "None of these work for you? Request a different time instead",
+    useSlotsLink: "← Back to available times",
   },
   sessionStatus: {
     sessionWith: "Session with",

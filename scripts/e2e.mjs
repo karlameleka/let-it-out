@@ -363,26 +363,26 @@ let orderUrl = "";
   await ctx.close();
 }
 
-// --- Flow 2c: workshop notify popup ------------------------------------------
+// --- Flow 2c: workshop notify section (constant, end of /workshops page) -----
 {
   const ctx = await newContext();
   const page = await ctx.newPage();
 
-  await page.goto(`${BASE}/`);
-  await page.evaluate(() => window.localStorage.removeItem("lio_workshop_popup_seen"));
-  await page.reload();
-  await page.waitForTimeout(6500);
+  await page.goto(`${BASE}/workshops`);
+  const sectionVisible = await page
+    .locator("text=Don't miss our next workshop")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  log("workshop notify section appears at end of /workshops", sectionVisible);
 
-  const popupVisible = await page.locator("text=Don't miss our next workshop").first().isVisible().catch(() => false);
-  log("workshop notify popup appears", popupVisible);
-
-  if (popupVisible) {
+  if (sectionVisible) {
     await page.fill('input[name=email]', `workshop-fan-${rand}@example.com`);
     await page.click('button:has-text("Notify me")');
     await page.waitForSelector("text=You're on the list", { timeout: 10000 });
     log("workshop notify signup succeeds", true);
   } else {
-    log("workshop notify signup succeeds", false, "(popup never appeared)");
+    log("workshop notify signup succeeds", false, "(section never appeared)");
   }
 
   await ctx.close();

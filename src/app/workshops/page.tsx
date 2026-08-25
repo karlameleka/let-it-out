@@ -5,6 +5,7 @@ import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { getWorkshopTopics } from "@/lib/content/workshops";
 import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
 import WorkshopInquiryForm from "./inquiry-form";
+import WorkshopNotifySection from "./workshop-notify-section";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -115,6 +116,8 @@ export default async function WorkshopsPage() {
           </Container>
         </Reveal>
       </section>
+
+      <WorkshopNotifySection />
 
       <Link
         href="#request-quote"

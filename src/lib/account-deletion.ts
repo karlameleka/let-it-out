@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { sendSupportNotification } from "@/lib/email";
 
 /**
  * Fully removes a client account and everything owned only by that
@@ -11,7 +12,10 @@ import { prisma } from "@/lib/db";
  * account it belongs to, so it's deleted outright. Shared by both the
  * client's own "Delete my account" flow and the admin-initiated one.
  */
-export async function deleteUserAccountCompletely(userId: string) {
+export async function deleteUserAccountCompletely(userId: string, initiatedBy: "self" | "admin" = "self") {
+  // Read before the transaction — the row won't exist to look up afterward.
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, accountCode: true } });
+
   await prisma.$transaction([
     prisma.journalEntry.deleteMany({ where: { userId } }),
     prisma.pushSubscription.deleteMany({ where: { userId } }),
@@ -20,4 +24,16 @@ export async function deleteUserAccountCompletely(userId: string) {
     prisma.bookingRequest.updateMany({ where: { userId }, data: { userId: null } }),
     prisma.user.delete({ where: { id: userId } }),
   ]);
+
+  if (user) {
+    await sendSupportNotification({
+      subject: "An account was deleted",
+      lines: [
+        { label: "Name", value: user.name },
+        { label: "Email", value: user.email },
+        { label: "Account code", value: user.accountCode },
+        { label: "Deleted by", value: initiatedBy === "admin" ? "Admin (from the dashboard)" : "The account holder (self-service)" },
+      ],
+    }).catch((err) => console.error("[account-deletion] Failed to send deletion notification email:", err));
+  }
 }

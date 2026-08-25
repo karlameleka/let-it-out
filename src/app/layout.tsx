@@ -4,7 +4,6 @@ import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
-import WorkshopInterestPopup from "@/components/workshop-interest-popup";
 import EntryGates from "@/components/entry-gates";
 import { SerwistProvider } from "@serwist/turbopack/react";
 import OfflineBanner from "@/components/offline-banner";
@@ -95,7 +94,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <ViewTransition name="page-content">{children}</ViewTransition>
               </main>
               <SiteFooter locale={locale} dict={dict.footer} />
-              <WorkshopInterestPopup />
               <EntryGates />
               <SerwistProvider swUrl="/serwist/sw.js" />
               <HelpButton dict={dict.helpButton} />

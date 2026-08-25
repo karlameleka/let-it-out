@@ -1,28 +1,55 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { submitBookingRequest } from "@/lib/booking-actions";
 import { Button } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 import PrivacyBadge from "@/components/privacy-badge";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
 const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
+export type BookingSlot = { date: string; time: string };
+
+function formatSlotTime(time: string, locale: Locale) {
+  const [h, m] = time.split(":").map(Number);
+  const end = new Date(2000, 0, 1, h, m + 50);
+  const fmt = (d: Date) =>
+    d.toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-GB", { hour: "numeric", minute: "2-digit" });
+  return `${fmt(new Date(2000, 0, 1, h, m))} – ${fmt(end)}`;
+}
+
 export default function BookingForm({
   counselorId,
   dict,
+  locale,
   account,
+  slots = [],
 }: {
   counselorId: string;
   dict: Dictionary;
+  locale: Locale;
   account?: { name: string; email: string; phone: string | null } | null;
+  slots?: BookingSlot[];
 }) {
   const [state, formAction, pending] = useActionState(submitBookingRequest, undefined);
   const [useAccount, setUseAccount] = useState(!!account);
+  const [customTime, setCustomTime] = useState(slots.length === 0);
+  const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(slots[0] ?? null);
   const t = dict.bookingForm;
   const f = dict.forms;
+
+  const byDate = useMemo(() => {
+    const map = new Map<string, BookingSlot[]>();
+    for (const slot of slots) {
+      map.set(slot.date, [...(map.get(slot.date) ?? []), slot]);
+    }
+    return map;
+  }, [slots]);
+  const dates = [...byDate.keys()];
+  const [selectedDate, setSelectedDate] = useState(dates[0]);
 
   const SESSION_TYPES = [
     { value: "INDIVIDUAL_COUNSELING", label: t.typeIndividual },
@@ -100,17 +127,84 @@ export default function BookingForm({
           ))}
         </select>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      {!customTime && dates.length > 0 ? (
         <div>
-          <label className={labelClass} htmlFor="preferredDate">{t.preferredDate}</label>
-          <input id="preferredDate" name="preferredDate" type="date" required className={inputClass} />
+          <label className={labelClass}>{t.pickTimeHeading}</label>
+          <input type="hidden" name="preferredDate" value={selectedSlot?.date ?? ""} />
+          <input type="hidden" name="preferredTime" value={selectedSlot?.time ?? ""} />
+          <div className="flex flex-wrap gap-2">
+            {dates.map((date) => (
+              <button
+                key={date}
+                type="button"
+                onClick={() => {
+                  setSelectedDate(date);
+                  setSelectedSlot(byDate.get(date)![0]);
+                }}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  selectedDate === date
+                    ? "bg-brand-700 text-white"
+                    : "border border-brand-200 text-ink/60 hover:bg-brand-50"
+                }`}
+              >
+                {new Date(`${date}T00:00:00`).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                })}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(byDate.get(selectedDate ?? "") ?? []).map((slot) => (
+              <button
+                key={slot.time}
+                type="button"
+                onClick={() => setSelectedSlot(slot)}
+                className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                  selectedSlot?.date === slot.date && selectedSlot?.time === slot.time
+                    ? "border-brand-700 bg-brand-700 text-white"
+                    : "border-brand-200 text-ink/70 hover:bg-brand-50"
+                }`}
+              >
+                {formatSlotTime(slot.time, locale)}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-ink/45">{t.pickTimeHint}</p>
+          <button
+            type="button"
+            onClick={() => setCustomTime(true)}
+            className="mt-2 text-xs font-medium text-brand-600 link-grow"
+          >
+            {t.useCustomTimeLink}
+          </button>
         </div>
+      ) : (
         <div>
-          <label className={labelClass} htmlFor="preferredTime">{t.preferredTime}</label>
-          <input id="preferredTime" name="preferredTime" type="time" required className={inputClass} />
+          {dates.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setCustomTime(false)}
+              className="mb-2 text-xs font-medium text-brand-600 link-grow"
+            >
+              {t.useSlotsLink}
+            </button>
+          )}
+          {dates.length === 0 && <p className="mb-2 text-xs text-ink/45">{t.noSlotsMessage}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass} htmlFor="preferredDate">{t.preferredDate}</label>
+              <input id="preferredDate" name="preferredDate" type="date" required className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="preferredTime">{t.preferredTime}</label>
+              <input id="preferredTime" name="preferredTime" type="time" required className={inputClass} />
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-ink/45">{t.dateTimeHint}</p>
         </div>
-      </div>
-      <p className="text-xs text-ink/45">{t.dateTimeHint}</p>
+      )}
       <div>
         <label className={labelClass} htmlFor="message">{t.messageLabel}</label>
         <textarea id="message" name="message" rows={3} className={inputClass} />
