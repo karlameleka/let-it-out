@@ -105,3 +105,91 @@ export async function updateOwnBookingRequestStatus(formData: FormData) {
   revalidatePath("/therapist/calendar");
   revalidatePath("/therapist");
 }
+
+export type ClientNoteFormState = { error?: string; success?: boolean } | undefined;
+
+function parseSessionDate(raw: string): Date | null {
+  if (!raw) return null;
+  const d = new Date(`${raw}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export async function addClientNote(
+  _prevState: ClientNoteFormState,
+  formData: FormData,
+): Promise<ClientNoteFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const nextSteps = String(formData.get("nextSteps") ?? "").trim();
+  const sessionDate = parseSessionDate(String(formData.get("sessionDate") ?? ""));
+
+  if (!clientEmail || !clientName) return { error: "Missing client." };
+  if (!notes) return { error: "Please add a note before saving." };
+
+  await prisma.clientNote.create({
+    data: {
+      counselorId: session.counselorId,
+      clientEmail,
+      clientName,
+      notes,
+      nextSteps: nextSteps || null,
+      ...(sessionDate ? { sessionDate } : {}),
+    },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/therapist/clients");
+  revalidatePath("/therapist");
+  return { success: true };
+}
+
+export async function updateClientNote(
+  _prevState: ClientNoteFormState,
+  formData: FormData,
+): Promise<ClientNoteFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const noteId = String(formData.get("noteId") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const nextSteps = String(formData.get("nextSteps") ?? "").trim();
+  const sessionDate = parseSessionDate(String(formData.get("sessionDate") ?? ""));
+
+  if (!notes) return { error: "Notes can't be empty." };
+
+  // updateMany with counselorId in the where clause, not update-by-id alone
+  // — this is how ownership is enforced against a tampered noteId.
+  const result = await prisma.clientNote.updateMany({
+    where: { id: noteId, counselorId: session.counselorId },
+    data: {
+      notes,
+      nextSteps: nextSteps || null,
+      ...(sessionDate ? { sessionDate } : {}),
+    },
+  });
+  if (result.count === 0) return { error: "Note not found." };
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/therapist/clients");
+  revalidatePath("/therapist");
+  return { success: true };
+}
+
+export async function deleteClientNote(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const noteId = String(formData.get("noteId") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+
+  await prisma.clientNote.deleteMany({ where: { id: noteId, counselorId: session.counselorId } });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/therapist/clients");
+  revalidatePath("/therapist");
+}

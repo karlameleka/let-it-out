@@ -7,6 +7,7 @@ const TABS = [
   { href: "/therapist", label: "Overview" },
   { href: "/therapist/clients", label: "Clients" },
   { href: "/therapist/calendar", label: "Calendar" },
+  { href: "/therapist/toolkit", label: "Toolkit" },
   { href: "/therapist/profile", label: "Profile & pricing" },
   { href: "/therapist/settings", label: "Settings" },
 ];

@@ -59,9 +59,10 @@ export default async function TherapistOverviewPage() {
         ) : (
           <div className="mt-3 space-y-2">
             {upcoming.slice(0, 5).map((a) => (
-              <div
+              <Link
                 key={`${a.kind}-${a.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-4 py-3"
+                href={`/therapist/clients/${encodeURIComponent(a.email)}`}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-4 py-3 transition-colors hover:border-brand-300"
               >
                 <div>
                   <p className="font-medium text-brand-900">{a.name}</p>
@@ -71,7 +72,7 @@ export default async function TherapistOverviewPage() {
                   </p>
                 </div>
                 <StatusBadge status={a.status} />
-              </div>
+              </Link>
             ))}
           </div>
         )}
@@ -87,7 +88,10 @@ export default async function TherapistOverviewPage() {
                   <p className="font-medium text-brand-900">{a.name}</p>
                   <p className="text-xs text-ink/50">Requested {a.date} at {a.time}</p>
                 </div>
-                <Link href="/therapist/clients" className="text-xs font-semibold text-brand-600 link-grow">
+                <Link
+                  href={`/therapist/clients/${encodeURIComponent(a.email)}`}
+                  className="text-xs font-semibold text-brand-600 link-grow"
+                >
                   Respond →
                 </Link>
               </div>

@@ -15,6 +15,11 @@ export type TherapistCounselorWithBookings = NonNullable<
   Awaited<ReturnType<typeof getOwnCounselorWithBookings>>
 >;
 
+// Narrower than TherapistCounselorWithBookings — deriveClients/deriveAppointments
+// only ever touch these two fields, so anything with just this shape (e.g. a
+// single client's filtered bookings) can reuse them without a full Counselor.
+type BookingsSource = Pick<TherapistCounselorWithBookings, "sessionBookings" | "bookingRequests">;
+
 export type TherapistClient = {
   name: string;
   email: string;
@@ -27,7 +32,7 @@ export type TherapistClient = {
  * pre-booking flow and the manual booking-request flow — the same shape
  * as the admin counselor-detail "Clients" list, scoped here to a single
  * counselor's own records. */
-export function deriveClients(counselor: TherapistCounselorWithBookings): TherapistClient[] {
+export function deriveClients(counselor: BookingsSource): TherapistClient[] {
   const byEmail = new Map<string, TherapistClient>();
   for (const row of [...counselor.sessionBookings, ...counselor.bookingRequests]) {
     const existing = byEmail.get(row.email);
@@ -68,7 +73,7 @@ export type TherapistAppointment = {
 /** Every booking (paid + manual request) as one flat, chronologically
  * sorted agenda — this is the closest thing to "the calendar" this app
  * owns; exact time slots are Cal.com's, not ours. */
-export function deriveAppointments(counselor: TherapistCounselorWithBookings): TherapistAppointment[] {
+export function deriveAppointments(counselor: BookingsSource): TherapistAppointment[] {
   const paid: TherapistAppointment[] = counselor.sessionBookings.map((b) => ({
     id: b.id,
     kind: "Paid session",
@@ -96,3 +101,39 @@ export function deriveAppointments(counselor: TherapistCounselorWithBookings): T
 export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+export type IntakeAnswerEntry = { section: string; label: string; value: string };
+
+/** Everything the therapist portal shows on one client: contact info +
+ * booking history (scoped to just this client), every intake form they've
+ * submitted to this counselor (most recent first), and this counselor's
+ * private session notes for them (most recent first). Nothing here is
+ * shared across counselors — every query is scoped by counselorId. */
+export async function getClientProfile(counselorId: string, clientEmail: string) {
+  const [sessionBookings, bookingRequests, intakeSubmissions, notes] = await Promise.all([
+    prisma.sessionBooking.findMany({ where: { counselorId, email: clientEmail }, orderBy: { createdAt: "desc" } }),
+    prisma.bookingRequest.findMany({ where: { counselorId, email: clientEmail }, orderBy: { createdAt: "desc" } }),
+    prisma.intakeSubmission.findMany({ where: { counselorId, clientEmail }, orderBy: { submittedAt: "desc" } }),
+    prisma.clientNote.findMany({ where: { counselorId, clientEmail }, orderBy: [{ sessionDate: "desc" }, { createdAt: "desc" }] }),
+  ]);
+
+  if (sessionBookings.length === 0 && bookingRequests.length === 0 && intakeSubmissions.length === 0 && notes.length === 0) {
+    return null;
+  }
+
+  const allRows = [...sessionBookings, ...bookingRequests];
+  const latest = allRows.reduce((a, b) => (b.createdAt > a.createdAt ? b : a), allRows[0]);
+
+  return {
+    name: latest?.name ?? intakeSubmissions[0]?.clientName ?? notes[0]?.clientName ?? clientEmail,
+    email: clientEmail,
+    phone: latest?.phone ?? null,
+    appointments: deriveAppointments({ sessionBookings, bookingRequests }),
+    intakeSubmissions,
+    notes,
+  };
+}
+
+export type TherapistClientProfile = NonNullable<Awaited<ReturnType<typeof getClientProfile>>>;
+export type TherapistClientNote = TherapistClientProfile["notes"][number];
+export type TherapistIntakeSubmission = TherapistClientProfile["intakeSubmissions"][number];

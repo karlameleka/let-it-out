@@ -151,9 +151,11 @@ model Counselor {
   lockedUntil                DateTime?
   lastLoginAt                DateTime?
 
-  bookingRequests BookingRequest[]
-  sessionBookings SessionBooking[]
-  promoCodes      PromoCodeCounselor[]
+  bookingRequests   BookingRequest[]
+  sessionBookings   SessionBooking[]
+  promoCodes        PromoCodeCounselor[]
+  intakeSubmissions IntakeSubmission[]
+  clientNotes       ClientNote[]
 }
 
 enum AvailabilityStatus {
@@ -208,6 +210,47 @@ model IntakeFormToken {
   createdAt      DateTime  @default(now())
   expiresAt      DateTime
   usedAt         DateTime?
+}
+
+// The actual submitted intake form, persisted so it shows up in that
+// client's profile inside the assigned counselor's therapist portal — only
+// that counselor can see it (never the admin, never another counselor).
+// One row per submission; a client could in principle submit more than
+// once across separate booking requests, so this isn't unique per
+// counselor+email — the portal always shows the most recent.
+model IntakeSubmission {
+  id          String    @id @default(cuid())
+  counselor   Counselor @relation(fields: [counselorId], references: [id])
+  counselorId String
+  clientName  String
+  clientEmail String
+  // [{ section, label, value }] — same shape buildIntakeAnswers() produces.
+  answers     Json
+  // Best-effort AI-generated clinical-prep summary (see ai-insights.ts) —
+  // null when ANTHROPIC_API_KEY isn't configured or the call failed.
+  aiSummary   String?   @db.Text
+  submittedAt DateTime  @default(now())
+
+  @@index([counselorId, clientEmail])
+}
+
+// A therapist's private note logged against one of their clients, tied to
+// a specific session date. nextSteps is the plan going into the following
+// session — the portal surfaces the most recent note's nextSteps as the
+// client's "current" plan, while older notes stay as a running history.
+model ClientNote {
+  id          String   @id @default(cuid())
+  counselor   Counselor @relation(fields: [counselorId], references: [id])
+  counselorId String
+  clientEmail String
+  clientName  String
+  sessionDate DateTime @default(now()) @db.Date
+  notes       String   @db.Text
+  nextSteps   String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([counselorId, clientEmail])
 }
 
 enum SessionType {

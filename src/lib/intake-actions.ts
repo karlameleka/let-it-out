@@ -67,10 +67,11 @@ export async function validateIntakeToken(rawToken: string): Promise<IntakeToken
 
 export type IntakeSubmitState = { error?: string; success?: boolean } | undefined;
 
-/** Processes a submitted intake form: AI summary (best-effort), straight to
- * the therapist's inbox, then marks the link used. The answers are held only
- * in memory for the duration of this request — never written to our
- * database at any point. */
+/** Processes a submitted intake form: AI summary (best-effort), emailed to
+ * the therapist's inbox, saved as an IntakeSubmission so it shows up in
+ * that client's profile inside the assigned counselor's therapist portal
+ * (visible to that counselor only — never the admin, never another
+ * counselor), then marks the link used. */
 export async function submitIntakeFormAction(
   _prevState: IntakeSubmitState,
   formData: FormData,
@@ -110,6 +111,16 @@ export async function submitIntakeFormAction(
   if (!sent) {
     return { error: "We couldn't deliver your form right now. Please try again in a moment." };
   }
+
+  await prisma.intakeSubmission.create({
+    data: {
+      counselorId: record.counselorId,
+      clientName: record.clientName,
+      clientEmail: record.clientEmail,
+      answers,
+      aiSummary,
+    },
+  });
 
   await prisma.intakeFormToken.update({ where: { id: record.id }, data: { usedAt: new Date() } });
 

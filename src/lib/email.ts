@@ -392,7 +392,7 @@ export async function sendIntakeFormRequestEmail({
     "",
     `Thanks for requesting a session with ${counselorName}. Before your first session, we ask every client to fill out a short intake form — it helps your therapist understand your background and prepare for your work together.`,
     "",
-    "This form goes directly and only to your therapist. It is never stored on our servers, never seen by anyone at Let It Out, and never shared with any third party — it exists solely between you and your therapist.",
+    "This form goes directly and only to your therapist, and is saved to your private profile in their client records. It is never seen by anyone else at Let It Out, and never shared with any third party — it exists solely between you and your therapist.",
     "",
     intakeUrl,
     "",
@@ -407,9 +407,9 @@ export async function sendIntakeFormRequestEmail({
       <p>Hi ${escapeHtml(name)},</p>
       <p>Thanks for requesting a session with ${escapeHtml(counselorName)}. Before your first session, we ask every client to fill out a short intake form — it helps your therapist understand your background and prepare for your work together.</p>
       <p style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
-        This form goes directly and only to your therapist. It is <strong>never stored on our servers</strong>,
-        never seen by anyone at Let It Out, and never shared with any third party — it exists solely between
-        you and your therapist.
+        This form goes directly and only to your therapist, and is saved to your private profile in their
+        client records. It is <strong>never seen by anyone else at Let It Out</strong>, and never shared with
+        any third party — it exists solely between you and your therapist.
       </p>
       <p style="margin: 24px 0;">
         <a href="${intakeUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Fill out your intake form</a>
@@ -434,10 +434,11 @@ export async function sendIntakeFormRequestEmail({
 
 /**
  * Delivers a submitted intake form directly to the assigned therapist —
- * raw answers plus an optional AI-generated prep summary. This is the only
- * place the form content is ever transmitted; it's never written to our
- * database. Unlike the other senders, a failed send here is surfaced to the
- * caller (returns false) since there's no stored copy to retry from.
+ * raw answers plus an optional AI-generated prep summary. The caller also
+ * persists this as an IntakeSubmission right after a successful send, so
+ * it shows up in that client's profile in the therapist portal. Unlike the
+ * other senders, a failed send here is surfaced to the caller (returns
+ * false) so the client can be told to retry.
  */
 export async function sendIntakeSubmissionEmail({
   to,
@@ -465,7 +466,7 @@ export async function sendIntakeSubmissionEmail({
   const text = [
     `New intake form submitted by ${clientName} (${clientEmail}) for ${counselorName}.`,
     "",
-    "This information is confidential — sent only to you, never stored on our servers.",
+    "This information is confidential — sent only to you, and saved to this client's profile in your therapist portal.",
     "",
     ...(aiSummary ? ["=== AI-assisted prep summary ===", aiSummary, ""] : []),
     "=== Full intake form ===",
@@ -478,7 +479,7 @@ export async function sendIntakeSubmissionEmail({
       <h2 style="color: #1e5b73; margin: 0 0 4px;">New intake form: ${escapeHtml(clientName)}</h2>
       <p style="color: #6b7c80; font-size: 13px; margin-top: 0;">${escapeHtml(clientEmail)} · for ${escapeHtml(counselorName)}</p>
       <p style="background: #f4f8f9; border-radius: 12px; padding: 12px 16px; color: #345a63; font-size: 13px;">
-        Confidential — sent directly and only to you. Not stored on our servers, not visible to anyone else at Let It Out.
+        Confidential — sent directly and only to you, and saved to this client's profile in your therapist portal. Not visible to anyone else at Let It Out.
       </p>
       ${
         aiSummary

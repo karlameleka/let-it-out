@@ -114,8 +114,8 @@ export default function IntakeForm({
         <CheckCircle2 className="mx-auto h-12 w-12 text-brand-600" strokeWidth={1.5} />
         <h1 className="mt-4 font-display text-2xl font-semibold text-brand-900">Thank you, {clientName.split(" ")[0]}</h1>
         <p className="mt-3 text-sm text-ink/60">
-          Your intake form has been sent directly and only to {counselorName}. They&rsquo;ll review it before your
-          session — no need to do anything else.
+          Your intake form has been sent directly and only to {counselorName}, and saved to your private profile in
+          their client records. They&rsquo;ll review it before your session — no need to do anything else.
         </p>
       </Container>
     );
@@ -134,9 +134,10 @@ export default function IntakeForm({
         <ShieldCheck className="h-5 w-5 shrink-0 text-brand-600" strokeWidth={2} />
         <p className="text-sm text-ink/70">
           <strong className="text-ink/90">This is strictly confidential.</strong> Your answers are sent directly
-          and only to {counselorName}. They are never stored on our servers, never seen by anyone else at Let It
-          Out — not even our admin team — and never shared with any third party. This page itself isn&rsquo;t
-          linked anywhere in the app; only you have this link.
+          and only to {counselorName}, and saved in their private client records so they have them on hand for
+          your sessions. They are never seen by anyone else at Let It Out — not even our admin team — and never
+          shared with any third party. This page itself isn&rsquo;t linked anywhere in the app; only you have
+          this link.
         </p>
       </div>
 

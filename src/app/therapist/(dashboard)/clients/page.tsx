@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireCounselor } from "@/lib/therapist-session";
 import { getOwnCounselorWithBookings, deriveClients } from "@/lib/therapist-data";
@@ -40,7 +41,14 @@ export default async function TherapistClientsPage() {
               <tbody>
                 {clients.map((c) => (
                   <tr key={c.email} className="border-t border-brand-50">
-                    <td className="px-5 py-3 font-medium text-brand-900">{c.name}</td>
+                    <td className="px-5 py-3">
+                      <Link
+                        href={`/therapist/clients/${encodeURIComponent(c.email)}`}
+                        className="font-medium text-brand-700 underline-offset-2 hover:underline"
+                      >
+                        {c.name}
+                      </Link>
+                    </td>
                     <td className="px-5 py-3 text-ink/70">{c.email}</td>
                     <td className="px-5 py-3 text-ink/70">{c.phone}</td>
                     <td className="px-5 py-3 text-ink/70">{c.totalBookings}</td>
@@ -70,7 +78,12 @@ export default async function TherapistClientsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-display font-semibold text-brand-900">{r.name}</p>
+                      <Link
+                        href={`/therapist/clients/${encodeURIComponent(r.email)}`}
+                        className="font-display font-semibold text-brand-900 underline-offset-2 hover:underline"
+                      >
+                        {r.name}
+                      </Link>
                       <StatusBadge status={r.status} />
                     </div>
                     <p className="text-sm text-ink/60">{r.email} · {r.phone}</p>

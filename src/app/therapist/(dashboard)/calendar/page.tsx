@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { requireCounselor } from "@/lib/therapist-session";
@@ -55,9 +56,10 @@ export default async function TherapistCalendarPage() {
                 </p>
                 <div className="mt-2 space-y-2">
                   {byDate.get(date)!.map((a) => (
-                    <div
+                    <Link
                       key={`${a.kind}-${a.id}`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-4 py-3"
+                      href={`/therapist/clients/${encodeURIComponent(a.email)}`}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-4 py-3 transition-colors hover:border-brand-300"
                     >
                       <div>
                         <p className="font-medium text-brand-900">{a.name}</p>
@@ -67,7 +69,7 @@ export default async function TherapistCalendarPage() {
                         </p>
                       </div>
                       <StatusBadge status={a.status} />
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -81,16 +83,17 @@ export default async function TherapistCalendarPage() {
           <h2 className="font-display font-semibold text-brand-900">Past</h2>
           <div className="mt-3 space-y-2">
             {past.slice(0, 10).map((a) => (
-              <div
+              <Link
                 key={`${a.kind}-${a.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-4 py-3 opacity-70"
+                href={`/therapist/clients/${encodeURIComponent(a.email)}`}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-4 py-3 opacity-70 transition-colors hover:border-brand-300 hover:opacity-100"
               >
                 <div>
                   <p className="font-medium text-brand-900">{a.name}</p>
                   <p className="text-xs text-ink/50">{a.kind} · {a.date}</p>
                 </div>
                 <StatusBadge status={a.status} />
-              </div>
+              </Link>
             ))}
           </div>
         </div>
