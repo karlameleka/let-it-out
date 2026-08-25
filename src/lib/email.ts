@@ -366,6 +366,65 @@ export async function sendPasswordResetEmail({
 }
 
 /**
+ * Sends a one-click, passwordless login link for the therapist portal — an
+ * admin-triggered alternative to resetting a therapist's password just to
+ * get them back into their own account. Same fail-silently behavior as the
+ * other senders.
+ */
+export async function sendTherapistLoginLinkEmail({
+  to,
+  name,
+  loginUrl,
+}: {
+  to: string;
+  name: string;
+  loginUrl: string;
+}) {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] Skipped therapist login link email to ${to} — not configured.`);
+    return;
+  }
+
+  const text = [
+    `Hi ${name},`,
+    "",
+    "Here's a one-click link to log in to your Let It Out therapist portal — it expires in 30 minutes and can only be used once:",
+    "",
+    loginUrl,
+    "",
+    "If you didn't request this, you can safely ignore this email — your password stays unchanged.",
+    "",
+    "Warmly,\nThe Let It Out team",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+      <p>Hi ${escapeHtml(name)},</p>
+      <p>Here's a one-click link to log in to your therapist portal — it expires in 30 minutes and can only be used once.</p>
+      <p style="margin: 24px 0;">
+        <a href="${loginUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Log in to your portal</a>
+      </p>
+      <p style="color: #6b7c80; font-size: 13px;">If you didn't request this, you can safely ignore this email — your password stays unchanged.</p>
+      <p>Warmly,<br />The Let It Out team</p>
+    </div>
+  `;
+
+  try {
+    await transport.sendMail({
+      from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: "Let It Out — Your therapist portal login link",
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error(`[email] Failed to send therapist login link email to ${to}:`, err);
+  }
+}
+
+/**
  * Sent to the client right when a counseling session is requested, with a
  * link to their private intake form. Same fail-silently behavior as the
  * other senders.

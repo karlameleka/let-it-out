@@ -4,11 +4,12 @@ import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendTherapistLoginLinkEmail } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 
 const PORTAL_SETUP_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const LOGIN_LINK_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin();
@@ -283,6 +284,35 @@ export async function sendTherapistPortalSetupLink(formData: FormData) {
   revalidatePath("/admin/counselors/[id]", "page");
 }
 
+// Sends a one-click, single-use login link — for routine "get this
+// therapist back into their account" access, without touching their
+// existing password the way sendTherapistPortalSetupLink does. Requires
+// portal access (a password) to already be set up; a brand-new counselor
+// still goes through the setup-link flow once.
+export async function sendTherapistLoginLink(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const counselor = await prisma.counselor.findUnique({ where: { id: counselorId } });
+  if (!counselor || !counselor.email || !counselor.passwordHash) return;
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const loginTokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+  await prisma.counselor.update({
+    where: { id: counselor.id },
+    data: {
+      loginTokenHash,
+      loginTokenExpiresAt: new Date(Date.now() + LOGIN_LINK_TOKEN_TTL_MS),
+    },
+  });
+
+  const baseUrl = await getBaseUrl();
+  const loginUrl = `${baseUrl}/therapist/login/link?token=${rawToken}`;
+  await sendTherapistLoginLinkEmail({ to: counselor.email, name: counselor.name, loginUrl });
+
+  revalidatePath("/admin/counselors/[id]", "page");
+}
+
 export async function revokeTherapistPortalAccess(formData: FormData) {
   await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
@@ -292,6 +322,8 @@ export async function revokeTherapistPortalAccess(formData: FormData) {
       passwordHash: null,
       resetTokenHash: null,
       resetTokenExpiresAt: null,
+      loginTokenHash: null,
+      loginTokenExpiresAt: null,
       failedLoginAttempts: 0,
       lockedUntil: null,
     },

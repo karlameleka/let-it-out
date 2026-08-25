@@ -152,6 +152,14 @@ model Counselor {
   lockedUntil                DateTime?
   lastLoginAt                DateTime?
 
+  // A one-click, single-use, passwordless login link an admin can send from
+  // /admin/counselors/[id] — an alternative to sendTherapistPortalSetupLink
+  // for when the point is just getting the therapist back into their own
+  // account, not making them set a new password every time. Short TTL
+  // since it's a direct login bypass, not just a "set password" step.
+  loginTokenHash      String?   @unique
+  loginTokenExpiresAt DateTime?
+
   // Keys from CLIENT_TOOLS (therapist-toolkit.ts) this counselor has hidden
   // from their own Toolkit page — the built-in tools stay real app
   // features, just personally toggled off rather than deleted.

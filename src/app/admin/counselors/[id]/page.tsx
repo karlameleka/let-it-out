@@ -8,6 +8,7 @@ import {
   updateCounselorProfileFromAdmin,
   deleteCounselorClient,
   sendTherapistPortalSetupLink,
+  sendTherapistLoginLink,
   revokeTherapistPortalAccess,
 } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
@@ -187,6 +188,18 @@ export default async function AdminCounselorDetailPage({
             </form>
           ) : (
             <p className="text-sm text-ink/50">Set a notification email above first.</p>
+          )}
+          {counselor.email && counselor.passwordHash && (
+            <form action={sendTherapistLoginLink}>
+              <input type="hidden" name="counselorId" value={counselor.id} />
+              <button
+                type="submit"
+                title="One-click login, valid 30 minutes — doesn't change their password"
+                className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+              >
+                Send login link
+              </button>
+            </form>
           )}
           {counselor.passwordHash && (
             <form action={revokeTherapistPortalAccess}>
