@@ -11,8 +11,10 @@ import OfflineBanner from "@/components/offline-banner";
 import InitialSplash from "@/components/initial-splash";
 import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
+import AppBadgeSync from "@/components/app-badge-sync";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
+import { UnreadToolsProvider } from "@/lib/unread-tools-context";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale, dirForLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -82,21 +84,24 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <OfflineBanner message={dict.offline.bannerMessage} />
         <CurrencyProvider>
           <CartProvider>
-            <SiteHeader
-              user={user}
-              locale={locale}
-              dict={dict}
-              arabicEnabled={settings.arabicEnabled}
-            />
-            <main className="flex-1">
-              <ViewTransition name="page-content">{children}</ViewTransition>
-            </main>
-            <SiteFooter locale={locale} dict={dict.footer} />
-            <WorkshopInterestPopup />
-            <EntryGates />
-            <SerwistProvider swUrl="/serwist/sw.js" />
-            <HelpButton dict={dict.helpButton} />
-            <BottomTabBar dict={dict.nav} />
+            <UnreadToolsProvider>
+              <SiteHeader
+                user={user}
+                locale={locale}
+                dict={dict}
+                arabicEnabled={settings.arabicEnabled}
+              />
+              <main className="flex-1">
+                <ViewTransition name="page-content">{children}</ViewTransition>
+              </main>
+              <SiteFooter locale={locale} dict={dict.footer} />
+              <WorkshopInterestPopup />
+              <EntryGates />
+              <SerwistProvider swUrl="/serwist/sw.js" />
+              <HelpButton dict={dict.helpButton} />
+              <BottomTabBar dict={dict.nav} />
+              <AppBadgeSync />
+            </UnreadToolsProvider>
           </CartProvider>
         </CurrencyProvider>
       </body>

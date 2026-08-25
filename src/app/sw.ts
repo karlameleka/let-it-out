@@ -10,8 +10,21 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
+// The build sweeps /resources into the precache manifest as a static
+// build-time HTML snapshot — but precache matches are served straight from
+// that snapshot, bypassing the runtimeCaching NetworkOnly rule below
+// entirely (precache takes priority over runtime routes). For a page whose
+// content is personalized per logged-in client ("My tools"), that snapshot
+// would otherwise permanently mask new content and never clear the unread
+// badge for anyone using the installed app. Stripped out here so the
+// runtimeCaching rule is what actually decides its fetch behavior.
+const PRECACHE_EXCLUDED_URLS = new Set(["/resources"]);
+const precacheEntries = (self.__SW_MANIFEST ?? []).filter(
+  (entry) => !PRECACHE_EXCLUDED_URLS.has(typeof entry === "string" ? entry : entry.url),
+);
+
 const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
+  precacheEntries,
   skipWaiting: true,
   clientsClaim: true,
   // Left off deliberately: navigation preload races the browser's own
@@ -22,11 +35,13 @@ const serwist = new Serwist({
   navigationPreload: false,
   // Cache-first for static build assets, network-first (falling back to
   // cache) for pages/API calls — see @serwist/turbopack/worker's source
-  // for the exact per-resource-type strategy list. Booking, payment, and
-  // admin routes are carved out ahead of that: a stale cached checkout page
-  // that can't actually charge a card, or a cached admin dashboard holding
-  // someone else's data, is worse than the honest /offline fallback below —
-  // these must always hit the network, never a cache.
+  // for the exact per-resource-type strategy list. Booking, payment,
+  // admin, and resources routes are carved out ahead of that: a stale
+  // cached checkout page that can't actually charge a card, a cached admin
+  // dashboard holding someone else's data, or a stale Resources page
+  // missing a tool a therapist just sent (and not clearing the unread
+  // badge) is worse than the honest /offline fallback below — these must
+  // always hit the network, never a cache.
   runtimeCaching: [
     {
       matcher({ url: { pathname } }) {
@@ -36,7 +51,9 @@ const serwist = new Serwist({
           pathname.startsWith("/counseling/session/") ||
           pathname.startsWith("/api/checkout/") ||
           pathname.startsWith("/api/webhooks/") ||
-          pathname.startsWith("/admin")
+          pathname.startsWith("/admin") ||
+          pathname === "/resources" ||
+          pathname.startsWith("/api/my-tools/")
         );
       },
       handler: new NetworkOnly(),

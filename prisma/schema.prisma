@@ -378,6 +378,10 @@ model AssignedResource {
   // ASSIGNMENT only — set when the client marks it done from their own
   // account. Always null for the other three kinds.
   completedAt DateTime?
+  // Set the first time the client opens Resources > "My tools" after this
+  // was sent — drives the unread-count badge on the Resources tab and the
+  // installed-app icon (see client-resources.ts). Null = unread.
+  viewedAt    DateTime?
   createdAt   DateTime             @default(now())
 
   @@index([counselorId])

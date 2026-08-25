@@ -26,3 +26,17 @@ export async function toggleAssignmentComplete(formData: FormData) {
 
   revalidatePath("/resources");
 }
+
+/** Called once, client-side, when the logged-in client's "My tools" section
+ * has actually been shown to them — clears the unread badge on the
+ * Resources tab and the installed-app icon. Scoped to their own
+ * clientEmail, so it can only ever mark their own items viewed. */
+export async function markMyToolsViewed() {
+  const user = await requireUser().catch(() => null);
+  if (!user) return;
+
+  await prisma.assignedResource.updateMany({
+    where: { clientEmail: user.email, viewedAt: null },
+    data: { viewedAt: new Date() },
+  });
+}

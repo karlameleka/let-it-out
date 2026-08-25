@@ -11,6 +11,7 @@ import { getArticles } from "@/lib/content/articles";
 import { getCurrentUser } from "@/lib/session";
 import { getMyAssignedResources } from "@/lib/client-resources";
 import MyToolsItem from "./my-tools-item";
+import MyToolsViewedTracker from "./my-tools-viewed-tracker";
 
 export const metadata: Metadata = {
   title: "Resources",
@@ -124,6 +125,7 @@ export default async function ResourcesPage() {
 
   const myToolsSection = user ? (
     <section className="pt-2 pb-8 sm:py-10" key="my-tools" id="my-tools">
+      <MyToolsViewedTracker hasUnviewed={myTools.some((item) => !item.viewedAt)} />
       <Reveal>
         <Container>
           <SectionHeading eyebrow="Just for you" title="My tools" />

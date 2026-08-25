@@ -15,3 +15,9 @@ export async function getMyAssignedResources(clientEmail: string) {
 }
 
 export type MyAssignedResource = Awaited<ReturnType<typeof getMyAssignedResources>>[number];
+
+/** Drives the unread-count badge on the Resources tab and the
+ * installed-app icon (see unread-tools-context.tsx). */
+export async function getUnviewedAssignedResourceCount(clientEmail: string) {
+  return prisma.assignedResource.count({ where: { clientEmail, viewedAt: null } });
+}

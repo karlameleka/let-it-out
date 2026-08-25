@@ -27,6 +27,10 @@ type CartContextValue = {
   clear: () => void;
   count: number;
   subtotalEGP: number;
+  /** True once the initial localStorage read has completed — lets
+   * consumers (e.g. AppBadgeSync) avoid treating a transient pre-hydration
+   * count of 0 as "cart is actually empty". */
+  hydrated: boolean;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -101,30 +105,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [items],
   );
 
-  // Badging API — shows the cart count as a red notification badge on the
-  // home-screen icon when installed as a PWA. Not supported everywhere
-  // (notably desktop Safari), so this is best-effort and silently no-ops
-  // where the API doesn't exist.
-  useEffect(() => {
-    if (!hydrated) return;
-    const nav = navigator as Navigator & {
-      setAppBadge?: (count?: number) => Promise<void>;
-      clearAppBadge?: () => Promise<void>;
-    };
-    if (count > 0) {
-      nav.setAppBadge?.(count)?.catch(() => {});
-    } else {
-      nav.clearAppBadge?.()?.catch(() => {});
-    }
-  }, [count, hydrated]);
   const subtotalEGP = useMemo(
     () => items.reduce((sum, i) => sum + i.quantity * i.priceEGP, 0),
     [items],
   );
 
   const value = useMemo(
-    () => ({ items, addItem, removeItem, updateQuantity, clear, count, subtotalEGP }),
-    [items, addItem, removeItem, updateQuantity, clear, count, subtotalEGP],
+    () => ({ items, addItem, removeItem, updateQuantity, clear, count, subtotalEGP, hydrated }),
+    [items, addItem, removeItem, updateQuantity, clear, count, subtotalEGP, hydrated],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
