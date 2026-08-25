@@ -14,7 +14,13 @@ export { THERAPIST_SESSION_COOKIE, type TherapistSessionPayload };
 // therapist portal login isn't a User account, and keeping the payload
 // shapes apart avoids widening every existing requireUser()/role check in
 // the app to account for a third kind of session.
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
+//
+// Short-lived by design: once this expires (or a one-click login link from
+// sendTherapistLoginLink expires/is already used), the therapist is simply
+// redirected to /therapist/login where they can sign back in themselves
+// with their own email/password at any time — this isn't a lockout, just a
+// session boundary.
+const MAX_AGE_SECONDS = 60 * 70; // 70 minutes
 
 export async function createTherapistSession(payload: TherapistSessionPayload) {
   const token = await new SignJWT({ ...payload })
