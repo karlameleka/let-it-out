@@ -517,6 +517,78 @@ export async function sendIntakeSubmissionEmail({
   }
 }
 
+/**
+ * Notifies a therapist that a colleague has referred/looped them in on a
+ * client, via the therapist portal — same fail-silently behavior as the
+ * other senders. Deliberately doesn't embed the shared notes/intake content
+ * itself (that stays in-app only, private to the two counselors involved);
+ * this just points them to log in and review it.
+ */
+export async function sendReferralNotificationEmail({
+  to,
+  toName,
+  fromName,
+  clientName,
+  reason,
+  isFullReferral,
+  portalUrl,
+}: {
+  to: string;
+  toName: string;
+  fromName: string;
+  clientName: string;
+  reason: string;
+  isFullReferral: boolean;
+  portalUrl: string;
+}) {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] Skipped referral notification email to ${to} — not configured.`);
+    return;
+  }
+
+  const kindLabel = isFullReferral ? "referred a client to you" : "looped you in to collaborate on a client";
+
+  const text = [
+    `Hi ${toName},`,
+    "",
+    `${fromName} has ${kindLabel} — ${clientName}.`,
+    "",
+    `Reason: ${reason}`,
+    "",
+    `Log in to your therapist portal to review what they've shared: ${portalUrl}`,
+    "",
+    "Warmly,\nThe Let It Out team",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+      <p>Hi ${escapeHtml(toName)},</p>
+      <p><strong>${escapeHtml(fromName)}</strong> has ${kindLabel} — <strong>${escapeHtml(clientName)}</strong>.</p>
+      <p style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+        <strong>Reason:</strong> ${escapeHtml(reason)}
+      </p>
+      <p style="margin: 24px 0;">
+        <a href="${portalUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Review in your portal</a>
+      </p>
+      <p>Warmly,<br />The Let It Out team</p>
+    </div>
+  `;
+
+  try {
+    await transport.sendMail({
+      from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: `Let It Out — ${fromName} shared a client with you`,
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error(`[email] Failed to send referral notification email to ${to}:`, err);
+  }
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")

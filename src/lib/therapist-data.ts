@@ -137,3 +137,43 @@ export async function getClientProfile(counselorId: string, clientEmail: string)
 export type TherapistClientProfile = NonNullable<Awaited<ReturnType<typeof getClientProfile>>>;
 export type TherapistClientNote = TherapistClientProfile["notes"][number];
 export type TherapistIntakeSubmission = TherapistClientProfile["intakeSubmissions"][number];
+
+/** Every other therapist with portal access — the only people a referral
+ * can actually reach, since receiving one only means anything if you can
+ * log in and see it. */
+export async function getOtherActiveCounselors(excludeCounselorId: string) {
+  return prisma.counselor.findMany({
+    where: { active: true, id: { not: excludeCounselorId }, passwordHash: { not: null } },
+    select: { id: true, name: true, credentials: true, photoUrl: true },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getReceivedReferrals(counselorId: string) {
+  return prisma.referral.findMany({
+    where: { toCounselorId: counselorId },
+    include: { fromCounselor: { select: { name: true, photoUrl: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getSentReferrals(counselorId: string) {
+  return prisma.referral.findMany({
+    where: { fromCounselorId: counselorId },
+    include: { toCounselor: { select: { name: true, photoUrl: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export type ReferralNotesSnapshotEntry = {
+  sessionDate: string;
+  moods: string[];
+  notes: string;
+  nextSteps: string | null;
+};
+
+export type ReferralIntakeSnapshot = {
+  answers: IntakeAnswerEntry[];
+  aiSummary: string | null;
+  submittedAt: string;
+};

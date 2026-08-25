@@ -8,6 +8,7 @@ const TABS = [
   { href: "/therapist/clients", label: "Clients" },
   { href: "/therapist/calendar", label: "Calendar" },
   { href: "/therapist/toolkit", label: "Toolkit" },
+  { href: "/therapist/referrals", label: "Referrals" },
   { href: "/therapist/profile", label: "Profile & pricing" },
   { href: "/therapist/settings", label: "Settings" },
 ];

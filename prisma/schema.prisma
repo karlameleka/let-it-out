@@ -162,6 +162,8 @@ model Counselor {
   intakeSubmissions IntakeSubmission[]
   clientNotes       ClientNote[]
   toolkitItems      ToolkitItem[]
+  referralsSent     Referral[]           @relation("ReferralsSent")
+  referralsReceived Referral[]           @relation("ReferralsReceived")
 }
 
 enum AvailabilityStatus {
@@ -290,6 +292,55 @@ model ToolkitItem {
   createdAt   DateTime        @default(now())
 
   @@index([counselorId])
+}
+
+enum ReferralType {
+  // Handing the client off — the sending therapist steps back, the
+  // receiving therapist is expected to take over going forward. Purely a
+  // labeled intent: this does not reassign any booking/session data, so
+  // the sending therapist's own records and future notification routing
+  // are untouched — see the comment on Referral below.
+  FULL_REFERRAL
+  // Looping another therapist in on a shared case — the client stays with
+  // the sending therapist.
+  COLLABORATE
+}
+
+enum ReferralStatus {
+  PENDING
+  ACKNOWLEDGED
+}
+
+// An internal handoff/collaboration from one therapist to another, with an
+// explicit, point-in-time snapshot of whatever the sender chose to share —
+// never a live link into the sender's own IntakeSubmission/ClientNote rows.
+// This keeps sharing an auditable, one-time act of consent (matching the
+// "your answers are shared only with your counselor" promise made to
+// clients) rather than opening ongoing cross-counselor access to another
+// therapist's private client records.
+model Referral {
+  id              String         @id @default(cuid())
+  fromCounselor   Counselor      @relation("ReferralsSent", fields: [fromCounselorId], references: [id])
+  fromCounselorId String
+  toCounselor     Counselor      @relation("ReferralsReceived", fields: [toCounselorId], references: [id])
+  toCounselorId   String
+  clientName      String
+  clientEmail     String
+  clientPhone     String?
+  reason          String         @db.Text
+  type            ReferralType
+  status          ReferralStatus @default(PENDING)
+  // Copy of the latest IntakeSubmission (answers + aiSummary + submittedAt)
+  // at the moment of referral, or null if the sender didn't include it.
+  intakeSnapshot  Json?
+  // Copy of the specific ClientNote rows the sender chose to include:
+  // [{ sessionDate, moods, notes, nextSteps }]. Empty/absent = none shared.
+  notesSnapshot   Json?
+  createdAt       DateTime       @default(now())
+  acknowledgedAt  DateTime?
+
+  @@index([toCounselorId])
+  @@index([fromCounselorId])
 }
 
 enum SessionType {

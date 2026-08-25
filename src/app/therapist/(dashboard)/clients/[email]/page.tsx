@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import { requireCounselor } from "@/lib/therapist-session";
-import { getClientProfile, type IntakeAnswerEntry } from "@/lib/therapist-data";
+import { getClientProfile, getOtherActiveCounselors, type IntakeAnswerEntry } from "@/lib/therapist-data";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
 import ClientNoteForm from "./note-form";
 import ClientNoteItem from "./note-item";
+import ReferClientForm from "./refer-form";
 
 export default async function TherapistClientProfilePage({
   params,
@@ -17,7 +18,10 @@ export default async function TherapistClientProfilePage({
   const { email: encodedEmail } = await params;
   const email = decodeURIComponent(encodedEmail);
 
-  const client = await getClientProfile(session.counselorId, email);
+  const [client, colleagues] = await Promise.all([
+    getClientProfile(session.counselorId, email),
+    getOtherActiveCounselors(session.counselorId),
+  ]);
   if (!client) notFound();
 
   const currentNextSteps = client.notes.find((n) => n.nextSteps)?.nextSteps ?? null;
@@ -29,12 +33,22 @@ export default async function TherapistClientProfilePage({
         ← Back to clients
       </Link>
 
-      <div className="rounded-2xl border border-brand-100 bg-white p-6">
-        <h1 className="font-display text-xl font-semibold text-brand-900">{client.name}</h1>
-        <p className="text-sm text-ink/60">
-          {client.email}
-          {client.phone && ` · ${client.phone}`}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-brand-100 bg-white p-6">
+        <div>
+          <h1 className="font-display text-xl font-semibold text-brand-900">{client.name}</h1>
+          <p className="text-sm text-ink/60">
+            {client.email}
+            {client.phone && ` · ${client.phone}`}
+          </p>
+        </div>
+        <ReferClientForm
+          clientEmail={client.email}
+          clientName={client.name}
+          clientPhone={client.phone}
+          hasIntake={client.intakeSubmissions.length > 0}
+          notes={client.notes}
+          colleagues={colleagues}
+        />
       </div>
 
       {currentNextSteps && (

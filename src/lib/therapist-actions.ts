@@ -4,6 +4,9 @@ import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
 import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES } from "@/lib/therapist-toolkit";
+import { getBaseUrl } from "@/lib/base-url";
+import { sendReferralNotificationEmail } from "@/lib/email";
+import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/therapist-data";
 
 export type TherapistProfileFormState = { error?: string; success?: boolean } | undefined;
 
@@ -303,4 +306,112 @@ export async function toggleDefaultTool(formData: FormData) {
   await prisma.counselor.update({ where: { id: session.counselorId }, data: { hiddenDefaultTools: hidden } });
 
   revalidatePath("/therapist/toolkit");
+}
+
+export type ReferralFormState = { error?: string; success?: boolean } | undefined;
+
+export async function sendReferral(
+  _prevState: ReferralFormState,
+  formData: FormData,
+): Promise<ReferralFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const toCounselorId = String(formData.get("toCounselorId") ?? "").trim();
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
+  const clientPhone = String(formData.get("clientPhone") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  const type = String(formData.get("type") ?? "");
+  const includeIntake = formData.get("includeIntake") === "on";
+  const noteIds = formData.getAll("noteIds").map((v) => String(v)).filter(Boolean);
+
+  if (!toCounselorId || toCounselorId === session.counselorId) return { error: "Please pick a colleague to refer to." };
+  if (!clientEmail || !clientName) return { error: "Missing client." };
+  if (!reason) return { error: "Please explain the reason for this referral." };
+  if (type !== "FULL_REFERRAL" && type !== "COLLABORATE") return { error: "Please pick a referral type." };
+
+  // Only counselors with portal access can actually receive/see a referral.
+  const target = await prisma.counselor.findFirst({
+    where: { id: toCounselorId, active: true, passwordHash: { not: null } },
+    select: { id: true, name: true, email: true },
+  });
+  if (!target) return { error: "That colleague isn't available to receive referrals." };
+
+  // Both snapshots are built from THIS counselor's own scoped records only —
+  // never a lookup by clientEmail alone, which would leak another
+  // counselor's notes on a client of the same name/email.
+  let intakeSnapshot: ReferralIntakeSnapshot | null = null;
+  if (includeIntake) {
+    const latestIntake = await prisma.intakeSubmission.findFirst({
+      where: { counselorId: session.counselorId, clientEmail },
+      orderBy: { submittedAt: "desc" },
+    });
+    if (latestIntake) {
+      intakeSnapshot = {
+        answers: latestIntake.answers as unknown as ReferralIntakeSnapshot["answers"],
+        aiSummary: latestIntake.aiSummary,
+        submittedAt: latestIntake.submittedAt.toISOString(),
+      };
+    }
+  }
+
+  let notesSnapshot: ReferralNotesSnapshotEntry[] | null = null;
+  if (noteIds.length > 0) {
+    const notes = await prisma.clientNote.findMany({
+      where: { id: { in: noteIds }, counselorId: session.counselorId, clientEmail },
+      orderBy: { sessionDate: "desc" },
+    });
+    if (notes.length > 0) {
+      notesSnapshot = notes.map((n) => ({
+        sessionDate: n.sessionDate.toISOString(),
+        moods: n.moods,
+        notes: n.notes,
+        nextSteps: n.nextSteps,
+      }));
+    }
+  }
+
+  await prisma.referral.create({
+    data: {
+      fromCounselorId: session.counselorId,
+      toCounselorId: target.id,
+      clientName,
+      clientEmail,
+      clientPhone: clientPhone || null,
+      reason,
+      type: type as never,
+      intakeSnapshot: intakeSnapshot as never,
+      notesSnapshot: notesSnapshot as never,
+    },
+  });
+
+  if (target.email) {
+    const baseUrl = await getBaseUrl();
+    await sendReferralNotificationEmail({
+      to: target.email,
+      toName: target.name,
+      fromName: session.name,
+      clientName,
+      reason,
+      isFullReferral: type === "FULL_REFERRAL",
+      portalUrl: `${baseUrl}/therapist/referrals`,
+    });
+  }
+
+  revalidatePath("/therapist/referrals");
+  return { success: true };
+}
+
+export async function acknowledgeReferral(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const referralId = String(formData.get("referralId") ?? "");
+  await prisma.referral.updateMany({
+    where: { id: referralId, toCounselorId: session.counselorId },
+    data: { status: "ACKNOWLEDGED", acknowledgedAt: new Date() },
+  });
+
+  revalidatePath("/therapist/referrals");
 }
