@@ -14,12 +14,12 @@ import AppBadgeSync from "@/components/app-badge-sync";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { UnreadToolsProvider } from "@/lib/unread-tools-context";
+import { UpcomingProvider } from "@/lib/upcoming-context";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale, dirForLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
-import { getUpcomingItemsForUser } from "@/lib/upcoming-items";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -72,7 +72,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
   const baseDict = getDictionary(locale);
   const dict = { ...baseDict, nav: applyOverrides(baseDict.nav, "nav", textOverrides, locale) };
-  const upcomingItems = user ? await getUpcomingItemsForUser(user.email) : [];
 
   return (
     <html
@@ -86,22 +85,23 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <CurrencyProvider>
           <CartProvider>
             <UnreadToolsProvider>
-              <SiteHeader
-                user={user}
-                locale={locale}
-                dict={dict}
-                arabicEnabled={settings.arabicEnabled}
-                upcomingItems={upcomingItems}
-              />
-              <main className="flex-1">
-                <ViewTransition name="page-content">{children}</ViewTransition>
-              </main>
-              <SiteFooter locale={locale} dict={dict.footer} />
-              <EntryGates />
-              <SerwistProvider swUrl="/serwist/sw.js" />
-              <HelpButton dict={dict.helpButton} />
-              <BottomTabBar dict={dict.nav} />
-              <AppBadgeSync />
+              <UpcomingProvider>
+                <SiteHeader
+                  user={user}
+                  locale={locale}
+                  dict={dict}
+                  arabicEnabled={settings.arabicEnabled}
+                />
+                <main className="flex-1">
+                  <ViewTransition name="page-content">{children}</ViewTransition>
+                </main>
+                <SiteFooter locale={locale} dict={dict.footer} />
+                <EntryGates />
+                <SerwistProvider swUrl="/serwist/sw.js" />
+                <HelpButton dict={dict.helpButton} />
+                <BottomTabBar dict={dict.nav} />
+                <AppBadgeSync />
+              </UpcomingProvider>
             </UnreadToolsProvider>
           </CartProvider>
         </CurrencyProvider>

@@ -415,6 +415,25 @@ const en = {
     save: "Save",
     saving: "Saving…",
   },
+  upcoming: {
+    heading: "Upcoming",
+    sessionsHeading: "Your sessions",
+    noSessions: "No upcoming sessions yet.",
+    eventsHeading: "Events",
+    noEvents: "No upcoming events right now.",
+    completePayment: "Complete payment",
+    statusPendingPayment: "Pending payment",
+    statusPaid: "Paid",
+    statusPending: "Pending",
+    statusConfirmed: "Confirmed",
+    statusCancelled: "Cancelled",
+    statusCompleted: "Completed",
+    rsvpPrompt: "Will you attend?",
+    rsvpAttending: "Attending",
+    rsvpMaybe: "Maybe",
+    rsvpNotAttending: "Not attending",
+    yourResponse: "Your response",
+  },
 };
 
 export default en;

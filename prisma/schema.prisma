@@ -77,6 +77,7 @@ model User {
   orders         Order[]
   pushSubscriptions PushSubscription[]
   supportChats   SupportChat[]
+  eventRsvps     EventRSVP[]
 }
 
 enum OtpChannel {
@@ -420,14 +421,36 @@ enum BookingStatus {
 // sign-up step) — surfaced in the site header's notification bell
 // alongside that client's own upcoming counseling sessions.
 model Event {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
-  description String?  @db.Text
+  description String?     @db.Text
   startAt     DateTime
   location    String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime    @default(now())
+  rsvps       EventRSVP[]
 
   @@index([startAt])
+}
+
+enum RSVPStatus {
+  ATTENDING
+  MAYBE
+  NOT_ATTENDING
+}
+
+// One client's RSVP to a broadcast Event — surfaced to the admin on
+// /admin/events (tallies + respondent list) and the Overview dashboard.
+model EventRSVP {
+  id        String     @id @default(cuid())
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  status    RSVPStatus
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([eventId, userId])
 }
 
 model BookingRequest {

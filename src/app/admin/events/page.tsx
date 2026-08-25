@@ -1,8 +1,36 @@
 import { prisma } from "@/lib/db";
 import { createEvent, deleteEvent } from "@/lib/event-actions";
 
+const RSVP_LABELS: Record<string, string> = {
+  ATTENDING: "Attending",
+  MAYBE: "Maybe",
+  NOT_ATTENDING: "Not attending",
+};
+
+function RSVPSummary({ rsvps }: { rsvps: { status: string; user: { name: string } }[] }) {
+  if (rsvps.length === 0) {
+    return <p className="mt-2 text-xs text-ink/40">No responses yet.</p>;
+  }
+  const counts = { ATTENDING: 0, MAYBE: 0, NOT_ATTENDING: 0 } as Record<string, number>;
+  for (const r of rsvps) counts[r.status] = (counts[r.status] ?? 0) + 1;
+
+  return (
+    <div className="mt-2">
+      <p className="text-xs font-medium text-brand-700">
+        {counts.ATTENDING} attending · {counts.MAYBE} maybe · {counts.NOT_ATTENDING} not attending
+      </p>
+      <p className="mt-1 text-xs text-ink/50">
+        {rsvps.map((r) => `${r.user.name} (${RSVP_LABELS[r.status] ?? r.status})`).join(", ")}
+      </p>
+    </div>
+  );
+}
+
 export default async function AdminEventsPage() {
-  const events = await prisma.event.findMany({ orderBy: { startAt: "asc" } });
+  const events = await prisma.event.findMany({
+    orderBy: { startAt: "asc" },
+    include: { rsvps: { include: { user: { select: { name: true } } } } },
+  });
   const today = new Date();
   const upcoming = events.filter((e) => e.startAt >= today);
   const past = events.filter((e) => e.startAt < today).reverse();
@@ -93,6 +121,7 @@ export default async function AdminEventsPage() {
                     {e.location ? ` · ${e.location}` : ""}
                   </p>
                   {e.description && <p className="mt-1 text-xs text-ink/60">{e.description}</p>}
+                  <RSVPSummary rsvps={e.rsvps} />
                 </div>
                 <form action={deleteEvent}>
                   <input type="hidden" name="id" value={e.id} />

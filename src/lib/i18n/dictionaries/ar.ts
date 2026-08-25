@@ -405,6 +405,25 @@ const ar: Dictionary = {
     save: "حفظ",
     saving: "جارٍ الحفظ…",
   },
+  upcoming: {
+    heading: "القادم",
+    sessionsHeading: "جلساتك",
+    noSessions: "لا توجد جلسات قادمة بعد.",
+    eventsHeading: "الفعاليات",
+    noEvents: "لا توجد فعاليات قادمة حاليًا.",
+    completePayment: "إكمال الدفع",
+    statusPendingPayment: "بانتظار الدفع",
+    statusPaid: "مدفوعة",
+    statusPending: "قيد الانتظار",
+    statusConfirmed: "مؤكدة",
+    statusCancelled: "ملغاة",
+    statusCompleted: "مكتملة",
+    rsvpPrompt: "هل ستحضر؟",
+    rsvpAttending: "سأحضر",
+    rsvpMaybe: "ربما",
+    rsvpNotAttending: "لن أحضر",
+    yourResponse: "إجابتك",
+  },
 };
 
 export default ar;
