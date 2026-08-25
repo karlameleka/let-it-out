@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, type CSSProperties } from "react";
+import { useEffect, useReducer, useRef, type CSSProperties } from "react";
 import { Info, Play, RotateCcw, Sparkles, Square } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui";
 import {
@@ -144,6 +144,7 @@ function reducer(state: State, action: Action): State {
 
 export default function BreathingTool() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch({ type: "HYDRATE_COUNT", count: Number(window.localStorage.getItem(STORAGE_KEY) ?? "0") });
@@ -155,10 +156,19 @@ export default function BreathingTool() {
     return () => clearInterval(id);
   }, [state.stage]);
 
+  // The setup card is much taller than the active view — collapsing it
+  // otherwise leaves the page scrolled past the exercise, since the browser
+  // keeps the same scroll offset while the content above it shrinks.
+  useEffect(() => {
+    if (state.stage === "active") {
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [state.stage]);
+
   const currentPhase = state.pattern.phases[state.phaseIndex];
 
   return (
-    <div className="overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
+    <div ref={containerRef} className="overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
       {state.stage === "setup" && (
         <div className="p-6 sm:p-8">
           <div className="flex items-start gap-2.5 rounded-xl bg-brand-50/70 p-4 text-sm text-ink/70">
