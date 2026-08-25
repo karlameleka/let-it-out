@@ -78,6 +78,7 @@ model User {
   pushSubscriptions PushSubscription[]
   supportChats   SupportChat[]
   eventRsvps     EventRSVP[]
+  notificationReads NotificationRead[]
 }
 
 enum OtpChannel {
@@ -183,6 +184,7 @@ enum AvailabilityStatus {
 enum SessionBookingStatus {
   PENDING_PAYMENT
   CONFIRMED
+  CANCELLED
 }
 
 // A paid pre-booking step for counselors with priceEGP set. When the
@@ -451,6 +453,20 @@ model EventRSVP {
   updatedAt DateTime   @updatedAt
 
   @@unique([eventId, userId])
+}
+
+// Marks one /upcoming row (a session, request, or event — keyed by the
+// same "session-<id>"/"request-<id>"/"event-<id>" id used throughout
+// upcoming-items.ts) as opened by this client, so the bell badge only
+// counts what they haven't seen yet.
+model NotificationRead {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  itemId    String
+  readAt    DateTime @default(now())
+
+  @@unique([userId, itemId])
 }
 
 model BookingRequest {

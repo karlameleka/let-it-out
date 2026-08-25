@@ -27,14 +27,20 @@ export default async function SessionBookingPage({
           {t.sessionWith} {booking.counselor.name}
         </p>
         <h1 className="mt-1 font-display text-3xl font-medium text-brand-900">
-          {booking.status !== "CONFIRMED"
-            ? t.titlePending
-            : booking.preferredTime
-              ? t.titleConfirmedWithTime
-              : t.titleConfirmed}
+          {booking.status === "CANCELLED"
+            ? t.titleCancelled
+            : booking.status !== "CONFIRMED"
+              ? t.titlePending
+              : booking.preferredTime
+                ? t.titleConfirmedWithTime
+                : t.titleConfirmed}
         </h1>
-        <p className="mt-2 inline-flex rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700">
-          {booking.status === "CONFIRMED" ? t.pillConfirmed : t.pillPending}
+        <p
+          className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-medium ${
+            booking.status === "CANCELLED" ? "bg-ink/10 text-ink/60" : "bg-brand-50 text-brand-700"
+          }`}
+        >
+          {booking.status === "CANCELLED" ? t.pillCancelled : booking.status === "CONFIRMED" ? t.pillConfirmed : t.pillPending}
         </p>
 
         <div className="mt-8 rounded-2xl border border-brand-100 bg-white p-6">
@@ -89,6 +95,13 @@ export default async function SessionBookingPage({
           <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
             <h2 className="font-display font-semibold text-brand-900">{t.pickTimeHeading}</h2>
             <p className="mt-1 text-sm text-ink/60">{t.pickTimeText}</p>
+          </div>
+        )}
+
+        {booking.status === "CANCELLED" && (
+          <div className="mt-8 rounded-2xl border border-ink/10 bg-ink/5 p-6">
+            <h2 className="font-display font-semibold text-brand-900">{t.titleCancelled}</h2>
+            <p className="mt-1 text-sm text-ink/60">{t.cancelledText}</p>
           </div>
         )}
       </div>

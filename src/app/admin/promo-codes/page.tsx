@@ -18,7 +18,7 @@ export default async function AdminPromoCodesPage() {
     }),
     prisma.sessionBooking.groupBy({
       by: ["promoCodeId"],
-      where: { promoCodeId: { not: null }, status: { not: "PENDING_PAYMENT" } },
+      where: { promoCodeId: { not: null }, status: "CONFIRMED" },
       _sum: { discountEGP: true, priceEGP: true },
       _count: { _all: true },
     }),

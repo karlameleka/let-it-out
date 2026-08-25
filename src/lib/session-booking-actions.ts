@@ -86,6 +86,7 @@ export async function createSessionBooking(
         counselorId: counselor.id,
         preferredDate: parsed.data.preferredDate,
         preferredTime: parsed.data.preferredTime,
+        status: { not: "CANCELLED" },
       },
     });
     if (clash) return { error: "That time was just taken — please pick another slot." };
@@ -169,7 +170,7 @@ export async function createSessionBooking(
     subject: "Complete your payment to book your session",
     intro: booking.preferredTime
       ? `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
-      : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to unlock the scheduler and pick your exact session time.`,
+      : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} — we'll confirm your exact session time with you afterward.`,
     lines: [
       { label: "Counselor", value: counselor.name },
       { label: "Preferred day", value: booking.preferredDate },

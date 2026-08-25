@@ -35,7 +35,7 @@ export async function getAvailableSlots(counselorId: string): Promise<AvailableS
       select: { preferredDate: true, preferredTime: true },
     }),
     prisma.sessionBooking.findMany({
-      where: { counselorId, preferredTime: { not: null } },
+      where: { counselorId, preferredTime: { not: null }, status: { not: "CANCELLED" } },
       select: { preferredDate: true, preferredTime: true },
     }),
   ]);

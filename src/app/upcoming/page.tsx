@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale } from "@/lib/i18n/locale";
@@ -7,13 +6,16 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { getUpcomingPageData } from "@/lib/upcoming-items";
 import { formatSlotTime } from "@/lib/format-slot";
 import { Container, Eyebrow } from "@/components/ui";
-import RSVPButtons from "./rsvp-buttons";
+import SessionRow from "./session-row";
+import EventRow from "./event-row";
+import MarkAllReadButton from "./mark-all-read-button";
 
 export const metadata: Metadata = { title: "Upcoming" };
 
 const SESSION_STATUS_KEYS: Record<string, string> = {
   PENDING_PAYMENT: "statusPendingPayment",
   CONFIRMED: "statusPaid",
+  CANCELLED: "statusCancelled",
 };
 
 const REQUEST_STATUS_KEYS: Record<string, string> = {
@@ -44,6 +46,7 @@ export default async function UpcomingPage() {
     day: "numeric",
     month: "short",
   });
+  const t2 = t as unknown as Record<string, string>;
 
   return (
     <Container className="py-10 sm:py-14">
@@ -58,29 +61,26 @@ export default async function UpcomingPage() {
           <div className="mt-4 space-y-3">
             {sessions.map((s) => {
               const statusKey = s.kind === "paid" ? SESSION_STATUS_KEYS[s.status] : REQUEST_STATUS_KEYS[s.status];
-              const statusLabel = statusKey ? (t as unknown as Record<string, string>)[statusKey] : s.status;
-              const row = (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-white p-5">
-                  <div>
-                    <p className="font-medium text-brand-900">Session with {s.counselorName}</p>
-                    <p className="mt-1 text-sm text-ink/60">
-                      {dateFormatter.format(new Date(`${s.date}T00:00:00`))}
-                      {s.time && s.kind === "paid" ? ` · ${formatSlotTime(s.time, locale)}` : s.time ? ` · ${s.time}` : ""}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[s.status] ?? "bg-ink/10 text-ink/60"}`}
-                  >
-                    {statusLabel}
-                  </span>
-                </div>
-              );
-              return s.href ? (
-                <Link key={s.id} href={s.href} className="block transition-opacity hover:opacity-80">
-                  {row}
-                </Link>
-              ) : (
-                <div key={s.id}>{row}</div>
+              const statusLabel = statusKey ? t2[statusKey] : s.status;
+              const dateTimeLabel =
+                dateFormatter.format(new Date(`${s.date}T00:00:00`)) +
+                (s.time && s.kind === "paid" ? ` · ${formatSlotTime(s.time, locale)}` : s.time ? ` · ${s.time}` : "");
+              return (
+                <SessionRow
+                  key={s.id}
+                  itemId={s.id}
+                  bookingId={s.bookingId}
+                  kind={s.kind}
+                  href={s.href}
+                  title={`Session with ${s.counselorName}`}
+                  dateTimeLabel={dateTimeLabel}
+                  statusLabel={statusLabel}
+                  statusClassName={STATUS_STYLES[s.status] ?? "bg-ink/10 text-ink/60"}
+                  canCancel={s.canCancel}
+                  read={s.read}
+                  cancelLabel={t.cancel}
+                  cancellingLabel={t.cancelling}
+                />
               );
             })}
           </div>
@@ -93,26 +93,35 @@ export default async function UpcomingPage() {
           <p className="mt-3 text-sm text-ink/60">{t.noEvents}</p>
         ) : (
           <div className="mt-4 space-y-3">
-            {events.map((e) => (
-              <div key={e.id} className="rounded-2xl border border-brand-100 bg-white p-5">
-                <p className="font-medium text-brand-900">{e.title}</p>
-                <p className="mt-1 text-sm text-ink/60">
-                  {dateFormatter.format(new Date(`${e.date}T00:00:00`))} ·{" "}
-                  {new Date(`${e.date}T${e.time}:00`).toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-GB", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  {e.location ? ` · ${e.location}` : ""}
-                </p>
-                {e.description && <p className="mt-2 text-sm text-ink/70">{e.description}</p>}
-                <div className="mt-4">
-                  <RSVPButtons eventId={e.id} current={e.myRsvp} dict={t} />
-                </div>
-              </div>
-            ))}
+            {events.map((e) => {
+              const dateTimeLabel = `${dateFormatter.format(new Date(`${e.date}T00:00:00`))} · ${new Date(
+                `${e.date}T${e.time}:00`,
+              ).toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-GB", { hour: "2-digit", minute: "2-digit" })}${
+                e.location ? ` · ${e.location}` : ""
+              }`;
+              return (
+                <EventRow
+                  key={e.id}
+                  itemId={e.id}
+                  eventId={e.id}
+                  title={e.title}
+                  dateTimeLabel={dateTimeLabel}
+                  description={e.description}
+                  myRsvp={e.myRsvp}
+                  read={e.read}
+                  dict={t}
+                />
+              );
+            })}
           </div>
         )}
       </div>
+
+      {(sessions.length > 0 || events.length > 0) && (
+        <div className="mt-10 flex justify-center border-t border-brand-100 pt-8">
+          <MarkAllReadButton label={t.markAllRead} />
+        </div>
+      )}
     </Container>
   );
 }
