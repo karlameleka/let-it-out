@@ -14,8 +14,12 @@ function pad(n: number) {
  * Slices a counselor's recurring weekly windows (CounselorAvailability)
  * into concrete 50-minute slots for the next two weeks, greedily packed
  * from each window's start time, excluding times already taken by a
- * non-cancelled booking. Returns [] for a counselor with no windows set up
- * yet — callers fall back to the free-text request form in that case.
+ * non-cancelled BookingRequest or a SessionBooking. Returns [] for a
+ * counselor with no windows set up yet — callers fall back to a free-text
+ * request/day-only picker in that case. A counselor only ever uses one of
+ * BookingRequest or SessionBooking depending on which flow applies to
+ * them, but checking both is cheap and keeps this correct regardless of
+ * how a counselor's config has changed over time.
  *
  * Like the rest of this app, dates/times are plain Cairo-local values with
  * no timezone conversion (see todayISO() in therapist-data.ts) — "now" is
@@ -25,11 +29,19 @@ export async function getAvailableSlots(counselorId: string): Promise<AvailableS
   const windows = await prisma.counselorAvailability.findMany({ where: { counselorId } });
   if (windows.length === 0) return [];
 
-  const booked = await prisma.bookingRequest.findMany({
-    where: { counselorId, status: { not: "CANCELLED" } },
-    select: { preferredDate: true, preferredTime: true },
-  });
-  const taken = new Set(booked.map((b) => `${b.preferredDate}T${b.preferredTime}`));
+  const [bookingRequests, sessionBookings] = await Promise.all([
+    prisma.bookingRequest.findMany({
+      where: { counselorId, status: { not: "CANCELLED" } },
+      select: { preferredDate: true, preferredTime: true },
+    }),
+    prisma.sessionBooking.findMany({
+      where: { counselorId, preferredTime: { not: null } },
+      select: { preferredDate: true, preferredTime: true },
+    }),
+  ]);
+  const taken = new Set(
+    [...bookingRequests, ...sessionBookings].map((b) => `${b.preferredDate}T${b.preferredTime}`),
+  );
 
   const now = new Date();
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();

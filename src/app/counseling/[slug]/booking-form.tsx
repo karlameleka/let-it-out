@@ -5,6 +5,7 @@ import { submitBookingRequest } from "@/lib/booking-actions";
 import { Button } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
+import { formatSlotTime } from "@/lib/format-slot";
 import PrivacyBadge from "@/components/privacy-badge";
 
 const inputClass =
@@ -12,14 +13,6 @@ const inputClass =
 const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
 export type BookingSlot = { date: string; time: string };
-
-function formatSlotTime(time: string, locale: Locale) {
-  const [h, m] = time.split(":").map(Number);
-  const end = new Date(2000, 0, 1, h, m + 50);
-  const fmt = (d: Date) =>
-    d.toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-GB", { hour: "numeric", minute: "2-digit" });
-  return `${fmt(new Date(2000, 0, 1, h, m))} – ${fmt(end)}`;
-}
 
 export default function BookingForm({
   counselorId,

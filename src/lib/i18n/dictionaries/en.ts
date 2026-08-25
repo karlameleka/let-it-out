@@ -218,6 +218,7 @@ const en = {
     bookHeading: "Book a session",
     bookDescription:
       "Pick a day and pay below, then choose your exact time slot and get your video link right away.",
+    bookDescriptionWithSlots: "Pick your session time and pay below — you'll get your video link right away.",
     calBookHeading: "Book a session",
     calBookDescription: "Pick an open slot below and get your video link right away.",
     requestHeading: "Request a session",
@@ -275,6 +276,9 @@ const en = {
     pickTimeHeading: "Pick your session time",
     pickTimeText:
       "Sessions run 50 minutes over video call. Pick an open slot below — you'll get a confirmation with your video link right away.",
+    time: "Time",
+    titleConfirmedWithTime: "You're all set!",
+    confirmedWithTimeText: "Your session is booked — you'll get a confirmation with your video link by email ahead of time.",
   },
   workshops: {
     ribbon: "Trainings and Workshops",

@@ -14,6 +14,10 @@ const createSessionBookingSchema = z.object({
   email: z.string().trim().email("Please enter a valid email."),
   phone: z.string().trim().min(5, "Please enter a valid phone number."),
   preferredDate: z.string().trim().min(1, "Please choose a preferred day."),
+  // Set when picked from the in-app slot picker (counselor has
+  // CounselorAvailability windows configured) — empty/omitted for the
+  // day-only fallback, where Cal.com finalizes the exact time post-payment.
+  preferredTime: z.string().trim().optional(),
   promoCode: z.string().trim().optional(),
 });
 
@@ -72,6 +76,21 @@ export async function createSessionBooking(
     return { error: "This counselor isn't available for online booking right now." };
   }
 
+  // A real slot from the in-app picker is a commitment being paid for —
+  // re-check server-side that nobody else grabbed it in the moment between
+  // this client loading the page and submitting, since the client-side
+  // list could be stale.
+  if (parsed.data.preferredTime) {
+    const clash = await prisma.sessionBooking.findFirst({
+      where: {
+        counselorId: counselor.id,
+        preferredDate: parsed.data.preferredDate,
+        preferredTime: parsed.data.preferredTime,
+      },
+    });
+    if (clash) return { error: "That time was just taken — please pick another slot." };
+  }
+
   let discountEGP = 0;
   let promoCodeId: string | null = null;
   if (parsed.data.promoCode) {
@@ -89,6 +108,7 @@ export async function createSessionBooking(
         email: parsed.data.email,
         phone: parsed.data.phone,
         preferredDate: parsed.data.preferredDate,
+        preferredTime: parsed.data.preferredTime || null,
         priceEGP: counselor.priceEGP!,
         promoCodeId,
         discountEGP,
@@ -101,7 +121,10 @@ export async function createSessionBooking(
   });
 
   const finalPriceEGP = counselor.priceEGP - discountEGP;
-  const notes = `Counselor: ${counselor.name}\nPreferred day: ${booking.preferredDate}\nPrice: ${formatEGP(finalPriceEGP)}${discountEGP > 0 ? ` (${formatEGP(counselor.priceEGP)} - ${formatEGP(discountEGP)} promo)` : ""}`;
+  const dateTimeLine = booking.preferredTime
+    ? `Session time: ${booking.preferredDate} at ${booking.preferredTime}`
+    : `Preferred day: ${booking.preferredDate}`;
+  const notes = `Counselor: ${counselor.name}\n${dateTimeLine}\nPrice: ${formatEGP(finalPriceEGP)}${discountEGP > 0 ? ` (${formatEGP(counselor.priceEGP)} - ${formatEGP(discountEGP)} promo)` : ""}`;
 
   await createLead({
     name: booking.name,
@@ -134,6 +157,7 @@ export async function createSessionBooking(
       { label: "Phone", value: booking.phone },
       { label: "Counselor", value: counselor.name },
       { label: "Preferred day", value: booking.preferredDate },
+      ...(booking.preferredTime ? [{ label: "Time", value: booking.preferredTime }] : []),
       { label: "Price", value: formatEGP(finalPriceEGP) },
     ],
     extraRecipients: [counselor.email],
@@ -143,10 +167,13 @@ export async function createSessionBooking(
     to: booking.email,
     name: booking.name,
     subject: "Complete your payment to book your session",
-    intro: `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to unlock the scheduler and pick your exact session time.`,
+    intro: booking.preferredTime
+      ? `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
+      : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to unlock the scheduler and pick your exact session time.`,
     lines: [
       { label: "Counselor", value: counselor.name },
       { label: "Preferred day", value: booking.preferredDate },
+      ...(booking.preferredTime ? [{ label: "Time", value: booking.preferredTime }] : []),
       { label: "Price", value: formatEGP(finalPriceEGP) },
     ],
   });

@@ -28,7 +28,11 @@ export default async function SessionBookingPage({
           {t.sessionWith} {booking.counselor.name}
         </p>
         <h1 className="mt-1 font-display text-3xl font-medium text-brand-900">
-          {booking.status === "CONFIRMED" ? t.titleConfirmed : t.titlePending}
+          {booking.status !== "CONFIRMED"
+            ? t.titlePending
+            : booking.preferredTime
+              ? t.titleConfirmedWithTime
+              : t.titleConfirmed}
         </h1>
         <p className="mt-2 inline-flex rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700">
           {booking.status === "CONFIRMED" ? t.pillConfirmed : t.pillPending}
@@ -39,6 +43,12 @@ export default async function SessionBookingPage({
             <span className="text-ink/70">{t.preferredDay}</span>
             <span className="font-medium">{booking.preferredDate}</span>
           </div>
+          {booking.preferredTime && (
+            <div className="mt-2 flex justify-between text-sm">
+              <span className="text-ink/70">{t.time}</span>
+              <span className="font-medium">{booking.preferredTime}</span>
+            </div>
+          )}
           {booking.discountEGP > 0 && (
             <>
               <div className="mt-2 flex justify-between border-t border-brand-100 pt-2 text-sm">
@@ -67,7 +77,14 @@ export default async function SessionBookingPage({
           </div>
         )}
 
-        {booking.status === "CONFIRMED" && booking.counselor.bookingUrl && (
+        {booking.status === "CONFIRMED" && booking.preferredTime && (
+          <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
+            <h2 className="font-display font-semibold text-brand-900">{t.titleConfirmedWithTime}</h2>
+            <p className="mt-1 text-sm text-ink/60">{t.confirmedWithTimeText}</p>
+          </div>
+        )}
+
+        {booking.status === "CONFIRMED" && !booking.preferredTime && booking.counselor.bookingUrl && (
           <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
             <h2 className="font-display font-semibold text-brand-900">{t.pickTimeHeading}</h2>
             <p className="mt-1 text-sm text-ink/60">{t.pickTimeText}</p>

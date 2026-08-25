@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOffline } from "next/offline";
 import { createSessionBooking, checkCounselingPromoCode } from "@/lib/session-booking-actions";
 import { formatEGP } from "@/lib/format";
 import PaymentSelector from "@/components/PaymentSelector";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
+import { formatSlotTime } from "@/lib/format-slot";
 import PrivacyBadge from "@/components/privacy-badge";
 
 const inputClass =
@@ -15,18 +17,24 @@ const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+export type SessionSlot = { date: string; time: string };
+
 export default function SessionBookingFlow({
   counselorId,
   counselorName,
   priceEGP,
   dict,
+  locale,
   account,
+  slots = [],
 }: {
   counselorId: string;
   counselorName: string;
   priceEGP: number;
   dict: Dictionary;
+  locale: Locale;
   account?: { name: string; email: string; phone: string | null } | null;
+  slots?: SessionSlot[];
 }) {
   const t = dict.counselorProfile;
   const f = dict.forms;
@@ -38,6 +46,18 @@ export default function SessionBookingFlow({
   const [sessionBookingId, setSessionBookingId] = useState<string | null>(null);
   const [finalPriceEGP, setFinalPriceEGP] = useState(priceEGP);
   const [promoInput, setPromoInput] = useState("");
+
+  const usingSlots = slots.length > 0;
+  const byDate = useMemo(() => {
+    const map = new Map<string, SessionSlot[]>();
+    for (const slot of slots) {
+      map.set(slot.date, [...(map.get(slot.date) ?? []), slot]);
+    }
+    return map;
+  }, [slots]);
+  const dates = [...byDate.keys()];
+  const [selectedDate, setSelectedDate] = useState(dates[0]);
+  const [selectedSlot, setSelectedSlot] = useState<SessionSlot | null>(slots[0] ?? null);
   const [promoApplied, setPromoApplied] = useState<{ code: string; discountEGP: number; label: string } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoChecking, setPromoChecking] = useState(false);
@@ -66,6 +86,11 @@ export default function SessionBookingFlow({
     e.preventDefault();
     if (!e.currentTarget.reportValidity()) return;
 
+    if (usingSlots && !selectedSlot) {
+      setError(dict.bookingForm.pickTimeHeading);
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
 
     // createSessionBooking is a Server Action — with experimental.useOffline
@@ -85,7 +110,8 @@ export default function SessionBookingFlow({
       name: String(formData.get("name") || ""),
       email: String(formData.get("email") || ""),
       phone: String(formData.get("phone") || ""),
-      preferredDate: String(formData.get("preferredDate") || ""),
+      preferredDate: usingSlots ? (selectedSlot?.date ?? "") : String(formData.get("preferredDate") || ""),
+      preferredTime: usingSlots ? (selectedSlot?.time ?? "") : undefined,
       promoCode: promoApplied?.code,
     });
 
@@ -210,18 +236,64 @@ export default function SessionBookingFlow({
           <input id="phone" name="phone" type="tel" required className={inputClass} />
         </div>
       )}
-      <div>
-        <label className={labelClass} htmlFor="preferredDate">{t.preferredDay}</label>
-        <input
-          id="preferredDate"
-          name="preferredDate"
-          type="date"
-          min={todayISO()}
-          required
-          className={inputClass}
-        />
-        <p className="mt-1 text-xs text-ink/45">{t.preferredDayHint}</p>
-      </div>
+      {usingSlots ? (
+        <div>
+          <label className={labelClass}>{dict.bookingForm.pickTimeHeading}</label>
+          <div className="flex flex-wrap gap-2">
+            {dates.map((date) => (
+              <button
+                key={date}
+                type="button"
+                onClick={() => {
+                  setSelectedDate(date);
+                  setSelectedSlot(byDate.get(date)![0]);
+                }}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  selectedDate === date
+                    ? "bg-brand-700 text-white"
+                    : "border border-brand-200 text-ink/60 hover:bg-brand-50"
+                }`}
+              >
+                {new Date(`${date}T00:00:00`).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                })}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(byDate.get(selectedDate ?? "") ?? []).map((slot) => (
+              <button
+                key={slot.time}
+                type="button"
+                onClick={() => setSelectedSlot(slot)}
+                className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                  selectedSlot?.date === slot.date && selectedSlot?.time === slot.time
+                    ? "border-brand-700 bg-brand-700 text-white"
+                    : "border-brand-200 text-ink/70 hover:bg-brand-50"
+                }`}
+              >
+                {formatSlotTime(slot.time, locale)}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-ink/45">{dict.bookingForm.pickTimeHint}</p>
+        </div>
+      ) : (
+        <div>
+          <label className={labelClass} htmlFor="preferredDate">{t.preferredDay}</label>
+          <input
+            id="preferredDate"
+            name="preferredDate"
+            type="date"
+            min={todayISO()}
+            required
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-ink/45">{t.preferredDayHint}</p>
+        </div>
+      )}
       {error && <p className="text-sm text-red-600">{error}</p>}
       <PrivacyBadge text={dict.privacyBadge.booking} />
       <button

@@ -189,8 +189,12 @@ enum SessionBookingStatus {
 }
 
 // A paid pre-booking step for counselors with both bookingUrl and priceEGP
-// set: the visitor picks a preferred day and pays here first, then the
-// Cal.com embed unlocks so they can pick their exact time slot.
+// set. When the counselor has weekly availability windows configured (see
+// CounselorAvailability), the visitor picks a real 50-minute slot in-app
+// and pays — preferredTime is set, no Cal.com involved. Counselors without
+// windows configured yet fall back to the original flow: pick a preferred
+// day, pay, then the Cal.com embed unlocks post-payment to pick the exact
+// time (preferredTime stays null for those rows).
 model SessionBooking {
   id            String               @id @default(cuid())
   counselor     Counselor            @relation(fields: [counselorId], references: [id])
@@ -199,6 +203,10 @@ model SessionBooking {
   email         String
   phone         String
   preferredDate String
+  // "HH:mm", 24-hour, set only when picked from the in-app slot picker —
+  // null means this booking used the pre-slot-picker fallback (preferred
+  // day only, Cal.com finalizes the exact time after payment).
+  preferredTime String?
   // Full session price before any discount — the amount actually charged
   // is priceEGP - discountEGP.
   priceEGP      Int

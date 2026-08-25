@@ -213,6 +213,7 @@ const ar: Dictionary = {
   counselorProfile: {
     bookHeading: "احجز جلسة",
     bookDescription: "اختر يومك وادفع أدناه، ثم حدد موعدك الدقيق واحصل على رابط الفيديو فورًا.",
+    bookDescriptionWithSlots: "اختر موعد جلستك وادفع أدناه — وستحصل على رابط الفيديو فورًا.",
     calBookHeading: "احجز جلسة",
     calBookDescription: "اختر موعدًا متاحًا أدناه واحصل على رابط الفيديو فورًا.",
     requestHeading: "اطلب جلسة",
@@ -269,6 +270,9 @@ const ar: Dictionary = {
     pickTimeHeading: "اختر موعد جلستك",
     pickTimeText:
       "تستمر الجلسات 50 دقيقة عبر مكالمة فيديو. اختر موعدًا متاحًا أدناه — وستحصل على تأكيد برابط الفيديو فورًا.",
+    time: "الوقت",
+    titleConfirmedWithTime: "كل شيء جاهز!",
+    confirmedWithTimeText: "تم حجز جلستك — ستصلك رسالة تأكيد برابط الفيديو عبر البريد الإلكتروني قبل الموعد.",
   },
   workshops: {
     ribbon: "تدريبات وورش عمل",

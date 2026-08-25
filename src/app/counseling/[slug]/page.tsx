@@ -39,7 +39,10 @@ export default async function CounselorPage({
   const dict = getDictionary(locale);
   const t = dict.counselorProfile;
   const account = session ? { name: session.name, email: session.email, phone: session.phone } : null;
-  const slots = counselor.bookingUrl ? [] : await getAvailableSlots(counselor.id);
+  // Needed for the pay-first flow (bookingUrl + priceEGP) and the manual
+  // request-form flow (neither set) — skipped only for the pure
+  // direct-Cal.com flow (bookingUrl, no price), which doesn't use it.
+  const slots = counselor.bookingUrl && !counselor.priceEGP ? [] : await getAvailableSlots(counselor.id);
 
   return (
     <section className="pt-6 pb-10 sm:pt-14 sm:pb-20">
@@ -135,14 +138,18 @@ export default async function CounselorPage({
                 <h2 className="font-display text-lg font-semibold text-brand-900">
                   {t.bookHeading}
                 </h2>
-                <p className="mt-1 text-sm text-ink/60">{t.bookDescription}</p>
+                <p className="mt-1 text-sm text-ink/60">
+                  {slots.length > 0 ? t.bookDescriptionWithSlots : t.bookDescription}
+                </p>
                 <div className="mt-4">
                   <SessionBookingFlow
                     counselorId={counselor.id}
                     counselorName={counselor.name}
                     priceEGP={counselor.priceEGP}
                     dict={dict}
+                    locale={locale}
                     account={account}
+                    slots={slots}
                   />
                 </div>
               </>
