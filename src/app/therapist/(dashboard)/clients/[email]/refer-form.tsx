@@ -137,7 +137,16 @@ export default function ReferClientForm({
   // stale "Referral sent." from a previous submission.
   const [instance, setInstance] = useState(0);
 
-  if (colleagues.length === 0) return null;
+  if (colleagues.length === 0) {
+    return (
+      <p
+        title="Once a colleague sets up their own portal login, they'll appear here as someone you can refer clients to."
+        className="max-w-[240px] rounded-full border border-dashed border-brand-200 px-4 py-2 text-right text-xs text-ink/40"
+      >
+        No colleagues with portal access yet to refer to
+      </p>
+    );
+  }
 
   if (!open) {
     return (
