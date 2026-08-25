@@ -136,6 +136,21 @@ model Counselor {
   // WAITLIST/UNAVAILABLE both show a badge and hide the booking form.
   availabilityStatus AvailabilityStatus @default(AVAILABLE)
 
+  // Self-service therapist portal login (/therapist). Null passwordHash
+  // means portal access hasn't been set up yet for this counselor — an
+  // admin sends a setup link from /admin/counselors/[id], which uses the
+  // same reset-token flow as an ordinary password reset. Same
+  // brute-force-lockout shape as User (see auth-actions.ts) — kept as
+  // separate columns rather than merging into the User table since a
+  // counselor isn't a client account and has no signup flow of its own.
+  passwordHash               String?
+  resetTokenHash             String?   @unique
+  resetTokenExpiresAt        DateTime?
+  lastPasswordResetRequestAt DateTime?
+  failedLoginAttempts        Int       @default(0)
+  lockedUntil                DateTime?
+  lastLoginAt                DateTime?
+
   bookingRequests BookingRequest[]
   sessionBookings SessionBooking[]
   promoCodes      PromoCodeCounselor[]

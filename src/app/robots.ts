@@ -11,6 +11,8 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       disallow: [
         "/admin",
         "/admin/*",
+        "/therapist",
+        "/therapist/*",
         "/account",
         "/journal",
         "/journal/*",

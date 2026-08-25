@@ -1,8 +1,13 @@
 "use server";
 
+import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { sendPasswordResetEmail } from "@/lib/email";
+import { getBaseUrl } from "@/lib/base-url";
+
+const PORTAL_SETUP_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin();
@@ -195,4 +200,87 @@ export async function updateCounselorDetails(formData: FormData) {
   revalidatePath("/counseling");
   revalidatePath("/counseling/[slug]", "page");
   revalidatePath("/");
+}
+
+export async function updateCounselorProfileFromAdmin(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const name = String(formData.get("name") ?? "").trim();
+  const credentials = String(formData.get("credentials") ?? "").trim();
+  const bio = String(formData.get("bio") ?? "").trim();
+  const specialties = String(formData.get("specialties") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const languages = String(formData.get("languages") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const bookingUrlRaw = String(formData.get("bookingUrl") ?? "").trim();
+  const photoUrlRaw = String(formData.get("photoUrl") ?? "").trim();
+
+  if (!name || !credentials || !bio) return;
+
+  await prisma.counselor.update({
+    where: { id: counselorId },
+    data: {
+      name,
+      credentials,
+      bio,
+      specialties,
+      languages,
+      bookingUrl: bookingUrlRaw || null,
+      ...(photoUrlRaw ? { photoUrl: photoUrlRaw } : {}),
+    },
+  });
+  revalidatePath("/admin/counselors");
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
+  revalidatePath("/counseling/[slug]", "page");
+  revalidatePath("/");
+}
+
+// Sends a "set up your portal password" link — the same reset-token
+// mechanism as an ordinary forgot-password flow, so no plaintext password
+// ever passes through the admin's hands. Requires a notification email to
+// already be on file for the counselor.
+export async function sendTherapistPortalSetupLink(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const counselor = await prisma.counselor.findUnique({ where: { id: counselorId } });
+  if (!counselor || !counselor.email) return;
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const resetTokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+  await prisma.counselor.update({
+    where: { id: counselor.id },
+    data: {
+      resetTokenHash,
+      resetTokenExpiresAt: new Date(Date.now() + PORTAL_SETUP_TOKEN_TTL_MS),
+      lastPasswordResetRequestAt: new Date(),
+    },
+  });
+
+  const baseUrl = await getBaseUrl();
+  const resetUrl = `${baseUrl}/therapist/reset-password?token=${rawToken}`;
+  await sendPasswordResetEmail({ to: counselor.email, name: counselor.name, resetUrl });
+
+  revalidatePath("/admin/counselors/[id]", "page");
+}
+
+export async function revokeTherapistPortalAccess(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  await prisma.counselor.update({
+    where: { id: counselorId },
+    data: {
+      passwordHash: null,
+      resetTokenHash: null,
+      resetTokenExpiresAt: null,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    },
+  });
+  revalidatePath("/admin/counselors/[id]", "page");
 }

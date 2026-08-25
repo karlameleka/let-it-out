@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/session-edge";
+import { THERAPIST_SESSION_COOKIE, verifyTherapistSessionToken } from "@/lib/therapist-session-edge";
+
+// /therapist/login, /forgot-password, /reset-password stay public — every
+// other /therapist route is the gated portal.
+const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password", "/therapist/reset-password"];
 
 /**
  * Sets a strict, nonce-based Content-Security-Policy on every page request.
@@ -37,6 +42,17 @@ export async function proxy(request: NextRequest) {
     }
     if (session.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
+  if (
+    request.nextUrl.pathname.startsWith("/therapist") &&
+    !PUBLIC_THERAPIST_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))
+  ) {
+    const token = request.cookies.get(THERAPIST_SESSION_COOKIE)?.value;
+    const session = token ? await verifyTherapistSessionToken(token) : null;
+    if (!session) {
+      return NextResponse.redirect(new URL("/therapist/login", request.url));
     }
   }
 

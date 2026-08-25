@@ -3,7 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatEGP } from "@/lib/format";
-import { updateCounselorDetails, deleteCounselorClient } from "@/lib/admin-actions";
+import {
+  updateCounselorDetails,
+  updateCounselorProfileFromAdmin,
+  deleteCounselorClient,
+  sendTherapistPortalSetupLink,
+  revokeTherapistPortalAccess,
+} from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 const AVAILABILITY_OPTIONS = [
@@ -149,6 +155,125 @@ export default async function AdminCounselorDetailPage({
               ? "Showing a Waitlist badge, booking hidden"
               : "Showing an Unavailable badge, booking hidden"}
         </p>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <h2 className="font-display font-semibold text-brand-900">Therapist portal access</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Lets {counselor.name.split(" ")[0]} log in at /therapist to manage their own clients, calendar,
+          pricing, and profile.
+        </p>
+        <p className="mt-3 text-sm">
+          Status:{" "}
+          {counselor.passwordHash ? (
+            <span className="font-medium text-brand-700">Active</span>
+          ) : (
+            <span className="font-medium text-ink/50">Not set up</span>
+          )}
+          {counselor.lastLoginAt && (
+            <span className="text-ink/50"> · Last login {counselor.lastLoginAt.toLocaleString("en-GB")}</span>
+          )}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {counselor.email ? (
+            <form action={sendTherapistPortalSetupLink}>
+              <input type="hidden" name="counselorId" value={counselor.id} />
+              <button
+                type="submit"
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                {counselor.passwordHash ? "Send password reset link" : "Send portal setup link"}
+              </button>
+            </form>
+          ) : (
+            <p className="text-sm text-ink/50">Set a notification email above first.</p>
+          )}
+          {counselor.passwordHash && (
+            <form action={revokeTherapistPortalAccess}>
+              <input type="hidden" name="counselorId" value={counselor.id} />
+              <ConfirmSubmitButton
+                confirmMessage={`Revoke ${counselor.name}'s therapist portal access? They'll need a new setup link to log back in.`}
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                Revoke access
+              </ConfirmSubmitButton>
+            </form>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <h2 className="font-display font-semibold text-brand-900">Profile</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Also editable by {counselor.name.split(" ")[0]} themselves from the therapist portal.
+        </p>
+        <form action={updateCounselorProfileFromAdmin} className="mt-4 space-y-3">
+          <input type="hidden" name="counselorId" value={counselor.id} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-sm text-ink/70">
+              <span className="mb-1 block font-medium text-ink/80">Name</span>
+              <input
+                name="name"
+                defaultValue={counselor.name}
+                required
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </label>
+            <label className="text-sm text-ink/70">
+              <span className="mb-1 block font-medium text-ink/80">Credentials</span>
+              <input
+                name="credentials"
+                defaultValue={counselor.credentials}
+                required
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </label>
+          </div>
+          <label className="block text-sm text-ink/70">
+            <span className="mb-1 block font-medium text-ink/80">Bio</span>
+            <textarea
+              name="bio"
+              defaultValue={counselor.bio}
+              required
+              rows={4}
+              className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-sm text-ink/70">
+              <span className="mb-1 block font-medium text-ink/80">Specialties (comma-separated)</span>
+              <input
+                name="specialties"
+                defaultValue={counselor.specialties.join(", ")}
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </label>
+            <label className="text-sm text-ink/70">
+              <span className="mb-1 block font-medium text-ink/80">Languages (comma-separated)</span>
+              <input
+                name="languages"
+                defaultValue={counselor.languages.join(", ")}
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </label>
+          </div>
+          <label className="block text-sm text-ink/70">
+            <span className="mb-1 block font-medium text-ink/80">Cal.com booking link</span>
+            <input
+              name="bookingUrl"
+              type="url"
+              defaultValue={counselor.bookingUrl ?? ""}
+              placeholder="https://cal.com/..."
+              className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            Save profile
+          </button>
+        </form>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
