@@ -231,6 +231,7 @@ const en = {
     preferredDayHint: "We'll confirm your exact session time with you after payment.",
     almostThere: "Almost there — pay",
     almostThereSuffix: "to confirm your session with",
+    chosenTime: "Chosen time slot",
     justAMoment: "Just a moment…",
     waitlistHeading: "Currently on the waitlist",
     waitlistDescription:
@@ -433,6 +434,9 @@ const en = {
     statusCompleted: "Completed",
     cancel: "Cancel",
     cancelling: "Cancelling…",
+    cancelSession: "Cancel session",
+    tapToManage: "Tap to manage",
+    deleteNotification: "Delete",
     markAllRead: "Mark all as read",
     rsvpPrompt: "Will you attend?",
     rsvpAttending: "Attending",

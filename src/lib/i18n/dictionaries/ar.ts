@@ -226,6 +226,7 @@ const ar: Dictionary = {
     preferredDayHint: "سنؤكد معك موعد جلستك الدقيق بعد الدفع.",
     almostThere: "اقتربنا — ادفع",
     almostThereSuffix: "لتأكيد جلستك مع",
+    chosenTime: "الموعد المختار",
     justAMoment: "لحظة من فضلك…",
     waitlistHeading: "على قائمة الانتظار حاليًا",
     waitlistDescription:
@@ -423,6 +424,9 @@ const ar: Dictionary = {
     statusCompleted: "مكتملة",
     cancel: "إلغاء",
     cancelling: "جارٍ الإلغاء…",
+    cancelSession: "إلغاء الجلسة",
+    tapToManage: "اضغط للإدارة",
+    deleteNotification: "حذف",
     markAllRead: "تحديد الكل كمقروء",
     rsvpPrompt: "هل ستحضر؟",
     rsvpAttending: "سأحضر",

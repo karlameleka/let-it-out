@@ -121,13 +121,17 @@ export async function getUpcomingPageData(email: string, userId: string) {
 
   const allIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id)];
   const reads = allIds.length
-    ? await prisma.notificationRead.findMany({ where: { userId, itemId: { in: allIds } }, select: { itemId: true } })
+    ? await prisma.notificationRead.findMany({
+        where: { userId, itemId: { in: allIds } },
+        select: { itemId: true, dismissed: true },
+      })
     : [];
   const readIds = new Set(reads.map((r) => r.itemId));
+  const dismissedIds = new Set(reads.filter((r) => r.dismissed).map((r) => r.itemId));
 
   return {
-    sessions: sessions.map((s) => ({ ...s, read: readIds.has(s.id) })),
-    events: events.map((e) => ({ ...e, read: readIds.has(e.id) })),
+    sessions: sessions.filter((s) => !dismissedIds.has(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
+    events: events.filter((e) => !dismissedIds.has(e.id)).map((e) => ({ ...e, read: readIds.has(e.id) })),
   };
 }
 

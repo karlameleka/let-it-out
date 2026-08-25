@@ -465,6 +465,10 @@ model NotificationRead {
   userId    String
   itemId    String
   readAt    DateTime @default(now())
+  // Swiped away on /upcoming — permanently hidden for this client (the
+  // underlying session/request/event itself is untouched; this only hides
+  // the notification row).
+  dismissed Boolean  @default(false)
 
   @@unique([userId, itemId])
 }

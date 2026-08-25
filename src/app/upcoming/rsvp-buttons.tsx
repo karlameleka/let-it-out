@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setEventRSVP } from "@/lib/event-rsvp-actions";
+import { hapticTap } from "@/lib/haptics";
 import type { RSVPStatus } from "@/generated/prisma/enums";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
@@ -38,6 +39,7 @@ export default function RSVPButtons({
               type="button"
               disabled={pending}
               onClick={() => {
+                hapticTap();
                 const formData = new FormData();
                 formData.set("eventId", eventId);
                 formData.set("status", o.status);

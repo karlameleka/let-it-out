@@ -78,8 +78,7 @@ export default async function UpcomingPage() {
                   statusClassName={STATUS_STYLES[s.status] ?? "bg-ink/10 text-ink/60"}
                   canCancel={s.canCancel}
                   read={s.read}
-                  cancelLabel={t.cancel}
-                  cancellingLabel={t.cancelling}
+                  dict={t}
                 />
               );
             })}

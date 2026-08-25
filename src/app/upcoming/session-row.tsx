@@ -3,9 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { markNotificationRead } from "@/lib/notification-read-actions";
+import { ChevronDown } from "lucide-react";
+import { markNotificationRead, dismissNotification } from "@/lib/notification-read-actions";
 import { cancelSessionBooking, cancelBookingRequest } from "@/lib/session-cancel-actions";
 import { useUpcoming } from "@/lib/upcoming-context";
+import { hapticTap, hapticWarning } from "@/lib/haptics";
+import SwipeToDelete from "./swipe-to-delete";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function SessionRow({
   itemId,
@@ -18,8 +22,7 @@ export default function SessionRow({
   statusClassName,
   canCancel,
   read,
-  cancelLabel,
-  cancellingLabel,
+  dict,
 }: {
   itemId: string;
   bookingId: string;
@@ -31,15 +34,19 @@ export default function SessionRow({
   statusClassName: string;
   canCancel: boolean;
   read: boolean;
-  cancelLabel: string;
-  cancellingLabel: string;
+  dict: Dictionary["upcoming"];
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const router = useRouter();
   const { refetch } = useUpcoming();
 
-  function handleOpen() {
+  const expandable = Boolean(href) || canCancel;
+
+  function handleToggle() {
+    hapticTap();
+    if (expandable) setExpanded((v) => !v);
     startTransition(async () => {
       await markNotificationRead(itemId);
       router.refresh();
@@ -50,12 +57,14 @@ export default function SessionRow({
   function handleCancel(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    hapticWarning();
     startTransition(async () => {
       const result = kind === "paid" ? await cancelSessionBooking(bookingId) : await cancelBookingRequest(bookingId);
       if ("error" in result) {
         setError(result.error);
       } else {
         setError(null);
+        setExpanded(false);
         await markNotificationRead(itemId);
         router.refresh();
         refetch();
@@ -63,47 +72,61 @@ export default function SessionRow({
     });
   }
 
-  const card = (
-    <div
-      className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-5 transition-colors ${
-        read ? "border-brand-100" : "border-brand-300"
-      }`}
-    >
-      <div className="flex items-start gap-2">
-        {!read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand-600" aria-hidden />}
-        <div>
-          <p className={`text-brand-900 ${read ? "font-medium" : "font-semibold"}`}>{title}</p>
-          <p className="mt-1 text-sm text-ink/60">{dateTimeLabel}</p>
-          {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {canCancel && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={handleCancel}
-            className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
-          >
-            {pending ? cancellingLabel : cancelLabel}
-          </button>
-        )}
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName}`}>{statusLabel}</span>
-      </div>
-    </div>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} onClick={handleOpen} className="block transition-opacity hover:opacity-80">
-        {card}
-      </Link>
-    );
+  function handleDismiss() {
+    startTransition(async () => {
+      await dismissNotification(itemId);
+      router.refresh();
+      refetch();
+    });
   }
 
   return (
-    <button type="button" onClick={handleOpen} className="block w-full text-start">
-      {card}
-    </button>
+    <SwipeToDelete onDelete={handleDismiss} deleteLabel={dict.deleteNotification}>
+      <div className={`rounded-2xl border bg-white transition-colors ${read ? "border-brand-100" : "border-brand-300"}`}>
+        <button type="button" onClick={handleToggle} className="flex w-full items-center justify-between gap-3 p-5 text-start">
+          <div className="flex items-start gap-2">
+            {!read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand-600" aria-hidden />}
+            <div>
+              <p className={`text-brand-900 ${read ? "font-medium" : "font-semibold"}`}>{title}</p>
+              <p className="mt-1 text-sm text-ink/60">{dateTimeLabel}</p>
+              {expandable && !expanded && <p className="mt-1 text-xs text-ink/35">{dict.tapToManage}</p>}
+              {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName}`}>{statusLabel}</span>
+            {expandable && (
+              <ChevronDown
+                className={`h-4 w-4 text-ink/30 transition-transform ${expanded ? "rotate-180" : ""}`}
+                aria-hidden
+              />
+            )}
+          </div>
+        </button>
+        {expandable && expanded && (
+          <div className="flex flex-col items-start gap-3 border-t border-brand-100 px-5 py-4">
+            {href && (
+              <Link
+                href={href}
+                onClick={hapticTap}
+                className="rounded-full bg-brand-700 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
+              >
+                {dict.completePayment}
+              </Link>
+            )}
+            {canCancel && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={handleCancel}
+                className="text-xs font-medium text-red-600/80 underline decoration-red-300 underline-offset-2 transition-colors hover:text-red-700 disabled:opacity-50"
+              >
+                {pending ? dict.cancelling : dict.cancelSession}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </SwipeToDelete>
   );
 }

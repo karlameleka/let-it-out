@@ -46,7 +46,13 @@ export default function SessionBookingFlow({
   const [error, setError] = useState<string | null>(null);
   const [sessionBookingId, setSessionBookingId] = useState<string | null>(null);
   const [finalPriceEGP, setFinalPriceEGP] = useState(priceEGP);
+  const [finalDate, setFinalDate] = useState<string | null>(null);
+  const [finalTime, setFinalTime] = useState<string | null>(null);
   const [promoInput, setPromoInput] = useState("");
+  const slotDateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { weekday: "short", day: "numeric", month: "short" }),
+    [locale],
+  );
 
   const usingSlots = slots.length > 0;
   const byDate = useMemo(() => {
@@ -106,13 +112,16 @@ export default function SessionBookingFlow({
     setPending(true);
     setError(null);
 
+    const preferredDate = usingSlots ? (selectedSlot?.date ?? "") : String(formData.get("preferredDate") || "");
+    const preferredTime = usingSlots ? (selectedSlot?.time ?? "") : undefined;
+
     const result = await createSessionBooking({
       counselorId,
       name: String(formData.get("name") || ""),
       email: String(formData.get("email") || ""),
       phone: String(formData.get("phone") || ""),
-      preferredDate: usingSlots ? (selectedSlot?.date ?? "") : String(formData.get("preferredDate") || ""),
-      preferredTime: usingSlots ? (selectedSlot?.time ?? "") : undefined,
+      preferredDate,
+      preferredTime,
       promoCode: promoApplied?.code,
     });
 
@@ -122,6 +131,8 @@ export default function SessionBookingFlow({
       return;
     }
     setFinalPriceEGP(priceEGP - (promoApplied?.discountEGP ?? 0));
+    setFinalDate(preferredDate);
+    setFinalTime(preferredTime ?? null);
     setSessionBookingId(result.sessionBookingId);
   }
 
@@ -131,6 +142,12 @@ export default function SessionBookingFlow({
         <p className="text-sm text-ink/70">
           {t.almostThere} <strong>{formatEGP(finalPriceEGP)}</strong> {t.almostThereSuffix} {counselorName}.
         </p>
+        {finalDate && (
+          <p className="mt-2 rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-800">
+            {t.chosenTime}: {slotDateFormatter.format(new Date(`${finalDate}T00:00:00`))}
+            {finalTime ? ` · ${formatSlotTime(finalTime, locale)}` : ""}
+          </p>
+        )}
         <div className="mt-4">
           <PaymentSelector
             amountEGP={finalPriceEGP}

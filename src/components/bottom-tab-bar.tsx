@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, HeartHandshake, Newspaper, ShoppingBag } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useUnreadTools } from "@/lib/unread-tools-context";
+import { hapticTap } from "@/lib/haptics";
 
 export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
           <Link
             key={href}
             href={href}
+            onClick={hapticTap}
             className={`flex flex-1 flex-col items-center gap-1 py-3 text-[11.5px] font-bold transition-colors ${
               active ? "text-brand-700" : "text-ink/40"
             }`}

@@ -18,6 +18,21 @@ export async function markNotificationRead(itemId: string) {
   revalidatePath("/upcoming");
 }
 
+/** Swipe-to-delete on /upcoming — permanently hides this notification for
+ * this client only. The underlying session/request/event is untouched. */
+export async function dismissNotification(itemId: string) {
+  const session = await requireUser().catch(() => null);
+  if (!session || !itemId) return;
+
+  await prisma.notificationRead.upsert({
+    where: { userId_itemId: { userId: session.userId, itemId } },
+    update: { dismissed: true },
+    create: { userId: session.userId, itemId, dismissed: true },
+  });
+
+  revalidatePath("/upcoming");
+}
+
 export async function markAllNotificationsRead() {
   const session = await requireUser().catch(() => null);
   if (!session) return;
