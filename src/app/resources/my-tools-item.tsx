@@ -3,6 +3,7 @@
 import { Download, Check } from "lucide-react";
 import { toggleAssignmentComplete } from "@/lib/client-resources-actions";
 import type { MyAssignedResource } from "@/lib/client-resources";
+import PdfOpenButton from "@/components/pdf-open-button";
 
 export default function MyToolsItem({ item }: { item: MyAssignedResource }) {
   const isDone = Boolean(item.completedAt);
@@ -44,17 +45,15 @@ export default function MyToolsItem({ item }: { item: MyAssignedResource }) {
           Open →
         </a>
       )}
-      {item.kind === "PDF" && (
-        <a
-          href={item.fileData ?? undefined}
-          download={item.fileName ?? undefined}
-          target="_blank"
-          rel="noopener noreferrer"
+      {item.kind === "PDF" && item.fileData && (
+        <PdfOpenButton
+          fileData={item.fileData}
+          fileName={item.fileName ?? "document.pdf"}
           className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 link-grow"
         >
           <Download className="h-4 w-4" strokeWidth={2} />
           Open / Download PDF
-        </a>
+        </PdfOpenButton>
       )}
     </div>
   );

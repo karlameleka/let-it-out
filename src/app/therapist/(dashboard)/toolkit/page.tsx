@@ -5,6 +5,7 @@ import { requireCounselor } from "@/lib/therapist-session";
 import { removeToolkitItem, toggleDefaultTool } from "@/lib/therapist-actions";
 import { CLIENT_TOOLS, SESSION_PROMPTS, CRISIS_PROTOCOL } from "@/lib/therapist-toolkit";
 import AddToolkitItemForm from "./add-item-form";
+import PdfOpenButton from "@/components/pdf-open-button";
 
 export default async function TherapistToolkitPage() {
   const session = await requireCounselor();
@@ -58,17 +59,15 @@ export default async function TherapistToolkitPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-display font-semibold text-brand-900">{item.title}</p>
                 {item.description && <p className="mt-1 text-sm text-ink/60">{item.description}</p>}
-                {item.kind === "PDF" ? (
-                  <a
-                    href={item.fileData ?? undefined}
-                    download={item.fileName ?? undefined}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                {item.kind === "PDF" && item.fileData ? (
+                  <PdfOpenButton
+                    fileData={item.fileData}
+                    fileName={item.fileName ?? "document.pdf"}
                     className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 link-grow"
                   >
                     <Download className="h-3.5 w-3.5" strokeWidth={2} />
                     Open / Download PDF
-                  </a>
+                  </PdfOpenButton>
                 ) : (
                   <a
                     href={item.url ?? undefined}

@@ -15,6 +15,7 @@ import ClientNoteForm from "./note-form";
 import ClientNoteItem from "./note-item";
 import ReferClientForm from "./refer-form";
 import AssignResourceForm from "./assign-resource-form";
+import PdfOpenButton from "@/components/pdf-open-button";
 
 export default async function TherapistClientProfilePage({
   params,
@@ -164,17 +165,15 @@ export default async function TherapistClientProfilePage({
                         )}
                       </div>
                       {item.description && <p className="mt-1 text-sm text-ink/60">{item.description}</p>}
-                      {item.kind === "PDF" && (
-                        <a
-                          href={item.fileData ?? undefined}
-                          download={item.fileName ?? undefined}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      {item.kind === "PDF" && item.fileData && (
+                        <PdfOpenButton
+                          fileData={item.fileData}
+                          fileName={item.fileName ?? "document.pdf"}
                           className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 link-grow"
                         >
                           <Download className="h-3.5 w-3.5" strokeWidth={2} />
                           Open / Download PDF
-                        </a>
+                        </PdfOpenButton>
                       )}
                       {item.kind === "LINK" && (
                         <a href={item.url ?? undefined} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs font-semibold text-brand-600 link-grow">

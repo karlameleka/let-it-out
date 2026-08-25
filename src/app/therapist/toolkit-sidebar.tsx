@@ -3,6 +3,7 @@ import { Phone, Download } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import { CLIENT_TOOLS, CRISIS_PROTOCOL } from "@/lib/therapist-toolkit";
+import PdfOpenButton from "@/components/pdf-open-button";
 
 /** Condensed version of /therapist/toolkit for use alongside a specific
  * client — this counselor's personalized toolbox (defaults minus anything
@@ -34,18 +35,16 @@ export default async function ToolkitSidebar() {
             </Link>
           ))}
           {toolkitItems.map((item) =>
-            item.kind === "PDF" ? (
-              <a
+            item.kind === "PDF" && item.fileData ? (
+              <PdfOpenButton
                 key={item.id}
-                href={item.fileData ?? undefined}
-                download={item.fileName ?? undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-xl border border-brand-100 px-3 py-2 text-sm font-medium text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-50"
+                fileData={item.fileData}
+                fileName={item.fileName ?? "document.pdf"}
+                className="flex w-full items-center gap-1.5 rounded-xl border border-brand-100 px-3 py-2 text-left text-sm font-medium text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-50"
               >
                 <Download className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                 {item.title}
-              </a>
+              </PdfOpenButton>
             ) : (
               <a
                 key={item.id}
