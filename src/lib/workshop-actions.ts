@@ -80,9 +80,9 @@ export async function submitWorkshopInquiry(
       { label: "Email", value: inquiry.email },
       { label: "Phone", value: inquiry.phone },
       { label: "Topic", value: inquiry.workshopTopic },
-      { label: "Group size", value: inquiry.groupSize || "—" },
-      { label: "Preferred dates", value: inquiry.preferredDates || "—" },
-      { label: "Message", value: inquiry.message || "—" },
+      { label: "Group size", value: inquiry.groupSize || "Not provided" },
+      { label: "Preferred dates", value: inquiry.preferredDates || "Not provided" },
+      { label: "Message", value: inquiry.message || "Not provided" },
     ],
   });
 

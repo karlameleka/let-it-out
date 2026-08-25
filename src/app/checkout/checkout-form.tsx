@@ -383,7 +383,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                     ? formatEGP(shippingFeeEGP)
                     : shippingCalculatedOnDelivery
                       ? "On delivery"
-                      : "—"}
+                      : "Select a country"}
                 </span>
               </div>
             )}

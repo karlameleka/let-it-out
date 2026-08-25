@@ -81,16 +81,24 @@ export default function JournalFeed({
             <div className="flex divide-x divide-brand-100 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
               <div className="px-6 py-3.5">
                 <p className="font-display text-2xl font-semibold leading-none text-brand-900">
-                  {stats?.streak ?? "–"}
+                  {stats?.streak ?? 0}
                 </p>
                 <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">day streak</p>
               </div>
               <div className="px-6 py-3.5">
                 <p className="font-display text-2xl font-semibold leading-none text-brand-900">
-                  {stats?.total ?? "–"}
+                  {stats?.total ?? 0}
                 </p>
                 <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
                   {stats?.total === 1 ? "Entry" : "Entries"}
+                </p>
+              </div>
+              <div className="px-6 py-3.5">
+                <p className="font-display text-2xl font-semibold leading-none text-brand-900">
+                  {stats?.totalWords ?? 0}
+                </p>
+                <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
+                  {stats?.totalWords === 1 ? "word written" : "words written"}
                 </p>
               </div>
             </div>

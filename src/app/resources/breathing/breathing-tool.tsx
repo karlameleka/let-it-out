@@ -118,7 +118,8 @@ function reducer(state: State, action: Action): State {
         if (nextCycles >= state.targetCycles) {
           const nextCount = (state.count ?? 0) + 1;
           window.localStorage.setItem(STORAGE_KEY, String(nextCount));
-          const { streak }: BreathingStreakStats = recordBreathingCompletion();
+          const cycleSeconds = state.pattern.phases.reduce((sum, p) => sum + p.seconds, 0);
+          const { streak }: BreathingStreakStats = recordBreathingCompletion(cycleSeconds * nextCycles);
           return { ...state, stage: "done", cyclesDone: nextCycles, count: nextCount, streak };
         }
         return {

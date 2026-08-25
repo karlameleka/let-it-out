@@ -98,7 +98,7 @@ export async function submitBookingRequest(
       { label: "Session type", value: booking.sessionType.replaceAll("_", " ") },
       { label: "Preferred date", value: booking.preferredDate },
       { label: "Preferred time", value: booking.preferredTime },
-      { label: "Message", value: booking.message || "—" },
+      { label: "Message", value: booking.message || "Not provided" },
     ],
     extraRecipients: [booking.counselor.email],
   });

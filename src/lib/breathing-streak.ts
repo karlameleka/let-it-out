@@ -4,8 +4,9 @@
  * for consistent "day streak" semantics across the app. */
 
 const STREAK_KEY = "lio_breathing_streak_dates";
+const TOTAL_SECONDS_KEY = "lio_breathing_total_seconds";
 
-export type BreathingStreakStats = { streak: number; total: number };
+export type BreathingStreakStats = { streak: number; total: number; totalMinutes: number };
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -20,7 +21,13 @@ function readDays(): Set<string> {
   }
 }
 
-function computeFromDays(days: Set<string>): BreathingStreakStats {
+function readTotalSeconds(): number {
+  const raw = window.localStorage.getItem(TOTAL_SECONDS_KEY);
+  const seconds = Number(raw ?? "0");
+  return Number.isFinite(seconds) ? seconds : 0;
+}
+
+function computeFromDays(days: Set<string>, totalSeconds: number): BreathingStreakStats {
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
   if (!days.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
@@ -30,18 +37,24 @@ function computeFromDays(days: Set<string>): BreathingStreakStats {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
-  return { streak, total: days.size };
+  return { streak, total: days.size, totalMinutes: Math.round(totalSeconds / 60) };
 }
 
 export function getBreathingStreak(): BreathingStreakStats {
-  return computeFromDays(readDays());
+  return computeFromDays(readDays(), readTotalSeconds());
 }
 
-/** Call once per completed session. Safe to call multiple times the same
- * day — only distinct days count toward the streak. */
-export function recordBreathingCompletion(): BreathingStreakStats {
+/** Call once per completed session, with how long the paced session ran
+ * (sum of every phase's seconds across all completed cycles). Safe to call
+ * multiple times the same day — only distinct days count toward the streak,
+ * but every session's duration adds to the running total. */
+export function recordBreathingCompletion(durationSeconds: number): BreathingStreakStats {
   const days = readDays();
   days.add(todayKey());
   window.localStorage.setItem(STREAK_KEY, JSON.stringify(Array.from(days)));
-  return computeFromDays(days);
+
+  const totalSeconds = readTotalSeconds() + durationSeconds;
+  window.localStorage.setItem(TOTAL_SECONDS_KEY, String(totalSeconds));
+
+  return computeFromDays(days, totalSeconds);
 }

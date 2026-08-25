@@ -281,10 +281,10 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       { label: "Shipping fee", value: shippingFeeSummary },
       { label: "Total", value: formatEGP(totalEGP) },
       { label: "Payment method", value: paymentMethodLabel },
-      { label: "Country", value: needsShipping ? (country ?? "—") : "N/A (ebook only)" },
-      { label: "Governorate", value: needsShipping && country === "Egypt" ? (governorate ?? "—") : "N/A" },
-      { label: "Shipping address", value: needsShipping ? (shippingAddress ?? "—") : "N/A (ebook only)" },
-      { label: "Google Maps link", value: needsShipping ? (googleMapsLink ?? "—") : "N/A" },
+      { label: "Country", value: needsShipping ? (country ?? "Not provided") : "N/A (ebook only)" },
+      { label: "Governorate", value: needsShipping && country === "Egypt" ? (governorate ?? "Not provided") : "N/A" },
+      { label: "Shipping address", value: needsShipping ? (shippingAddress ?? "Not provided") : "N/A (ebook only)" },
+      { label: "Google Maps link", value: needsShipping ? (googleMapsLink ?? "Not provided") : "N/A" },
     ],
   });
 

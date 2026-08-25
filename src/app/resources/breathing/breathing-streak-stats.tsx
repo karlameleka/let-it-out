@@ -25,6 +25,12 @@ export default function BreathingStreakStats() {
           {stats.total === 1 ? "day practiced" : "days practiced"}
         </p>
       </div>
+      <div className="px-6 py-3.5">
+        <p className="font-display text-2xl font-semibold leading-none text-brand-900">{stats.totalMinutes}</p>
+        <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
+          {stats.totalMinutes === 1 ? "minute breathing" : "minutes breathing"}
+        </p>
+      </div>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export type JournalFeedEntry = {
   prompt: JournalPrompt;
 };
 
-export type JournalStats = { total: number; streak: number };
+export type JournalStats = { total: number; streak: number; totalWords: number };
 
 export type JournalFeedData = { entries: JournalFeedEntry[]; stats: JournalStats };
 
@@ -157,7 +157,12 @@ async function getAllStored(db: IDBDatabase): Promise<StoredEntry[]> {
   return tx<StoredEntry[]>(db, ENTRIES_STORE, "readonly", (s) => s.getAll());
 }
 
-function computeStats(entries: { createdAt: string }[]): JournalStats {
+function wordCount(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+function computeStats(entries: { createdAt: string; content: string }[]): JournalStats {
   const days = new Set(entries.map((e) => e.createdAt.slice(0, 10)));
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
@@ -168,7 +173,8 @@ function computeStats(entries: { createdAt: string }[]): JournalStats {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
-  return { total: entries.length, streak };
+  const totalWords = entries.reduce((sum, e) => sum + wordCount(e.content), 0);
+  return { total: entries.length, streak, totalWords };
 }
 
 export async function getFeedData(userId: string): Promise<JournalFeedData> {
@@ -177,7 +183,7 @@ export async function getFeedData(userId: string): Promise<JournalFeedData> {
   const stored = await getAllStored(db);
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(stored.map((s) => decryptEntry(key, s)));
-  return { entries, stats: computeStats(stored) };
+  return { entries, stats: computeStats(entries) };
 }
 
 export async function getEntryDetail(userId: string, id: string): Promise<JournalEntryDetail | null> {
