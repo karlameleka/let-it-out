@@ -39,6 +39,8 @@ export default async function ToolkitSidebar() {
                 key={item.id}
                 href={item.fileData ?? undefined}
                 download={item.fileName ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-1.5 rounded-xl border border-brand-100 px-3 py-2 text-sm font-medium text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-50"
               >
                 <Download className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />

@@ -48,10 +48,12 @@ export default function MyToolsItem({ item }: { item: MyAssignedResource }) {
         <a
           href={item.fileData ?? undefined}
           download={item.fileName ?? undefined}
+          target="_blank"
+          rel="noopener noreferrer"
           className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 link-grow"
         >
           <Download className="h-4 w-4" strokeWidth={2} />
-          Download PDF
+          Open / Download PDF
         </a>
       )}
     </div>

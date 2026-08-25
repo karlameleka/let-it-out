@@ -5,7 +5,7 @@ import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
 import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES } from "@/lib/therapist-toolkit";
 import { getBaseUrl } from "@/lib/base-url";
-import { sendReferralNotificationEmail } from "@/lib/email";
+import { sendReferralNotificationEmail, sendAssignedResourceNotificationEmail } from "@/lib/email";
 import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/therapist-data";
 
 export type TherapistProfileFormState = { error?: string; success?: boolean } | undefined;
@@ -418,6 +418,24 @@ export async function acknowledgeReferral(formData: FormData) {
 
 export type AssignResourceFormState = { error?: string; success?: boolean } | undefined;
 
+/** Best-effort, non-blocking — a missing/misspelled clientName or email
+ * config must never stop the resource itself from being saved. */
+async function notifyClientOfAssignedResource(
+  clientEmail: string,
+  clientName: string,
+  counselorName: string,
+  kindLabel: string,
+) {
+  const baseUrl = await getBaseUrl();
+  await sendAssignedResourceNotificationEmail({
+    to: clientEmail,
+    toName: clientName || "there",
+    counselorName,
+    kindLabel,
+    resourcesUrl: `${baseUrl}/resources#my-tools`,
+  });
+}
+
 export async function assignResourceLink(
   _prevState: AssignResourceFormState,
   formData: FormData,
@@ -426,6 +444,7 @@ export async function assignResourceLink(
   if (!session) return { error: "Please log in again." };
 
   const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const url = String(formData.get("url") ?? "").trim();
@@ -442,6 +461,7 @@ export async function assignResourceLink(
   await prisma.assignedResource.create({
     data: { counselorId: session.counselorId, clientEmail, title, description: description || null, kind: "LINK", url },
   });
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "a tool");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -455,6 +475,7 @@ export async function assignResourcePdf(
   if (!session) return { error: "Please log in again." };
 
   const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const fileData = String(formData.get("fileData") ?? "");
@@ -478,6 +499,7 @@ export async function assignResourcePdf(
       fileName: fileName || `${title}.pdf`,
     },
   });
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "a PDF");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -491,6 +513,7 @@ export async function assignResourceNote(
   if (!session) return { error: "Please log in again." };
 
   const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
   const isAssignment = formData.get("isAssignment") === "on";
@@ -502,6 +525,7 @@ export async function assignResourceNote(
   await prisma.assignedResource.create({
     data: { counselorId: session.counselorId, clientEmail, title, kind: isAssignment ? "ASSIGNMENT" : "TEXT", content },
   });
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, isAssignment ? "an assignment" : "a note");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };

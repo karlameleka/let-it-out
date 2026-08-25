@@ -18,7 +18,7 @@ function readFileAsDataUri(file: File): Promise<string> {
   });
 }
 
-function LinkTab({ clientEmail }: { clientEmail: string }) {
+function LinkTab({ clientEmail, clientName }: { clientEmail: string; clientName: string }) {
   const [state, formAction, pending] = useActionState(assignResourceLink, undefined);
   const [key, setKey] = useState(0);
   const [lastHandledState, setLastHandledState] = useState(state);
@@ -37,6 +37,7 @@ function LinkTab({ clientEmail }: { clientEmail: string }) {
   return (
     <form action={formAction} key={key} className="space-y-3">
       <input type="hidden" name="clientEmail" value={clientEmail} />
+      <input type="hidden" name="clientName" value={clientName} />
       <div>
         <label htmlFor="assign-tool-pick" className={labelClass}>Quick-pick one of our tools (optional)</label>
         <select
@@ -94,7 +95,7 @@ function LinkTab({ clientEmail }: { clientEmail: string }) {
   );
 }
 
-function PdfTab({ clientEmail }: { clientEmail: string }) {
+function PdfTab({ clientEmail, clientName }: { clientEmail: string; clientName: string }) {
   const [state, formAction, pending] = useActionState(assignResourcePdf, undefined);
   const [key, setKey] = useState(0);
   const [lastHandledState, setLastHandledState] = useState(state);
@@ -131,6 +132,7 @@ function PdfTab({ clientEmail }: { clientEmail: string }) {
   return (
     <form action={formAction} key={key} className="space-y-3">
       <input type="hidden" name="clientEmail" value={clientEmail} />
+      <input type="hidden" name="clientName" value={clientName} />
       <div>
         <label htmlFor="assign-pdf-title" className={labelClass}>Title</label>
         <input id="assign-pdf-title" name="title" required className={fieldClass} placeholder="e.g. Grounding handout" />
@@ -161,7 +163,7 @@ function PdfTab({ clientEmail }: { clientEmail: string }) {
   );
 }
 
-function NoteTab({ clientEmail }: { clientEmail: string }) {
+function NoteTab({ clientEmail, clientName }: { clientEmail: string; clientName: string }) {
   const [state, formAction, pending] = useActionState(assignResourceNote, undefined);
   const [key, setKey] = useState(0);
   const [lastHandledState, setLastHandledState] = useState(state);
@@ -174,6 +176,7 @@ function NoteTab({ clientEmail }: { clientEmail: string }) {
   return (
     <form action={formAction} key={key} className="space-y-3">
       <input type="hidden" name="clientEmail" value={clientEmail} />
+      <input type="hidden" name="clientName" value={clientName} />
       <div>
         <label htmlFor="assign-note-title" className={labelClass}>Title</label>
         <input id="assign-note-title" name="title" required className={fieldClass} placeholder="e.g. Try this before our next session" />
@@ -194,13 +197,15 @@ function NoteTab({ clientEmail }: { clientEmail: string }) {
   );
 }
 
-export default function AssignResourceForm({ clientEmail }: { clientEmail: string }) {
+export default function AssignResourceForm({ clientEmail, clientName }: { clientEmail: string; clientName: string }) {
   const [tab, setTab] = useState<"link" | "pdf" | "note">("link");
 
   return (
     <div className="rounded-2xl border border-brand-100 bg-white p-5">
       <p className="font-display font-semibold text-brand-900">Send a resource to this client</p>
-      <p className="mt-1 text-sm text-ink/60">Appears only to them, under &ldquo;My tools&rdquo; on their Resources page.</p>
+      <p className="mt-1 text-sm text-ink/60">
+        Appears only to them, under &ldquo;My tools&rdquo; on their Resources page — they&rsquo;ll also get an email letting them know.
+      </p>
       <div className="mt-3 flex gap-2">
         {(["link", "pdf", "note"] as const).map((t) => (
           <button
@@ -216,9 +221,9 @@ export default function AssignResourceForm({ clientEmail }: { clientEmail: strin
         ))}
       </div>
       <div className="mt-4">
-        {tab === "link" && <LinkTab clientEmail={clientEmail} />}
-        {tab === "pdf" && <PdfTab clientEmail={clientEmail} />}
-        {tab === "note" && <NoteTab clientEmail={clientEmail} />}
+        {tab === "link" && <LinkTab clientEmail={clientEmail} clientName={clientName} />}
+        {tab === "pdf" && <PdfTab clientEmail={clientEmail} clientName={clientName} />}
+        {tab === "note" && <NoteTab clientEmail={clientEmail} clientName={clientName} />}
       </div>
     </div>
   );

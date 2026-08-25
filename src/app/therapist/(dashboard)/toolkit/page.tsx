@@ -62,10 +62,12 @@ export default async function TherapistToolkitPage() {
                   <a
                     href={item.fileData ?? undefined}
                     download={item.fileName ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 link-grow"
                   >
                     <Download className="h-3.5 w-3.5" strokeWidth={2} />
-                    Download PDF
+                    Open / Download PDF
                   </a>
                 ) : (
                   <a

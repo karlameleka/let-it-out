@@ -589,6 +589,67 @@ export async function sendReferralNotificationEmail({
   }
 }
 
+/**
+ * Notifies a client that their therapist has sent them something new under
+ * Resources > "My tools" — same fail-silently behavior as the other
+ * senders. Deliberately doesn't name the item or describe its content in
+ * the email itself (consistent with the app's pattern for counselor
+ * notifications); the client reviews it in-app after logging in.
+ */
+export async function sendAssignedResourceNotificationEmail({
+  to,
+  toName,
+  counselorName,
+  kindLabel,
+  resourcesUrl,
+}: {
+  to: string;
+  toName: string;
+  counselorName: string;
+  kindLabel: string;
+  resourcesUrl: string;
+}) {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] Skipped assigned-resource notification email to ${to} — not configured.`);
+    return;
+  }
+
+  const text = [
+    `Hi ${toName},`,
+    "",
+    `${counselorName} just sent you ${kindLabel} — you'll find it under "My tools" on your Resources page.`,
+    "",
+    `Take a look: ${resourcesUrl}`,
+    "",
+    "Warmly,\nThe Let It Out team",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+      <p>Hi ${escapeHtml(toName)},</p>
+      <p><strong>${escapeHtml(counselorName)}</strong> just sent you ${kindLabel} — you&rsquo;ll find it under &ldquo;My tools&rdquo; on your Resources page.</p>
+      <p style="margin: 24px 0;">
+        <a href="${resourcesUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Take a look</a>
+      </p>
+      <p>Warmly,<br />The Let It Out team</p>
+    </div>
+  `;
+
+  try {
+    await transport.sendMail({
+      from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: `Let It Out — ${counselorName} sent you something new`,
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error(`[email] Failed to send assigned-resource notification email to ${to}:`, err);
+  }
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
