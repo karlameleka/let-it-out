@@ -50,7 +50,6 @@ const en = {
     privacyPolicy: "Privacy Policy",
     terms: "Terms & Conditions",
     shopPolicy: "Shop Policy",
-    therapistPortal: "Therapist portal",
     motto: "A self-exploration journey.",
   },
   helpButton: {
