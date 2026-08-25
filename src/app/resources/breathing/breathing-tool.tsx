@@ -1,12 +1,47 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, type CSSProperties } from "react";
 import { Info, Play, RotateCcw, Sparkles, Square } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui";
-import { BREATHING_PATTERNS, CYCLE_OPTIONS, type BreathingPattern, type BreathingPhaseLabel } from "@/lib/breathing-patterns";
+import {
+  BREATHING_PATTERNS,
+  CYCLE_OPTIONS,
+  type BreathingPattern,
+  type BreathingPhaseLabel,
+  type BreathingShape,
+} from "@/lib/breathing-patterns";
 import { recordBreathingCompletion, type BreathingStreakStats } from "@/lib/breathing-streak";
 
 const STORAGE_KEY = "lio_breathing_count";
+
+const TRIANGLE_CLIP_PATH = "polygon(50% 0%, 0% 100%, 100% 100%)";
+
+/** Rounded corners on a clip-path triangle would need an SVG path — a plain
+    triangle reads fine here since it's small and paired with a soft fill. */
+function shapeStyle(shape: BreathingShape): CSSProperties {
+  return shape === "triangle" ? { clipPath: TRIANGLE_CLIP_PATH } : {};
+}
+
+function shapeRounding(shape: BreathingShape): string {
+  if (shape === "circle") return "rounded-full";
+  if (shape === "square") return "rounded-2xl";
+  return "";
+}
+
+/** Small shape preview shown next to each pattern's name in the setup
+    picker, so the shape difference is visible before starting. Uses its own
+    (smaller) corner rounding than the big paced visual — rounded-2xl on a
+    14px box would round it into a circle. */
+function ShapeSwatch({ shape }: { shape: BreathingShape }) {
+  const rounding = shape === "circle" ? "rounded-full" : shape === "square" ? "rounded-[3px]" : "";
+  return (
+    <span
+      aria-hidden
+      className={`inline-block h-3.5 w-3.5 shrink-0 bg-brand-500 ${rounding}`}
+      style={shapeStyle(shape)}
+    />
+  );
+}
 
 function scaleForPhase(label: BreathingPhaseLabel, current: number): number {
   if (label === "Inhale") return 1.4;
@@ -23,7 +58,7 @@ type State = {
   phaseIndex: number;
   secondsLeft: number;
   cyclesDone: number;
-  circleScale: number;
+  shapeScale: number;
   count: number | null;
   streak: number | null;
 };
@@ -43,7 +78,7 @@ const initialState: State = {
   phaseIndex: 0,
   secondsLeft: BREATHING_PATTERNS[0].phases[0].seconds,
   cyclesDone: 0,
-  circleScale: 1,
+  shapeScale: 1,
   count: null,
   streak: null,
 };
@@ -69,10 +104,10 @@ function reducer(state: State, action: Action): State {
         phaseIndex: 0,
         secondsLeft: state.pattern.phases[0].seconds,
         cyclesDone: 0,
-        circleScale: scaleForPhase(state.pattern.phases[0].label, 1),
+        shapeScale: scaleForPhase(state.pattern.phases[0].label, 1),
       };
     case "RESET":
-      return { ...state, stage: "setup", phaseIndex: 0, circleScale: 1 };
+      return { ...state, stage: "setup", phaseIndex: 0, shapeScale: 1 };
     case "TICK": {
       if (state.stage !== "active") return state;
       if (state.secondsLeft > 1) return { ...state, secondsLeft: state.secondsLeft - 1 };
@@ -91,14 +126,14 @@ function reducer(state: State, action: Action): State {
           cyclesDone: nextCycles,
           phaseIndex: nextIndex,
           secondsLeft: state.pattern.phases[nextIndex].seconds,
-          circleScale: scaleForPhase(state.pattern.phases[nextIndex].label, state.circleScale),
+          shapeScale: scaleForPhase(state.pattern.phases[nextIndex].label, state.shapeScale),
         };
       }
       return {
         ...state,
         phaseIndex: nextIndex,
         secondsLeft: state.pattern.phases[nextIndex].seconds,
-        circleScale: scaleForPhase(state.pattern.phases[nextIndex].label, state.circleScale),
+        shapeScale: scaleForPhase(state.pattern.phases[nextIndex].label, state.shapeScale),
       };
     }
     default:
@@ -148,7 +183,10 @@ export default function BreathingTool() {
                     : "border-brand-200 hover:border-brand-400 active:border-brand-400"
                 }`}
               >
-                <p className="font-display text-base font-semibold text-brand-900">{p.name}</p>
+                <div className="flex items-center gap-2">
+                  <ShapeSwatch shape={p.shape} />
+                  <p className="font-display text-base font-semibold text-brand-900">{p.name}</p>
+                </div>
                 <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-brand-500">{p.tagline}</p>
                 <p className="mt-1.5 text-xs text-ink/60">{p.description}</p>
               </button>
@@ -189,10 +227,24 @@ export default function BreathingTool() {
 
           <div className="relative mt-8 flex h-48 w-48 items-center justify-center">
             <div
-              className="absolute inset-0 rounded-full bg-brand-100 transition-transform ease-in-out"
-              style={{ transform: `scale(${state.circleScale})`, transitionDuration: `${currentPhase.seconds}s` }}
+              className={`absolute inset-0 bg-brand-100 transition-transform ease-in-out ${shapeRounding(state.pattern.shape)}`}
+              style={{
+                transform: `scale(${state.shapeScale})`,
+                transitionDuration: `${currentPhase.seconds}s`,
+                ...shapeStyle(state.pattern.shape),
+              }}
             />
-            <div className="absolute inset-6 rounded-full border-2 border-brand-300" />
+            {state.pattern.shape === "triangle" ? (
+              <svg
+                viewBox="0 0 100 100"
+                className="absolute left-6 top-6 text-brand-300"
+                style={{ width: "calc(100% - 3rem)", height: "calc(100% - 3rem)" }}
+              >
+                <polygon points="50,4 4,96 96,96" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <div className={`absolute inset-6 border-2 border-brand-300 ${shapeRounding(state.pattern.shape)}`} />
+            )}
             <div className="relative text-center">
               <p className="font-display text-2xl font-semibold text-brand-900">{currentPhase.label}</p>
               <p className="mt-1 text-3xl font-semibold text-brand-700">{state.secondsLeft || currentPhase.seconds}</p>
