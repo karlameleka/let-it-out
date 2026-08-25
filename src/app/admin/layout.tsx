@@ -15,6 +15,7 @@ const TABS = [
   { href: "/admin/workshops", label: "Workshop inquiries" },
   { href: "/admin/workshop-signups", label: "Workshop notify list" },
   { href: "/admin/messages", label: "Contact messages" },
+  { href: "/admin/support", label: "Live chat" },
   { href: "/admin/articles", label: "Articles" },
   { href: "/admin/intake-form", label: "Intake form" },
   { href: "/admin/settings", label: "Site settings" },

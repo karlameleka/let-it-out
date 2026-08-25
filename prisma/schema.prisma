@@ -76,6 +76,7 @@ model User {
   bookingRequests BookingRequest[]
   orders         Order[]
   pushSubscriptions PushSubscription[]
+  supportChats   SupportChat[]
 }
 
 enum OtpChannel {
@@ -745,4 +746,43 @@ model SiteText {
   key       String   @id
   value     String   @db.Text
   updatedAt DateTime @updatedAt
+}
+
+enum SupportChatStatus {
+  // Conversation still in progress, or ended without either side marking
+  // an outcome.
+  OPEN
+  // The bot (or the admin, manually) determined the issue was fixed.
+  RESOLVED
+  // The bot couldn't resolve it — the admin gets a one-time email
+  // notification (see escalatedAt) and reviews the transcript in
+  // /admin/support.
+  ESCALATED
+}
+
+// A client's "Having technical issues? Live Chat" conversation from
+// Account settings, answered by an AI assistant scoped to app/technical
+// problems only — never psychological ones (enforced in the system
+// prompt in ai-support-chat.ts, and disclaimed in the chat UI itself).
+model SupportChat {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  // [{ role: "user" | "assistant", content: string, at: ISO string }] —
+  // the full transcript, simplest storage for something only ever read
+  // back as a whole (the chat UI, or the admin transcript view).
+  messages Json
+
+  status SupportChatStatus @default(OPEN)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Set the first time this chat is escalated — guards against re-sending
+  // the admin notification email on every subsequent unresolved turn.
+  escalatedAt DateTime?
+  resolvedAt  DateTime?
+
+  @@index([userId])
+  @@index([status])
 }
