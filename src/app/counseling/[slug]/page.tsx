@@ -39,9 +39,9 @@ export default async function CounselorPage({
   const dict = getDictionary(locale);
   const t = dict.counselorProfile;
   const account = session ? { name: session.name, email: session.email, phone: session.phone } : null;
-  // Needed for the pay-first flow (bookingUrl + priceEGP) and the manual
-  // request-form flow (neither set) — skipped only for the pure
-  // direct-Cal.com flow (bookingUrl, no price), which doesn't use it.
+  // Needed for the pay-first flow (priceEGP set) and the manual
+  // request-form flow (no price, no bookingUrl) — skipped only for the
+  // pure direct-Cal.com flow (bookingUrl, no price), which doesn't use it.
   const slots = counselor.bookingUrl && !counselor.priceEGP ? [] : await getAvailableSlots(counselor.id);
 
   return (
@@ -133,7 +133,7 @@ export default async function CounselorPage({
                   {dict.counselorProfile.contactCta}
                 </Link>
               </>
-            ) : counselor.bookingUrl && counselor.priceEGP ? (
+            ) : counselor.priceEGP ? (
               <>
                 <h2 className="font-display text-lg font-semibold text-brand-900">
                   {t.bookHeading}

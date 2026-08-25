@@ -71,8 +71,7 @@ export type TherapistAppointment = {
 };
 
 /** Every booking (paid + manual request) as one flat, chronologically
- * sorted agenda — this is the closest thing to "the calendar" this app
- * owns; exact time slots are Cal.com's, not ours. */
+ * sorted agenda — the closest thing to "the calendar" this app owns. */
 export function deriveAppointments(counselor: BookingsSource): TherapistAppointment[] {
   const paid: TherapistAppointment[] = counselor.sessionBookings.map((b) => ({
     id: b.id,
@@ -81,6 +80,7 @@ export function deriveAppointments(counselor: BookingsSource): TherapistAppointm
     email: b.email,
     phone: b.phone,
     date: b.preferredDate,
+    time: b.preferredTime ?? undefined,
     status: b.status,
     createdAt: b.createdAt,
   }));

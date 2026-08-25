@@ -10,6 +10,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 import { formatSlotTime } from "@/lib/format-slot";
 import PrivacyBadge from "@/components/privacy-badge";
+import MonthCalendar from "@/components/month-calendar";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -239,29 +240,15 @@ export default function SessionBookingFlow({
       {usingSlots ? (
         <div>
           <label className={labelClass}>{dict.bookingForm.pickTimeHeading}</label>
-          <div className="flex flex-wrap gap-2">
-            {dates.map((date) => (
-              <button
-                key={date}
-                type="button"
-                onClick={() => {
-                  setSelectedDate(date);
-                  setSelectedSlot(byDate.get(date)![0]);
-                }}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  selectedDate === date
-                    ? "bg-brand-700 text-white"
-                    : "border border-brand-200 text-ink/60 hover:bg-brand-50"
-                }`}
-              >
-                {new Date(`${date}T00:00:00`).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}
-              </button>
-            ))}
-          </div>
+          <MonthCalendar
+            highlightedDates={new Set(dates)}
+            selectedDate={selectedDate}
+            onSelectDate={(date) => {
+              setSelectedDate(date);
+              setSelectedSlot(byDate.get(date)![0]);
+            }}
+            locale={locale}
+          />
           <div className="mt-3 flex flex-wrap gap-2">
             {(byDate.get(selectedDate ?? "") ?? []).map((slot) => (
               <button
