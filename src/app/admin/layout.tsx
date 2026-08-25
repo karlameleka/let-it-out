@@ -13,6 +13,7 @@ const TABS = [
   { href: "/admin/promo-codes", label: "Promo codes" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/events", label: "Events" },
+  { href: "/admin/notifications", label: "Notifications" },
   { href: "/admin/workshops", label: "Workshop inquiries" },
   { href: "/admin/workshop-signups", label: "Workshop notify list" },
   { href: "/admin/messages", label: "Contact messages" },

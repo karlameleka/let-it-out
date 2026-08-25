@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { sendPasswordResetEmail, sendTherapistLoginLinkEmail } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
+import { sendPushToAllSubscribers } from "@/lib/web-push";
 
 const PORTAL_SETUP_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const LOGIN_LINK_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -25,6 +26,115 @@ export async function updateBookingStatus(formData: FormData) {
   const status = String(formData.get("status"));
   await prisma.bookingRequest.update({ where: { id: bookingId }, data: { status: status as never } });
   revalidatePath("/admin/bookings");
+}
+
+function parseOptionalMeetingLink(raw: string): { ok: true; value: string | null } | { ok: false } {
+  if (!raw) return { ok: true, value: null };
+  try {
+    new URL(raw);
+    return { ok: true, value: raw };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export type SessionBookingEditFormState = { error?: string; success?: boolean } | undefined;
+
+/** Full edit for a paid SessionBooking — everything but the amount actually
+ * charged (priceEGP/discountEGP/paymentRef stay untouched here, since
+ * editing them wouldn't change what Paymob actually processed). */
+export async function updateSessionBooking(
+  _prevState: SessionBookingEditFormState,
+  formData: FormData,
+): Promise<SessionBookingEditFormState> {
+  await requireAdmin();
+
+  const bookingId = String(formData.get("bookingId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const counselorId = String(formData.get("counselorId") ?? "").trim();
+  const preferredDate = String(formData.get("preferredDate") ?? "").trim();
+  const preferredTime = String(formData.get("preferredTime") ?? "").trim();
+  const status = String(formData.get("status") ?? "");
+  const meetingLinkRaw = String(formData.get("meetingLink") ?? "").trim();
+
+  if (!bookingId) return { error: "Missing booking." };
+  if (!name || !email || !phone || !counselorId || !preferredDate) {
+    return { error: "Please fill in name, email, phone, counselor, and date." };
+  }
+
+  const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
+  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid — include https://" };
+
+  await prisma.sessionBooking.update({
+    where: { id: bookingId },
+    data: {
+      name,
+      email,
+      phone,
+      counselorId,
+      preferredDate,
+      preferredTime: preferredTime || null,
+      status: status as never,
+      meetingLink: meetingLink.value,
+    },
+  });
+
+  revalidatePath("/admin/bookings");
+  revalidatePath("/upcoming");
+  return { success: true };
+}
+
+export type BookingRequestEditFormState = { error?: string; success?: boolean } | undefined;
+
+/** Full edit for a manual BookingRequest — replaces the old status-only
+ * quick form with every editable field. */
+export async function updateBookingRequestFull(
+  _prevState: BookingRequestEditFormState,
+  formData: FormData,
+): Promise<BookingRequestEditFormState> {
+  await requireAdmin();
+
+  const bookingId = String(formData.get("bookingId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const counselorId = String(formData.get("counselorId") ?? "").trim();
+  const preferredDate = String(formData.get("preferredDate") ?? "").trim();
+  const preferredTime = String(formData.get("preferredTime") ?? "").trim();
+  const sessionType = String(formData.get("sessionType") ?? "");
+  const status = String(formData.get("status") ?? "");
+  const message = String(formData.get("message") ?? "").trim();
+  const meetingLinkRaw = String(formData.get("meetingLink") ?? "").trim();
+
+  if (!bookingId) return { error: "Missing booking." };
+  if (!name || !email || !phone || !counselorId || !preferredDate || !preferredTime) {
+    return { error: "Please fill in name, email, phone, counselor, date, and time." };
+  }
+
+  const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
+  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid — include https://" };
+
+  await prisma.bookingRequest.update({
+    where: { id: bookingId },
+    data: {
+      name,
+      email,
+      phone,
+      counselorId,
+      preferredDate,
+      preferredTime,
+      sessionType: sessionType as never,
+      status: status as never,
+      message: message || null,
+      meetingLink: meetingLink.value,
+    },
+  });
+
+  revalidatePath("/admin/bookings");
+  revalidatePath("/upcoming");
+  return { success: true };
 }
 
 export async function updateWorkshopInquiryStatus(formData: FormData) {
@@ -327,4 +437,36 @@ export async function revokeTherapistPortalAccess(formData: FormData) {
     },
   });
   revalidatePath("/admin/counselors/[id]", "page");
+}
+
+export type SendPushFormState = { error?: string; success?: boolean; sent?: number; total?: number } | undefined;
+
+/** Manual push blast to every subscribed browser — the ad hoc counterpart
+ * to the automatic new-event announcement and the daily journal reminder
+ * cron, for anything the admin wants to announce on demand. */
+export async function sendManualPushNotification(
+  _prevState: SendPushFormState,
+  formData: FormData,
+): Promise<SendPushFormState> {
+  await requireAdmin();
+
+  const title = String(formData.get("title") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  const urlRaw = String(formData.get("url") ?? "").trim();
+
+  if (!title) return { error: "Please add a title." };
+  if (!body) return { error: "Please add a message." };
+
+  let url = "/upcoming";
+  if (urlRaw) {
+    if (!urlRaw.startsWith("/")) return { error: "The link should be a path on this site, starting with /" };
+    url = urlRaw;
+  }
+
+  if (!process.env.VAPID_PRIVATE_KEY) {
+    return { error: "Push notifications aren't configured on this deployment yet." };
+  }
+
+  const result = await sendPushToAllSubscribers({ title, body, url });
+  return { success: true, sent: result.sent, total: result.total };
 }

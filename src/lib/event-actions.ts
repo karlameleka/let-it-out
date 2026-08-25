@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { sendPushToAllSubscribers } from "@/lib/web-push";
 
 export async function createEvent(formData: FormData) {
   await requireAdmin();
@@ -39,6 +40,16 @@ export async function createEvent(formData: FormData) {
       meetingLink,
     },
   });
+
+  // Best-effort — a missing/broken web push config must never block the
+  // event itself from being posted. Every subscribed browser (Android
+  // Chrome, desktop, or an installed iOS PWA) gets this the same way.
+  const dateLabel = startAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  await sendPushToAllSubscribers({
+    title: "New event: " + title,
+    body: description ? description.slice(0, 140) : `${dateLabel}${location ? ` · ${location}` : ""}`,
+    url: "/upcoming",
+  }).catch((err) => console.error("[event-actions] Failed to send event announcement push:", err));
 
   revalidatePath("/admin/events");
   revalidatePath("/", "layout");
