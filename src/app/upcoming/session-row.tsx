@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Video } from "lucide-react";
 import { markNotificationRead, dismissNotification } from "@/lib/notification-read-actions";
 import { cancelSessionBooking, cancelBookingRequest } from "@/lib/session-cancel-actions";
 import { useUpcoming } from "@/lib/upcoming-context";
@@ -22,6 +22,7 @@ export default function SessionRow({
   statusClassName,
   canCancel,
   read,
+  meetingLink,
   dict,
 }: {
   itemId: string;
@@ -34,6 +35,7 @@ export default function SessionRow({
   statusClassName: string;
   canCancel: boolean;
   read: boolean;
+  meetingLink?: string | null;
   dict: Dictionary["upcoming"];
 }) {
   const [pending, startTransition] = useTransition();
@@ -42,7 +44,7 @@ export default function SessionRow({
   const router = useRouter();
   const { refetch } = useUpcoming();
 
-  const expandable = Boolean(href) || canCancel;
+  const expandable = Boolean(href) || canCancel || Boolean(meetingLink);
 
   function handleToggle() {
     hapticTap();
@@ -113,6 +115,18 @@ export default function SessionRow({
               >
                 {dict.completePayment}
               </Link>
+            )}
+            {meetingLink && (
+              <a
+                href={meetingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={hapticTap}
+                className="inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
+              >
+                <Video className="h-3.5 w-3.5" strokeWidth={2} />
+                {dict.joinSession}
+              </a>
             )}
             {canCancel && (
               <button

@@ -50,6 +50,7 @@ const en = {
     privacyPolicy: "Privacy Policy",
     terms: "Terms & Conditions",
     shopPolicy: "Shop Policy",
+    therapistPortal: "Therapist portal",
     motto: "A self-exploration journey.",
   },
   helpButton: {
@@ -437,6 +438,7 @@ const en = {
     cancelSession: "Cancel session",
     tapToManage: "Tap to manage",
     deleteNotification: "Delete",
+    joinSession: "Join session",
     markAllRead: "Mark all as read",
     rsvpPrompt: "Will you attend?",
     rsvpAttending: "Attending",

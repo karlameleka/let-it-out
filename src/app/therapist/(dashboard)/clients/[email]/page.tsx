@@ -15,6 +15,7 @@ import ClientNoteForm from "./note-form";
 import ClientNoteItem from "./note-item";
 import ReferClientForm from "./refer-form";
 import AssignResourceForm from "./assign-resource-form";
+import MeetingLinkForm from "./meeting-link-form";
 import PdfOpenButton from "@/components/pdf-open-button";
 
 export default async function TherapistClientProfilePage({
@@ -107,15 +108,22 @@ export default async function TherapistClientProfilePage({
             ) : (
               <div className="mt-3 space-y-2">
                 {client.appointments.map((a) => (
-                  <div
-                    key={`${a.kind}-${a.id}`}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-100 bg-white px-4 py-3"
-                  >
-                    <p className="text-sm text-ink/70">
-                      {a.kind} · {a.date}
-                      {a.time ? ` at ${a.time}` : ""}
-                    </p>
-                    <StatusBadge status={a.status} />
+                  <div key={`${a.kind}-${a.id}`} className="rounded-xl border border-brand-100 bg-white px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm text-ink/70">
+                        {a.kind} · {a.date}
+                        {a.time ? ` at ${a.time}` : ""}
+                      </p>
+                      <StatusBadge status={a.status} />
+                    </div>
+                    {a.status === "CONFIRMED" && (
+                      <MeetingLinkForm
+                        bookingId={a.id}
+                        bookingKind={a.bookingKind}
+                        clientEmail={client.email}
+                        currentLink={a.meetingLink}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

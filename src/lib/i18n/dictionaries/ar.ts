@@ -52,6 +52,7 @@ const ar: Dictionary = {
     privacyPolicy: "سياسة الخصوصية",
     terms: "الشروط والأحكام",
     shopPolicy: "سياسة المتجر",
+    therapistPortal: "بوابة المعالجين",
     motto: "رحلة لاكتشاف الذات.",
   },
   helpButton: {
@@ -427,6 +428,7 @@ const ar: Dictionary = {
     cancelSession: "إلغاء الجلسة",
     tapToManage: "اضغط للإدارة",
     deleteNotification: "حذف",
+    joinSession: "الانضمام للجلسة",
     markAllRead: "تحديد الكل كمقروء",
     rsvpPrompt: "هل ستحضر؟",
     rsvpAttending: "سأحضر",

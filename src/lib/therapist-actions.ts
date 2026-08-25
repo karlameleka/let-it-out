@@ -5,7 +5,8 @@ import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
 import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES } from "@/lib/therapist-toolkit";
 import { getBaseUrl } from "@/lib/base-url";
-import { sendReferralNotificationEmail, sendAssignedResourceNotificationEmail } from "@/lib/email";
+import { sendReferralNotificationEmail, sendAssignedResourceNotificationEmail, sendMeetingLinkEmail } from "@/lib/email";
+import { formatSlotTime } from "@/lib/format-slot";
 import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/therapist-data";
 
 export type TherapistProfileFormState = { error?: string; success?: boolean } | undefined;
@@ -526,6 +527,77 @@ export async function assignResourceNote(
   await notifyClientOfAssignedResource(clientEmail, clientName, session.name, isAssignment ? "an assignment" : "a note");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  return { success: true };
+}
+
+export type MeetingLinkFormState = { error?: string; success?: boolean } | undefined;
+
+/** Sets/updates the video-call link for one confirmed booking and emails
+ * it to the client immediately — fires on every save, not just the first,
+ * so a corrected link always reaches them right away. Scoped to this
+ * counselor's own booking via a findFirst-then-update pair, same ownership
+ * pattern as the rest of this file. */
+export async function setMeetingLink(
+  _prevState: MeetingLinkFormState,
+  formData: FormData,
+): Promise<MeetingLinkFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const bookingId = String(formData.get("bookingId") ?? "");
+  const bookingKind = String(formData.get("bookingKind") ?? "");
+  const clientEmailForRevalidate = String(formData.get("clientEmail") ?? "").trim();
+  const meetingLink = String(formData.get("meetingLink") ?? "").trim();
+
+  if (!bookingId || (bookingKind !== "paid" && bookingKind !== "request")) {
+    return { error: "Invalid booking." };
+  }
+  if (!meetingLink) return { error: "Please add a meeting link." };
+  try {
+    new URL(meetingLink);
+  } catch {
+    return { error: "That link doesn't look valid — include https://" };
+  }
+
+  let clientEmail: string;
+  let clientName: string;
+  let preferredDate: string;
+  let preferredTime: string | null;
+
+  if (bookingKind === "paid") {
+    const booking = await prisma.sessionBooking.findFirst({ where: { id: bookingId, counselorId: session.counselorId } });
+    if (!booking) return { error: "Booking not found." };
+    await prisma.sessionBooking.update({ where: { id: bookingId }, data: { meetingLink } });
+    clientEmail = booking.email;
+    clientName = booking.name;
+    preferredDate = booking.preferredDate;
+    preferredTime = booking.preferredTime;
+  } else {
+    const booking = await prisma.bookingRequest.findFirst({ where: { id: bookingId, counselorId: session.counselorId } });
+    if (!booking) return { error: "Booking not found." };
+    await prisma.bookingRequest.update({ where: { id: bookingId }, data: { meetingLink } });
+    clientEmail = booking.email;
+    clientName = booking.name;
+    preferredDate = booking.preferredDate;
+    preferredTime = booking.preferredTime;
+  }
+
+  const dateLabel = new Date(`${preferredDate}T00:00:00`).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  const sessionLabel = preferredTime ? `${dateLabel} · ${formatSlotTime(preferredTime, "en")}` : dateLabel;
+
+  await sendMeetingLinkEmail({
+    to: clientEmail,
+    name: clientName || "there",
+    counselorName: session.name,
+    meetingLink,
+    sessionLabel,
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmailForRevalidate)}`);
   return { success: true };
 }
 

@@ -112,6 +112,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
             <Link href="/privacy" className="hover:text-white active:text-white">{dict.privacyPolicy}</Link>
             <Link href="/terms" className="hover:text-white active:text-white">{dict.terms}</Link>
             <Link href="/shop-policy" className="hover:text-white active:text-white">{dict.shopPolicy}</Link>
+            <Link href="/therapist/login" className="hover:text-white active:text-white">{dict.therapistPortal}</Link>
           </div>
           <p className="italic">{dict.motto}</p>
         </div>

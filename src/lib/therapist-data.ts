@@ -59,6 +59,9 @@ export function deriveClients(counselor: BookingsSource): TherapistClient[] {
 export type TherapistAppointment = {
   id: string;
   kind: "Paid session" | "Session request";
+  /** Which table this id belongs to — pass to setMeetingLink so it knows
+   * SessionBooking vs BookingRequest. */
+  bookingKind: "paid" | "request";
   name: string;
   email: string;
   phone: string;
@@ -66,6 +69,7 @@ export type TherapistAppointment = {
   date: string;
   time?: string;
   status: string;
+  meetingLink: string | null;
   createdAt: Date;
 };
 
@@ -75,23 +79,27 @@ export function deriveAppointments(counselor: BookingsSource): TherapistAppointm
   const paid: TherapistAppointment[] = counselor.sessionBookings.map((b) => ({
     id: b.id,
     kind: "Paid session",
+    bookingKind: "paid",
     name: b.name,
     email: b.email,
     phone: b.phone,
     date: b.preferredDate,
     time: b.preferredTime ?? undefined,
     status: b.status,
+    meetingLink: b.meetingLink,
     createdAt: b.createdAt,
   }));
   const requests: TherapistAppointment[] = counselor.bookingRequests.map((b) => ({
     id: b.id,
     kind: "Session request",
+    bookingKind: "request",
     name: b.name,
     email: b.email,
     phone: b.phone,
     date: b.preferredDate,
     time: b.preferredTime,
     status: b.status,
+    meetingLink: b.meetingLink,
     createdAt: b.createdAt,
   }));
   return [...paid, ...requests].sort((a, b) => a.date.localeCompare(b.date));

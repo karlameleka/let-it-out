@@ -709,6 +709,70 @@ export async function sendAssignedResourceNotificationEmail({
   }
 }
 
+/**
+ * Sent to the client the moment their counselor posts (or updates) a
+ * meeting link for a confirmed session — same fail-silently behavior as
+ * the other senders. Deliberately fires on every save, not just the
+ * first, so a corrected link always reaches the client immediately.
+ */
+export async function sendMeetingLinkEmail({
+  to,
+  name,
+  counselorName,
+  meetingLink,
+  sessionLabel,
+}: {
+  to: string;
+  name: string;
+  counselorName: string;
+  meetingLink: string;
+  /** e.g. "Wed 26 Aug · 14:00 – 14:50" — omitted when no exact time is known. */
+  sessionLabel?: string | null;
+}) {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] Skipped meeting link email to ${to} — not configured.`);
+    return;
+  }
+
+  const text = [
+    `Hi ${name},`,
+    "",
+    `${counselorName} has posted the video link for your session${sessionLabel ? ` (${sessionLabel})` : ""}:`,
+    "",
+    meetingLink,
+    "",
+    "Warmly,\nThe Let It Out team",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+      <p>Hi ${escapeHtml(name)},</p>
+      <p><strong>${escapeHtml(counselorName)}</strong> has posted the video link for your session${
+        sessionLabel ? ` — <strong>${escapeHtml(sessionLabel)}</strong>` : ""
+      }.</p>
+      <p style="margin: 24px 0;">
+        <a href="${meetingLink}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Join your session</a>
+      </p>
+      <p style="color: #6b7c80; font-size: 13px;">${escapeHtml(meetingLink)}</p>
+      <p>Warmly,<br />The Let It Out team</p>
+    </div>
+  `;
+
+  try {
+    await transport.sendMail({
+      from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: `Let It Out — Your session link from ${counselorName}`,
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error(`[email] Failed to send meeting link email to ${to}:`, err);
+  }
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")

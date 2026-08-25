@@ -28,6 +28,9 @@ export type UpcomingSession = {
    * before the session, false once already cancelled/completed. */
   canCancel: boolean;
   read: boolean;
+  /** Video-call link the counselor posted from their portal — set only
+   * once a session is confirmed. */
+  meetingLink: string | null;
 };
 
 export type UpcomingEvent = {
@@ -74,6 +77,7 @@ async function getUpcomingSessions(email: string): Promise<UpcomingSession[]> {
       status: s.status,
       href: s.status === "PENDING_PAYMENT" ? `/counseling/session/${s.id}` : undefined,
       canCancel: sessionCanCancel(s.status, s.preferredDate, s.preferredTime),
+      meetingLink: s.meetingLink,
     })),
     ...requests.map((r) => ({
       id: `request-${r.id}`,
@@ -84,6 +88,7 @@ async function getUpcomingSessions(email: string): Promise<UpcomingSession[]> {
       time: r.preferredTime,
       status: r.status,
       canCancel: sessionCanCancel(r.status, r.preferredDate, r.preferredTime),
+      meetingLink: r.meetingLink,
     })),
   ];
 

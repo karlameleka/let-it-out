@@ -215,6 +215,9 @@ model SessionBooking {
   status        SessionBookingStatus @default(PENDING_PAYMENT)
   paymentRef    String?
   paymentNote   String?              @db.Text
+  // Set by the counselor from their portal once a session is confirmed —
+  // immediately surfaced to the client on /upcoming and emailed to them.
+  meetingLink   String?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 }
@@ -487,6 +490,9 @@ model BookingRequest {
   preferredTime  String
   message        String?       @db.Text
   status         BookingStatus @default(PENDING)
+  // Set by the counselor from their portal once a session is confirmed —
+  // immediately surfaced to the client on /upcoming and emailed to them.
+  meetingLink    String?
   createdAt      DateTime      @default(now())
 }
 
