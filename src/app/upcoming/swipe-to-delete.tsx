@@ -6,8 +6,8 @@ import { hapticTap, hapticWarning } from "@/lib/haptics";
 const THRESHOLD = 88;
 const MAX_DRAG = 140;
 
-/** Swipe-right-to-delete wrapper for a notification row. Dragging the child
- * far enough right and releasing permanently dismisses it (calls
+/** Swipe-left-to-delete wrapper for a notification row. Dragging the child
+ * far enough left and releasing permanently dismisses it (calls
  * `onDelete`, expected to hit `dismissNotification` and refresh); a short
  * drag springs back. Pointer Events cover touch + mouse in one handler set. */
 export default function SwipeToDelete({
@@ -35,12 +35,12 @@ export default function SwipeToDelete({
   function handlePointerMove(e: React.PointerEvent) {
     if (startX.current === null) return;
     const delta = e.clientX - startX.current;
-    const clamped = Math.max(0, Math.min(delta, MAX_DRAG));
+    const clamped = Math.min(0, Math.max(delta, -MAX_DRAG));
     setDragX(clamped);
-    if (clamped >= THRESHOLD && !armed.current) {
+    if (clamped <= -THRESHOLD && !armed.current) {
       armed.current = true;
       hapticTap();
-    } else if (clamped < THRESHOLD) {
+    } else if (clamped > -THRESHOLD) {
       armed.current = false;
     }
   }
@@ -52,7 +52,7 @@ export default function SwipeToDelete({
     if (armed.current) {
       hapticWarning();
       setRemoving(true);
-      setDragX(MAX_DRAG + 60);
+      setDragX(-(MAX_DRAG + 60));
       setTimeout(onDelete, 160);
     } else {
       setDragX(0);
@@ -62,7 +62,7 @@ export default function SwipeToDelete({
   return (
     <div className="relative overflow-hidden rounded-2xl">
       <div
-        className="absolute inset-y-0 left-0 flex w-full items-center rounded-2xl bg-red-500 px-5 text-sm font-semibold text-white"
+        className="absolute inset-y-0 right-0 flex w-full items-center justify-end rounded-2xl bg-red-500 px-5 text-sm font-semibold text-white"
         aria-hidden
       >
         {deleteLabel}

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, BellRing } from "lucide-react";
+import Link from "next/link";
+import { Bell, BellOff, BellRing, Share } from "lucide-react";
 import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-actions";
+import { useInstallPrompt } from "@/lib/use-install-prompt";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -16,6 +18,12 @@ type Status = "checking" | "unsupported" | "off" | "on" | "denied";
 export default function JournalReminderToggle() {
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
+  // iOS Safari only exposes the Push/Notification APIs at all once the
+  // site has been added to the Home Screen (iOS 16.4+) — there is no way
+  // to enable push notifications in a regular Safari tab, so that state is
+  // detected here to explain why, rather than just silently hiding the
+  // toggle like any other unsupported browser.
+  const { iOS, installed, ready: installReady } = useInstallPrompt();
 
   useEffect(() => {
     // Reading browser support/permission state after mount (rather than
@@ -88,7 +96,26 @@ export default function JournalReminderToggle() {
     }
   }
 
-  if (status === "checking" || status === "unsupported") return null;
+  if (status === "checking" || !installReady) return null;
+
+  if (iOS && !installed) {
+    return (
+      <div className="rounded-xl border border-brand-100 bg-brand-50/50 px-4 py-3 text-xs text-ink/60">
+        <p className="flex items-start gap-1.5">
+          <Share className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" strokeWidth={2} />
+          <span>
+            On iPhone, push notifications only work once Let It Out is added to your Home Screen.{" "}
+            <Link href="/install" className="font-medium text-brand-600 underline-offset-2 hover:underline">
+              Install the app
+            </Link>{" "}
+            to enable reminders.
+          </span>
+        </p>
+      </div>
+    );
+  }
+
+  if (status === "unsupported") return null;
 
   if (status === "denied") {
     return (

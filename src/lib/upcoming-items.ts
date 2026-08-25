@@ -42,6 +42,9 @@ export type UpcomingEvent = {
   location: string | null;
   myRsvp: RSVPStatus | null;
   read: boolean;
+  /** Online session link the admin posted at creation — only meaningful
+   * (and only ever shown) once this client's RSVP is ATTENDING. */
+  meetingLink: string | null;
 };
 
 function sessionCanCancel(status: string, date: string, time: string | null): boolean {
@@ -105,16 +108,22 @@ async function getUpcomingEvents(userId: string): Promise<UpcomingEvent[]> {
     orderBy: { startAt: "asc" },
   });
 
-  return events.map((e) => ({
-    id: e.id,
-    title: e.title,
-    description: e.description,
-    date: e.startAt.toISOString().slice(0, 10),
-    time: e.startAt.toISOString().slice(11, 16),
-    location: e.location,
-    myRsvp: e.rsvps[0]?.status ?? null,
-    read: false,
-  }));
+  return events.map((e) => {
+    const myRsvp = e.rsvps[0]?.status ?? null;
+    return {
+      id: e.id,
+      title: e.title,
+      description: e.description,
+      date: e.startAt.toISOString().slice(0, 10),
+      time: e.startAt.toISOString().slice(11, 16),
+      location: e.location,
+      myRsvp,
+      read: false,
+      // Only surfaced to clients who've RSVP'd attending — never leaked to
+      // a "maybe"/"not attending"/no-response client via this data layer.
+      meetingLink: myRsvp === "ATTENDING" ? e.meetingLink : null,
+    };
+  });
 }
 
 /** Full data for the /upcoming page: every upcoming counseling

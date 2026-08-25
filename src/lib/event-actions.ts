@@ -12,11 +12,23 @@ export async function createEvent(formData: FormData) {
   const time = String(formData.get("time") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const meetingLinkRaw = String(formData.get("meetingLink") ?? "").trim();
 
   if (!title || !date) return;
 
   const startAt = new Date(`${date}T${time || "00:00"}:00`);
   if (Number.isNaN(startAt.getTime())) return;
+
+  let meetingLink: string | null = null;
+  if (meetingLinkRaw) {
+    try {
+      new URL(meetingLinkRaw);
+      meetingLink = meetingLinkRaw;
+    } catch {
+      // Not a valid URL — silently dropped rather than blocking the whole
+      // event from being posted over one optional field.
+    }
+  }
 
   await prisma.event.create({
     data: {
@@ -24,6 +36,7 @@ export async function createEvent(formData: FormData) {
       startAt,
       location: location || null,
       description: description || null,
+      meetingLink,
     },
   });
 

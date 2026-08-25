@@ -431,6 +431,9 @@ model Event {
   description String?     @db.Text
   startAt     DateTime
   location    String?
+  // Online session link, set at creation — shown only to clients who RSVP
+  // "attending", both on /upcoming and via their read/unread notification.
+  meetingLink String?
   createdAt   DateTime    @default(now())
   rsvps       EventRSVP[]
 

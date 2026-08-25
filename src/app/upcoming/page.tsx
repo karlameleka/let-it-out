@@ -109,6 +109,7 @@ export default async function UpcomingPage() {
                   description={e.description}
                   myRsvp={e.myRsvp}
                   read={e.read}
+                  meetingLink={e.meetingLink}
                   dict={t}
                 />
               );
