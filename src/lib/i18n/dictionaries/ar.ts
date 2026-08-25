@@ -212,10 +212,8 @@ const ar: Dictionary = {
   },
   counselorProfile: {
     bookHeading: "احجز جلسة",
-    bookDescription: "اختر يومك وادفع أدناه، ثم حدد موعدك الدقيق واحصل على رابط الفيديو فورًا.",
+    bookDescription: "اختر يومك المفضل وادفع أدناه — وسنؤكد معك موعدك الدقيق بعد ذلك.",
     bookDescriptionWithSlots: "اختر موعد جلستك وادفع أدناه — وستحصل على رابط الفيديو فورًا.",
-    calBookHeading: "احجز جلسة",
-    calBookDescription: "اختر موعدًا متاحًا أدناه واحصل على رابط الفيديو فورًا.",
     requestHeading: "اطلب جلسة",
     requestDescription: "أخبرنا بما تبحث عنه وتوقيتك المفضل، وسنؤكد لك الموعد.",
     sessionPrice: "سعر الجلسة",
@@ -225,9 +223,9 @@ const ar: Dictionary = {
     useMyDetails: "استخدام بياناتي",
     continueToPayment: "المتابعة إلى الدفع",
     preferredDay: "اليوم المفضل",
-    preferredDayHint: "ستختار موعدك الدقيق على الجدول بعد الدفع.",
+    preferredDayHint: "سنؤكد معك موعد جلستك الدقيق بعد الدفع.",
     almostThere: "اقتربنا — ادفع",
-    almostThereSuffix: "لفتح الجدول واختيار موعدك الدقيق مع",
+    almostThereSuffix: "لتأكيد جلستك مع",
     justAMoment: "لحظة من فضلك…",
     waitlistHeading: "على قائمة الانتظار حاليًا",
     waitlistDescription:
@@ -258,7 +256,7 @@ const ar: Dictionary = {
   },
   sessionStatus: {
     sessionWith: "جلسة مع",
-    titleConfirmed: "تم استلام الدفع — اختر موعدك",
+    titleConfirmed: "تم استلام الدفع — سنؤكد موعدك",
     titlePending: "أكمل عملية الدفع",
     pillConfirmed: "تم تأكيد الدفع",
     pillPending: "بانتظار الدفع",
@@ -266,10 +264,12 @@ const ar: Dictionary = {
     price: "السعر",
     completePaymentHeading: "أكمل عملية الدفع",
     completePaymentText:
-      "تم حفظ حجزك لكنه لم يُؤكَّد بعد. أكمل الدفع أدناه لفتح الجدول واختيار موعد جلستك الدقيق.",
-    pickTimeHeading: "اختر موعد جلستك",
+      "تم حفظ حجزك لكنه لم يُؤكَّد بعد. أكمل الدفع أدناه — وسنؤكد معك موعد جلستك الدقيق بعد ذلك.",
+    completePaymentTextWithTime:
+      "تم حفظ حجزك لكنه لم يُؤكَّد بعد. أكمل الدفع أدناه لتأكيد جلستك.",
+    pickTimeHeading: "سنتواصل معك قريبًا",
     pickTimeText:
-      "تستمر الجلسات 50 دقيقة عبر مكالمة فيديو. اختر موعدًا متاحًا أدناه — وستحصل على تأكيد برابط الفيديو فورًا.",
+      "تستمر الجلسات 50 دقيقة عبر مكالمة فيديو. سيتواصل معك فريقنا عبر البريد الإلكتروني أو الهاتف قريبًا لتأكيد موعد جلستك الدقيق.",
     time: "الوقت",
     titleConfirmedWithTime: "كل شيء جاهز!",
     confirmedWithTimeText: "تم حجز جلستك — ستصلك رسالة تأكيد برابط الفيديو عبر البريد الإلكتروني قبل الموعد.",

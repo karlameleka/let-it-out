@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Container, Eyebrow } from "@/components/ui";
 import BookingForm from "./booking-form";
-import CalBooking from "@/components/cal-booking";
 import SessionBookingFlow from "./session-booking-flow";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -39,10 +38,7 @@ export default async function CounselorPage({
   const dict = getDictionary(locale);
   const t = dict.counselorProfile;
   const account = session ? { name: session.name, email: session.email, phone: session.phone } : null;
-  // Needed for the pay-first flow (priceEGP set) and the manual
-  // request-form flow (no price, no bookingUrl) — skipped only for the
-  // pure direct-Cal.com flow (bookingUrl, no price), which doesn't use it.
-  const slots = counselor.bookingUrl && !counselor.priceEGP ? [] : await getAvailableSlots(counselor.id);
+  const slots = await getAvailableSlots(counselor.id);
 
   return (
     <section className="pt-6 pb-10 sm:pt-14 sm:pb-20">
@@ -151,16 +147,6 @@ export default async function CounselorPage({
                     account={account}
                     slots={slots}
                   />
-                </div>
-              </>
-            ) : counselor.bookingUrl ? (
-              <>
-                <h2 className="font-display text-lg font-semibold text-brand-900">
-                  {t.calBookHeading}
-                </h2>
-                <p className="mt-1 text-sm text-ink/60">{t.calBookDescription}</p>
-                <div className="mt-4">
-                  <CalBooking calLink={counselor.bookingUrl.replace(/^https?:\/\/(www\.)?cal\.com\//, "")} />
                 </div>
               </>
             ) : (

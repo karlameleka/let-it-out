@@ -16,7 +16,7 @@ const createSessionBookingSchema = z.object({
   preferredDate: z.string().trim().min(1, "Please choose a preferred day."),
   // Set when picked from the in-app slot picker (counselor has
   // CounselorAvailability windows configured) — empty/omitted for the
-  // day-only fallback, where Cal.com finalizes the exact time post-payment.
+  // day-only fallback, where the counselor follows up to confirm a time.
   preferredTime: z.string().trim().optional(),
   promoCode: z.string().trim().optional(),
 });
@@ -72,7 +72,7 @@ export async function createSessionBooking(
   }
 
   const counselor = await prisma.counselor.findUnique({ where: { id: parsed.data.counselorId } });
-  if (!counselor || !counselor.active || !counselor.bookingUrl || !counselor.priceEGP) {
+  if (!counselor || !counselor.active || !counselor.priceEGP) {
     return { error: "This counselor isn't available for online booking right now." };
   }
 

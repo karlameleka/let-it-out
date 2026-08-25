@@ -231,7 +231,6 @@ export async function updateCounselorProfileFromAdmin(formData: FormData) {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const bookingUrlRaw = String(formData.get("bookingUrl") ?? "").trim();
   const photoUrlRaw = String(formData.get("photoUrl") ?? "").trim();
 
   if (!name || !credentials || !bio) return;
@@ -244,7 +243,6 @@ export async function updateCounselorProfileFromAdmin(formData: FormData) {
       bio,
       specialties,
       languages,
-      bookingUrl: bookingUrlRaw || null,
       ...(photoUrlRaw ? { photoUrl: photoUrlRaw } : {}),
     },
   });

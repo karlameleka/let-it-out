@@ -60,8 +60,8 @@ export async function POST(req: Request) {
         // so we can reconcile the callback with this exact SessionBooking.
         special_reference: booking.id,
         // Where Paymob sends the customer back to after paying — the
-        // session-booking status page, which reveals the Cal.com scheduler
-        // once the webhook has confirmed payment.
+        // session-booking status page, which confirms the booking once
+        // the webhook has confirmed payment.
         redirection_url: `${origin}/counseling/session/${booking.id}`,
         billing_data: {
           first_name: firstName || "Guest",

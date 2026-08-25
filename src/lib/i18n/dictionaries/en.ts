@@ -217,10 +217,8 @@ const en = {
   counselorProfile: {
     bookHeading: "Book a session",
     bookDescription:
-      "Pick a day and pay below, then choose your exact time slot and get your video link right away.",
+      "Pick a preferred day and pay below — we'll confirm your exact session time with you afterward.",
     bookDescriptionWithSlots: "Pick your session time and pay below — you'll get your video link right away.",
-    calBookHeading: "Book a session",
-    calBookDescription: "Pick an open slot below and get your video link right away.",
     requestHeading: "Request a session",
     requestDescription: "Tell us what you're looking for and your preferred timing, and we'll confirm.",
     sessionPrice: "Session price",
@@ -230,9 +228,9 @@ const en = {
     useMyDetails: "Use my details",
     continueToPayment: "Continue to payment",
     preferredDay: "Preferred day",
-    preferredDayHint: "You'll pick your exact time slot on the scheduler after payment.",
+    preferredDayHint: "We'll confirm your exact session time with you after payment.",
     almostThere: "Almost there — pay",
-    almostThereSuffix: "to unlock the scheduler and pick your exact time with",
+    almostThereSuffix: "to confirm your session with",
     justAMoment: "Just a moment…",
     waitlistHeading: "Currently on the waitlist",
     waitlistDescription:
@@ -264,7 +262,7 @@ const en = {
   },
   sessionStatus: {
     sessionWith: "Session with",
-    titleConfirmed: "Payment received — pick your time",
+    titleConfirmed: "Payment received — we'll confirm your time",
     titlePending: "Complete your payment",
     pillConfirmed: "Payment confirmed",
     pillPending: "Awaiting payment",
@@ -272,10 +270,12 @@ const en = {
     price: "Price",
     completePaymentHeading: "Complete your payment",
     completePaymentText:
-      "Your booking is saved but not yet confirmed. Finish payment below to unlock the scheduler and pick your exact session time.",
-    pickTimeHeading: "Pick your session time",
+      "Your booking is saved but not yet confirmed. Finish payment below — we'll confirm your exact session time with you afterward.",
+    completePaymentTextWithTime:
+      "Your booking is saved but not yet confirmed. Finish payment below to confirm your session.",
+    pickTimeHeading: "We'll be in touch",
     pickTimeText:
-      "Sessions run 50 minutes over video call. Pick an open slot below — you'll get a confirmation with your video link right away.",
+      "Sessions run 50 minutes over video call. Our team will reach out by email or phone shortly to confirm your exact session time.",
     time: "Time",
     titleConfirmedWithTime: "You're all set!",
     confirmedWithTimeText: "Your session is booked — you'll get a confirmation with your video link by email ahead of time.",

@@ -389,13 +389,13 @@ let orderUrl = "";
 }
 
 // --- Flow 3: counseling booking (manual form) --------------------------------
-// Both real active counselors (Verna, Karla) now have a live Cal.com
-// bookingUrl, so no current page exposes the manual BookingForm to test
-// through the browser. The component and its submitBooking action are
-// unchanged and still used automatically as a fallback for any future
-// counselor added without a bookingUrl — covered by Flow 13's assertion
-// that a counselor without one still gets the manual form. Re-add a
-// live submission test here if a real counselor without Cal.com exists.
+// Both real active counselors (Verna, Karla) now have priceEGP set, so no
+// current page exposes the manual BookingForm to test through the browser.
+// The component and its submitBooking action are unchanged and still used
+// automatically as a fallback for any counselor without a price set —
+// covered by Flow 13's assertion that a priced counselor gets the pay-first
+// flow instead. Re-add a live submission test here if a real counselor
+// without a price exists.
 
 // --- Flow 4: workshop inquiry + contact form ---------------------------------
 {
@@ -764,22 +764,25 @@ let orderUrl = "";
   await ctx.close();
 }
 
-// --- Flow 13: live Cal.com booking for both counselors -----------------------
+// --- Flow 13: pay-first in-app booking for both counselors --------------------
+// Both real active counselors (Verna, Karla) have priceEGP set, so their
+// page shows the pay-first SessionBookingFlow (with an in-app calendar/slot
+// picker) instead of the free manual request form.
 {
   const ctx = await newContext();
   const page = await ctx.newPage();
 
   await page.goto(`${BASE}/counseling/karla-meleka`);
-  const karlaCalVisible = await page.locator("text=Book a session").first().isVisible().catch(() => false);
+  const karlaPayFirstVisible = await page.locator("text=Book a session").first().isVisible().catch(() => false);
   const karlaManualFormGone = !(await page.locator("text=Request a session").first().isVisible().catch(() => false));
-  log("Karla's page shows the live Cal.com booking heading", karlaCalVisible);
-  log("Karla's manual form is replaced now that bookingUrl is set", karlaManualFormGone);
+  log("Karla's page shows the pay-first booking heading", karlaPayFirstVisible);
+  log("Karla's manual form is replaced now that priceEGP is set", karlaManualFormGone);
 
   await page.goto(`${BASE}/counseling/verna-awad`);
-  const vernaCalVisible = await page.locator("text=Book a session").first().isVisible().catch(() => false);
+  const vernaPayFirstVisible = await page.locator("text=Book a session").first().isVisible().catch(() => false);
   const vernaManualFormGone = !(await page.locator("text=Request a session").first().isVisible().catch(() => false));
-  log("Verna's page shows the live Cal.com booking heading", vernaCalVisible);
-  log("Verna's manual form is replaced now that bookingUrl is set", vernaManualFormGone);
+  log("Verna's page shows the pay-first booking heading", vernaPayFirstVisible);
+  log("Verna's manual form is replaced now that priceEGP is set", vernaManualFormGone);
 
   await ctx.close();
 }

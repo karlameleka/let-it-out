@@ -17,11 +17,9 @@ const AVAILABILITY_OPTIONS = [
 export default function TherapistPricingForm({
   priceEGP,
   availabilityStatus,
-  bookingUrl,
 }: {
   priceEGP: number | null;
   availabilityStatus: string;
-  bookingUrl: string | null;
 }) {
   const [state, formAction, pending] = useActionState(updateTherapistPricing, undefined);
 
@@ -39,7 +37,8 @@ export default function TherapistPricingForm({
           className={fieldClass}
         />
         <p className="mt-1.5 text-xs text-ink/50">
-          When set alongside your Cal.com link below, clients pay this before picking their exact time slot.
+          Once set, clients pay this before picking an exact time slot from your availability windows
+          on the Calendar page.
         </p>
       </div>
 
@@ -50,22 +49,6 @@ export default function TherapistPricingForm({
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
-      </div>
-
-      <div>
-        <label htmlFor="bookingUrl" className={labelClass}>Cal.com booking link</label>
-        <input
-          id="bookingUrl"
-          name="bookingUrl"
-          type="url"
-          defaultValue={bookingUrl ?? ""}
-          placeholder="https://cal.com/your-name/50min"
-          className={fieldClass}
-        />
-        <p className="mt-1.5 text-xs text-ink/50">
-          Your live scheduling calendar. Set this up once in Cal.com, then paste the link here — that&rsquo;s
-          where clients pick their exact time and where your real availability lives.
-        </p>
       </div>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}

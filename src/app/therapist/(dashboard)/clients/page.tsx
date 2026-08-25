@@ -66,8 +66,7 @@ export default async function TherapistClientsPage() {
           Session requests <span className="text-sm font-normal text-ink/40">({requests.length})</span>
         </h2>
         <p className="mt-1 text-sm text-ink/60">
-          Manual requests from clients booking without Cal.com — update the status once you&rsquo;ve been
-          in touch.
+          Manual booking requests from clients — update the status once you&rsquo;ve been in touch.
         </p>
         {requests.length === 0 ? (
           <p className="mt-4 text-sm text-ink/60">No session requests yet.</p>

@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Container } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
-import CalBooking from "@/components/cal-booking";
 import RetrySessionPayment from "./retry-session-payment";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -70,7 +69,9 @@ export default async function SessionBookingPage({
         {booking.status === "PENDING_PAYMENT" && (
           <div className="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-6">
             <h2 className="font-display font-semibold text-brand-900">{t.completePaymentHeading}</h2>
-            <p className="mt-3 text-sm text-ink/80">{t.completePaymentText}</p>
+            <p className="mt-3 text-sm text-ink/80">
+              {booking.preferredTime ? t.completePaymentTextWithTime : t.completePaymentText}
+            </p>
             <div className="mt-6">
               <RetrySessionPayment sessionBookingId={booking.id} amountEGP={booking.priceEGP - booking.discountEGP} />
             </div>
@@ -84,15 +85,10 @@ export default async function SessionBookingPage({
           </div>
         )}
 
-        {booking.status === "CONFIRMED" && !booking.preferredTime && booking.counselor.bookingUrl && (
+        {booking.status === "CONFIRMED" && !booking.preferredTime && (
           <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 shadow-sm">
             <h2 className="font-display font-semibold text-brand-900">{t.pickTimeHeading}</h2>
             <p className="mt-1 text-sm text-ink/60">{t.pickTimeText}</p>
-            <div className="mt-4">
-              <CalBooking
-                calLink={booking.counselor.bookingUrl.replace(/^https?:\/\/(www\.)?cal\.com\//, "")}
-              />
-            </div>
           </div>
         )}
       </div>

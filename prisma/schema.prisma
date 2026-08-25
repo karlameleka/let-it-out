@@ -124,14 +124,10 @@ model Counselor {
   // Notified alongside the admin inbox on every counseling inquiry/booking
   // for this counselor. Null skips the counselor notification silently.
   email        String?
-  // Full Cal.com booking link (e.g. "https://cal.com/karla-meleka/50min").
-  // When set, the counselor's page embeds live Cal.com scheduling instead
-  // of the manual request form.
-  bookingUrl   String?
-  // Session price in EGP. When set alongside bookingUrl, the counselor's
-  // page requires payment before the Cal.com scheduler unlocks; when
-  // bookingUrl is set but this is null, Cal.com is shown directly (no
-  // payment step yet).
+  // Session price in EGP. When set, the counselor's page requires payment
+  // upfront, then lets the client pick an exact date/time from this
+  // counselor's own CounselorAvailability windows. When null, visitors use
+  // the free manual request form instead (BookingRequest, human-confirmed).
   priceEGP     Int?
   // Controls whether the booking UI on this counselor's page is live.
   // WAITLIST/UNAVAILABLE both show a badge and hide the booking form.
@@ -188,13 +184,12 @@ enum SessionBookingStatus {
   CONFIRMED
 }
 
-// A paid pre-booking step for counselors with both bookingUrl and priceEGP
-// set. When the counselor has weekly availability windows configured (see
+// A paid pre-booking step for counselors with priceEGP set. When the
+// counselor has weekly availability windows configured (see
 // CounselorAvailability), the visitor picks a real 50-minute slot in-app
-// and pays — preferredTime is set, no Cal.com involved. Counselors without
-// windows configured yet fall back to the original flow: pick a preferred
-// day, pay, then the Cal.com embed unlocks post-payment to pick the exact
-// time (preferredTime stays null for those rows).
+// and pays — preferredTime is set. Counselors without windows configured
+// yet fall back to picking just a preferred day and paying; preferredTime
+// stays null for those rows and the counselor follows up to confirm a time.
 model SessionBooking {
   id            String               @id @default(cuid())
   counselor     Counselor            @relation(fields: [counselorId], references: [id])
@@ -437,14 +432,12 @@ model BookingRequest {
   createdAt      DateTime      @default(now())
 }
 
-// A recurring weekly window (e.g. "Monday 09:00–17:00") a counselor without
-// their own Cal.com link has opened up for bookings. The public counselor
-// page slices these into concrete 50-minute slots for the next couple of
-// weeks (see availability.ts) so a client picks a real open time instead of
+// A recurring weekly window (e.g. "Monday 09:00–17:00") a counselor has
+// opened up for bookings. The public counselor page slices these into
+// concrete 50-minute slots for the next couple of weeks (see
+// availability.ts) so a client picks a real open time instead of
 // submitting a free-text "preferred" date/time that has to be manually
-// confirmed. Counselors who use Cal.com (bookingUrl set) manage their real
-// availability there instead — this only applies to the manual-request
-// fallback path.
+// confirmed.
 model CounselorAvailability {
   id          String    @id @default(cuid())
   counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)

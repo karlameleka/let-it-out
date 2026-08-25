@@ -68,7 +68,6 @@ export async function updateTherapistPricing(
 
   const priceRaw = String(formData.get("priceEGP") ?? "").trim();
   const availabilityStatus = String(formData.get("availabilityStatus") ?? "AVAILABLE");
-  const bookingUrlRaw = String(formData.get("bookingUrl") ?? "").trim();
 
   if (!AVAILABILITY_VALUES.includes(availabilityStatus as never)) {
     return { error: "Invalid availability status." };
@@ -79,7 +78,6 @@ export async function updateTherapistPricing(
     data: {
       priceEGP: priceRaw === "" ? null : Math.max(0, Number(priceRaw)),
       availabilityStatus: availabilityStatus as never,
-      bookingUrl: bookingUrlRaw || null,
     },
   });
 

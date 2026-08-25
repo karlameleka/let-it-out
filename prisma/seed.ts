@@ -3,13 +3,10 @@ import bcrypt from "bcryptjs";
 
 async function main() {
   // --- Counselors -----------------------------------------------------
-  // bookingUrl: once a counselor has a live Cal.com account with their
-  // Google Calendar connected and Google Meet enabled as the conferencing
-  // location, set this to their full event link (e.g.
-  // "https://cal.com/verna-awad/50min-session") and their page will
-  // automatically switch from the manual request form to the live Cal.com
-  // scheduler. Leave null until that's ready — the manual form keeps
-  // working in the meantime.
+  // priceEGP: once set, the counselor's page requires payment upfront, then
+  // lets clients pick an exact date/time from that counselor's own
+  // CounselorAvailability windows (set up in their therapist portal). Leave
+  // null for the free manual-request form instead.
   const counselors = [
     {
       slug: "verna-awad",
@@ -20,7 +17,6 @@ async function main() {
       languages: ["English", "Arabic"],
       sortOrder: 0,
       active: true,
-      bookingUrl: "https://cal.com/karlameleka/verna-awad",
       priceEGP: 1000,
       photoUrl: "/counselors/verna-awad.jpg",
     },
@@ -33,7 +29,6 @@ async function main() {
       languages: ["English", "Arabic", "French"],
       sortOrder: 1,
       active: true,
-      bookingUrl: "https://cal.com/karlameleka/counseling-session",
       priceEGP: 800,
       photoUrl: "/counselors/karla-meleka.jpg",
     },

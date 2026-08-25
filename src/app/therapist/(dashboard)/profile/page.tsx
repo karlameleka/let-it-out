@@ -33,7 +33,6 @@ export default async function TherapistProfilePage() {
           <TherapistPricingForm
             priceEGP={counselor.priceEGP}
             availabilityStatus={counselor.availabilityStatus}
-            bookingUrl={counselor.bookingUrl}
           />
         </div>
       </div>

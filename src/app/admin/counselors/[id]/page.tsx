@@ -98,16 +98,6 @@ export default async function AdminCounselorDetailPage({
             Notification email: {counselor.email ?? <span className="text-ink/40">Not set</span>}
           </p>
         </div>
-        {counselor.bookingUrl && (
-          <a
-            href={counselor.bookingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-          >
-            Open Cal.com dashboard →
-          </a>
-        )}
       </div>
 
       <div className="rounded-2xl border border-brand-100 bg-white p-5">
@@ -270,16 +260,6 @@ export default async function AdminCounselorDetailPage({
               />
             </label>
           </div>
-          <label className="block text-sm text-ink/70">
-            <span className="mb-1 block font-medium text-ink/80">Cal.com booking link</span>
-            <input
-              name="bookingUrl"
-              type="url"
-              defaultValue={counselor.bookingUrl ?? ""}
-              placeholder="https://cal.com/..."
-              className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
-            />
-          </label>
           <button
             type="submit"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"

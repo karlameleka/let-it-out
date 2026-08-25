@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink } from "lucide-react";
 import { requireCounselor } from "@/lib/therapist-session";
 import { getOwnCounselorWithBookings, deriveAppointments, todayISO } from "@/lib/therapist-data";
 import { prisma } from "@/lib/db";
@@ -23,27 +22,6 @@ export default async function TherapistCalendarPage() {
 
   return (
     <div className="space-y-8">
-      {counselor.bookingUrl && (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-100 bg-white p-5">
-          <div>
-            <h2 className="font-display font-semibold text-brand-900">Cal.com (legacy)</h2>
-            <p className="mt-1 text-sm text-ink/60">
-              Your profile still has a Cal.com link on file. New bookings now use the availability
-              windows below instead — ask an admin to remove the Cal.com link once you&apos;re ready to
-              stop using it.
-            </p>
-          </div>
-          <a
-            href={counselor.bookingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700"
-          >
-            Open Cal.com <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
-          </a>
-        </div>
-      )}
-
       <AvailabilityManager windows={availabilityWindows} />
 
       <div>

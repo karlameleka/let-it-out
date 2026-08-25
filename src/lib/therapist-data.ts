@@ -62,8 +62,7 @@ export type TherapistAppointment = {
   name: string;
   email: string;
   phone: string;
-  /** ISO "YYYY-MM-DD" — visitor-picked preferred date, entered via a plain
-   * date input, not a confirmed exact time slot (that lives in Cal.com). */
+  /** ISO "YYYY-MM-DD" — visitor-picked preferred date. */
   date: string;
   time?: string;
   status: string;

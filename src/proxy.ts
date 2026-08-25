@@ -14,9 +14,8 @@ const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password"
  * script-src uses 'strict-dynamic' + a per-request nonce: Next's own
  * framework/page scripts get the nonce automatically (see
  * app/getting-started/proxy in the Next docs), and 'strict-dynamic' lets
- * those trusted scripts load further scripts (e.g. the Cal.com embed
- * dynamically injecting app.cal.com/embed/embed.js) without needing to
- * allowlist every third-party script origin by hand.
+ * those trusted scripts load further scripts without needing to allowlist
+ * every third-party script origin by hand.
  *
  * style-src allows 'unsafe-inline': several components use React inline
  * `style={{...}}` (mood colors, animation delays) which nonces can't cover
@@ -66,7 +65,7 @@ export async function proxy(request: NextRequest) {
     img-src 'self' data: blob:;
     font-src 'self';
     connect-src 'self';
-    frame-src https://cal.com https://app.cal.com;
+    frame-src 'none';
     object-src 'none';
     base-uri 'self';
     form-action 'self';
