@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BookOpen } from "lucide-react";
 import { requireCounselor } from "@/lib/therapist-session";
 import { getClientProfile, type IntakeAnswerEntry } from "@/lib/therapist-data";
 import StatusBadge from "../../../status-badge";
@@ -98,21 +99,27 @@ export default async function TherapistClientProfilePage({
             )}
           </div>
 
-          <div>
-            <h2 className="font-display font-semibold text-brand-900">Session notes</h2>
-            <p className="mt-1 text-sm text-ink/60">
-              Private to you — not visible to the client or anyone else at Let It Out.
-            </p>
-            <div className="mt-3">
-              <ClientNoteForm clientEmail={client.email} clientName={client.name} />
-            </div>
-            {client.notes.length > 0 && (
-              <div className="mt-4 space-y-3">
-                {client.notes.map((note) => (
-                  <ClientNoteItem key={note.id} note={note} />
-                ))}
+          <div className="rounded-2xl border border-brand-100 bg-brand-50/30 p-1">
+            <div className="rounded-xl border-l-4 border-brand-600 bg-white p-5">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-brand-600" strokeWidth={2} />
+                <h2 className="font-display font-semibold text-brand-900">{client.name.split(" ")[0]}&rsquo;s session book</h2>
               </div>
-            )}
+              <p className="mt-1 text-sm text-ink/60">
+                One page per session — private to you, never visible to the client or anyone else at Let It Out.
+                {client.notes.length > 0 && ` ${client.notes.length} session${client.notes.length === 1 ? "" : "s"} logged.`}
+              </p>
+              <div className="mt-4">
+                <ClientNoteForm clientEmail={client.email} clientName={client.name} />
+              </div>
+              {client.notes.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  {client.notes.map((note, i) => (
+                    <ClientNoteItem key={note.id} note={note} sessionNumber={client.notes.length - i} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -151,11 +151,17 @@ model Counselor {
   lockedUntil                DateTime?
   lastLoginAt                DateTime?
 
+  // Keys from CLIENT_TOOLS (therapist-toolkit.ts) this counselor has hidden
+  // from their own Toolkit page — the built-in tools stay real app
+  // features, just personally toggled off rather than deleted.
+  hiddenDefaultTools String[] @default([])
+
   bookingRequests   BookingRequest[]
   sessionBookings   SessionBooking[]
   promoCodes        PromoCodeCounselor[]
   intakeSubmissions IntakeSubmission[]
   clientNotes       ClientNote[]
+  toolkitItems      ToolkitItem[]
 }
 
 enum AvailabilityStatus {
@@ -235,22 +241,55 @@ model IntakeSubmission {
 }
 
 // A therapist's private note logged against one of their clients, tied to
-// a specific session date. nextSteps is the plan going into the following
-// session — the portal surfaces the most recent note's nextSteps as the
-// client's "current" plan, while older notes stay as a running history.
+// a specific session date — one page in that client's session "book".
+// nextSteps is the plan going into the following session — the portal
+// surfaces the most recent note's nextSteps as the client's "current"
+// plan, while older notes stay as a running history. moods is the same
+// mood-id vocabulary as JournalEntry/the journal app's mood picker (see
+// src/lib/moods.ts), letting the therapist log how the client said they
+// were feeling that session.
 model ClientNote {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   counselor   Counselor @relation(fields: [counselorId], references: [id])
   counselorId String
   clientEmail String
   clientName  String
-  sessionDate DateTime @default(now()) @db.Date
-  notes       String   @db.Text
-  nextSteps   String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sessionDate DateTime  @default(now()) @db.Date
+  moods       String[]  @default([])
+  notes       String    @db.Text
+  nextSteps   String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([counselorId, clientEmail])
+}
+
+enum ToolkitItemKind {
+  LINK
+  PDF
+}
+
+// A resource a therapist has personally added to their own toolbox —
+// either an external link or an uploaded PDF (stored as a data URI, same
+// pattern as counselor/journal photo uploads — no blob storage wired up).
+// The built-in client-facing tools (breathing, reframing, etc. — see
+// therapist-toolkit.ts) aren't rows here; a therapist can hide those via
+// Counselor.hiddenDefaultTools instead of deleting app data.
+model ToolkitItem {
+  id          String          @id @default(cuid())
+  counselor   Counselor       @relation(fields: [counselorId], references: [id])
+  counselorId String
+  title       String
+  description String?         @db.Text
+  kind        ToolkitItemKind
+  // Set for LINK items, null for PDF.
+  url         String?         @db.Text
+  // Set for PDF items (a data: URI), null for LINK.
+  fileData    String?         @db.Text
+  fileName    String?
+  createdAt   DateTime        @default(now())
+
+  @@index([counselorId])
 }
 
 enum SessionType {

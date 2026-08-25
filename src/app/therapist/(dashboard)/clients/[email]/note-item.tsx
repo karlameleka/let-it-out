@@ -4,8 +4,10 @@ import { useActionState, useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { updateClientNote, deleteClientNote } from "@/lib/therapist-actions";
 import type { TherapistClientNote } from "@/lib/therapist-data";
+import { moodColor, moodLabel } from "@/lib/moods";
 import { Button } from "@/components/ui";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import MoodPicker from "@/components/mood-picker";
 
 const fieldClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -19,21 +21,24 @@ function toDateInputValue(date: Date) {
  * leak into the next time this note is opened for editing. */
 function EditNoteForm({ note, onDone }: { note: TherapistClientNote; onDone: () => void }) {
   const [state, formAction, pending] = useActionState(updateClientNote, undefined);
+  const [moods, setMoods] = useState<string[]>(note.moods);
 
   useEffect(() => {
     if (state?.success) onDone();
   }, [state, onDone]);
 
   return (
-    <form action={formAction} className="space-y-3 rounded-2xl border border-brand-300 bg-white p-5">
+    <form action={formAction} className="space-y-4 rounded-2xl border border-brand-300 bg-white p-5">
       <input type="hidden" name="noteId" value={note.id} />
       <input type="hidden" name="clientEmail" value={note.clientEmail} />
+      <input type="hidden" name="moods" value={moods.join(",")} />
       <input
         type="date"
         name="sessionDate"
         defaultValue={toDateInputValue(note.sessionDate)}
-        className={fieldClass + " w-40"}
+        className={fieldClass + " w-44"}
       />
+      <MoodPicker moods={moods} onChange={setMoods} label="How was the client feeling?" />
       <textarea name="notes" defaultValue={note.notes} required rows={4} className={fieldClass} />
       <textarea
         name="nextSteps"
@@ -59,7 +64,13 @@ function EditNoteForm({ note, onDone }: { note: TherapistClientNote; onDone: () 
   );
 }
 
-export default function ClientNoteItem({ note }: { note: TherapistClientNote }) {
+export default function ClientNoteItem({
+  note,
+  sessionNumber,
+}: {
+  note: TherapistClientNote;
+  sessionNumber: number;
+}) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -69,9 +80,12 @@ export default function ClientNoteItem({ note }: { note: TherapistClientNote }) 
   return (
     <div className="rounded-2xl border border-brand-100 bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-          {note.sessionDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-        </p>
+        <div>
+          <p className="font-display text-sm font-semibold text-brand-900">Session {sessionNumber}</p>
+          <p className="text-xs text-ink/40">
+            {note.sessionDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
+          </p>
+        </div>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -85,7 +99,7 @@ export default function ClientNoteItem({ note }: { note: TherapistClientNote }) 
             <input type="hidden" name="noteId" value={note.id} />
             <input type="hidden" name="clientEmail" value={note.clientEmail} />
             <ConfirmSubmitButton
-              confirmMessage="Delete this session note? This can't be undone."
+              confirmMessage="Delete this session's page? This can't be undone."
               className="rounded-lg p-1.5 text-ink/40 hover:bg-red-50 hover:text-red-600"
             >
               <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
@@ -93,7 +107,22 @@ export default function ClientNoteItem({ note }: { note: TherapistClientNote }) 
           </form>
         </div>
       </div>
-      <p className="mt-2 whitespace-pre-line text-sm text-ink/80">{note.notes}</p>
+
+      {note.moods.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {note.moods.map((m) => (
+            <span
+              key={m}
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50/60 px-2.5 py-1 text-xs font-medium text-ink/70"
+            >
+              <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: moodColor(m) }} />
+              {moodLabel(m)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <p className="mt-3 whitespace-pre-line text-sm text-ink/80">{note.notes}</p>
       {note.nextSteps && (
         <div className="mt-3 rounded-xl bg-brand-50 p-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-600">Next steps</p>

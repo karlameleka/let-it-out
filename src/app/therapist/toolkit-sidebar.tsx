@@ -1,18 +1,31 @@
 import Link from "next/link";
-import { Phone } from "lucide-react";
+import { Phone, Download } from "lucide-react";
+import { prisma } from "@/lib/db";
+import { requireCounselor } from "@/lib/therapist-session";
 import { CLIENT_TOOLS, CRISIS_PROTOCOL } from "@/lib/therapist-toolkit";
 
 /** Condensed version of /therapist/toolkit for use alongside a specific
- * client — quick links, not the full session-prompt reference. */
-export default function ToolkitSidebar() {
+ * client — this counselor's personalized toolbox (defaults minus anything
+ * they've hidden, plus anything they've added), not the full
+ * session-prompt reference. Self-contained: fetches its own data so
+ * callers don't need to thread counselor state through. */
+export default async function ToolkitSidebar() {
+  const session = await requireCounselor();
+  const counselor = await prisma.counselor.findUnique({
+    where: { id: session.counselorId },
+    select: { hiddenDefaultTools: true, toolkitItems: { orderBy: { createdAt: "desc" } } },
+  });
+  const visibleDefaults = CLIENT_TOOLS.filter((t) => !counselor?.hiddenDefaultTools.includes(t.key));
+  const toolkitItems = counselor?.toolkitItems ?? [];
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-brand-100 bg-white p-5">
         <p className="font-display font-semibold text-brand-900">Guiding tools</p>
         <div className="mt-3 space-y-2">
-          {CLIENT_TOOLS.map((tool) => (
+          {visibleDefaults.map((tool) => (
             <Link
-              key={tool.href}
+              key={tool.key}
               href={tool.href}
               target="_blank"
               className="block rounded-xl border border-brand-100 px-3 py-2 text-sm font-medium text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-50"
@@ -20,9 +33,32 @@ export default function ToolkitSidebar() {
               {tool.title}
             </Link>
           ))}
+          {toolkitItems.map((item) =>
+            item.kind === "PDF" ? (
+              <a
+                key={item.id}
+                href={item.fileData ?? undefined}
+                download={item.fileName ?? undefined}
+                className="flex items-center gap-1.5 rounded-xl border border-brand-100 px-3 py-2 text-sm font-medium text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-50"
+              >
+                <Download className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                {item.title}
+              </a>
+            ) : (
+              <a
+                key={item.id}
+                href={item.url ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-xl border border-brand-100 px-3 py-2 text-sm font-medium text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-50"
+              >
+                {item.title}
+              </a>
+            ),
+          )}
         </div>
         <Link href="/therapist/toolkit" className="mt-3 inline-block text-xs font-semibold text-brand-600 link-grow">
-          More session prompts →
+          Manage your toolbox →
         </Link>
       </div>
 

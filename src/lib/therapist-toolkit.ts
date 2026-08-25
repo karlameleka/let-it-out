@@ -1,10 +1,16 @@
 // Static, curated content for the therapist portal's "Toolkit" page and the
 // condensed sidebar shown on a client's profile — reference material and
-// quick links a therapist might reach for during or around a session.
-// Not admin-editable (unlike client-facing content); revisit if it needs to
-// grow past a fixed reference list.
+// quick links a therapist might reach for during or around a session. The
+// 4 CLIENT_TOOLS entries below are real site features (not admin-editable),
+// but a therapist can personally hide any of them via Counselor.hiddenDefaultTools
+// (keyed by `key`) — they can also add their own links/PDFs on top, stored
+// as ToolkitItem rows (see therapist-actions.ts).
 
 export type ClientTool = {
+  /** Stable id — used as the entry in Counselor.hiddenDefaultTools. Never
+   * change an existing key once shipped, or old hidden-tool preferences
+   * silently stop applying. */
+  key: string;
   title: string;
   description: string;
   href: string;
@@ -14,21 +20,25 @@ export type ClientTool = {
  * walk through together in session, or to recommend as homework. */
 export const CLIENT_TOOLS: ClientTool[] = [
   {
+    key: "breathing",
     title: "Guided Breathing",
     description: "Box breathing, 4-7-8, and coherent breathing, paced with a visual guide.",
     href: "/resources/breathing",
   },
   {
+    key: "cognitive-reframing",
     title: "Cognitive Reframing",
     description: "Walks through catching, examining, and reframing a stuck thought.",
     href: "/resources/cognitive-reframing",
   },
   {
+    key: "grounding",
     title: "5-4-3-2-1 Grounding",
     description: "A short sensory grounding exercise for acute anxiety or dissociation.",
     href: "/resources/cbt-exercises/grounding",
   },
   {
+    key: "next-step",
     title: "Tiny Next Step",
     description: "Behavioral activation — shrinks an overwhelming task to one tiny step.",
     href: "/resources/cbt-exercises/next-step",
@@ -69,6 +79,13 @@ export const SESSION_PROMPTS: PromptCard[] = [
     ],
   },
 ];
+
+/** PDFs are stored as a base64 data URI in Postgres (no blob storage wired
+ * up, same pattern as photo uploads elsewhere) — capped well below Postgres's
+ * per-row limits to keep the table light. Checked both client-side (before
+ * reading the file) and server-side (defense-in-depth against a tampered
+ * request). */
+export const MAX_TOOLKIT_PDF_BYTES = 8 * 1024 * 1024; // 8MB
 
 /** Deliberately short and action-oriented — this is a during-session quick
  * reference, not clinical guidance. Mirrors the hotline shown sitewide in

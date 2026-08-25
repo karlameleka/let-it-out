@@ -6,7 +6,7 @@ import { shufflePrompt } from "@/lib/journal-actions";
 import { createEntry, type EntryFormState } from "@/lib/local-journal";
 import { compressImage } from "@/lib/compress-image";
 import { Button } from "@/components/ui";
-import { CORE_EMOTIONS, getSecondaryEmotions, type CoreEmotionId } from "@/lib/moods";
+import MoodPicker from "@/components/mood-picker";
 
 const CELEBRATIONS = [
   "Entry saved — that's one more step in your journey.",
@@ -33,7 +33,6 @@ export default function EntryForm({
   onSaved?: () => void;
 }) {
   const [moods, setMoods] = useState<string[]>([]);
-  const [expandedCore, setExpandedCore] = useState<CoreEmotionId | null>(null);
   const [key, setKey] = useState(0);
   const [prompt, setPrompt] = useState(initialPrompt);
 
@@ -70,7 +69,6 @@ export default function EntryForm({
     if (state?.success) {
       setKey((k) => k + 1);
       setMoods([]);
-      setExpandedCore(null);
       setPhoto(null);
       setPhotoError(null);
       onSaved?.();
@@ -108,15 +106,6 @@ export default function EntryForm({
     } finally {
       setPhotoProcessing(false);
     }
-  }
-
-  function toggleMood(id: string) {
-    setMoods((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]));
-  }
-
-  function toggleCore(coreId: CoreEmotionId) {
-    toggleMood(coreId);
-    setExpandedCore((prev) => (prev === coreId ? null : coreId));
   }
 
   function handleShuffle() {
@@ -168,54 +157,7 @@ export default function EntryForm({
 
         <div className="overflow-hidden rounded-xl border border-brand-200 bg-white focus-within:border-brand-500">
           <div className="border-b border-brand-100 bg-brand-50/50 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-              How are you feeling? <span className="font-normal normal-case text-ink/35">pick as many as apply</span>
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {CORE_EMOTIONS.map((core) => {
-                const isSelected = moods.includes(core.id);
-                const isExpanded = expandedCore === core.id;
-                return (
-                  <button
-                    key={core.id}
-                    type="button"
-                    onClick={() => toggleCore(core.id)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all ${
-                      isSelected
-                        ? "border-brand-600 bg-brand-50 text-brand-800 shadow-[0_2px_0_0_theme(colors.brand.300)]"
-                        : isExpanded
-                          ? "border-brand-300 text-ink/80"
-                          : "border-brand-100 bg-white text-ink/70 hover:border-brand-300 active:border-brand-300"
-                    }`}
-                  >
-                    <span
-                      className="h-2.5 w-2.5 rounded-full border border-black/10"
-                      style={{ backgroundColor: core.color }}
-                    />
-                    {core.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {expandedCore && (
-              <div className="animate-pop-in mt-3 flex flex-wrap gap-2 rounded-xl border border-dashed border-brand-200 bg-white/60 p-3">
-                {getSecondaryEmotions(expandedCore).map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => toggleMood(m.id)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
-                      moods.includes(m.id)
-                        ? "border-brand-600 bg-white text-brand-800 shadow-sm"
-                        : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300 active:border-brand-300"
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <MoodPicker moods={moods} onChange={setMoods} />
           </div>
 
           <textarea
