@@ -19,6 +19,7 @@ import { getLocale, dirForLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
+import { getUpcomingItemsForUser } from "@/lib/upcoming-items";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -71,6 +72,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
   const baseDict = getDictionary(locale);
   const dict = { ...baseDict, nav: applyOverrides(baseDict.nav, "nav", textOverrides, locale) };
+  const upcomingItems = user ? await getUpcomingItemsForUser(user.email) : [];
 
   return (
     <html
@@ -89,6 +91,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 locale={locale}
                 dict={dict}
                 arabicEnabled={settings.arabicEnabled}
+                upcomingItems={upcomingItems}
               />
               <main className="flex-1">
                 <ViewTransition name="page-content">{children}</ViewTransition>

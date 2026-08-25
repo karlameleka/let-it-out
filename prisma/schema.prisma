@@ -199,8 +199,9 @@ model SessionBooking {
   phone         String
   preferredDate String
   // "HH:mm", 24-hour, set only when picked from the in-app slot picker —
-  // null means this booking used the pre-slot-picker fallback (preferred
-  // day only, Cal.com finalizes the exact time after payment).
+  // null means the counselor didn't have availability windows configured
+  // yet, so only a preferred day was captured and the exact time is
+  // confirmed with the client afterward.
   preferredTime String?
   // Full session price before any discount — the amount actually charged
   // is priceEGP - discountEGP.
@@ -413,6 +414,20 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+}
+
+// Admin-created, broadcast to every logged-in client (no per-client
+// sign-up step) — surfaced in the site header's notification bell
+// alongside that client's own upcoming counseling sessions.
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  startAt     DateTime
+  location    String?
+  createdAt   DateTime @default(now())
+
+  @@index([startAt])
 }
 
 model BookingRequest {

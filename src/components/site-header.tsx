@@ -11,7 +11,9 @@ import { useCart } from "@/lib/cart-context";
 import type { SessionPayload } from "@/lib/session";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { UpcomingItem } from "@/lib/upcoming-items";
 import LanguageSwitcher from "@/components/language-switcher";
+import NotificationBell from "@/components/notification-bell";
 
 function CartIconLink({
   count,
@@ -42,11 +44,13 @@ export default function SiteHeader({
   locale,
   dict,
   arabicEnabled = true,
+  upcomingItems = [],
 }: {
   user: SessionPayload | null;
   locale: Locale;
   dict: Dictionary;
   arabicEnabled?: boolean;
+  upcomingItems?: UpcomingItem[];
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -119,11 +123,13 @@ export default function SiteHeader({
             </div>
           )}
 
+          {user && <NotificationBell items={upcomingItems} />}
           <CartIconLink count={cartCount} icon={CartIcon} />
           <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} compact arabicEnabled={arabicEnabled} />
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
+          {user && <NotificationBell items={upcomingItems} />}
           <CartIconLink count={cartCount} icon={ShoppingCart} />
           <button
             type="button"
