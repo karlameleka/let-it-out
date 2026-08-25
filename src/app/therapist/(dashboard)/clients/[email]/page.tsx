@@ -154,15 +154,13 @@ export default async function TherapistClientProfilePage({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-brand-900">{item.title}</p>
-                        {item.kind === "ASSIGNMENT" && (
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                              item.completedAt ? "bg-brand-50 text-brand-700" : "bg-amber-50 text-amber-700"
-                            }`}
-                          >
-                            {item.completedAt ? "Done" : "Assignment"}
-                          </span>
-                        )}
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                            item.completedAt ? "bg-brand-50 text-brand-700" : "bg-amber-50 text-amber-700"
+                          }`}
+                        >
+                          {item.completedAt ? "Done" : "Not done yet"}
+                        </span>
                       </div>
                       {item.description && <p className="mt-1 text-sm text-ink/60">{item.description}</p>}
                       {item.kind === "PDF" && item.fileData && (

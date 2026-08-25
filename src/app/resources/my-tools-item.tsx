@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, Check } from "lucide-react";
-import { toggleAssignmentComplete } from "@/lib/client-resources-actions";
+import { toggleResourceComplete } from "@/lib/client-resources-actions";
 import type { MyAssignedResource } from "@/lib/client-resources";
 import PdfOpenButton from "@/components/pdf-open-button";
 
@@ -15,20 +15,18 @@ export default function MyToolsItem({ item }: { item: MyAssignedResource }) {
           <p className={`font-display font-semibold ${isDone ? "text-brand-700 line-through" : "text-brand-900"}`}>{item.title}</p>
           <p className="mt-0.5 text-xs text-ink/40">From {item.counselor.name}</p>
         </div>
-        {item.kind === "ASSIGNMENT" && (
-          <form action={toggleAssignmentComplete}>
-            <input type="hidden" name="itemId" value={item.id} />
-            <button
-              type="submit"
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                isDone ? "bg-brand-700 text-white" : "border border-brand-200 text-brand-700 hover:bg-brand-50"
-              }`}
-            >
-              <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-              {isDone ? "Done" : "Mark as done"}
-            </button>
-          </form>
-        )}
+        <form action={toggleResourceComplete}>
+          <input type="hidden" name="itemId" value={item.id} />
+          <button
+            type="submit"
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+              isDone ? "bg-brand-700 text-white" : "border border-brand-200 text-brand-700 hover:bg-brand-50"
+            }`}
+          >
+            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+            {isDone ? "Done" : "Mark as done"}
+          </button>
+        </form>
       </div>
 
       {item.description && <p className="mt-2 text-sm text-ink/60">{item.description}</p>}

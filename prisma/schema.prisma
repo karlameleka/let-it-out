@@ -376,8 +376,8 @@ model AssignedResource {
   fileName    String?
   // Set for TEXT/ASSIGNMENT — the free-text note or instructions.
   content     String?              @db.Text
-  // ASSIGNMENT only — set when the client marks it done from their own
-  // account. Always null for the other three kinds.
+  // Set when the client marks this tool done from their own account —
+  // available for every kind (link, PDF, note, or assignment).
   completedAt DateTime?
   // Set the first time the client opens Resources > "My tools" after this
   // was sent — drives the unread-count badge on the Resources tab and the
