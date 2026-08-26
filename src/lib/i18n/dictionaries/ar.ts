@@ -62,6 +62,8 @@ const ar: Dictionary = {
     crisisHotline: "الخط الساخن الوطني المصري للأزمات: 16328",
     contactUs: "تواصل معنا",
     contactDescription: "أرسل لنا رسالة وسنعاود التواصل معك.",
+    technicalSupport: "الدعم الفني",
+    technicalSupportDescription: "تحدث مع مساعد الدعم بخصوص مشاكل التطبيق أو الحساب.",
     whatsapp: "راسلنا عبر واتساب",
     whatsappDescription: "لديك سؤال سريع؟ تحدث مع فريقنا مباشرة.",
     faq: "الأسئلة الشائعة",

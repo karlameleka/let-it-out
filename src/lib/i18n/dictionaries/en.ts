@@ -60,6 +60,8 @@ const en = {
     crisisHotline: "Egyptian National Crisis Hotline: 16328",
     contactUs: "Contact us",
     contactDescription: "Send us a message and we'll get back to you.",
+    technicalSupport: "Technical support",
+    technicalSupportDescription: "Chat with our support assistant about app or account issues.",
     whatsapp: "Message us on WhatsApp",
     whatsappDescription: "Quick questions? Chat with our team directly.",
     faq: "Browse FAQs",

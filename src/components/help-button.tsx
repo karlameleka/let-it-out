@@ -61,6 +61,17 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
               </span>
             </Link>
             <Link
+              href="/support"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
+            >
+              <LifeBuoy className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
+              <span>
+                <span className="block text-sm font-medium text-ink/80">{dict.technicalSupport}</span>
+                <span className="block text-xs text-ink/50">{dict.technicalSupportDescription}</span>
+              </span>
+            </Link>
+            <Link
               href="/counseling#faq"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
