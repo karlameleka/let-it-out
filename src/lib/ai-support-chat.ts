@@ -18,19 +18,22 @@ End EVERY reply with exactly one status tag on its own line, and nothing after i
 
 Keep replies short and plain — a few sentences, not a wall of text.`;
 
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+
 /**
  * Generates the assistant's next reply in a support chat, given the full
- * message history (oldest first). Requires ANTHROPIC_API_KEY — without it,
- * returns a fixed "not available" reply and marks the chat ESCALATED so a
- * human (via the admin email notification) picks it up instead of the
- * client waiting on a bot that can't run.
+ * message history (oldest first). Requires GROQ_API_KEY (free tier at
+ * console.groq.com) — without it, returns a fixed "not available" reply
+ * and marks the chat ESCALATED so a human (via the admin email
+ * notification) picks it up instead of the client waiting on a bot that
+ * can't run. Uses Groq's OpenAI-compatible chat completions endpoint.
  */
 export async function generateSupportChatReply(
   history: { role: "user" | "assistant"; content: string }[],
 ): Promise<{ reply: string; status: SupportChatOutcome }> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    console.warn("[ai-support-chat] Skipped — ANTHROPIC_API_KEY not configured.");
+    console.warn("[ai-support-chat] Skipped — GROQ_API_KEY not configured.");
     return {
       reply:
         "Live chat isn't available right now. I've flagged this for our team and they'll follow up by email — sorry for the trouble.",
@@ -39,31 +42,29 @@ export async function generateSupportChatReply(
   }
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "claude-sonnet-5",
+        model: GROQ_MODEL,
         max_tokens: 500,
-        system: SYSTEM_PROMPT,
-        messages: history.map((m) => ({ role: m.role, content: m.content })),
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history.map((m) => ({ role: m.role, content: m.content }))],
       }),
     });
 
     if (!res.ok) {
-      console.error(`[ai-support-chat] Anthropic API returned ${res.status}: ${await res.text()}`);
+      console.error(`[ai-support-chat] Groq API returned ${res.status}: ${await res.text()}`);
       return {
         reply: "Something went wrong on our end. I've flagged this for our team to follow up by email.",
         status: "ESCALATED",
       };
     }
 
-    const data: { content?: { type: string; text?: string }[] } = await res.json();
-    const rawText = data.content?.find((c) => c.type === "text")?.text?.trim() || "";
+    const data: { choices?: { message?: { content?: string } }[] } = await res.json();
+    const rawText = data.choices?.[0]?.message?.content?.trim() || "";
 
     const match = rawText.match(STATUS_TAG_RE);
     const status: SupportChatOutcome = (match?.[1] as SupportChatOutcome) ?? "OPEN";
