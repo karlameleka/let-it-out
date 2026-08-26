@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { updateVariantStock, updateProductPlacement } from "@/lib/admin-actions";
+import { updateVariantStock, updateProductPlacement, updateProductArabicContent } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
 
 export default async function AdminProductsPage() {
@@ -95,6 +95,46 @@ export default async function AdminProductsPage() {
               </form>
             ))}
           </div>
+          <form
+            action={updateProductArabicContent}
+            className="mt-3 space-y-2 rounded-xl border border-dashed border-brand-200 bg-brand-50/40 p-4"
+          >
+            <input type="hidden" name="productId" value={product.id} />
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">
+              Arabic (optional — falls back to English until filled in)
+            </p>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${product.id}-titleAr`}>
+                Title
+              </label>
+              <input
+                id={`${product.id}-titleAr`}
+                name="titleAr"
+                dir="rtl"
+                defaultValue={product.titleAr ?? ""}
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${product.id}-descriptionAr`}>
+                Description
+              </label>
+              <textarea
+                id={`${product.id}-descriptionAr`}
+                name="descriptionAr"
+                dir="rtl"
+                rows={3}
+                defaultValue={product.descriptionAr ?? ""}
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Save Arabic content
+            </button>
+          </form>
         </div>
       ))}
     </div>

@@ -562,6 +562,11 @@ model Product {
   durationDays  Int?
   active      Boolean         @default(true)
   sortOrder   Int             @default(0)
+  // Optional Arabic translations — null/empty falls back to the English
+  // field above, so the shop still renders in Arabic view before an admin
+  // fills these in.
+  titleAr       String?
+  descriptionAr String?         @db.Text
 
   variants   ProductVariant[]
   orderItems OrderItem[]
@@ -871,6 +876,13 @@ model Article {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  // Optional Arabic translations — same shape as their English
+  // counterparts above. Null/empty falls back to English, so an article
+  // still renders in Arabic view before an admin fills these in.
+  titleAr     String?
+  excerptAr   String?  @db.Text
+  sectionsAr  Json?
+  checkInsAr  Json?
 }
 
 // Singleton row holding the counseling intake form's questions (see

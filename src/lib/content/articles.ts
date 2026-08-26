@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -30,6 +31,12 @@ export type Article = {
    * sections[i + 1] (or the closing references/CTA, for the last one). */
   checkIns: ArticleCheckIn[];
   references: string[];
+  // Optional Arabic translations, same shape as their English counterparts
+  // above. Null/undefined means no translation has been entered yet.
+  titleAr?: string | null;
+  excerptAr?: string | null;
+  sectionsAr?: ArticleSection[] | null;
+  checkInsAr?: ArticleCheckIn[] | null;
 };
 
 function rowToArticle(row: {
@@ -42,6 +49,10 @@ function rowToArticle(row: {
   sections: unknown;
   checkIns: unknown;
   references: string[];
+  titleAr: string | null;
+  excerptAr: string | null;
+  sectionsAr: unknown;
+  checkInsAr: unknown;
 }): Article {
   return {
     id: row.id,
@@ -53,6 +64,26 @@ function rowToArticle(row: {
     sections: row.sections as ArticleSection[],
     checkIns: row.checkIns as ArticleCheckIn[],
     references: row.references,
+    titleAr: row.titleAr,
+    excerptAr: row.excerptAr,
+    sectionsAr: row.sectionsAr as ArticleSection[] | null,
+    checkInsAr: row.checkInsAr as ArticleCheckIn[] | null,
+  };
+}
+
+/** Picks the Arabic version of an article's content when the locale is
+ * "ar" and a translation has actually been entered, falling back to
+ * English for any field left untranslated — so an article never renders
+ * blank in Arabic view just because part of it hasn't been translated
+ * yet. */
+export function localizeArticle(article: Article, locale: "en" | "ar"): Article {
+  if (locale !== "ar") return article;
+  return {
+    ...article,
+    title: article.titleAr || article.title,
+    excerpt: article.excerptAr || article.excerpt,
+    sections: article.sectionsAr && article.sectionsAr.length > 0 ? article.sectionsAr : article.sections,
+    checkIns: article.checkInsAr && article.checkInsAr.length > 0 ? article.checkInsAr : article.checkIns,
   };
 }
 
@@ -102,7 +133,13 @@ function parseArticleFormData(formData: FormData) {
     .split("\n")
     .map((r) => r.trim())
     .filter(Boolean);
-  return { title, excerpt, category, readMinutes, sections, checkIns, references };
+  const titleAr = String(formData.get("titleAr") ?? "").trim() || null;
+  const excerptAr = String(formData.get("excerptAr") ?? "").trim() || null;
+  const sectionsArRaw = String(formData.get("sectionsArJson") ?? "").trim();
+  const checkInsArRaw = String(formData.get("checkInsArJson") ?? "").trim();
+  const sectionsAr = sectionsArRaw ? (JSON.parse(sectionsArRaw) as ArticleSection[]) : Prisma.JsonNull;
+  const checkInsAr = checkInsArRaw ? (JSON.parse(checkInsArRaw) as ArticleCheckIn[]) : Prisma.JsonNull;
+  return { title, excerpt, category, readMinutes, sections, checkIns, references, titleAr, excerptAr, sectionsAr, checkInsAr };
 }
 
 export async function createArticle(formData: FormData) {

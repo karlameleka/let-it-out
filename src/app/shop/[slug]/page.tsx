@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Container } from "@/components/ui";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
+import { localizeProduct } from "@/lib/content/products";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 import AddToCartForm from "./add-to-cart-form";
 
 export async function generateMetadata({
@@ -23,11 +26,16 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: { variants: { where: { format: "PHYSICAL" } } },
-  });
-  if (!product || !product.active) notFound();
+  const [rawProduct, locale] = await Promise.all([
+    prisma.product.findUnique({
+      where: { slug },
+      include: { variants: { where: { format: "PHYSICAL" } } },
+    }),
+    getLocale(),
+  ]);
+  if (!rawProduct || !rawProduct.active) notFound();
+  const product = localizeProduct(rawProduct, locale);
+  const t = getDictionary(locale).shop;
 
   const photo = PRODUCT_PHOTOS[product.slug];
 
@@ -61,6 +69,7 @@ export default async function ProductPage({
             <AddToCartForm
               productSlug={product.slug}
               title={product.title}
+              dict={t}
               variants={product.variants.map((v) => ({
                 id: v.id,
                 format: v.format,

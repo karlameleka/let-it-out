@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui";
 import PriceDisplay from "@/components/price-display";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 type Variant = {
   id: string;
@@ -19,10 +20,12 @@ export default function AddToCartForm({
   productSlug,
   title,
   variants,
+  dict,
 }: {
   productSlug: string;
   title: string;
   variants: Variant[];
+  dict: Dictionary["shop"];
 }) {
   const variant = variants[0];
   const [added, setAdded] = useState(false);
@@ -52,11 +55,11 @@ export default function AddToCartForm({
 
       {outOfStock ? (
         <p className="inline-flex items-center rounded-full bg-ink/5 px-3 py-1 text-sm font-medium text-ink/50">
-          Out of stock
+          {dict.outOfStock}
         </p>
       ) : lowStock ? (
         <p className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">
-          Only {variant.stockCount} left
+          {dict.onlyLeft.replace("{count}", String(variant.stockCount))}
         </p>
       ) : null}
 
@@ -69,16 +72,16 @@ export default function AddToCartForm({
             router.push("/cart");
           }}
         >
-          {outOfStock ? "Out of stock" : "Buy now"}
+          {outOfStock ? dict.outOfStock : dict.buyNow}
         </Button>
         <Button type="button" variant="outline" disabled={outOfStock} onClick={handleAdd}>
-          Add to cart
+          {dict.addToCart}
         </Button>
       </div>
 
       {added && (
         <p className="text-sm font-medium text-brand-600">
-          Added to cart. <a href="/cart" className="underline">View cart &rarr;</a>
+          {dict.addedToCart} <a href="/cart" className="underline">{dict.viewCart} &rarr;</a>
         </p>
       )}
     </div>

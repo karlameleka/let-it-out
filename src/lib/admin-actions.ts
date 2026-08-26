@@ -292,6 +292,16 @@ export async function updateProductPlacement(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function updateProductArabicContent(formData: FormData) {
+  await requireAdmin();
+  const productId = String(formData.get("productId"));
+  const titleAr = String(formData.get("titleAr") ?? "").trim() || null;
+  const descriptionAr = String(formData.get("descriptionAr") ?? "").trim() || null;
+  await prisma.product.update({ where: { id: productId }, data: { titleAr, descriptionAr } });
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+}
+
 export async function updateCounselorPlacement(formData: FormData) {
   await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
