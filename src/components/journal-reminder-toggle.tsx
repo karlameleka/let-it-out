@@ -18,6 +18,7 @@ type Status = "checking" | "unsupported" | "off" | "on" | "denied";
 export default function JournalReminderToggle() {
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // iOS Safari only exposes the Push/Notification APIs at all once the
   // site has been added to the Home Screen (iOS 16.4+) — there is no way
   // to enable push notifications in a regular Safari tab, so that state is
@@ -48,10 +49,14 @@ export default function JournalReminderToggle() {
 
   async function enable() {
     setBusy(true);
+    setError(null);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setStatus(permission === "denied" ? "denied" : "off");
+        if (permission !== "denied") {
+          setError("Permission wasn't granted — try again and allow notifications when prompted.");
+        }
         return;
       }
 
@@ -59,6 +64,7 @@ export default function JournalReminderToggle() {
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!publicKey) {
         setStatus("unsupported");
+        setError("Push isn't configured on this deployment (missing VAPID public key).");
         return;
       }
 
@@ -74,8 +80,16 @@ export default function JournalReminderToggle() {
       });
 
       setStatus(result.success ? "on" : "off");
-    } catch {
+      if (!result.success) {
+        setError(result.error ?? "Saving the subscription failed for an unknown reason.");
+      }
+    } catch (err) {
+      // Surfaced on-screen (not just console) since this most often runs on
+      // a phone with no attached debugger — the failure needs to be visible
+      // without remote-debugging tools.
+      console.error("[push] enable failed:", err);
       setStatus("off");
+      setError(err instanceof Error ? err.message : "Something went wrong enabling reminders.");
     } finally {
       setBusy(false);
     }
@@ -127,22 +141,25 @@ export default function JournalReminderToggle() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={status === "on" ? disable : enable}
-      disabled={busy}
-      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
-        status === "on"
-          ? "border-brand-500 bg-brand-50 text-brand-700"
-          : "border-brand-200 text-brand-600 hover:bg-brand-50 active:bg-brand-50"
-      }`}
-    >
-      {status === "on" ? (
-        <BellRing className="h-4 w-4" strokeWidth={2} />
-      ) : (
-        <Bell className="h-4 w-4" strokeWidth={2} />
-      )}
-      {status === "on" ? "Daily reminders on" : "Enable daily reminders"}
-    </button>
+    <div>
+      <button
+        type="button"
+        onClick={status === "on" ? disable : enable}
+        disabled={busy}
+        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+          status === "on"
+            ? "border-brand-500 bg-brand-50 text-brand-700"
+            : "border-brand-200 text-brand-600 hover:bg-brand-50 active:bg-brand-50"
+        }`}
+      >
+        {status === "on" ? (
+          <BellRing className="h-4 w-4" strokeWidth={2} />
+        ) : (
+          <Bell className="h-4 w-4" strokeWidth={2} />
+        )}
+        {status === "on" ? "Daily reminders on" : "Enable daily reminders"}
+      </button>
+      {error && <p className="mt-2 max-w-xs text-xs text-red-600">{error}</p>}
+    </div>
   );
 }
