@@ -3,17 +3,16 @@
 import { useActionState } from "react";
 import { resetPasswordAction } from "@/lib/auth-actions";
 import { Button, ButtonLink } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function ResetPasswordForm({ token }: { token: string }) {
+export default function ResetPasswordForm({ token, dict }: { token: string; dict: Dictionary["auth"] }) {
   const [state, formAction, pending] = useActionState(resetPasswordAction, undefined);
 
   if (state?.success) {
     return (
       <div className="animate-pop-in space-y-4">
-        <p className="text-sm font-medium text-brand-600">
-          Your password has been updated.
-        </p>
-        <ButtonLink href="/login">Log in</ButtonLink>
+        <p className="text-sm font-medium text-brand-600">{dict.passwordUpdatedText}</p>
+        <ButtonLink href="/login">{dict.logIn}</ButtonLink>
       </div>
     );
   }
@@ -24,7 +23,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
 
       <div>
         <label htmlFor="newPassword" className="mb-1 block text-sm font-medium text-ink/80">
-          New password
+          {dict.newPasswordField}
         </label>
         <input
           id="newPassword"
@@ -39,7 +38,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
 
       <div>
         <label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium text-ink/80">
-          Confirm new password
+          {dict.confirmNewPasswordField}
         </label>
         <input
           id="confirmPassword"
@@ -54,7 +53,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Updating…" : "Reset password"}
+        {pending ? dict.updatingPassword : dict.resetPasswordCta}
       </Button>
     </form>
   );
