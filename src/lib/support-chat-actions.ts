@@ -100,3 +100,23 @@ export async function reopenSupportChat(formData: FormData) {
   });
   revalidatePath("/admin/support");
 }
+
+/** Permanently removes a resolved chat's transcript — only resolved chats
+ * can be deleted from the admin UI (open/escalated ones need resolving
+ * first), so a conversation still needing a reply can't be discarded by
+ * accident. */
+export async function deleteSupportChat(formData: FormData) {
+  await requireAdmin();
+  const chatId = String(formData.get("chatId") ?? "");
+  const chat = await prisma.supportChat.findUnique({ where: { id: chatId }, select: { status: true } });
+  if (chat?.status !== "RESOLVED") return;
+  await prisma.supportChat.delete({ where: { id: chatId } });
+  revalidatePath("/admin/support");
+}
+
+/** Bulk cleanup — clears every resolved chat's transcript at once. */
+export async function deleteAllResolvedSupportChats() {
+  await requireAdmin();
+  await prisma.supportChat.deleteMany({ where: { status: "RESOLVED" } });
+  revalidatePath("/admin/support");
+}

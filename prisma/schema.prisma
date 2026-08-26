@@ -852,6 +852,14 @@ model SiteSettings {
   // Hides the "Let it out. One page at a time." teal card / journal-app
   // button on the homepage.
   hideJournalTaglineButton Boolean                @default(false)
+  // What hour (0–23, Egypt local time, UTC+2 — matches how every other
+  // booking-related time in this app is stored, plain and unconverted) the
+  // two push-notification crons should fire. Both crons actually run every
+  // hour (see vercel.json) and no-op unless the current hour matches this —
+  // see src/lib/cron-schedule.ts — since Vercel Cron schedules themselves
+  // are fixed at deploy time and can't be changed from the dashboard.
+  journalReminderHour     Int                     @default(20)
+  sessionReminderHour     Int                     @default(19)
   updatedAt               DateTime                @updatedAt
 }
 

@@ -1,6 +1,12 @@
 import { getAllSupportChats } from "@/lib/support-chat-data";
-import { resolveSupportChat, reopenSupportChat } from "@/lib/support-chat-actions";
+import {
+  resolveSupportChat,
+  reopenSupportChat,
+  deleteSupportChat,
+  deleteAllResolvedSupportChats,
+} from "@/lib/support-chat-actions";
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 const STATUS_ORDER = { ESCALATED: 0, OPEN: 1, RESOLVED: 2 };
 
@@ -13,15 +19,28 @@ const STATUS_STYLES: Record<string, string> = {
 export default async function AdminSupportPage() {
   const chats = await getAllSupportChats();
   const sorted = [...chats].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+  const resolvedCount = chats.filter((c) => c.status === "RESOLVED").length;
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="font-display font-semibold text-brand-900">Live chat</h2>
-        <p className="mt-1 text-sm text-ink/60">
-          Clients&rsquo; &ldquo;Having technical issues? Live Chat&rdquo; conversations from Account settings. The
-          bot only handles app/technical issues — anything psychological gets redirected, never answered.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display font-semibold text-brand-900">Live chat</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            Clients&rsquo; &ldquo;Having technical issues? Live Chat&rdquo; conversations from Account settings. The
+            bot only handles app/technical issues — anything psychological gets redirected, never answered.
+          </p>
+        </div>
+        {resolvedCount > 0 && (
+          <form action={deleteAllResolvedSupportChats}>
+            <ConfirmSubmitButton
+              confirmMessage={`Permanently delete all ${resolvedCount} resolved chat${resolvedCount === 1 ? "" : "s"}? This can't be undone.`}
+              className="shrink-0 rounded-full border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+            >
+              Delete all resolved ({resolvedCount})
+            </ConfirmSubmitButton>
+          </form>
+        )}
       </div>
 
       {sorted.length === 0 && <p className="text-sm text-ink/60">No live chats yet.</p>}
@@ -91,6 +110,17 @@ export default async function AdminSupportPage() {
               >
                 Email client
               </a>
+              {chat.status === "RESOLVED" && (
+                <form action={deleteSupportChat}>
+                  <input type="hidden" name="chatId" value={chat.id} />
+                  <ConfirmSubmitButton
+                    confirmMessage="Permanently delete this chat transcript? This can't be undone."
+                    className="rounded-full border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+                  >
+                    Delete
+                  </ConfirmSubmitButton>
+                </form>
+              )}
             </div>
           </div>
         );
