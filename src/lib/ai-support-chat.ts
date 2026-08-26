@@ -20,12 +20,15 @@ Be brief and to the point in every reply: 1–3 short sentences, plain language,
 
 If the client asks about services, counselors, pricing, or where to find something in the app, include exactly one relevant link formatted as [Label](/path), using ONLY these internal paths — never any other URL, and never more than one per reply: [Our services](/services), [Book a counselor](/counseling), [Guided journals](/shop), [Open your journal](/journal), [Help articles](/resources). Only include a link when it's genuinely relevant to what they asked — don't force one into every reply.`;
 
-// gemini-3.6-flash's free tier is capped at just 20 requests/day total —
-// unusable for a live support chat (confirmed in production: a 429
-// RESOURCE_EXHAUSTED after normal light usage). gemini-2.5-flash is an
-// older, cheaper generation with a much more generous free daily quota,
-// still plenty capable for short, direct troubleshooting replies.
-const GEMINI_MODEL = "gemini-2.5-flash";
+// gemini-2.5-flash returned 404 "no longer available to new users" on this
+// API key — Google's own error redirected back to gemini-3.6-flash. That
+// leaves gemini-3.6-flash as the only model confirmed to actually process
+// requests here (it hit a 429 rate limit, not an auth/model-not-found
+// error — meaning requests do reach it, just capped at 20/day on the free
+// tier). Until billing is enabled on this Gemini API project (which
+// removes the daily cap) or Google raises the free allotment, this model
+// is the one that works, with that 20/day ceiling as the known tradeoff.
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 /**
  * Generates the assistant's next reply in a support chat, given the full
@@ -66,27 +69,28 @@ export async function generateSupportChatReply(
           // mid-sentence before the reply, or the trailing status tag, is
           // finished.
           //
-          // thinkingBudget: 0 disables this model's internal "thinking"
-          // step. Thinking tokens are drawn from the same maxOutputTokens
-          // budget as the visible reply and take extra generation time —
-          // for a short, direct support-bot answer that doesn't need
-          // multi-step reasoning, that's pure overhead.
+          // thinkingLevel: "minimal" keeps this model's internal
+          // "thinking" step as short as possible. Thinking tokens are
+          // drawn from the same maxOutputTokens budget as the visible
+          // reply and take extra generation time — for a short, direct
+          // support-bot answer that doesn't need multi-step reasoning,
+          // that's mostly overhead.
           //
-          // IMPORTANT: this must be `thinkingBudget`, not `thinkingLevel`
-          // — thinkingLevel is the newer field introduced for the Gemini 3
-          // series. gemini-2.5-flash is a Gemini 2.5-series model and only
-          // understands the legacy thinkingBudget field; sending the wrong
-          // one for a model's generation gets the whole request rejected
-          // with a 400 (this happened in the other direction when
-          // thinkingBudget was sent to the Gemini 3 model this app used
-          // before switching back to 2.5-flash for its free-tier quota).
-          generationConfig: { maxOutputTokens: 800, thinkingConfig: { thinkingBudget: 0 } },
+          // IMPORTANT: this must be `thinkingLevel`, not `thinkingBudget`
+          // — thinkingBudget is the legacy field from the Gemini 2.5
+          // series. Gemini 3 models (gemini-3.6-flash included) reject a
+          // request carrying thinkingBudget with a 400 error. Sending the
+          // wrong field for a model's generation breaks the request
+          // entirely — this app has now hit that in both directions, so
+          // double-check this matches GEMINI_MODEL's generation before
+          // ever changing either one again.
+          generationConfig: { maxOutputTokens: 800, thinkingConfig: { thinkingLevel: "minimal" } },
         }),
       },
     );
 
     if (!res.ok) {
-      console.error(`[ai-support-chat] Gemini API returned ${res.status}: ${await res.text()}`);
+      console.error(`[ai-support-chat] Gemini API (model: ${GEMINI_MODEL}) returned ${res.status}: ${await res.text()}`);
       return {
         reply: "Something went wrong on our end. I've flagged this for our team to follow up by email.",
         status: "ESCALATED",
