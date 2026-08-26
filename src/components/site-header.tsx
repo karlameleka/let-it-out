@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
@@ -52,6 +52,22 @@ export default function SiteHeader({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { count: cartCount } = useCart();
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [open]);
 
   const NAV_LINKS = [
     { href: "/about", label: dict.nav.about },
@@ -64,7 +80,10 @@ export default function SiteHeader({
   const MOBILE_NAV_LINKS = NAV_LINKS.filter((link) => link.href !== "/journal");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80"
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 md:py-6">
         <LogoLink height={48} className="h-10 w-auto sm:h-11 md:h-12" />
 

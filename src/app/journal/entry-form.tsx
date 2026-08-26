@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { ImagePlus, Shuffle, X } from "lucide-react";
+import { ImagePlus, PenLine, Shuffle, Sparkles, X } from "lucide-react";
 import { shufflePrompt } from "@/lib/journal-actions";
 import { createEntry, type EntryFormState } from "@/lib/local-journal";
 import { compressImage } from "@/lib/compress-image";
@@ -17,8 +17,10 @@ const CELEBRATIONS = [
 ];
 
 const PHOTO_PERMISSION_KEY = "lio_photo_access_granted";
+const MODE_KEY = "lio_journal_mode";
 
 type Prompt = { id: string; category: string; text: string } | null;
+type Mode = "prompt" | "free";
 
 export default function EntryForm({
   userId,
@@ -35,6 +37,20 @@ export default function EntryForm({
   const [moods, setMoods] = useState<string[]>([]);
   const [key, setKey] = useState(0);
   const [prompt, setPrompt] = useState(initialPrompt);
+  // Remembered across sessions so the composer opens the way the person
+  // left it last time — defaults to "prompt" (the pre-existing behavior)
+  // rather than "free" so nothing changes for people who never touch it.
+  const [mode, setMode] = useState<Mode>("prompt");
+  useEffect(() => {
+    const saved = window.localStorage.getItem(MODE_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saved === "free" || saved === "prompt") setMode(saved);
+  }, []);
+
+  function changeMode(next: Mode) {
+    setMode(next);
+    window.localStorage.setItem(MODE_KEY, next);
+  }
 
   async function saveLocally(_prevState: EntryFormState, formData: FormData): Promise<EntryFormState> {
     const content = String(formData.get("content") ?? "").trim();
@@ -46,7 +62,7 @@ export default function EntryForm({
           .split(",")
           .filter(Boolean),
         photoUrl: (String(formData.get("photoUrl") ?? "") || null),
-        prompt: prompt ? { category: prompt.category, text: prompt.text } : null,
+        prompt: mode === "prompt" && prompt ? { category: prompt.category, text: prompt.text } : null,
       });
       return { success: true };
     } catch {
@@ -129,28 +145,61 @@ export default function EntryForm({
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-            {prompt?.category ?? "Reflection"}
-          </p>
-          <button
-            type="button"
-            onClick={handleShuffle}
-            disabled={shuffling}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
-          >
-            <Shuffle className={`h-3.5 w-3.5 ${shuffling ? "animate-spin" : ""}`} strokeWidth={2} />
-            {shuffling ? "Shuffling…" : "Shuffle prompt"}
-          </button>
-        </div>
-        <p
-          data-testid="journal-prompt-text"
-          className={`mt-2 font-display text-xl font-medium italic text-brand-900 transition-opacity ${shuffling ? "opacity-40" : "opacity-100"}`}
+      <div
+        role="tablist"
+        aria-label="Writing mode"
+        className="inline-flex rounded-full border border-brand-200 bg-white p-1"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "prompt"}
+          onClick={() => changeMode("prompt")}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+            mode === "prompt" ? "bg-brand-600 text-white" : "text-ink/60 hover:text-brand-600 active:text-brand-600"
+          }`}
         >
-          {prompt?.text ?? "What's on your mind today?"}
-        </p>
+          <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
+          Give me a prompt
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "free"}
+          onClick={() => changeMode("free")}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+            mode === "free" ? "bg-brand-600 text-white" : "text-ink/60 hover:text-brand-600 active:text-brand-600"
+          }`}
+        >
+          <PenLine className="h-3.5 w-3.5" strokeWidth={2} />
+          Free flow
+        </button>
       </div>
+
+      {mode === "prompt" && (
+        <div className="relative overflow-hidden rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+              {prompt?.category ?? "Reflection"}
+            </p>
+            <button
+              type="button"
+              onClick={handleShuffle}
+              disabled={shuffling}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+            >
+              <Shuffle className={`h-3.5 w-3.5 ${shuffling ? "animate-spin" : ""}`} strokeWidth={2} />
+              {shuffling ? "Shuffling…" : "Shuffle prompt"}
+            </button>
+          </div>
+          <p
+            data-testid="journal-prompt-text"
+            className={`mt-2 font-display text-xl font-medium italic text-brand-900 transition-opacity ${shuffling ? "opacity-40" : "opacity-100"}`}
+          >
+            {prompt?.text ?? "What's on your mind today?"}
+          </p>
+        </div>
+      )}
 
       <form action={formAction} key={key} className="space-y-4">
         <input type="hidden" name="moods" value={moods.join(",")} />
@@ -164,7 +213,7 @@ export default function EntryForm({
             name="content"
             rows={6}
             required
-            placeholder="Let it out here..."
+            placeholder={mode === "prompt" ? "Let it out here..." : "Write whatever's on your mind..."}
             className="w-full border-0 px-4 py-3 text-sm outline-none"
           />
         </div>

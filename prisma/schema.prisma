@@ -76,6 +76,7 @@ model User {
   bookingRequests BookingRequest[]
   orders         Order[]
   pushSubscriptions PushSubscription[]
+  webauthnCredentials WebAuthnCredential[]
   supportChats   SupportChat[]
   eventRsvps     EventRSVP[]
   notificationReads NotificationRead[]
@@ -751,6 +752,27 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+}
+
+// A registered platform authenticator (Face ID, Touch ID, Windows Hello,
+// Android fingerprint) letting the journal lock be opened with a biometric
+// instead of re-entering the account password — see src/lib/webauthn.ts.
+// One row per enrolled device/browser; a user can have several.
+model WebAuthnCredential {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // Base64url-encoded credential id reported by the authenticator —
+  // globally unique, used to look up which row to verify an assertion
+  // against.
+  credentialId String @unique
+  publicKey    Bytes
+  // Anti-replay counter the authenticator increments on each use; verified
+  // to have strictly increased on every unlock attempt.
+  counter      BigInt @default(0)
+  transports   String[] @default([])
+  createdAt    DateTime @default(now())
 }
 
 enum LeadType {
