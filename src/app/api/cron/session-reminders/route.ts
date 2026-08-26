@@ -2,8 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendPushToEmails } from "@/lib/web-push";
 import { tomorrowISO } from "@/lib/therapist-data";
-import { getSiteSettings } from "@/lib/site-settings";
-import { isScheduledHourNow } from "@/lib/cron-schedule";
 
 export async function GET(req: NextRequest) {
   // Same fail-closed auth pattern as the journal-reminder cron — this
@@ -21,16 +19,6 @@ export async function GET(req: NextRequest) {
 
   if (!process.env.VAPID_PRIVATE_KEY) {
     return NextResponse.json({ error: "Web push is not configured." }, { status: 503 });
-  }
-
-  // This runs hourly (see vercel.json) rather than once a day, so the send
-  // hour can be changed from /admin/notifications without a redeploy —
-  // only actually send during the hour an admin configured. (Bookings
-  // still only get one reminder ever, via reminderSentAt below, regardless
-  // of how often this route is invoked.)
-  const { sessionReminderHour } = await getSiteSettings();
-  if (!isScheduledHourNow(sessionReminderHour)) {
-    return NextResponse.json({ skipped: true, reason: "not the scheduled hour" });
   }
 
   const tomorrow = tomorrowISO();
