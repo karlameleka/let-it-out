@@ -44,7 +44,17 @@ export default function JournalReminderToggle() {
       .register("/serwist/sw.js")
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setStatus(sub ? "on" : "off"))
-      .catch(() => setStatus("unsupported"));
+      .catch((err) => {
+        // This used to fall back to "unsupported", which renders nothing —
+        // indistinguishable from a browser that genuinely lacks Push
+        // support. That made a real failure here (a broken service worker,
+        // a stale/invalid subscription, anything) look like the toggle had
+        // simply vanished, with zero way to tell why. Show the button plus
+        // the actual error instead, so it's recoverable and debuggable.
+        console.error("[push] checking existing subscription failed:", err);
+        setStatus("off");
+        setError(err instanceof Error ? err.message : "Couldn't check your notification status.");
+      });
   }, []);
 
   async function enable() {
@@ -63,7 +73,11 @@ export default function JournalReminderToggle() {
       const registration = await navigator.serviceWorker.ready;
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!publicKey) {
-        setStatus("unsupported");
+        // Deliberately "off" (button stays visible) rather than
+        // "unsupported" (renders nothing) — this is a real, fixable
+        // deployment misconfiguration, not a browser limitation, and
+        // hiding the button entirely would make the error unreachable.
+        setStatus("off");
         setError("Push isn't configured on this deployment (missing VAPID public key).");
         return;
       }
