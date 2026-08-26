@@ -18,7 +18,7 @@ End EVERY reply with exactly one status tag on its own line, and nothing after i
 
 Keep replies short and plain — a few sentences, not a wall of text.`;
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 /**
  * Generates the assistant's next reply in a support chat, given the full
