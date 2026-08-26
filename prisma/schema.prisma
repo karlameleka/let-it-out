@@ -80,6 +80,7 @@ model User {
   supportChats   SupportChat[]
   eventRsvps     EventRSVP[]
   notificationReads NotificationRead[]
+  pageViews      PageView[]
 }
 
 enum OtpChannel {
@@ -752,6 +753,23 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+}
+
+// One row per page a logged-in person opens — the only usage signal behind
+// the admin analytics page's "most/least used features" and "time spent"
+// numbers (see src/lib/analytics.ts). Deliberately just a path + timestamp:
+// no query params, no referrer, nothing about what's actually on the page
+// (journal entry content in particular never touches the server at all —
+// see JournalEntry/local-journal.ts). Anonymous/logged-out browsing is
+// never recorded.
+model PageView {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  path      String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // A registered platform authenticator (Face ID, Touch ID, Windows Hello,

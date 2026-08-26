@@ -12,6 +12,7 @@ import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
 import AppBadgeSync from "@/components/app-badge-sync";
 import PushAutoPrompt from "@/components/push-auto-prompt";
+import AnalyticsTracker from "@/components/analytics-tracker";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { UnreadToolsProvider } from "@/lib/unread-tools-context";
@@ -103,6 +104,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <BottomTabBar dict={dict.nav} />
                 <AppBadgeSync />
                 <PushAutoPrompt loggedIn={Boolean(user)} />
+                {user && <AnalyticsTracker />}
               </UpcomingProvider>
             </UnreadToolsProvider>
           </CartProvider>
