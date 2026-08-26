@@ -109,6 +109,14 @@ export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Tomorrow's date as "YYYY-MM-DD" — used by the session-reminders cron to
+ * find bookings happening the day after it runs. */
+export function tomorrowISO(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export type IntakeAnswerEntry = { section: string; label: string; value: string };
 
 /** Everything the therapist portal shows on one client: contact info +

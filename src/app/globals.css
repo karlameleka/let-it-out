@@ -83,6 +83,19 @@ h1, h2, h3, h4, .font-display {
   }
 }
 
+/* iOS Safari draws its own gray tap-highlight overlay on any tappable
+   element and, for elements with no CSS `touch-action`, can briefly zoom
+   or delay-recalculate layout on tap (most visible on small toggle
+   switches, which can look like they "jump") before it fires the click.
+   Neither is desired here since components already have custom
+   active/pressed styling. */
+button,
+[role="switch"],
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 /* A crisp, consistent focus ring for any interactive element that doesn't
    define its own — keyboard navigation should always be visible without
    relying on each component to remember to add one. */

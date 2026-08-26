@@ -3,15 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, BellOff, BellRing, Share } from "lucide-react";
-import { subscribeToPush, unsubscribeFromPush } from "@/lib/push-actions";
+import { unsubscribeFromPush } from "@/lib/push-actions";
+import { subscribeBrowserToPush } from "@/lib/push-subscribe";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-}
 
 type Status = "checking" | "unsupported" | "off" | "on" | "denied";
 
@@ -61,42 +55,18 @@ export default function JournalReminderToggle() {
     setBusy(true);
     setError(null);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setStatus(permission === "denied" ? "denied" : "off");
-        if (permission !== "denied") {
-          setError("Permission wasn't granted — try again and allow notifications when prompted.");
-        }
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!publicKey) {
+      const result = await subscribeBrowserToPush();
+      if (!result.ok) {
         // Deliberately "off" (button stays visible) rather than
-        // "unsupported" (renders nothing) — this is a real, fixable
-        // deployment misconfiguration, not a browser limitation, and
-        // hiding the button entirely would make the error unreachable.
-        setStatus("off");
-        setError("Push isn't configured on this deployment (missing VAPID public key).");
+        // "unsupported" (renders nothing) — these are recoverable
+        // failures (permission dismissed, missing VAPID key, save
+        // failed), not a browser limitation, and hiding the button
+        // entirely would make the error unreachable.
+        setStatus(result.permission === "denied" ? "denied" : "off");
+        if (result.error) setError(result.error);
         return;
       }
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-      });
-
-      const json = subscription.toJSON();
-      const result = await subscribeToPush({
-        endpoint: json.endpoint!,
-        keys: { p256dh: json.keys!.p256dh, auth: json.keys!.auth },
-      });
-
-      setStatus(result.success ? "on" : "off");
-      if (!result.success) {
-        setError(result.error ?? "Saving the subscription failed for an unknown reason.");
-      }
+      setStatus("on");
     } catch (err) {
       // Surfaced on-screen (not just console) since this most often runs on
       // a phone with no attached debugger — the failure needs to be visible

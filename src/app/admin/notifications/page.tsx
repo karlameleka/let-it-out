@@ -41,6 +41,14 @@ export default async function AdminNotificationsPage() {
           Account settings — not sent from here.
         </p>
       </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <h2 className="font-display font-semibold text-brand-900">Session reminders</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Sent automatically the evening before a confirmed counseling session (paid booking or booking request) to
+          any client who has push notifications enabled — not sent from here.
+        </p>
+      </div>
     </div>
   );
 }

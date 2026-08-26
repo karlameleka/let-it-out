@@ -218,6 +218,9 @@ model SessionBooking {
   // Set by the counselor from their portal once a session is confirmed —
   // immediately surfaced to the client on /upcoming and emailed to them.
   meetingLink   String?
+  // Set once the day-before push reminder (see the session-reminders cron)
+  // has gone out for this booking, so it's never sent twice.
+  reminderSentAt DateTime?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 }
@@ -496,6 +499,9 @@ model BookingRequest {
   // Set by the counselor from their portal once a session is confirmed —
   // immediately surfaced to the client on /upcoming and emailed to them.
   meetingLink    String?
+  // Set once the day-before push reminder (see the session-reminders cron)
+  // has gone out for this booking, so it's never sent twice.
+  reminderSentAt DateTime?
   createdAt      DateTime      @default(now())
 }
 

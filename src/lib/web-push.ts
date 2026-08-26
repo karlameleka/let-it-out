@@ -60,3 +60,47 @@ export async function sendPushToAllSubscribers(payload: PushPayload): Promise<{ 
 
   return { sent, removed, total: subscriptions.length };
 }
+
+/**
+ * Sends a push to just the subscriptions belonging to specific users,
+ * resolved by email (the session-reminders cron uses this — a
+ * SessionBooking/BookingRequest only has a plain email string, not a
+ * userId, so subscriptions are found via User.email rather than a direct
+ * relation). Emails with no matching account, or an account with no push
+ * subscription, are silently skipped. Same expired-subscription cleanup
+ * as sendPushToAllSubscribers.
+ */
+export async function sendPushToEmails(emails: string[], payload: PushPayload): Promise<{ sent: number; removed: number; total: number }> {
+  if (!process.env.VAPID_PRIVATE_KEY || emails.length === 0) return { sent: 0, removed: 0, total: 0 };
+
+  const webpushClient = getWebPush();
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: { user: { email: { in: emails } } },
+  });
+  const json = JSON.stringify(payload);
+
+  let sent = 0;
+  let removed = 0;
+
+  await Promise.all(
+    subscriptions.map(async (sub) => {
+      try {
+        await webpushClient.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          json,
+        );
+        sent++;
+      } catch (err: unknown) {
+        const statusCode = (err as { statusCode?: number })?.statusCode;
+        if (statusCode === 404 || statusCode === 410) {
+          await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+          removed++;
+        } else {
+          console.error("[web-push] Failed to send push notification:", err);
+        }
+      }
+    }),
+  );
+
+  return { sent, removed, total: subscriptions.length };
+}

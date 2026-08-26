@@ -11,6 +11,7 @@ import InitialSplash from "@/components/initial-splash";
 import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
 import AppBadgeSync from "@/components/app-badge-sync";
+import PushAutoPrompt from "@/components/push-auto-prompt";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { UnreadToolsProvider } from "@/lib/unread-tools-context";
@@ -101,6 +102,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <HelpButton dict={dict.helpButton} />
                 <BottomTabBar dict={dict.nav} />
                 <AppBadgeSync />
+                <PushAutoPrompt loggedIn={Boolean(user)} />
               </UpcomingProvider>
             </UnreadToolsProvider>
           </CartProvider>
