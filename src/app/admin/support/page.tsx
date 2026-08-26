@@ -7,7 +7,24 @@ import {
 } from "@/lib/support-chat-actions";
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import { SUPPORT_EMAIL } from "@/lib/email";
 import { Star } from "lucide-react";
+
+function gmailComposeUrl(toEmail: string) {
+  // Opens Gmail's own web compose view (rather than a bare mailto:, which
+  // just hands off to whatever mail client/account happens to be the OS
+  // default) addressed to the client, with `authuser` hinting Gmail to use
+  // the Let It Out support account if the admin is signed into more than
+  // one Google account in that browser.
+  const params = new URLSearchParams({
+    view: "cm",
+    fs: "1",
+    to: toEmail,
+    su: "Following up on your Let It Out support chat",
+    authuser: SUPPORT_EMAIL,
+  });
+  return `https://mail.google.com/mail/?${params.toString()}`;
+}
 
 const STATUS_ORDER = { ESCALATED: 0, OPEN: 1, RESOLVED: 2 };
 
@@ -138,7 +155,9 @@ export default async function AdminSupportPage() {
                 </form>
               )}
               <a
-                href={`mailto:${chat.user.email}`}
+                href={gmailComposeUrl(chat.user.email)}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="rounded-full border border-brand-200 px-4 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50"
               >
                 Email client

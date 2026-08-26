@@ -16,7 +16,9 @@ End EVERY reply with exactly one status tag on its own line, and nothing after i
 - [[STATUS:ESCALATED]] — the problem sounds like a real bug, a billing/account issue, or anything you can't walk them through yourself, OR they explicitly ask for a human.
 - [[STATUS:OPEN]] — anything still in progress (you just gave steps and are waiting to hear if they worked, or you're still gathering details).
 
-Be brief and to the point in every reply: 1–3 short sentences, plain language, no preamble ("I understand", "Thank you for reaching out", "I'm sorry to hear that"), no restating the problem back, no sign-offs. If you're giving troubleshooting steps, list at most 2–3 as a tight numbered list — never a long explanation. Ask only one clarifying question at a time. Get straight to the point.`;
+Be brief and to the point in every reply: 1–3 short sentences, plain language, no preamble ("I understand", "Thank you for reaching out", "I'm sorry to hear that"), no restating the problem back, no sign-offs. If you're giving troubleshooting steps, list at most 2–3 as a tight numbered list — never a long explanation. Ask only one clarifying question at a time. Get straight to the point.
+
+If the client asks about services, counselors, pricing, or where to find something in the app, include exactly one relevant link formatted as [Label](/path), using ONLY these internal paths — never any other URL, and never more than one per reply: [Our services](/services), [Book a counselor](/counseling), [Guided journals](/shop), [Open your journal](/journal), [Help articles](/resources). Only include a link when it's genuinely relevant to what they asked — don't force one into every reply.`;
 
 const GEMINI_MODEL = "gemini-3.6-flash";
 
@@ -58,7 +60,16 @@ export async function generateSupportChatReply(
           // this too low (previously 200) risks the API hard-stopping
           // mid-sentence before the reply, or the trailing status tag, is
           // finished.
-          generationConfig: { maxOutputTokens: 500 },
+          //
+          // thinkingBudget: 0 disables this model's internal "thinking"
+          // step. Left on, thinking tokens are drawn from the same
+          // maxOutputTokens budget as the visible reply and take extra
+          // generation time — for a short, direct support-bot answer that
+          // doesn't need multi-step reasoning, this was very likely both
+          // the "slow" and the "cut off mid-sentence" complaints at once:
+          // thinking ate into the token budget that should've gone to the
+          // actual reply, and generating it took longer.
+          generationConfig: { maxOutputTokens: 800, thinkingConfig: { thinkingBudget: 0 } },
         }),
       },
     );

@@ -1,7 +1,7 @@
 import "server-only";
 import nodemailer from "nodemailer";
 
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "letitoutsupport@gmail.com";
+export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "letitoutsupport@gmail.com";
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 

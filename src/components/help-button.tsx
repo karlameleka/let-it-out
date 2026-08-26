@@ -13,7 +13,9 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  if (pathname?.startsWith("/admin")) return null;
+  // On /support the button's fixed position sits directly over the live
+  // chat's send button.
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/support")) return null;
 
   return (
     <div className="fixed bottom-24 end-5 z-50 md:bottom-5">

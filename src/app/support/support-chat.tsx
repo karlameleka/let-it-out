@@ -2,13 +2,39 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, MessageCircle, Send, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { sendSupportChatMessage, submitSupportChatFeedback } from "@/lib/support-chat-actions";
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import { Button } from "@/components/ui";
 
 const GREETING =
-  "Hi, I'm the Let It Out support assistant. Tell me what's going wrong — a page not loading, a payment issue, the journal not saving — and I'll help you sort it out.";
+  "Hi, I'm Let It Out support assistant. Tell me what's going wrong (e.g.: a page not loading, a payment issue, the journal not saving) and I'll help you sort it out.";
+
+// Matches the [Label](/path) links the assistant is instructed to send for
+// service/counselor questions — deliberately restricted to a single leading
+// slash (no `//host`, which a browser reads as a scheme-relative URL to a
+// different origin) so a link can only ever point somewhere inside this app.
+const MESSAGE_LINK_RE = /\[([^\]]+)\]\((\/(?!\/)[a-zA-Z0-9\-/#]*)\)/g;
+
+function renderMessageContent(content: string) {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  for (const match of content.matchAll(MESSAGE_LINK_RE)) {
+    const [full, label, href] = match;
+    const index = match.index ?? 0;
+    if (index > lastIndex) nodes.push(content.slice(lastIndex, index));
+    nodes.push(
+      <Link key={key++} href={href} className="font-semibold underline underline-offset-2 hover:opacity-80">
+        {label}
+      </Link>,
+    );
+    lastIndex = index + full.length;
+  }
+  if (lastIndex < content.length) nodes.push(content.slice(lastIndex));
+  return nodes;
+}
 
 const SAVED_CHAT_KEY = "lio_support_chat_saved";
 const SAVED_CHAT_TTL_MS = 24 * 60 * 60 * 1000;
@@ -57,6 +83,7 @@ export default function SupportChat() {
   const [leaveResolved, setLeaveResolved] = useState<boolean | null>(null);
   const [leaveRating, setLeaveRating] = useState<number | null>(null);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [pendingHref, setPendingHref] = useState("/account");
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -87,6 +114,53 @@ export default function SupportChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
+  // Catches navigation away from this page via any in-app link — header
+  // nav, the bottom tab bar, the footer, the logo — not just our own back
+  // button. A capture-phase listener on the document runs before Next's
+  // Link intercepts the click, so preventDefault()/stopPropagation() here
+  // stops the navigation before it starts; the intended destination is
+  // remembered and used once the leave flow finishes.
+  useEffect(() => {
+    if (!chatId || messages.length === 0 || leaveStep !== null) return;
+
+    function handleDocumentClick(e: MouseEvent) {
+      const anchor = (e.target as HTMLElement | null)?.closest("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+      let url: URL;
+      try {
+        url = new URL(href, window.location.origin);
+      } catch {
+        return;
+      }
+      if (url.origin !== window.location.origin || url.pathname === "/support") return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingHref(url.pathname + url.search);
+      setLeaveResolved(null);
+      setLeaveRating(null);
+      setLeaveStep("confirm");
+    }
+
+    document.addEventListener("click", handleDocumentClick, true);
+    return () => document.removeEventListener("click", handleDocumentClick, true);
+  }, [chatId, messages.length, leaveStep]);
+
+  // Best-effort coverage for an actual tab close/refresh — a real page
+  // unload doesn't run our React code, so only the browser's own generic
+  // confirmation is possible here (there's no way to show custom UI).
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (!chatId || messages.length === 0 || leaveStep !== null) return;
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [chatId, messages.length, leaveStep]);
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     const text = input.trim();
@@ -114,6 +188,7 @@ export default function SupportChat() {
       router.push("/account");
       return;
     }
+    setPendingHref("/account");
     setLeaveResolved(null);
     setLeaveRating(null);
     setLeaveStep("confirm");
@@ -144,7 +219,7 @@ export default function SupportChat() {
     if (chatId && leaveResolved !== null) {
       await submitSupportChatFeedback(chatId, leaveResolved, ratingValue ?? undefined).catch(() => {});
     }
-    router.push("/account");
+    router.push(pendingHref);
   }
 
   return (
@@ -185,7 +260,7 @@ export default function SupportChat() {
                     : "border border-brand-100 bg-white text-ink/80 shadow-sm"
                 }`}
               >
-                {m.content}
+                {renderMessageContent(m.content)}
               </div>
             </div>
           </div>
@@ -320,7 +395,7 @@ export default function SupportChat() {
             This conversation is saved on this device for 24 hours. Come back to Live Chat before then to continue
             it.
           </p>
-          <Button type="button" onClick={() => router.push("/account")} variant="bright" className="mt-5 w-full">
+          <Button type="button" onClick={() => router.push(pendingHref)} variant="bright" className="mt-5 w-full">
             Got it
           </Button>
         </DialogShell>
