@@ -18,22 +18,22 @@ End EVERY reply with exactly one status tag on its own line, and nothing after i
 
 Keep replies short and plain — a few sentences, not a wall of text.`;
 
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 /**
  * Generates the assistant's next reply in a support chat, given the full
- * message history (oldest first). Requires GROQ_API_KEY (free tier at
- * console.groq.com) — without it, returns a fixed "not available" reply
- * and marks the chat ESCALATED so a human (via the admin email
+ * message history (oldest first). Requires GEMINI_API_KEY (free tier at
+ * aistudio.google.com/apikey) — without it, returns a fixed "not available"
+ * reply and marks the chat ESCALATED so a human (via the admin email
  * notification) picks it up instead of the client waiting on a bot that
- * can't run. Uses Groq's OpenAI-compatible chat completions endpoint.
+ * can't run. Uses the Gemini API's generateContent endpoint.
  */
 export async function generateSupportChatReply(
   history: { role: "user" | "assistant"; content: string }[],
 ): Promise<{ reply: string; status: SupportChatOutcome }> {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.warn("[ai-support-chat] Skipped — GROQ_API_KEY not configured.");
+    console.warn("[ai-support-chat] Skipped — GEMINI_API_KEY not configured.");
     return {
       reply:
         "Live chat isn't available right now. I've flagged this for our team and they'll follow up by email — sorry for the trouble.",
@@ -42,29 +42,33 @@ export async function generateSupportChatReply(
   }
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          // Gemini uses "model" rather than "assistant" for the bot's own turns.
+          contents: history.map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          })),
+          generationConfig: { maxOutputTokens: 500 },
+        }),
       },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        max_tokens: 500,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history.map((m) => ({ role: m.role, content: m.content }))],
-      }),
-    });
+    );
 
     if (!res.ok) {
-      console.error(`[ai-support-chat] Groq API returned ${res.status}: ${await res.text()}`);
+      console.error(`[ai-support-chat] Gemini API returned ${res.status}: ${await res.text()}`);
       return {
         reply: "Something went wrong on our end. I've flagged this for our team to follow up by email.",
         status: "ESCALATED",
       };
     }
 
-    const data: { choices?: { message?: { content?: string } }[] } = await res.json();
-    const rawText = data.choices?.[0]?.message?.content?.trim() || "";
+    const data: { candidates?: { content?: { parts?: { text?: string }[] } }[] } = await res.json();
+    const rawText = (data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "").trim();
 
     const match = rawText.match(STATUS_TAG_RE);
     const status: SupportChatOutcome = (match?.[1] as SupportChatOutcome) ?? "OPEN";
