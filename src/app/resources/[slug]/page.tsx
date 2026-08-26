@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui";
 import { Ribbon } from "@/components/decor";
-import { getArticles, getArticleBySlug } from "@/lib/content/articles";
+import { getArticles, getArticleBySlug, localizeArticle } from "@/lib/content/articles";
 import InteractiveArticle from "./interactive-article";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export async function generateStaticParams() {
   const articles = await getArticles();
@@ -26,9 +28,11 @@ export default async function ArticlePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
-  const article = await getArticleBySlug(slug);
-  if (!article) notFound();
+  const [{ slug }, locale] = await Promise.all([params, getLocale()]);
+  const rawArticle = await getArticleBySlug(slug);
+  if (!rawArticle) notFound();
+  const article = localizeArticle(rawArticle, locale);
+  const dict = getDictionary(locale);
 
   return (
     <>
@@ -44,7 +48,7 @@ export default async function ArticlePage({
 
       <section className="py-16 sm:py-20">
         <Container className="max-w-3xl">
-          <InteractiveArticle article={article} />
+          <InteractiveArticle article={article} dict={dict.interactiveArticle} notifyDict={dict.resourceNotifyBell} />
         </Container>
       </section>
     </>

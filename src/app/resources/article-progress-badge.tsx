@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { getArticleProgress } from "@/lib/article-progress";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function ArticleProgressBadge({
   slug,
   totalMilestones,
+  dict,
 }: {
   slug: string;
   totalMilestones: number;
+  dict: Dictionary["articleProgressBadge"];
 }) {
   const [count, setCount] = useState<number | null>(null);
 
@@ -26,7 +29,7 @@ export default function ArticleProgressBadge({
         isComplete ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-700"
       }`}
     >
-      {isComplete ? "Completed" : "In progress"}
+      {isComplete ? dict.completed : dict.inProgress}
     </span>
   );
 }

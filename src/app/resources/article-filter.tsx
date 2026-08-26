@@ -5,13 +5,18 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import type { Article } from "@/lib/content/articles";
 import ArticleProgressBadge from "./article-progress-badge";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function ArticleFilter({
   articles,
   hiddenSlugs = [],
+  dict,
+  progressDict,
 }: {
   articles: Article[];
   hiddenSlugs?: string[];
+  dict: Dictionary["articleFilter"];
+  progressDict: Dictionary["articleProgressBadge"];
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -48,7 +53,7 @@ export default function ArticleFilter({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search articles..."
+            placeholder={dict.searchPlaceholder}
             className="w-full rounded-full border border-brand-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-500"
           />
         </div>
@@ -62,7 +67,7 @@ export default function ArticleFilter({
                 : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
             }`}
           >
-            All topics
+            {dict.allTopics}
           </button>
           {categories.map((c) => (
             <button
@@ -82,7 +87,7 @@ export default function ArticleFilter({
       </div>
 
       {filtered.length === 0 ? (
-        <p className="mt-10 text-sm text-ink/60">No articles match that search.</p>
+        <p className="mt-10 text-sm text-ink/60">{dict.noMatches}</p>
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           {filtered.map((article) => (
@@ -92,10 +97,11 @@ export default function ArticleFilter({
               className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
             >
               <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">
-                {article.category} · {article.readMinutes} min read
+                {article.category} · {article.readMinutes} {dict.minRead}
                 <ArticleProgressBadge
                   slug={article.slug}
                   totalMilestones={article.sections.length + article.checkIns.length}
+                  dict={progressDict}
                 />
               </p>
               <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
@@ -103,7 +109,7 @@ export default function ArticleFilter({
               </h3>
               <p className="mt-2 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{article.excerpt}</p>
               <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                Read article &rarr;
+                {dict.readArticle} &rarr;
               </p>
             </Link>
           ))}

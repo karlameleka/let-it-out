@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/ui";
 import type { Article, ArticleCheckIn, ArticleSection } from "@/lib/content/articles";
 import { getArticleProgress, saveArticleProgress, clearArticleProgress } from "@/lib/article-progress";
 import ResourceNotifyBell from "../resource-notify-bell";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 function sectionKey(index: number) {
   return `section-${index}`;
@@ -18,7 +19,15 @@ function checkInKey(index: number) {
 
 type Progress = { completed: Set<string>; checkInAnswers: (string | null)[] };
 
-export default function InteractiveArticle({ article }: { article: Article }) {
+export default function InteractiveArticle({
+  article,
+  dict,
+  notifyDict,
+}: {
+  article: Article;
+  dict: Dictionary["interactiveArticle"];
+  notifyDict: Dictionary["resourceNotifyBell"];
+}) {
   const totalMilestones = article.sections.length + article.checkIns.length;
   const [progress, setProgress] = useState<Progress>(() => ({
     completed: new Set(),
@@ -76,7 +85,7 @@ export default function InteractiveArticle({ article }: { article: Article }) {
     <>
       <div className="mt-3 flex items-center gap-3">
         <p className="text-sm text-ink/50">
-          {isComplete ? "Completed" : `${article.readMinutes} min read`}
+          {isComplete ? dict.completed : dict.minRead.replace("{n}", String(article.readMinutes))}
         </p>
         {hydrated && (
           <div className="h-1.5 w-28 overflow-hidden rounded-full bg-brand-100" aria-hidden="true">
@@ -102,6 +111,7 @@ export default function InteractiveArticle({ article }: { article: Article }) {
                 answer={checkInAnswers[i]}
                 onAnswer={(option) => answerCheckIn(i, option)}
                 isLast={isLastCheckIn}
+                dict={dict}
               />
               <Sentinel onSeen={() => markComplete(sectionKey(i))} />
             </div>
@@ -111,7 +121,7 @@ export default function InteractiveArticle({ article }: { article: Article }) {
         {allAnswered && (
           <div className="animate-pop-in">
             <div className="mt-10 border-t border-brand-100 pt-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">References</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.referencesLabel}</p>
               <ol className="mt-2 space-y-1.5 text-xs text-ink/50">
                 {article.references.map((ref, i) => (
                   <li key={i}>
@@ -123,50 +133,47 @@ export default function InteractiveArticle({ article }: { article: Article }) {
 
             <div className="mt-12 rounded-2xl border-2 border-brand-100 bg-brand-50 p-6 text-center">
               <p className="font-display font-semibold text-brand-800">
-                {isComplete ? "Nice — you made it to the end." : "Want more support than a good read?"}
+                {isComplete ? dict.niceMadeIt : dict.wantMoreSupport}
               </p>
-              <p className="mt-2 text-sm text-ink/70">
-                Our psychologist-led team offers 1:1 counseling and workplace workshops built on the same
-                evidence-based approach.
-              </p>
+              <p className="mt-2 text-sm text-ink/70">{dict.supportDescription}</p>
               {article.slug === "stress-management-for-employees" ? (
                 <div className="mt-5 flex flex-col items-center gap-3">
-                  <ButtonLink href="/workshops">Explore workshops</ButtonLink>
+                  <ButtonLink href="/workshops">{dict.exploreWorkshops}</ButtonLink>
                   <div className="flex flex-wrap justify-center gap-3">
                     <ButtonLink href="/shop" variant="outline">
-                      Explore our journals
+                      {dict.exploreJournals}
                     </ButtonLink>
                     <ButtonLink href="/counseling" variant="outline">
-                      Book a session
+                      {dict.bookSession}
                     </ButtonLink>
                   </div>
                 </div>
               ) : (
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
                   {article.slug === "importance-of-journaling" && (
-                    <ButtonLink href="/shop">Explore our journals</ButtonLink>
+                    <ButtonLink href="/shop">{dict.exploreJournals}</ButtonLink>
                   )}
                   <ButtonLink
                     href="/counseling"
                     variant={article.slug === "importance-of-journaling" ? "outline" : "primary"}
                   >
-                    Book a session
+                    {dict.bookSession}
                   </ButtonLink>
                   <ButtonLink href="/workshops" variant="outline">
-                    Explore workshops
+                    {dict.exploreWorkshops}
                   </ButtonLink>
                 </div>
               )}
             </div>
 
-            <ResourceNotifyBell />
+            <ResourceNotifyBell dict={notifyDict} />
           </div>
         )}
       </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
         <Link href="/resources" className="font-medium text-brand-600 underline">
-          &larr; Back to all resources
+          &larr; {dict.backToResources}
         </Link>
         {progressCount > 0 && (
           <button
@@ -175,7 +182,7 @@ export default function InteractiveArticle({ article }: { article: Article }) {
             className="inline-flex items-center gap-1.5 font-medium text-ink/50 transition-colors hover:text-ink/80 active:text-ink/80"
           >
             <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
-            Retake this article
+            {dict.retakeArticle}
           </button>
         )}
       </div>
@@ -188,17 +195,19 @@ function CheckInCard({
   answer,
   onAnswer,
   isLast,
+  dict,
 }: {
   checkIn: ArticleCheckIn;
   answer: string | null;
   onAnswer: (option: string) => void;
   isLast: boolean;
+  dict: Dictionary["interactiveArticle"];
 }) {
   return (
     <div className="mt-10 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50 p-6 sm:p-8">
       {answer === null ? (
         <>
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Quick check-in</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{dict.quickCheckIn}</p>
           <p className="mt-2 font-display text-lg font-medium text-brand-900">{checkIn.prompt}</p>
           <div className="mt-4 flex flex-col gap-2">
             {checkIn.options.map((option) => (
@@ -213,7 +222,7 @@ function CheckInCard({
             ))}
           </div>
           <p className="mt-3 text-xs text-ink/40">
-            Pick whatever&apos;s true for you — {isLast ? "the wrap-up" : "the next part"} unlocks either way.
+            {dict.pickWhatsTrue.replace("{part}", isLast ? dict.partWrapUp : dict.partNext)}
           </p>
         </>
       ) : (
@@ -222,8 +231,8 @@ function CheckInCard({
             ✓
           </span>
           <p className="text-sm text-ink/70">
-            Got it — <span className="font-medium text-ink/90">&ldquo;{answer}&rdquo;</span>. Here&apos;s{" "}
-            {isLast ? "the rest" : "the next part"}.
+            {dict.gotItPrefix} <span className="font-medium text-ink/90">&ldquo;{answer}&rdquo;</span>.{" "}
+            {isLast ? dict.gotItSuffixRest : dict.gotItSuffixNext}
           </p>
         </div>
       )}
