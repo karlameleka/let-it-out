@@ -20,7 +20,7 @@ function Facebook({ className }: { className?: string }) {
       <path
         d="M15 8.5h2V5.2h-2c-2.2 0-3.8 1.6-3.8 3.8v1.9H9.4v3.2h1.8V21h3.2v-6.9h2.2l.5-3.2h-2.7V9c0-.5.3-.8.6-.8Z"
         stroke="currentColor"
-        strokeWidth="1.4"
+        strokeWidth="1.8"
         strokeLinejoin="round"
       />
     </svg>

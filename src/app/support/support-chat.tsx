@@ -86,6 +86,22 @@ export default function SupportChat() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // The sticky site header's height isn't fixed — it grows at wider
+  // breakpoints (md:py-6 vs py-3.5) — so a hardcoded offset clips this
+  // page's own header under it on desktop. Measure the real header
+  // instead, so this stays correct at every breakpoint and if the site
+  // header's height ever changes again.
+  const [headerHeight, setHeaderHeight] = useState(73);
+  useEffect(() => {
+    const headerEl = document.querySelector("header");
+    if (!headerEl) return;
+    const updateHeight = () => setHeaderHeight(headerEl.getBoundingClientRect().height);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(headerEl);
+    return () => observer.disconnect();
+  }, []);
+
   // Restore a conversation kept open on this device within the last 24h —
   // read after mount (not as lazy initial state) so server and first client
   // render match, matching the pattern used by the other localStorage-driven
@@ -222,7 +238,10 @@ export default function SupportChat() {
   }
 
   return (
-    <div className="fixed inset-x-0 top-[73px] bottom-0 z-30 flex flex-col overflow-hidden bg-white">
+    <div
+      className="fixed inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden bg-white"
+      style={{ top: headerHeight }}
+    >
       <div className="flex shrink-0 items-center gap-3 border-b border-brand-100 bg-brand-50 px-4 py-3 sm:px-8">
         <button
           type="button"

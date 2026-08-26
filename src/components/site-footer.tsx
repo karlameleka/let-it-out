@@ -22,18 +22,22 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
   if (pathname?.startsWith("/support")) return null;
 
   return (
-    <footer className="relative mt-24 bg-brand-900 text-brand-50">
+    <footer className="relative mt-24 overflow-hidden bg-brand-900 text-brand-50">
       <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />
 
-      <div className="relative mx-auto max-w-6xl overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
-        <Image
-          src="/brand/logo-icon-white.png"
-          alt=""
-          width={852}
-          height={829}
-          className="pointer-events-none absolute -bottom-16 -right-12 h-64 w-64 rotate-6 opacity-[0.05] sm:h-80 sm:w-80"
-        />
+      {/* Positioned relative to the full-bleed footer, not the max-w-6xl
+          content column below, so it actually hugs the page's right edge
+          on wide screens instead of floating near the middle of the
+          viewport with visible background past it. */}
+      <Image
+        src="/brand/logo-icon-white.png"
+        alt=""
+        width={852}
+        height={829}
+        className="pointer-events-none absolute -bottom-16 -right-12 h-64 w-64 rotate-6 opacity-[0.05] sm:h-80 sm:w-80"
+      />
 
+      <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="relative grid gap-8 sm:grid-cols-2 sm:gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
             <Logo variant="horizontal-white" height={32} />
@@ -97,9 +101,9 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
                     target={href.startsWith("http") ? "_blank" : undefined}
                     rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
                     aria-label={label}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-brand-100 transition-colors hover:border-white/40 active:border-white/40 hover:bg-white/10 active:bg-white/10 hover:text-white active:text-white"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-brand-100 transition-colors hover:border-white/40 active:border-white/40 hover:bg-white/10 active:bg-white/10 hover:text-white active:text-white"
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-5 w-5" />
                   </a>
                 ))}
               </li>
