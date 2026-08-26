@@ -61,15 +61,20 @@ export async function generateSupportChatReply(
           // mid-sentence before the reply, or the trailing status tag, is
           // finished.
           //
-          // thinkingBudget: 0 disables this model's internal "thinking"
-          // step. Left on, thinking tokens are drawn from the same
-          // maxOutputTokens budget as the visible reply and take extra
-          // generation time — for a short, direct support-bot answer that
-          // doesn't need multi-step reasoning, this was very likely both
-          // the "slow" and the "cut off mid-sentence" complaints at once:
-          // thinking ate into the token budget that should've gone to the
-          // actual reply, and generating it took longer.
-          generationConfig: { maxOutputTokens: 800, thinkingConfig: { thinkingBudget: 0 } },
+          // thinkingLevel: "minimal" keeps this model's internal
+          // "thinking" step as short as possible. Thinking tokens are
+          // drawn from the same maxOutputTokens budget as the visible
+          // reply and take extra generation time — for a short, direct
+          // support-bot answer that doesn't need multi-step reasoning,
+          // this was very likely both the "slow" and the "cut off
+          // mid-sentence" complaints at once.
+          //
+          // IMPORTANT: this must be `thinkingLevel`, not `thinkingBudget`
+          // — thinkingBudget is the legacy field from the Gemini 2.5
+          // series. Gemini 3 models (this one included) reject a request
+          // carrying thinkingBudget with a 400 error, which is exactly
+          // what broke every single reply after that field was added.
+          generationConfig: { maxOutputTokens: 800, thinkingConfig: { thinkingLevel: "minimal" } },
         }),
       },
     );

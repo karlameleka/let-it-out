@@ -11,7 +11,9 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   const pathname = usePathname();
   const { count: unreadToolsCount } = useUnreadTools();
 
-  if (pathname?.startsWith("/admin")) return null;
+  // /support runs as a fixed, full-viewport chat screen with the input
+  // pinned to the true bottom edge — the tab bar would sit on top of it.
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/support")) return null;
 
   const TABS = [
     { href: "/", label: dict.home, icon: Home, matches: ["/"], badge: 0 },

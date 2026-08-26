@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { WaveDivider } from "@/components/decor";
@@ -13,6 +16,11 @@ const CONTACT_PHONE_HREF = "tel:+201288200533";
 const CONTACT_EMAIL = "letitoutsupport@gmail.com";
 
 export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary["footer"] }) {
+  const pathname = usePathname();
+  // /support runs as a fixed, full-viewport chat screen — the footer
+  // would just sit invisibly behind it.
+  if (pathname?.startsWith("/support")) return null;
+
   return (
     <footer className="relative mt-24 bg-brand-900 text-brand-50">
       <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />

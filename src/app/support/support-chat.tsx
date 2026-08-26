@@ -8,8 +8,7 @@ import { sendSupportChatMessage, submitSupportChatFeedback } from "@/lib/support
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import { Button } from "@/components/ui";
 
-const GREETING =
-  "Hi, I'm Let It Out support assistant. Tell me what's going wrong (e.g.: a page not loading, a payment issue, the journal not saving) and I'll help you sort it out.";
+const GREETING = "Hi, I'm Let It Out technical support assistant. How can I help you today?";
 
 // Matches the [Label](/path) links the assistant is instructed to send for
 // service/counselor questions — deliberately restricted to a single leading
@@ -223,8 +222,8 @@ export default function SupportChat() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-73px)] flex-col">
-      <div className="flex items-center gap-3 border-b border-brand-100 bg-brand-50 px-4 py-3 sm:px-8">
+    <div className="fixed inset-x-0 top-[73px] bottom-0 z-30 flex flex-col overflow-hidden bg-white">
+      <div className="flex shrink-0 items-center gap-3 border-b border-brand-100 bg-brand-50 px-4 py-3 sm:px-8">
         <button
           type="button"
           onClick={handleLeaveClick}
@@ -240,7 +239,7 @@ export default function SupportChat() {
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 bg-brand-50/40 p-4 sm:px-8">
+      <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain bg-brand-50/40 p-4 sm:px-8">
         <div className="flex justify-start">
           <div className="flex max-w-[85%] items-start gap-2 sm:max-w-[70%]">
             <AssistantAvatar />
@@ -281,19 +280,20 @@ export default function SupportChat() {
       </div>
 
       {status === "RESOLVED" && (
-        <p className="border-t border-brand-100 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 sm:px-8">
+        <p className="shrink-0 border-t border-brand-100 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 sm:px-8">
           Marked as resolved — keep chatting if you need anything else, or head back whenever you&rsquo;re ready.
         </p>
       )}
       {status === "ESCALATED" && (
-        <p className="border-t border-amber-100 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800 sm:px-8">
+        <p className="shrink-0 border-t border-amber-100 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800 sm:px-8">
           This has been flagged for our team — they&rsquo;ll follow up by email if needed.
         </p>
       )}
 
       <form
         onSubmit={handleSend}
-        className="sticky bottom-20 z-20 flex items-center gap-2 border-t border-brand-100 bg-white p-3 sm:px-8 md:bottom-0"
+        className="flex shrink-0 items-center gap-2 border-t border-brand-100 bg-white p-3 sm:px-8"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
         <input
           value={input}
@@ -306,7 +306,7 @@ export default function SupportChat() {
           <Send className="h-4 w-4" strokeWidth={2} />
         </Button>
       </form>
-      {error && <p className="px-3 pb-3 text-xs text-red-600 sm:px-8">{error}</p>}
+      {error && <p className="shrink-0 px-3 pb-3 text-xs text-red-600 sm:px-8">{error}</p>}
 
       {leaveStep === "confirm" && (
         <DialogShell title="Before you go" subtitle="Do you want to end this chat, or keep it open?">
