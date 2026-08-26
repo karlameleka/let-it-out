@@ -314,6 +314,14 @@ const ar: Dictionary = {
     tellUsMore: "أخبرنا المزيد (اختياري)",
     submit: "اطلب عرض سعر",
   },
+  workshopNotify: {
+    title: "متفوتش ورشتنا الجاية!",
+    successMessage: "إنت مسجل معانا — هنبعتلك إيميل أول ما نعلن عن الجلسة الجاية.",
+    description: "كن أول واحد يعرف لما نفتح أماكن لتدريب أو ورشة جديدة. مفيش سبام، بس الحاجات المفيدة.",
+    emailPlaceholder: "you@email.com",
+    submitting: "...",
+    submit: "بلغني",
+  },
   shop: {
     ribbon: "يوميات إرشادية ومصادر رقمية",
     titlePrefix: "أدوات مساعدة ذاتية ",

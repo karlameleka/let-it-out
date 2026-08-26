@@ -321,6 +321,14 @@ const en = {
     tellUsMore: "Tell us more (optional)",
     submit: "Request a quote",
   },
+  workshopNotify: {
+    title: "Don't miss our next workshop!",
+    successMessage: "You're on the list — we'll email you the moment we announce our next session.",
+    description: "Be the first to know when we open spots for our next training or workshop. No spam, just the good stuff.",
+    emailPlaceholder: "you@email.com",
+    submitting: "...",
+    submit: "Notify me",
+  },
   shop: {
     ribbon: "Guided journals & digital resources",
     titlePrefix: "Self-help tools you can ",
