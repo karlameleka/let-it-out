@@ -783,6 +783,43 @@ const en = {
     backToResources: "Back to all resources",
     retakeArticle: "Retake this article",
   },
+  breathing: {
+    backToResources: "Back to resources",
+    ribbon: "Guided exercise",
+    title: "Just breathe, on purpose.",
+    description:
+      "A paced, visual breathing guide — pick a pattern, follow the circle, and let your nervous system catch up with the moment.",
+    dayStreak: "day streak",
+    dayPracticed: "day practiced",
+    daysPracticed: "days practiced",
+    minuteBreathing: "minute breathing",
+    minutesBreathing: "minutes breathing",
+    infoText:
+      "Slow, paced breathing is one of the few ways to directly influence your nervous system on purpose. A longer exhale in particular activates the vagus nerve and shifts your body from fight-or-flight toward rest-and-digest — which is why a few minutes of this can measurably lower heart rate and feelings of anxiety, even before anything about the situation changes.",
+    choosePattern: "Choose a pattern",
+    howManyCycles: "How many cycles",
+    cycles: "cycles",
+    startBreathing: "Start breathing",
+    cycleLabel: "Cycle {current} of {total}",
+    stop: "Stop",
+    doneTitle: "{cycles} cycles of {pattern}, done.",
+    streakLine: "{n} day streak. ",
+    sessionSoFar: "{n} session so far. ",
+    sessionsSoFar: "{n} sessions so far. ",
+    savedPrivately: "Saved privately on this device — never on our servers.",
+    breatheAgain: "Breathe again",
+    talkToCounselor: "If this feels heavy, talk it through with a counselor",
+    phaseInhale: "Inhale",
+    phaseHold: "Hold",
+    phaseExhale: "Exhale",
+    patternBoxName: "Box Breathing",
+    patternBoxDescription: "Equal-count breathing used to sharpen focus and steady nerves before something stressful.",
+    pattern478Name: "4-7-8 Breathing",
+    pattern478Description: "A longer exhale than inhale, designed to wind you down — often used before sleep.",
+    patternCoherentName: "Coherent Breathing",
+    patternCoherentDescription:
+      "Smooth, equal in-and-out breathing at about six breaths a minute — shown to improve heart-rate variability.",
+  },
 };
 
 export default en;

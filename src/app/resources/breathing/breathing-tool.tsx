@@ -11,6 +11,7 @@ import {
   type BreathingShape,
 } from "@/lib/breathing-patterns";
 import { recordBreathingCompletion, type BreathingStreakStats } from "@/lib/breathing-streak";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const STORAGE_KEY = "lio_breathing_count";
 
@@ -142,9 +143,20 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export default function BreathingTool() {
+export default function BreathingTool({ dict }: { dict: Dictionary["breathing"] }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const patternName = (p: BreathingPattern) =>
+    p.id === "box" ? dict.patternBoxName : p.id === "4-7-8" ? dict.pattern478Name : dict.patternCoherentName;
+  const patternDescription = (p: BreathingPattern) =>
+    p.id === "box"
+      ? dict.patternBoxDescription
+      : p.id === "4-7-8"
+        ? dict.pattern478Description
+        : dict.patternCoherentDescription;
+  const phaseLabel = (label: BreathingPhaseLabel) =>
+    label === "Inhale" ? dict.phaseInhale : label === "Hold" ? dict.phaseHold : dict.phaseExhale;
 
   useEffect(() => {
     dispatch({ type: "HYDRATE_COUNT", count: Number(window.localStorage.getItem(STORAGE_KEY) ?? "0") });
@@ -173,15 +185,10 @@ export default function BreathingTool() {
         <div className="p-6 sm:p-8">
           <div className="flex items-start gap-2.5 rounded-xl bg-brand-50/70 p-4 text-sm text-ink/70">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
-            <p>
-              Slow, paced breathing is one of the few ways to directly influence your nervous system on
-              purpose. A longer exhale in particular activates the vagus nerve and shifts your body from
-              fight-or-flight toward rest-and-digest — which is why a few minutes of this can measurably
-              lower heart rate and feelings of anxiety, even before anything about the situation changes.
-            </p>
+            <p>{dict.infoText}</p>
           </div>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-ink/40">Choose a pattern</p>
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.choosePattern}</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {BREATHING_PATTERNS.map((p) => (
               <button
@@ -196,15 +203,15 @@ export default function BreathingTool() {
               >
                 <div className="flex items-center gap-2">
                   <ShapeSwatch shape={p.shape} />
-                  <p className="font-display text-base font-semibold text-brand-900">{p.name}</p>
+                  <p className="font-display text-base font-semibold text-brand-900">{patternName(p)}</p>
                 </div>
                 <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-brand-500">{p.tagline}</p>
-                <p className="mt-1.5 text-xs text-ink/60">{p.description}</p>
+                <p className="mt-1.5 text-xs text-ink/60">{patternDescription(p)}</p>
               </button>
             ))}
           </div>
 
-          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-ink/40">How many cycles</p>
+          <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.howManyCycles}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {CYCLE_OPTIONS.map((n) => (
               <button
@@ -217,14 +224,14 @@ export default function BreathingTool() {
                     : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
                 }`}
               >
-                {n} cycles
+                {n} {dict.cycles}
               </button>
             ))}
           </div>
 
           <Button onClick={() => dispatch({ type: "START" })} className="mt-6">
             <Play className="h-4 w-4" strokeWidth={2} />
-            Start breathing
+            {dict.startBreathing}
           </Button>
         </div>
       )}
@@ -232,8 +239,10 @@ export default function BreathingTool() {
       {state.stage === "active" && (
         <div className="flex flex-col items-center p-6 py-12 sm:p-8 sm:py-16">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-            {state.pattern.name} · Cycle {Math.min(state.cyclesDone + 1, state.targetCycles)} of{" "}
-            {state.targetCycles}
+            {patternName(state.pattern)} ·{" "}
+            {dict.cycleLabel
+              .replace("{current}", String(Math.min(state.cyclesDone + 1, state.targetCycles)))
+              .replace("{total}", String(state.targetCycles))}
           </p>
 
           <div className="relative mt-8 flex h-48 w-48 items-center justify-center">
@@ -257,7 +266,7 @@ export default function BreathingTool() {
               <div className={`absolute inset-6 border-2 border-brand-300 ${shapeRounding(state.pattern.shape)}`} />
             )}
             <div className="relative text-center">
-              <p className="font-display text-2xl font-semibold text-brand-900">{currentPhase.label}</p>
+              <p className="font-display text-2xl font-semibold text-brand-900">{phaseLabel(currentPhase.label)}</p>
               <p className="mt-1 text-3xl font-semibold text-brand-700">{state.secondsLeft || currentPhase.seconds}</p>
             </div>
           </div>
@@ -268,7 +277,7 @@ export default function BreathingTool() {
             className="mt-10 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:border-brand-400 active:border-brand-400"
           >
             <Square className="h-3.5 w-3.5" strokeWidth={2} />
-            Stop
+            {dict.stop}
           </button>
         </div>
       )}
@@ -279,21 +288,25 @@ export default function BreathingTool() {
             <Sparkles className="h-5 w-5" strokeWidth={2} />
           </span>
           <p className="mt-3 font-display text-lg font-semibold text-brand-900">
-            {state.targetCycles} cycles of {state.pattern.name.toLowerCase()}, done.
+            {dict.doneTitle
+              .replace("{cycles}", String(state.targetCycles))
+              .replace("{pattern}", patternName(state.pattern).toLowerCase())}
           </p>
           <p className="mt-1 text-sm text-ink/60">
-            {state.streak !== null && state.streak > 1 && `${state.streak} day streak. `}
-            {state.count !== null && state.count > 0 && `${state.count} session${state.count === 1 ? "" : "s"} so far. `}
-            Saved privately on this device — never on our servers.
+            {state.streak !== null && state.streak > 1 && dict.streakLine.replace("{n}", String(state.streak))}
+            {state.count !== null &&
+              state.count > 0 &&
+              (state.count === 1 ? dict.sessionSoFar : dict.sessionsSoFar).replace("{n}", String(state.count))}
+            {dict.savedPrivately}
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
             <Button onClick={() => dispatch({ type: "RESET" })}>
               <RotateCcw className="h-4 w-4" strokeWidth={2} />
-              Breathe again
+              {dict.breatheAgain}
             </Button>
             <ButtonLink href="/counseling" variant="text">
-              If this feels heavy, talk it through with a counselor &rarr;
+              {dict.talkToCounselor} &rarr;
             </ButtonLink>
           </div>
         </div>
