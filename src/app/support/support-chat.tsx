@@ -1,26 +1,90 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Send, Star } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, MessageCircle, Send, Star, ThumbsDown, ThumbsUp } from "lucide-react";
 import { sendSupportChatMessage, submitSupportChatFeedback } from "@/lib/support-chat-actions";
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import { Button } from "@/components/ui";
 
+const GREETING =
+  "Hi, I'm the Let It Out support assistant. Tell me what's going wrong — a page not loading, a payment issue, the journal not saving — and I'll help you sort it out.";
+
+const SAVED_CHAT_KEY = "lio_support_chat_saved";
+const SAVED_CHAT_TTL_MS = 24 * 60 * 60 * 1000;
+
+type SavedChat = {
+  chatId: string;
+  messages: SupportChatMessage[];
+  status: "OPEN" | "RESOLVED" | "ESCALATED";
+  savedAt: number;
+};
+
+type LeaveStep = "confirm" | "resolved" | "rating" | "saved" | null;
+
+function AssistantAvatar() {
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-700 text-white">
+      <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.25} />
+    </span>
+  );
+}
+
+function DialogShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+      <div className="w-full max-w-sm animate-pop-in overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+        <div className="bg-brand-700 px-6 py-5 text-white">
+          <h2 className="font-display text-lg font-semibold">{title}</h2>
+          {subtitle && <p className="mt-1 text-sm text-brand-100/80">{subtitle}</p>}
+        </div>
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function SupportChat() {
+  const router = useRouter();
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<SupportChatMessage[]>([]);
   const [status, setStatus] = useState<"OPEN" | "RESOLVED" | "ESCALATED">("OPEN");
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [feedbackGiven, setFeedbackGiven] = useState(false);
-  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
-  const [rating, setRating] = useState<number | null>(null);
+
+  const [leaveStep, setLeaveStep] = useState<LeaveStep>(null);
+  const [leaveResolved, setLeaveResolved] = useState<boolean | null>(null);
+  const [leaveRating, setLeaveRating] = useState<number | null>(null);
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Restore a conversation kept open on this device within the last 24h —
+  // read after mount (not as lazy initial state) so server and first client
+  // render match, matching the pattern used by the other localStorage-driven
+  // gates in this app.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    try {
+      const raw = window.localStorage.getItem(SAVED_CHAT_KEY);
+      if (!raw) return;
+      const saved: SavedChat = JSON.parse(raw);
+      if (Date.now() - saved.savedAt < SAVED_CHAT_TTL_MS) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring a locally-saved chat on mount, not synchronizing with an external subscription
+        setChatId(saved.chatId);
+        setMessages(saved.messages);
+        setStatus(saved.status);
+      } else {
+        window.localStorage.removeItem(SAVED_CHAT_KEY);
+      }
+    } catch {
+      // Corrupt or inaccessible storage — just start a fresh chat.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
   async function handleSend(e: React.FormEvent) {
@@ -31,10 +95,6 @@ export default function SupportChat() {
     setError(null);
     setPending(true);
     setInput("");
-    // A new message means any prior resolution is back up for debate — let
-    // the feedback prompt reappear if the bot marks it resolved again.
-    setFeedbackGiven(false);
-    setRating(null);
     setMessages((prev) => [...prev, { role: "user", content: text, at: new Date().toISOString() }]);
 
     const result = await sendSupportChatMessage(chatId, text);
@@ -49,95 +109,105 @@ export default function SupportChat() {
     setStatus(result.status);
   }
 
-  async function handleFeedback(resolved: boolean) {
-    if (!chatId || feedbackSubmitting) return;
-    setFeedbackSubmitting(true);
-    await submitSupportChatFeedback(chatId, resolved, rating ?? undefined);
-    setFeedbackSubmitting(false);
-    setFeedbackGiven(true);
-    if (!resolved) setStatus("ESCALATED");
+  function handleLeaveClick() {
+    if (!chatId || messages.length === 0) {
+      router.push("/account");
+      return;
+    }
+    setLeaveResolved(null);
+    setLeaveRating(null);
+    setLeaveStep("confirm");
+  }
+
+  function keepChatOpen() {
+    try {
+      const saved: SavedChat = { chatId: chatId!, messages, status, savedAt: Date.now() };
+      window.localStorage.setItem(SAVED_CHAT_KEY, JSON.stringify(saved));
+    } catch {
+      // Best-effort — worst case the chat just isn't there next visit.
+    }
+    setLeaveStep("saved");
+  }
+
+  function answerResolved(resolved: boolean) {
+    setLeaveResolved(resolved);
+    setLeaveStep("rating");
+  }
+
+  async function finishEndChat(ratingValue: number | null) {
+    setLeaveSubmitting(true);
+    try {
+      window.localStorage.removeItem(SAVED_CHAT_KEY);
+    } catch {
+      // Ignore — nothing left to clean up if storage isn't available.
+    }
+    if (chatId && leaveResolved !== null) {
+      await submitSupportChatFeedback(chatId, leaveResolved, ratingValue ?? undefined).catch(() => {});
+    }
+    router.push("/account");
   }
 
   return (
-    <div className="flex h-[calc(100vh-73px)] flex-col">
+    <div className="flex min-h-[calc(100dvh-73px)] flex-col">
       <div className="flex items-center gap-3 border-b border-brand-100 bg-brand-50 px-4 py-3 sm:px-8">
-        <Link
-          href="/account"
+        <button
+          type="button"
+          onClick={handleLeaveClick}
           aria-label="Back to account settings"
           className="rounded-lg p-1.5 text-ink/40 hover:bg-white hover:text-ink/70"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-        </Link>
+        </button>
+        <AssistantAvatar />
         <div>
           <p className="text-sm font-semibold text-brand-900">Technical support chat</p>
           <p className="text-xs text-ink/50">For app/technical issues only — not for how you&rsquo;re feeling.</p>
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:px-8">
-        {messages.length === 0 && (
-          <p className="text-sm text-ink/50">
-            Tell us what&rsquo;s going wrong — e.g. a page won&rsquo;t load, a payment failed, a PDF won&rsquo;t open.
-          </p>
-        )}
+      <div className="flex-1 space-y-3 bg-brand-50/40 p-4 sm:px-8">
+        <div className="flex justify-start">
+          <div className="flex max-w-[85%] items-start gap-2 sm:max-w-[70%]">
+            <AssistantAvatar />
+            <div className="animate-rise rounded-2xl border border-brand-100 bg-white px-3.5 py-2 text-sm text-ink/80 shadow-sm">
+              {GREETING}
+            </div>
+          </div>
+        </div>
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-line sm:max-w-[70%] ${
-                m.role === "user" ? "bg-brand-700 text-white" : "bg-brand-50 text-ink/80"
-              }`}
-            >
-              {m.content}
+            <div className={`flex max-w-[85%] items-start gap-2 sm:max-w-[70%] ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+              {m.role === "assistant" && <AssistantAvatar />}
+              <div
+                className={`animate-rise whitespace-pre-line rounded-2xl px-3.5 py-2 text-sm ${
+                  m.role === "user"
+                    ? "bg-brand-700 text-white"
+                    : "border border-brand-100 bg-white text-ink/80 shadow-sm"
+                }`}
+              >
+                {m.content}
+              </div>
             </div>
           </div>
         ))}
-        {pending && <p className="text-xs text-ink/40">Typing…</p>}
+        {pending && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-2">
+              <AssistantAvatar />
+              <div className="flex items-center gap-1 rounded-2xl border border-brand-100 bg-white px-4 py-3 shadow-sm">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-300 [animation-delay:-0.3s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-300 [animation-delay:-0.15s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-300" />
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
-      {status === "RESOLVED" && !feedbackGiven && (
-        <div className="border-t border-brand-100 bg-brand-50 px-4 py-3 sm:px-8">
-          <p className="text-xs font-semibold text-brand-800">Did this solve your problem?</p>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleFeedback(true)}
-              disabled={feedbackSubmitting}
-              className="rounded-full border border-brand-300 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:opacity-60"
-            >
-              👍 Yes, that fixed it
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFeedback(false)}
-              disabled={feedbackSubmitting}
-              className="rounded-full border border-brand-300 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:opacity-60"
-            >
-              👎 No, still stuck
-            </button>
-          </div>
-          <div className="mt-2 flex items-center gap-1">
-            <span className="text-[11px] text-ink/50">Rate this chat:</span>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setRating(n)}
-                aria-label={`${n} star${n === 1 ? "" : "s"}`}
-                className="p-0.5"
-              >
-                <Star
-                  className={`h-3.5 w-3.5 ${rating && n <= rating ? "fill-brand-500 text-brand-500" : "text-ink/20"}`}
-                  strokeWidth={1.75}
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {status === "RESOLVED" && feedbackGiven && (
+      {status === "RESOLVED" && (
         <p className="border-t border-brand-100 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 sm:px-8">
-          Thanks for the feedback! Still having trouble? Just send another message.
+          Marked as resolved — keep chatting if you need anything else, or head back whenever you&rsquo;re ready.
         </p>
       )}
       {status === "ESCALATED" && (
@@ -146,19 +216,115 @@ export default function SupportChat() {
         </p>
       )}
 
-      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-brand-100 p-3 sm:px-8">
+      <form
+        onSubmit={handleSend}
+        className="sticky bottom-20 z-20 flex items-center gap-2 border-t border-brand-100 bg-white p-3 sm:px-8 md:bottom-0"
+      >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Describe the issue…"
           disabled={pending}
-          className="flex-1 rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm outline-none focus:border-brand-500 disabled:opacity-60"
+          className="flex-1 rounded-full border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500 disabled:opacity-60"
         />
-        <Button type="submit" disabled={pending || !input.trim()} className="!px-4 !py-2 text-sm">
+        <Button type="submit" disabled={pending || !input.trim()} className="!rounded-full !px-4 !py-2.5 text-sm">
           <Send className="h-4 w-4" strokeWidth={2} />
         </Button>
       </form>
       {error && <p className="px-3 pb-3 text-xs text-red-600 sm:px-8">{error}</p>}
+
+      {leaveStep === "confirm" && (
+        <DialogShell title="Before you go" subtitle="Do you want to end this chat, or keep it open?">
+          <div className="flex flex-col gap-2.5">
+            <Button type="button" onClick={keepChatOpen} variant="bright" className="w-full">
+              Keep it open
+            </Button>
+            <Button type="button" onClick={() => setLeaveStep("resolved")} variant="outline" className="w-full">
+              End chat
+            </Button>
+            <button
+              type="button"
+              onClick={() => setLeaveStep(null)}
+              className="mt-1 text-center text-sm font-medium text-ink/50 hover:text-ink/70"
+            >
+              Never mind, stay here
+            </button>
+          </div>
+        </DialogShell>
+      )}
+
+      {leaveStep === "resolved" && (
+        <DialogShell title="Did this solve your problem?" subtitle="Quick question before you end the chat.">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => answerResolved(true)}
+              className="flex flex-1 flex-col items-center gap-2 rounded-2xl border border-brand-200 py-4 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+            >
+              <ThumbsUp className="h-5 w-5" strokeWidth={2} />
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={() => answerResolved(false)}
+              className="flex flex-1 flex-col items-center gap-2 rounded-2xl border border-brand-200 py-4 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+            >
+              <ThumbsDown className="h-5 w-5" strokeWidth={2} />
+              No
+            </button>
+          </div>
+        </DialogShell>
+      )}
+
+      {leaveStep === "rating" && (
+        <DialogShell title="Rate this chat" subtitle="Optional — helps us improve.">
+          <div className="flex items-center justify-center gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setLeaveRating(n)}
+                aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                className="p-1"
+              >
+                <Star
+                  className={`h-7 w-7 ${leaveRating && n <= leaveRating ? "fill-brand-500 text-brand-500" : "text-ink/20"}`}
+                  strokeWidth={1.5}
+                />
+              </button>
+            ))}
+          </div>
+          <Button
+            type="button"
+            onClick={() => finishEndChat(leaveRating)}
+            variant="bright"
+            disabled={leaveSubmitting}
+            className="mt-5 w-full"
+          >
+            {leaveSubmitting ? "Ending chat…" : "Submit & leave"}
+          </Button>
+          <button
+            type="button"
+            onClick={() => finishEndChat(null)}
+            disabled={leaveSubmitting}
+            className="mt-2 w-full text-center text-sm font-medium text-ink/50 hover:text-ink/70"
+          >
+            Skip rating
+          </button>
+        </DialogShell>
+      )}
+
+      {leaveStep === "saved" && (
+        <DialogShell title="Chat kept open" subtitle="You can pick up right where you left off.">
+          <p className="text-sm text-ink/70">
+            This conversation is saved on this device for 24 hours. Come back to Live Chat before then to continue
+            it.
+          </p>
+          <Button type="button" onClick={() => router.push("/account")} variant="bright" className="mt-5 w-full">
+            Got it
+          </Button>
+        </DialogShell>
+      )}
     </div>
   );
 }
