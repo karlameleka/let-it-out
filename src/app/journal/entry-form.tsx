@@ -1,20 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ImagePlus, PenLine, Shuffle, Sparkles, X } from "lucide-react";
 import { shufflePrompt } from "@/lib/journal-actions";
 import { createEntry, type EntryFormState } from "@/lib/local-journal";
 import { compressImage } from "@/lib/compress-image";
 import { Button } from "@/components/ui";
 import MoodPicker from "@/components/mood-picker";
-
-const CELEBRATIONS = [
-  "Entry saved — that's one more step in your journey.",
-  "Nice work. That's out of your head and onto the page.",
-  "Saved. Come back tomorrow to keep the streak going.",
-  "Entry saved. Future you will thank present you for this.",
-  "That's in the books. See you tomorrow?",
-];
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
 const PHOTO_PERMISSION_KEY = "lio_photo_access_granted";
 const MODE_KEY = "lio_journal_mode";
@@ -25,15 +19,25 @@ type Mode = "prompt" | "free";
 export default function EntryForm({
   userId,
   initialPrompt,
+  dict,
+  moodPickerDict,
+  locale = "en",
   onSaved,
 }: {
   userId: string;
   initialPrompt: Prompt;
+  dict: Dictionary["entryForm"];
+  moodPickerDict: Dictionary["moodPicker"];
+  locale?: Locale;
   /** Called once per successful save, in addition to the form's own
    * reset-for-next-entry behavior below — e.g. to navigate back to the
    * feed once the composer is done. */
   onSaved?: () => void;
 }) {
+  const CELEBRATIONS = useMemo(
+    () => [dict.celebration1, dict.celebration2, dict.celebration3, dict.celebration4, dict.celebration5],
+    [dict],
+  );
   const [moods, setMoods] = useState<string[]>([]);
   const [key, setKey] = useState(0);
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -54,7 +58,7 @@ export default function EntryForm({
 
   async function saveLocally(_prevState: EntryFormState, formData: FormData): Promise<EntryFormState> {
     const content = String(formData.get("content") ?? "").trim();
-    if (!content) return { error: "Write a little something before saving." };
+    if (!content) return { error: dict.writeSomethingError };
     try {
       await createEntry(userId, {
         content,
@@ -66,7 +70,7 @@ export default function EntryForm({
       });
       return { success: true };
     } catch {
-      return { error: "Couldn't save that entry — try again." };
+      return { error: dict.saveError };
     }
   }
 
@@ -110,7 +114,7 @@ export default function EntryForm({
     e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setPhotoError("Please choose an image file.");
+      setPhotoError(dict.chooseImageError);
       return;
     }
     setPhotoError(null);
@@ -118,7 +122,7 @@ export default function EntryForm({
     try {
       setPhoto(await compressImage(file));
     } catch {
-      setPhotoError("Couldn't process that photo — try a different one.");
+      setPhotoError(dict.photoProcessError);
     } finally {
       setPhotoProcessing(false);
     }
@@ -147,7 +151,7 @@ export default function EntryForm({
     <div className="space-y-6">
       <div
         role="tablist"
-        aria-label="Writing mode"
+        aria-label={dict.writingModeLabel}
         className="inline-flex rounded-full border border-brand-200 bg-white p-1"
       >
         <button
@@ -160,7 +164,7 @@ export default function EntryForm({
           }`}
         >
           <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
-          Give me a prompt
+          {dict.givePrompt}
         </button>
         <button
           type="button"
@@ -172,7 +176,7 @@ export default function EntryForm({
           }`}
         >
           <PenLine className="h-3.5 w-3.5" strokeWidth={2} />
-          Free flow
+          {dict.freeFlow}
         </button>
       </div>
 
@@ -180,7 +184,7 @@ export default function EntryForm({
         <div className="relative overflow-hidden rounded-2xl border-2 border-brand-200 bg-brand-50 p-6 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-              {prompt?.category ?? "Reflection"}
+              {prompt?.category ?? dict.reflection}
             </p>
             <button
               type="button"
@@ -189,14 +193,14 @@ export default function EntryForm({
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
             >
               <Shuffle className={`h-3.5 w-3.5 ${shuffling ? "animate-spin" : ""}`} strokeWidth={2} />
-              {shuffling ? "Shuffling…" : "Shuffle prompt"}
+              {shuffling ? dict.shuffling : dict.shufflePrompt}
             </button>
           </div>
           <p
             data-testid="journal-prompt-text"
             className={`mt-2 font-display text-xl font-medium italic text-brand-900 transition-opacity ${shuffling ? "opacity-40" : "opacity-100"}`}
           >
-            {prompt?.text ?? "What's on your mind today?"}
+            {prompt?.text ?? dict.defaultPromptText}
           </p>
         </div>
       )}
@@ -206,20 +210,26 @@ export default function EntryForm({
 
         <div className="overflow-hidden rounded-xl border border-brand-200 bg-white focus-within:border-brand-500">
           <div className="border-b border-brand-100 bg-brand-50/50 p-4">
-            <MoodPicker moods={moods} onChange={setMoods} />
+            <MoodPicker
+              moods={moods}
+              onChange={setMoods}
+              label={moodPickerDict.label}
+              hint={moodPickerDict.hint}
+              locale={locale}
+            />
           </div>
 
           <textarea
             name="content"
             rows={6}
             required
-            placeholder={mode === "prompt" ? "Let it out here..." : "Write whatever's on your mind..."}
+            placeholder={mode === "prompt" ? dict.promptPlaceholder : dict.freePlaceholder}
             className="w-full border-0 px-4 py-3 text-sm outline-none"
           />
         </div>
 
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">Add a photo (optional)</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.addPhotoLabel}</p>
           {photo ? (
             <div className="relative inline-block">
               {/* eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer */}
@@ -227,7 +237,7 @@ export default function EntryForm({
               <button
                 type="button"
                 onClick={() => setPhoto(null)}
-                aria-label="Remove photo"
+                aria-label={dict.removePhoto}
                 className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2} />
@@ -241,7 +251,7 @@ export default function EntryForm({
               className="inline-flex items-center gap-2 rounded-xl border border-dashed border-brand-200 px-4 py-3 text-sm text-ink/60 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
             >
               <ImagePlus className="h-4 w-4" strokeWidth={2} />
-              {photoProcessing ? "Processing…" : "Add photo"}
+              {photoProcessing ? dict.processing : dict.addPhotoButton}
             </button>
           )}
           <input
@@ -263,7 +273,7 @@ export default function EntryForm({
         )}
 
         <Button type="submit" disabled={pending || photoProcessing}>
-          {pending ? "Saving…" : "Save entry"}
+          {pending ? dict.saving : dict.saveEntry}
         </Button>
       </form>
 
@@ -274,13 +284,8 @@ export default function EntryForm({
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
                 <ImagePlus className="h-6 w-6" strokeWidth={1.75} />
               </span>
-              <p className="mt-3 font-display text-base font-semibold text-ink/90">
-                &ldquo;Let It Out&rdquo; Would Like to Access Your Photos
-              </p>
-              <p className="mt-1.5 pb-5 text-sm text-ink/60">
-                This lets you attach a photo to your journal entries. You can change this any time in your
-                browser or device settings.
-              </p>
+              <p className="mt-3 font-display text-base font-semibold text-ink/90">{dict.photoPermissionTitle}</p>
+              <p className="mt-1.5 pb-5 text-sm text-ink/60">{dict.photoPermissionBody}</p>
             </div>
             <div className="grid grid-cols-2 divide-x divide-brand-100 border-t border-brand-100 text-sm font-medium">
               <button
@@ -288,14 +293,14 @@ export default function EntryForm({
                 onClick={() => setShowPhotoPermission(false)}
                 className="py-3 text-ink/60 transition-colors hover:bg-brand-50 active:bg-brand-50"
               >
-                Don&apos;t Allow
+                {dict.dontAllow}
               </button>
               <button
                 type="button"
                 onClick={allowPhotoAccess}
                 className="py-3 text-brand-600 transition-colors hover:bg-brand-50 active:bg-brand-50"
               >
-                Allow Access
+                {dict.allowAccess}
               </button>
             </div>
           </div>

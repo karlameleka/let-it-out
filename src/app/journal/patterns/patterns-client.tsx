@@ -5,15 +5,24 @@ import Link from "next/link";
 import { getMoodPatterns, type MoodPatterns } from "@/lib/local-journal";
 import { moodColor, moodLabel } from "@/lib/moods";
 import { Container } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-export default function PatternsClient({ userId }: { userId: string }) {
+export default function PatternsClient({
+  userId,
+  dict,
+  locale,
+}: {
+  userId: string;
+  dict: Dictionary["moodPatterns"];
+  locale: Locale;
+}) {
   const [data, setData] = useState<MoodPatterns | null | undefined>(undefined);
+  const DAY_LABELS = [dict.daySun, dict.dayMon, dict.dayTue, dict.dayWed, dict.dayThu, dict.dayFri, dict.daySat];
 
   useEffect(() => {
-    getMoodPatterns(userId).then(setData);
-  }, [userId]);
+    getMoodPatterns(userId, locale).then(setData);
+  }, [userId, locale]);
 
   if (data === undefined) return null;
 
@@ -29,31 +38,28 @@ export default function PatternsClient({ userId }: { userId: string }) {
   return (
     <Container className="py-16 sm:py-20">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-3xl font-medium text-brand-900">Mood patterns</h1>
+        <h1 className="font-display text-3xl font-medium text-brand-900">{dict.title}</h1>
         <Link href="/journal" className="text-sm font-medium text-brand-600 link-grow">
-          View entries
+          {dict.viewEntries}
         </Link>
       </div>
-      <p className="mt-2 text-sm text-ink/60">
-        A look back at how you&apos;ve been feeling in your last 12 weeks of entries.
-      </p>
+      <p className="mt-2 text-sm text-ink/60">{dict.subtitle}</p>
 
       {totalWithMood === 0 ? (
         <p className="mt-10 text-sm text-ink/60">
-          No mood data yet — pick a mood next time you save an entry and
-          your patterns will show up here.{" "}
+          {dict.noDataText}{" "}
           <Link href="/journal/new" className="font-medium text-brand-600 hover:underline active:underline">
-            Write an entry
+            {dict.writeAnEntry}
           </Link>
           .
         </p>
       ) : (
         <div className="mt-10 grid gap-8 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <h2 className="font-display font-semibold text-brand-900">Last 12 weeks</h2>
+            <h2 className="font-display font-semibold text-brand-900">{dict.last12Weeks}</h2>
             {topMood && (
               <p className="mt-1 flex items-center gap-1.5 text-sm text-ink/60">
-                Most common mood:
+                {dict.mostCommonMood}
                 <span
                   className="h-2.5 w-2.5 rounded-full border border-black/10"
                   style={{ backgroundColor: topMood.color }}
@@ -78,7 +84,7 @@ export default function PatternsClient({ userId }: { userId: string }) {
                   {heatmap.map((day) => (
                     <div
                       key={day.date}
-                      title={`${day.date}${day.moods.length ? ` — ${day.moods.map(moodLabel).join(", ")}` : ""}`}
+                      title={`${day.date}${day.moods.length ? ` — ${day.moods.map((m) => moodLabel(m, locale)).join(", ")}` : ""}`}
                       className={`flex h-6 w-6 overflow-hidden rounded-md border ${
                         day.date === today ? "ring-2 ring-brand-400" : ""
                       } ${day.moods.length ? "border-black/10" : "border-transparent bg-brand-50/60"}`}
@@ -98,7 +104,7 @@ export default function PatternsClient({ userId }: { userId: string }) {
           </div>
 
           <div className="lg:col-span-2">
-            <h2 className="font-display font-semibold text-brand-900">Mood breakdown</h2>
+            <h2 className="font-display font-semibold text-brand-900">{dict.moodBreakdown}</h2>
             <div className="mt-4 space-y-3">
               {frequency.map((m) => (
                 <div key={m.id}>

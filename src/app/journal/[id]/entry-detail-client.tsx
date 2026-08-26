@@ -13,8 +13,20 @@ import {
 import { moodLabel } from "@/lib/moods";
 import { MoodDot } from "@/components/mood-dot";
 import { Container } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
-export default function EntryDetailClient({ userId, id }: { userId: string; id: string }) {
+export default function EntryDetailClient({
+  userId,
+  id,
+  dict,
+  locale,
+}: {
+  userId: string;
+  id: string;
+  dict: Dictionary["entryDetail"];
+  locale: Locale;
+}) {
   const router = useRouter();
   const [entry, setEntry] = useState<JournalEntryDetail | null | undefined>(undefined);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -46,9 +58,9 @@ export default function EntryDetailClient({ userId, id }: { userId: string; id: 
   if (entry === null) {
     return (
       <Container className="max-w-3xl py-16 text-center sm:py-20">
-        <p className="text-ink/60">That entry doesn&apos;t exist, or isn&apos;t yours to see.</p>
+        <p className="text-ink/60">{dict.notFound}</p>
         <Link href="/journal" className="mt-3 inline-block text-sm font-medium text-brand-600 link-grow">
-          &larr; Back to entries
+          &larr; {dict.backToEntries}
         </Link>
       </Container>
     );
@@ -57,7 +69,7 @@ export default function EntryDetailClient({ userId, id }: { userId: string; id: 
   return (
     <Container className="max-w-3xl py-16 sm:py-20">
       <Link href="/journal" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
-        &larr; Back to entries
+        &larr; {dict.backToEntries}
       </Link>
 
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
@@ -70,8 +82,8 @@ export default function EntryDetailClient({ userId, id }: { userId: string; id: 
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {entry.moods.map((m) => (
                   <div key={m} className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-brand-700">{moodLabel(m)}</span>
-                    <MoodDot mood={m} size="md" />
+                    <span className="text-sm font-medium text-brand-700">{moodLabel(m, locale)}</span>
+                    <MoodDot mood={m} size="md" locale={locale} />
                   </div>
                 ))}
               </div>
@@ -79,7 +91,7 @@ export default function EntryDetailClient({ userId, id }: { userId: string; id: 
             <button
               type="button"
               onClick={handleToggleBookmark}
-              aria-label={entry.bookmarked ? "Remove bookmark" : "Bookmark this entry"}
+              aria-label={entry.bookmarked ? dict.removeBookmark : dict.bookmarkThis}
               className={`rounded-full p-1.5 transition-colors ${
                 entry.bookmarked ? "text-brand-600" : "text-ink/30 hover:text-ink/50 active:text-ink/50"
               }`}
@@ -120,18 +132,18 @@ export default function EntryDetailClient({ userId, id }: { userId: string; id: 
               onClick={() => setConfirmingDelete(true)}
               className="text-xs text-ink/30 transition-colors hover:text-red-500 active:text-red-500"
             >
-              Delete entry
+              {dict.deleteEntry}
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-3 text-xs">
-              <span className="text-ink/50">Delete this entry? This can&apos;t be undone.</span>
+              <span className="text-ink/50">{dict.deleteConfirm}</span>
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
                 className="font-semibold text-red-600 transition-colors hover:text-red-700 active:text-red-700 disabled:opacity-50"
               >
-                {deleting ? "Deleting…" : "Delete"}
+                {deleting ? dict.deleting : dict.delete}
               </button>
               <button
                 type="button"
@@ -139,7 +151,7 @@ export default function EntryDetailClient({ userId, id }: { userId: string; id: 
                 disabled={deleting}
                 className="text-ink/50 transition-colors hover:text-ink/70 active:text-ink/70 disabled:opacity-50"
               >
-                Cancel
+                {dict.cancel}
               </button>
             </div>
           )}

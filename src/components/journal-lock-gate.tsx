@@ -6,6 +6,7 @@ import { browserSupportsWebAuthn, platformAuthenticatorIsAvailable, startAuthent
 import { verifyJournalLock } from "@/lib/journal-actions";
 import { hasWebAuthnCredential, getWebAuthnAuthenticationOptions, verifyJournalUnlockBiometric } from "@/lib/webauthn";
 import { Button } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const UNLOCK_KEY = "lio_journal_unlocked";
 
@@ -19,9 +20,11 @@ const UNLOCK_KEY = "lio_journal_unlocked";
  * server-rendered initial page. */
 export default function JournalLockGate({
   enabled,
+  dict,
   children,
 }: {
   enabled: boolean;
+  dict: Dictionary["journalLock"];
   children: React.ReactNode;
 }) {
   const [status, setStatus] = useState<"checking" | "locked" | "unlocked">("checking");
@@ -51,7 +54,7 @@ export default function JournalLockGate({
     try {
       const optionsResult = await getWebAuthnAuthenticationOptions();
       if (!optionsResult.options) {
-        setBiometricError(optionsResult.error ?? "Couldn't start.");
+        setBiometricError(optionsResult.error ?? dict.couldntStart);
         return;
       }
       const assertion = await startAuthentication({ optionsJSON: optionsResult.options });
@@ -60,7 +63,7 @@ export default function JournalLockGate({
         window.sessionStorage.setItem(UNLOCK_KEY, "1");
         setStatus("unlocked");
       } else {
-        setBiometricError(result.error ?? "Couldn't verify — use your password instead.");
+        setBiometricError(result.error ?? dict.couldntVerify);
         setShowPasswordForm(true);
       }
     } catch (err) {
@@ -70,7 +73,7 @@ export default function JournalLockGate({
       if (err instanceof Error && err.name === "NotAllowedError") {
         setShowPasswordForm(true);
       } else {
-        setBiometricError(err instanceof Error ? err.message : "Couldn't verify — use your password instead.");
+        setBiometricError(err instanceof Error ? err.message : dict.couldntVerify);
         setShowPasswordForm(true);
       }
     } finally {
@@ -106,7 +109,7 @@ export default function JournalLockGate({
       window.sessionStorage.setItem(UNLOCK_KEY, "1");
       setStatus("unlocked");
     } else {
-      setError(result.error ?? "Incorrect password.");
+      setError(result.error ?? dict.incorrectPassword);
     }
   }
 
@@ -119,16 +122,16 @@ export default function JournalLockGate({
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
             <Lock className="h-5 w-5" strokeWidth={1.75} />
           </span>
-          <h1 className="mt-4 font-display text-xl font-semibold text-brand-900">Your journal is locked</h1>
+          <h1 className="mt-4 font-display text-xl font-semibold text-brand-900">{dict.lockedTitle}</h1>
           <p className="mt-1.5 text-sm text-ink/60">
-            {biometricAvailable ? "Use Face ID / Touch ID, or enter your password." : "Enter your password to open it."}
+            {biometricAvailable ? dict.useBiometricOrPassword : dict.enterPassword}
           </p>
 
           {biometricAvailable && !showPasswordForm && (
             <div className="mt-6">
               <Button type="button" onClick={attemptBiometricUnlock} disabled={biometricBusy} className="w-full">
                 <Fingerprint className="h-4 w-4" strokeWidth={2} />
-                {biometricBusy ? "Waiting…" : "Unlock with Face ID / Touch ID"}
+                {biometricBusy ? dict.waiting : dict.unlockWithBiometric}
               </Button>
               {biometricError && <p className="mt-2 text-sm text-red-600">{biometricError}</p>}
               <button
@@ -136,7 +139,7 @@ export default function JournalLockGate({
                 onClick={() => setShowPasswordForm(true)}
                 className="mt-3 text-xs font-medium text-ink/50 underline-offset-2 hover:text-brand-600 hover:underline"
               >
-                Use password instead
+                {dict.usePasswordInstead}
               </button>
             </div>
           )}
@@ -149,12 +152,12 @@ export default function JournalLockGate({
                 onChange={(e) => setPassword(e.target.value)}
                 autoFocus
                 required
-                placeholder="Password"
+                placeholder={dict.passwordPlaceholder}
                 className="w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500"
               />
               {error && <p className="text-sm text-red-600">{error}</p>}
               <Button type="submit" disabled={pending} className="w-full">
-                {pending ? "Unlocking…" : "Unlock"}
+                {pending ? dict.unlocking : dict.unlock}
               </Button>
               {biometricAvailable && (
                 <button
@@ -165,7 +168,7 @@ export default function JournalLockGate({
                   }}
                   className="w-full text-center text-xs font-medium text-ink/50 underline-offset-2 hover:text-brand-600 hover:underline"
                 >
-                  Use Face ID / Touch ID instead
+                  {dict.useBiometricInstead}
                 </button>
               )}
             </form>

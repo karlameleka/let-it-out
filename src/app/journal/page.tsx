@@ -6,44 +6,27 @@ import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Ribbon, Swash, WaveDivider, DoodleField } from "@/components/decor";
 import JournalLockGate from "@/components/journal-lock-gate";
 import JournalFeed from "./journal-feed";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = { title: "Your Journal" };
 
-const HOW_IT_WORKS = [
-  {
-    step: "1",
-    title: "Get a daily prompt",
-    description: "A fresh, rotating prompt each time — no blank page to stare at.",
-  },
-  {
-    step: "2",
-    title: "Write freely",
-    description: "A few sentences or a full page — there's no right answer, and it's private.",
-  },
-  {
-    step: "3",
-    title: "Build your streak",
-    description: "Look back on old entries anytime and watch your self-reflection habit grow.",
-  },
-];
-
-const SAMPLE_PROMPTS = [
-  {
-    category: "Self-Awareness",
-    text: "When do you feel most like yourself, and what tends to pull you away from that?",
-  },
-  {
-    category: "Rest & Restoration",
-    text: "What signals does your body give you before you're burnt out? Are you listening to them?",
-  },
-  {
-    category: "Self-Love",
-    text: "Write down three things about yourself that have nothing to do with productivity or achievement.",
-  },
-];
-
 export default async function JournalPage() {
-  const user = await getCurrentUser();
+  const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
+  const dict = getDictionary(locale);
+  const t = dict.journalHome;
+
+  const HOW_IT_WORKS = [
+    { step: "1", title: t.step1Title, description: t.step1Description },
+    { step: "2", title: t.step2Title, description: t.step2Description },
+    { step: "3", title: t.step3Title, description: t.step3Description },
+  ];
+
+  const SAMPLE_PROMPTS = [
+    { category: t.sampleCategory1, text: t.sampleText1 },
+    { category: t.sampleCategory2, text: t.sampleText2 },
+    { category: t.sampleCategory3, text: t.sampleText3 },
+  ];
 
   if (!user) {
     return (
@@ -53,23 +36,22 @@ export default async function JournalPage() {
           <DoodleField />
           <Container className="relative pt-8 pb-14 sm:pt-20 sm:pb-28">
             <div className="max-w-2xl">
-              <Ribbon>Free journaling app</Ribbon>
+              <Ribbon>{t.ribbon}</Ribbon>
               <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
-                Let it out,{" "}
+                {t.heroTitlePrefix}{" "}
                 <span className="mark-swash italic text-brand-700">
-                  one page<Swash />
+                  {t.heroTitleHighlight}
+                  <Swash />
                 </span>{" "}
-                at a time.
+                {t.heroTitleSuffix}
               </h1>
               <p className="animate-rise mt-6 max-w-lg text-lg text-ink/70" style={{ animationDelay: "0.18s" }}>
-                A free, guided journaling space with rotating daily prompts —
-                no pressure, no perfect entries, just a little time for
-                yourself.
+                {t.heroDescription}
               </p>
               <div className="animate-rise mt-9 flex flex-wrap items-center gap-x-8 gap-y-4" style={{ animationDelay: "0.28s" }}>
-                <ButtonLink href="/signup">Start journaling — it&apos;s free</ButtonLink>
+                <ButtonLink href="/signup">{t.startCta}</ButtonLink>
                 <ButtonLink href="/login" variant="text">
-                  Log in
+                  {t.loginCta}
                 </ButtonLink>
               </div>
             </div>
@@ -79,22 +61,17 @@ export default async function JournalPage() {
               style={{ animationDelay: "0.4s" }}
             >
               <div className="max-w-md">
-                <p className="font-display text-lg italic leading-snug text-brand-900">
-                  &ldquo;What would you do if you trusted yourself completely,
-                  just for one day?&rdquo;
-                </p>
+                <p className="font-display text-lg italic leading-snug text-brand-900">{t.samplePromptQuote}</p>
                 <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
-                  Today&apos;s prompt
+                  {t.todaysPromptLabel}
                 </p>
               </div>
               <div className="rounded-lg bg-brand-700 px-6 py-5 text-white sm:max-w-xs">
                 <p className="font-display text-4xl font-semibold leading-none">12</p>
                 <p className="mt-2 text-sm font-medium uppercase tracking-wide text-brand-100">
-                  Day streak
+                  {t.dayStreakLabel}
                 </p>
-                <p className="mt-2 text-sm text-brand-50/80">
-                  and counting — one small page at a time.
-                </p>
+                <p className="mt-2 text-sm text-brand-50/80">{t.streakCaption}</p>
               </div>
             </div>
           </Container>
@@ -106,9 +83,9 @@ export default async function JournalPage() {
         <section className="pb-4 pt-4 sm:pb-8">
           <Container>
             <SectionHeading
-              eyebrow="How it works"
-              title="Three small steps, real change"
-              description="No blank page, no pressure — just show up for a few minutes."
+              eyebrow={t.howItWorksEyebrow}
+              title={t.howItWorksTitle}
+              description={t.howItWorksDescription}
             />
             <div className="mt-12 grid gap-6 sm:grid-cols-3">
               {HOW_IT_WORKS.map((item, i) => (
@@ -142,14 +119,11 @@ export default async function JournalPage() {
             className="pointer-events-none absolute -bottom-16 -right-14 h-64 w-64 opacity-[0.06]"
           />
           <Container className="relative">
-            <Ribbon tone="dark">Real prompts from the app</Ribbon>
+            <Ribbon tone="dark">{t.promptShowcaseRibbon}</Ribbon>
             <h2 className="mt-4 max-w-xl font-display text-3xl font-medium sm:text-4xl">
-              Never stare at a blank page again
+              {t.promptShowcaseTitle}
             </h2>
-            <p className="mt-4 max-w-lg text-brand-50/85">
-              Every entry starts with a fresh, rotating prompt — pulled from a
-              library of 100+, crafted to open something up.
-            </p>
+            <p className="mt-4 max-w-lg text-brand-50/85">{t.promptShowcaseDescription}</p>
 
             <div className="mt-14 grid gap-6 sm:grid-cols-3">
               {SAMPLE_PROMPTS.map((p, i) => (
@@ -178,14 +152,14 @@ export default async function JournalPage() {
             <div className="relative">
               <SectionHeading
                 align="center"
-                eyebrow="Ready when you are"
-                title="Your first entry is one click away"
-                description="Free forever. No credit card, no pressure — just a fresh prompt and a private page."
+                eyebrow={t.finalCtaEyebrow}
+                title={t.finalCtaTitle}
+                description={t.finalCtaDescription}
               />
               <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-                <ButtonLink href="/signup">Start journaling — it&apos;s free</ButtonLink>
+                <ButtonLink href="/signup">{t.startCta}</ButtonLink>
                 <ButtonLink href="/login" variant="text">
-                  Log in
+                  {t.loginCta}
                 </ButtonLink>
               </div>
             </div>
@@ -198,8 +172,15 @@ export default async function JournalPage() {
   const lockEnabled = await getJournalLockEnabled(user.userId);
 
   return (
-    <JournalLockGate enabled={lockEnabled}>
-      <JournalFeed userId={user.userId} firstName={user.name.split(" ")[0]} lockEnabled={lockEnabled} />
+    <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>
+      <JournalFeed
+        userId={user.userId}
+        firstName={user.name.split(" ")[0]}
+        lockEnabled={lockEnabled}
+        dict={dict.journalFeed}
+        dataNoticeDict={dict.journalDataNotice}
+        locale={locale}
+      />
     </JournalLockGate>
   );
 }

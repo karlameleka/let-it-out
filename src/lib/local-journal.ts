@@ -1,6 +1,7 @@
 "use client";
 
 import { MOODS } from "@/lib/moods";
+import type { Locale } from "@/lib/i18n/locale";
 
 // Device-only journal storage. Entries never leave the browser: content and
 // any attached photo are encrypted with AES-256-GCM using a key that is
@@ -298,7 +299,7 @@ export async function migrateFromServer(
 
 const HEATMAP_WEEKS = 12;
 
-export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
+export async function getMoodPatterns(userId: string, locale: Locale = "en"): Promise<MoodPatterns> {
   const db = await openDb(userId);
   const stored = await getAllStored(db);
 
@@ -324,7 +325,7 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
 
   const frequency = MOODS.map((m) => ({
     id: m.id,
-    label: m.label,
+    label: locale === "ar" ? m.labelAr : m.label,
     color: m.color,
     count: counts.get(m.id) ?? 0,
     percent: totalWithMood > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalWithMood) * 100) : 0,
