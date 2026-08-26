@@ -14,7 +14,7 @@ export default async function CheckoutPage() {
         country: (await prisma.user.findUnique({ where: { id: session.userId }, select: { country: true } }))?.country ?? null,
       }
     : null;
-  const dict = getDictionary(locale).checkout;
+  const fullDict = getDictionary(locale);
 
-  return <CheckoutForm account={account} dict={dict} />;
+  return <CheckoutForm account={account} dict={fullDict.checkout} paymentDict={fullDict.paymentSelector} />;
 }

@@ -155,6 +155,7 @@ export default function SessionBookingFlow({
             endpoint="/api/checkout/paymob-session"
             idField="sessionBookingId"
             onRedirect={() => router.push(`/counseling/session/${sessionBookingId}`)}
+            dict={dict.paymentSelector}
           />
         </div>
       </div>

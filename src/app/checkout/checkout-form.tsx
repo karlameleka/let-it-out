@@ -20,7 +20,15 @@ const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 type PaymentMethod = "CASH_ON_DELIVERY" | "PAYMOB";
 type Account = { name: string; email: string; phone: string | null; country: string | null };
 
-export default function CheckoutForm({ account, dict }: { account: Account | null; dict: Dictionary["checkout"] }) {
+export default function CheckoutForm({
+  account,
+  dict,
+  paymentDict,
+}: {
+  account: Account | null;
+  dict: Dictionary["checkout"];
+  paymentDict: Dictionary["paymentSelector"];
+}) {
   const { items, subtotalEGP, clear } = useCart();
   const router = useRouter();
   const isOffline = useOffline();
@@ -311,7 +319,7 @@ export default function CheckoutForm({ account, dict }: { account: Account | nul
               {isOffline ? dict.offlineReconnect : pending ? dict.placingOrder : dict.placeOrder}
             </Button>
           ) : (
-            <PaymentSelector amountEGP={totalEGP} getOrderId={handleCreatePaymobOrder} onRedirect={clear} />
+            <PaymentSelector amountEGP={totalEGP} getOrderId={handleCreatePaymobOrder} onRedirect={clear} dict={paymentDict} />
           )}
         </form>
 

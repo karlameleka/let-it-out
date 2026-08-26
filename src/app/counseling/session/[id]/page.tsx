@@ -18,7 +18,8 @@ export default async function SessionBookingPage({
   ]);
   if (!booking) notFound();
 
-  const t = getDictionary(locale).sessionStatus;
+  const fullDict = getDictionary(locale);
+  const t = fullDict.sessionStatus;
 
   return (
     <Container className="py-16 sm:py-20">
@@ -61,13 +62,13 @@ export default async function SessionBookingPage({
                 <span>{formatEGP(booking.priceEGP)}</span>
               </div>
               <div className="mt-1 flex justify-between text-sm text-brand-700">
-                <span>Discount</span>
+                <span>{t.discount}</span>
                 <span>-{formatEGP(booking.discountEGP)}</span>
               </div>
             </>
           )}
           <div className="mt-2 flex justify-between border-t border-brand-100 pt-2 text-sm font-semibold">
-            <span>{booking.discountEGP > 0 ? "Total" : t.price}</span>
+            <span>{booking.discountEGP > 0 ? t.total : t.price}</span>
             <span>{formatEGP(booking.priceEGP - booking.discountEGP)}</span>
           </div>
         </div>
@@ -79,7 +80,11 @@ export default async function SessionBookingPage({
               {booking.preferredTime ? t.completePaymentTextWithTime : t.completePaymentText}
             </p>
             <div className="mt-6">
-              <RetrySessionPayment sessionBookingId={booking.id} amountEGP={booking.priceEGP - booking.discountEGP} />
+              <RetrySessionPayment
+                sessionBookingId={booking.id}
+                amountEGP={booking.priceEGP - booking.discountEGP}
+                dict={fullDict.paymentSelector}
+              />
             </div>
           </div>
         )}
