@@ -7,8 +7,7 @@ import { ArrowLeft, MessageCircle, Send, Star, ThumbsDown, ThumbsUp } from "luci
 import { sendSupportChatMessage, submitSupportChatFeedback } from "@/lib/support-chat-actions";
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import { Button } from "@/components/ui";
-
-const GREETING = "Hi, I'm Let It Out technical support assistant. How can I help you today?";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 // Matches the [Label](/path) links the assistant is instructed to send for
 // service/counselor questions — deliberately restricted to a single leading
@@ -69,7 +68,7 @@ function DialogShell({ title, subtitle, children }: { title: string; subtitle?: 
   );
 }
 
-export default function SupportChat() {
+export default function SupportChat({ dict }: { dict: Dictionary["supportChat"] }) {
   const router = useRouter();
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<SupportChatMessage[]>([]);
@@ -246,15 +245,15 @@ export default function SupportChat() {
         <button
           type="button"
           onClick={handleLeaveClick}
-          aria-label="Back to account settings"
+          aria-label={dict.backAriaLabel}
           className="rounded-lg p-1.5 text-ink/40 hover:bg-white hover:text-ink/70"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={2} />
         </button>
         <AssistantAvatar />
         <div>
-          <p className="text-sm font-semibold text-brand-900">Technical support chat</p>
-          <p className="text-xs text-ink/50">For app/technical issues only — not for how you&rsquo;re feeling.</p>
+          <p className="text-sm font-semibold text-brand-900">{dict.headerTitle}</p>
+          <p className="text-xs text-ink/50">{dict.headerSubtitle}</p>
         </div>
       </div>
 
@@ -263,7 +262,7 @@ export default function SupportChat() {
           <div className="flex max-w-[85%] items-start gap-2 sm:max-w-[70%]">
             <AssistantAvatar />
             <div className="animate-rise rounded-2xl border border-brand-100 bg-white px-3.5 py-2 text-sm text-ink/80 shadow-sm">
-              {GREETING}
+              {dict.greeting}
             </div>
           </div>
         </div>
@@ -300,12 +299,12 @@ export default function SupportChat() {
 
       {status === "RESOLVED" && (
         <p className="shrink-0 border-t border-brand-100 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700 sm:px-8">
-          Marked as resolved — keep chatting if you need anything else, or head back whenever you&rsquo;re ready.
+          {dict.resolvedBanner}
         </p>
       )}
       {status === "ESCALATED" && (
         <p className="shrink-0 border-t border-amber-100 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800 sm:px-8">
-          This has been flagged for our team — they&rsquo;ll follow up by email if needed.
+          {dict.escalatedBanner}
         </p>
       )}
 
@@ -317,7 +316,7 @@ export default function SupportChat() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Describe the issue…"
+          placeholder={dict.inputPlaceholder}
           disabled={pending}
           className="flex-1 rounded-full border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500 disabled:opacity-60"
         />
@@ -328,27 +327,27 @@ export default function SupportChat() {
       {error && <p className="shrink-0 px-3 pb-3 text-xs text-red-600 sm:px-8">{error}</p>}
 
       {leaveStep === "confirm" && (
-        <DialogShell title="Before you go" subtitle="Do you want to end this chat, or keep it open?">
+        <DialogShell title={dict.beforeYouGoTitle} subtitle={dict.beforeYouGoSubtitle}>
           <div className="flex flex-col gap-2.5">
             <Button type="button" onClick={keepChatOpen} variant="bright" className="w-full">
-              Keep it open
+              {dict.keepItOpen}
             </Button>
             <Button type="button" onClick={() => setLeaveStep("resolved")} variant="outline" className="w-full">
-              End chat
+              {dict.endChat}
             </Button>
             <button
               type="button"
               onClick={() => setLeaveStep(null)}
               className="mt-1 text-center text-sm font-medium text-ink/50 hover:text-ink/70"
             >
-              Never mind, stay here
+              {dict.neverMind}
             </button>
           </div>
         </DialogShell>
       )}
 
       {leaveStep === "resolved" && (
-        <DialogShell title="Did this solve your problem?" subtitle="Quick question before you end the chat.">
+        <DialogShell title={dict.didThisSolveTitle} subtitle={dict.didThisSolveSubtitle}>
           <div className="flex gap-3">
             <button
               type="button"
@@ -356,7 +355,7 @@ export default function SupportChat() {
               className="flex flex-1 flex-col items-center gap-2 rounded-2xl border border-brand-200 py-4 text-sm font-semibold text-brand-700 hover:bg-brand-50"
             >
               <ThumbsUp className="h-5 w-5" strokeWidth={2} />
-              Yes
+              {dict.yes}
             </button>
             <button
               type="button"
@@ -364,21 +363,21 @@ export default function SupportChat() {
               className="flex flex-1 flex-col items-center gap-2 rounded-2xl border border-brand-200 py-4 text-sm font-semibold text-brand-700 hover:bg-brand-50"
             >
               <ThumbsDown className="h-5 w-5" strokeWidth={2} />
-              No
+              {dict.no}
             </button>
           </div>
         </DialogShell>
       )}
 
       {leaveStep === "rating" && (
-        <DialogShell title="Rate this chat" subtitle="Optional — helps us improve.">
+        <DialogShell title={dict.rateThisChatTitle} subtitle={dict.rateThisChatSubtitle}>
           <div className="flex items-center justify-center gap-1.5">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setLeaveRating(n)}
-                aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                aria-label={(n === 1 ? dict.starLabel : dict.starsLabel).replace("{n}", String(n))}
                 className="p-1"
               >
                 <Star
@@ -395,7 +394,7 @@ export default function SupportChat() {
             disabled={leaveSubmitting}
             className="mt-5 w-full"
           >
-            {leaveSubmitting ? "Ending chat…" : "Submit & leave"}
+            {leaveSubmitting ? dict.endingChat : dict.submitAndLeave}
           </Button>
           <button
             type="button"
@@ -403,19 +402,16 @@ export default function SupportChat() {
             disabled={leaveSubmitting}
             className="mt-2 w-full text-center text-sm font-medium text-ink/50 hover:text-ink/70"
           >
-            Skip rating
+            {dict.skipRating}
           </button>
         </DialogShell>
       )}
 
       {leaveStep === "saved" && (
-        <DialogShell title="Chat kept open" subtitle="You can pick up right where you left off.">
-          <p className="text-sm text-ink/70">
-            This conversation is saved on this device for 24 hours. Come back to Live Chat before then to continue
-            it.
-          </p>
+        <DialogShell title={dict.chatKeptOpenTitle} subtitle={dict.chatKeptOpenSubtitle}>
+          <p className="text-sm text-ink/70">{dict.chatKeptOpenBody}</p>
           <Button type="button" onClick={() => router.push(pendingHref)} variant="bright" className="mt-5 w-full">
-            Got it
+            {dict.gotIt}
           </Button>
         </DialogShell>
       )}

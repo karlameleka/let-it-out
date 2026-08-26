@@ -1,4 +1,6 @@
 import "server-only";
+import type { Locale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export type SupportChatMessage = { role: "user" | "assistant"; content: string; at: string };
 export type SupportChatOutcome = "OPEN" | "RESOLVED" | "ESCALATED";
@@ -20,6 +22,8 @@ Be brief and to the point in every reply: 1–3 short sentences, plain language,
 
 If the client asks about services, counselors, pricing, or where to find something in the app, include exactly one relevant link formatted as [Label](/path), using ONLY these internal paths — never any other URL, and never more than one per reply: [Our services](/services), [Book a counselor](/counseling), [Guided journals](/shop), [Open your journal](/journal), [Help articles](/resources). Only include a link when it's genuinely relevant to what they asked — don't force one into every reply.`;
 
+const ARABIC_REPLY_INSTRUCTION = `\n\nThe client's site language is set to Arabic. Reply in simple, everyday Egyptian Arabic (not formal Modern Standard Arabic) — the same friendly, clear tone described above, just in Egyptian Arabic. Keep the [Label](/path) link format and the [[STATUS:...]] tag exactly as specified, both untranslated.`;
+
 // gemini-2.5-flash returned 404 "no longer available to new users" on this
 // API key — Google's own error redirected back to gemini-3.6-flash. That
 // leaves gemini-3.6-flash as the only model confirmed to actually process
@@ -40,13 +44,14 @@ const GEMINI_MODEL = "gemini-3.6-flash";
  */
 export async function generateSupportChatReply(
   history: { role: "user" | "assistant"; content: string }[],
+  locale: Locale,
 ): Promise<{ reply: string; status: SupportChatOutcome }> {
+  const t = getDictionary(locale).supportChat;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn("[ai-support-chat] Skipped — GEMINI_API_KEY not configured.");
     return {
-      reply:
-        "Live chat isn't available right now. I've flagged this for our team and they'll follow up by email — sorry for the trouble.",
+      reply: t.notAvailableReply,
       status: "ESCALATED",
     };
   }
@@ -58,7 +63,9 @@ export async function generateSupportChatReply(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          systemInstruction: {
+            parts: [{ text: locale === "ar" ? SYSTEM_PROMPT + ARABIC_REPLY_INSTRUCTION : SYSTEM_PROMPT }],
+          },
           // Gemini uses "model" rather than "assistant" for the bot's own turns.
           contents: history.map((m) => ({
             role: m.role === "assistant" ? "model" : "user",
@@ -92,7 +99,7 @@ export async function generateSupportChatReply(
     if (!res.ok) {
       console.error(`[ai-support-chat] Gemini API (model: ${GEMINI_MODEL}) returned ${res.status}: ${await res.text()}`);
       return {
-        reply: "Something went wrong on our end. I've flagged this for our team to follow up by email.",
+        reply: t.somethingWrongReply,
         status: "ESCALATED",
       };
     }
@@ -102,13 +109,13 @@ export async function generateSupportChatReply(
 
     const match = rawText.match(STATUS_TAG_RE);
     const status: SupportChatOutcome = (match?.[1] as SupportChatOutcome) ?? "OPEN";
-    const reply = rawText.replace(STATUS_TAG_RE, "").trim() || "Could you tell me a bit more about what's happening?";
+    const reply = rawText.replace(STATUS_TAG_RE, "").trim() || t.tellMeMoreFallback;
 
     return { reply, status };
   } catch (err) {
     console.error("[ai-support-chat] Failed to generate reply:", err);
     return {
-      reply: "Something went wrong on our end. I've flagged this for our team to follow up by email.",
+      reply: t.somethingWrongReply,
       status: "ESCALATED",
     };
   }
