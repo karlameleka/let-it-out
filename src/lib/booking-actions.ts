@@ -7,6 +7,8 @@ import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { sendIntakeFormLink } from "@/lib/intake-actions";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   INDIVIDUAL_COUNSELING: "Individual",
@@ -15,16 +17,18 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-const bookingSchema = z.object({
-  counselorId: z.string().min(1),
-  name: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  sessionType: z.enum(["INDIVIDUAL_COUNSELING", "COUPLES_COUNSELING", "FOLLOW_UP", "OTHER"]),
-  preferredDate: z.string().trim().min(1, "Please choose a preferred date."),
-  preferredTime: z.string().trim().min(1, "Please choose a preferred time."),
-  message: z.string().trim().optional(),
-});
+function buildBookingSchema(v: Dictionary["validation"], b: Dictionary["bookingForm"]) {
+  return z.object({
+    counselorId: z.string().min(1),
+    name: z.string().trim().min(1, v.nameRequired),
+    email: z.string().trim().email(v.emailInvalid),
+    phone: z.string().trim().min(5, v.phoneInvalid),
+    sessionType: z.enum(["INDIVIDUAL_COUNSELING", "COUPLES_COUNSELING", "FOLLOW_UP", "OTHER"]),
+    preferredDate: z.string().trim().min(1, b.dateRequired),
+    preferredTime: z.string().trim().min(1, b.timeRequired),
+    message: z.string().trim().optional(),
+  });
+}
 
 export type BookingFormState = { error?: string; success?: boolean } | undefined;
 
@@ -32,7 +36,10 @@ export async function submitBookingRequest(
   _prevState: BookingFormState,
   formData: FormData,
 ): Promise<BookingFormState> {
-  const parsed = bookingSchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildBookingSchema(dict.validation, dict.bookingForm).safeParse({
     counselorId: formData.get("counselorId"),
     name: formData.get("name"),
     email: formData.get("email"),
@@ -44,7 +51,7 @@ export async function submitBookingRequest(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const user = await getCurrentUser();

@@ -7,21 +7,25 @@ import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { sendIntakeFormLink } from "@/lib/intake-actions";
 import { formatEGP } from "@/lib/format";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 
-const createSessionBookingSchema = z.object({
-  counselorId: z.string().min(1),
-  name: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  preferredDate: z.string().trim().min(1, "Please choose a preferred day."),
-  // Set when picked from the in-app slot picker (counselor has
-  // CounselorAvailability windows configured) — empty/omitted for the
-  // day-only fallback, where the counselor follows up to confirm a time.
-  preferredTime: z.string().trim().optional(),
-  promoCode: z.string().trim().optional(),
-});
+function buildCreateSessionBookingSchema(v: Dictionary["validation"], c: Dictionary["counselorProfile"]) {
+  return z.object({
+    counselorId: z.string().min(1),
+    name: z.string().trim().min(1, v.nameRequired),
+    email: z.string().trim().email(v.emailInvalid),
+    phone: z.string().trim().min(5, v.phoneInvalid),
+    preferredDate: z.string().trim().min(1, c.dayRequired),
+    // Set when picked from the in-app slot picker (counselor has
+    // CounselorAvailability windows configured) — empty/omitted for the
+    // day-only fallback, where the counselor follows up to confirm a time.
+    preferredTime: z.string().trim().optional(),
+    promoCode: z.string().trim().optional(),
+  });
+}
 
-export type CreateSessionBookingInput = z.infer<typeof createSessionBookingSchema>;
+export type CreateSessionBookingInput = z.infer<ReturnType<typeof buildCreateSessionBookingSchema>>;
 export type CreateSessionBookingResult = { error: string } | { sessionBookingId: string };
 
 export type CounselingPromoCheckResult =
@@ -36,24 +40,27 @@ export async function checkCounselingPromoCode(
   counselorId: string,
   priceEGP: number,
 ): Promise<CounselingPromoCheckResult> {
+  const locale = await getLocale();
+  const c = getDictionary(locale).counselorProfile;
+
   const code = rawCode.trim().toUpperCase();
-  if (!code) return { valid: false, error: "Enter a code." };
+  if (!code) return { valid: false, error: c.promoEnterCode };
 
   const promo = await prisma.promoCode.findUnique({
     where: { code },
     include: { counselors: true },
   });
-  if (!promo || !promo.active) return { valid: false, error: "That code isn't valid." };
-  if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: "That code has expired." };
+  if (!promo || !promo.active) return { valid: false, error: c.promoInvalid };
+  if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: c.promoExpired };
   if (promo.maxRedemptions !== null && promo.redemptionCount >= promo.maxRedemptions) {
-    return { valid: false, error: "That code has already been fully redeemed." };
+    return { valid: false, error: c.promoFullyRedeemed };
   }
   if (promo.minOrderEGP !== null && priceEGP < promo.minOrderEGP) {
-    return { valid: false, error: `This code needs a minimum session price of ${formatEGP(promo.minOrderEGP)}.` };
+    return { valid: false, error: c.promoMinOrder.replace("{amount}", formatEGP(promo.minOrderEGP)) };
   }
-  const scopedCounselorIds = promo.counselors.map((c) => c.counselorId);
+  const scopedCounselorIds = promo.counselors.map((pc) => pc.counselorId);
   if (scopedCounselorIds.length > 0 && !scopedCounselorIds.includes(counselorId)) {
-    return { valid: false, error: "This code doesn't apply to this therapist." };
+    return { valid: false, error: c.promoNotApplicable };
   }
 
   const discountEGP =
@@ -66,14 +73,18 @@ export async function checkCounselingPromoCode(
 export async function createSessionBooking(
   input: CreateSessionBookingInput,
 ): Promise<CreateSessionBookingResult> {
-  const parsed = createSessionBookingSchema.safeParse(input);
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const c = dict.counselorProfile;
+
+  const parsed = buildCreateSessionBookingSchema(dict.validation, c).safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const counselor = await prisma.counselor.findUnique({ where: { id: parsed.data.counselorId } });
   if (!counselor || !counselor.active || !counselor.priceEGP) {
-    return { error: "This counselor isn't available for online booking right now." };
+    return { error: c.counselorUnavailable };
   }
 
   // A real slot from the in-app picker is a commitment being paid for —
@@ -89,7 +100,7 @@ export async function createSessionBooking(
         status: { not: "CANCELLED" },
       },
     });
-    if (clash) return { error: "That time was just taken — please pick another slot." };
+    if (clash) return { error: c.timeJustTaken };
   }
 
   let discountEGP = 0;

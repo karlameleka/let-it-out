@@ -5,17 +5,21 @@ import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 
-const workshopInquirySchema = z.object({
-  organizationName: z.string().trim().min(1, "Please enter your organization or community name."),
-  contactName: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  workshopTopic: z.string().trim().min(1, "Please choose a topic."),
-  groupSize: z.string().trim().optional(),
-  preferredDates: z.string().trim().optional(),
-  message: z.string().trim().optional(),
-});
+function buildWorkshopInquirySchema(v: Dictionary["validation"], w: Dictionary["workshopForm"]) {
+  return z.object({
+    organizationName: z.string().trim().min(1, w.orgNameRequired),
+    contactName: z.string().trim().min(1, v.nameRequired),
+    email: z.string().trim().email(v.emailInvalid),
+    phone: z.string().trim().min(5, v.phoneInvalid),
+    workshopTopic: z.string().trim().min(1, w.topicRequired),
+    groupSize: z.string().trim().optional(),
+    preferredDates: z.string().trim().optional(),
+    message: z.string().trim().optional(),
+  });
+}
 
 export type WorkshopFormState = { error?: string; success?: boolean } | undefined;
 
@@ -23,7 +27,10 @@ export async function submitWorkshopInquiry(
   _prevState: WorkshopFormState,
   formData: FormData,
 ): Promise<WorkshopFormState> {
-  const parsed = workshopInquirySchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildWorkshopInquirySchema(dict.validation, dict.workshopForm).safeParse({
     organizationName: formData.get("organizationName"),
     contactName: formData.get("contactName"),
     email: formData.get("email"),
@@ -35,7 +42,7 @@ export async function submitWorkshopInquiry(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const inquiry = await prisma.workshopInquiry.create({ data: parsed.data });

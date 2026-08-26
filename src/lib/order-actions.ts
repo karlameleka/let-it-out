@@ -9,6 +9,8 @@ import { computeShippingFeeEGP } from "@/lib/shipping";
 import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   INSTAPAY: "InstaPay",
@@ -21,18 +23,20 @@ const itemSchema = z.object({
   quantity: z.number().int().positive(),
 });
 
-const createOrderSchema = z.object({
-  items: z.array(itemSchema).min(1),
-  guestName: z.string().trim().min(1, "Please enter your name."),
-  guestEmail: z.string().trim().email("Please enter a valid email."),
-  guestPhone: z.string().trim().min(5, "Please enter a valid phone number."),
-  shippingAddress: z.string().trim().optional(),
-  googleMapsLink: z.string().trim().optional(),
-  country: z.string().trim().optional(),
-  governorate: z.string().trim().optional(),
-  paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY", "PAYMOB"]),
-  promoCode: z.string().trim().optional(),
-});
+function buildCreateOrderSchema(v: Dictionary["validation"]) {
+  return z.object({
+    items: z.array(itemSchema).min(1),
+    guestName: z.string().trim().min(1, v.nameRequired),
+    guestEmail: z.string().trim().email(v.emailInvalid),
+    guestPhone: z.string().trim().min(5, v.phoneInvalid),
+    shippingAddress: z.string().trim().optional(),
+    googleMapsLink: z.string().trim().optional(),
+    country: z.string().trim().optional(),
+    governorate: z.string().trim().optional(),
+    paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY", "PAYMOB"]),
+    promoCode: z.string().trim().optional(),
+  });
+}
 
 export type PromoCheckResult =
   | { valid: true; code: string; discountEGP: number; label: string }
@@ -46,8 +50,11 @@ export type PromoCartItem = { productSlug: string; priceEGP: number; quantity: n
     of the cart, not the whole subtotal — the minimum-order check still looks
     at the full cart total, since that's a threshold on the order as a whole. */
 export async function checkPromoCode(rawCode: string, items: PromoCartItem[]): Promise<PromoCheckResult> {
+  const locale = await getLocale();
+  const t = getDictionary(locale).checkout;
+
   const code = rawCode.trim().toUpperCase();
-  if (!code) return { valid: false, error: "Enter a code." };
+  if (!code) return { valid: false, error: t.promoEnterCode };
 
   const subtotalEGP = items.reduce((sum, i) => sum + i.priceEGP * i.quantity, 0);
 
@@ -55,20 +62,20 @@ export async function checkPromoCode(rawCode: string, items: PromoCartItem[]): P
     where: { code },
     include: { products: { include: { product: true } } },
   });
-  if (!promo || !promo.active) return { valid: false, error: "That code isn't valid." };
-  if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: "That code has expired." };
+  if (!promo || !promo.active) return { valid: false, error: t.promoInvalid };
+  if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: t.promoExpired };
   if (promo.maxRedemptions !== null && promo.redemptionCount >= promo.maxRedemptions) {
-    return { valid: false, error: "That code has already been fully redeemed." };
+    return { valid: false, error: t.promoFullyRedeemed };
   }
   if (promo.minOrderEGP !== null && subtotalEGP < promo.minOrderEGP) {
-    return { valid: false, error: `This code needs a minimum order of ${formatEGP(promo.minOrderEGP)}.` };
+    return { valid: false, error: t.promoMinOrder.replace("{amount}", formatEGP(promo.minOrderEGP)) };
   }
 
   const scopedSlugs = promo.products.map((p) => p.product.slug);
   const eligibleItems = scopedSlugs.length === 0 ? items : items.filter((i) => scopedSlugs.includes(i.productSlug));
   const eligibleSubtotalEGP = eligibleItems.reduce((sum, i) => sum + i.priceEGP * i.quantity, 0);
   if (eligibleSubtotalEGP === 0) {
-    return { valid: false, error: "This code doesn't apply to anything in your cart." };
+    return { valid: false, error: t.promoNotApplicable };
   }
 
   const discountEGP =
@@ -81,13 +88,17 @@ export async function checkPromoCode(rawCode: string, items: PromoCartItem[]): P
   return { valid: true, code, discountEGP, label };
 }
 
-export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+export type CreateOrderInput = z.infer<ReturnType<typeof buildCreateOrderSchema>>;
 export type CreateOrderResult = { error: string } | { orderId: string };
 
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
-  const parsed = createOrderSchema.safeParse(input);
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = dict.checkout;
+
+  const parsed = buildCreateOrderSchema(dict.validation).safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
   const {
     items,
@@ -109,7 +120,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   });
 
   if (variants.length !== variantIds.length) {
-    return { error: "One or more items in your cart are no longer available." };
+    return { error: t.itemsUnavailable };
   }
 
   for (const i of items) {
@@ -118,8 +129,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       return {
         error:
           v.stockCount === 0
-            ? `${v.product.title} is out of stock.`
-            : `Only ${v.stockCount} of ${v.product.title} left in stock.`,
+            ? t.outOfStock.replace("{title}", v.product.title)
+            : t.lowStock.replace("{count}", String(v.stockCount)).replace("{title}", v.product.title),
       };
     }
   }
@@ -130,27 +141,27 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   });
 
   if (needsShipping && !shippingAddress) {
-    return { error: "Please enter a shipping address for physical items." };
+    return { error: t.shippingAddressRequired };
   }
 
   if (needsShipping && !country) {
-    return { error: "Please select your country." };
+    return { error: t.countryRequired };
   }
 
   if (needsShipping && country && !COUNTRIES.includes(country)) {
-    return { error: "Please select a valid country." };
+    return { error: t.countryInvalid };
   }
 
   if (needsShipping && country === "Egypt" && !governorate) {
-    return { error: "Please select your governorate." };
+    return { error: t.governorateRequired };
   }
 
   if (needsShipping && country === "Egypt" && governorate && !EGYPT_GOVERNORATES.includes(governorate)) {
-    return { error: "Please select a valid governorate." };
+    return { error: t.governorateInvalid };
   }
 
   if (paymentMethod === "CASH_ON_DELIVERY" && !needsShipping) {
-    return { error: "Cash on Delivery is only available when your order includes a physical journal." };
+    return { error: t.codRequiresPhysical };
   }
 
   let subtotalEGP = 0;
@@ -310,11 +321,13 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   return { orderId: order.id };
 }
 
-const paymentRefSchema = z.object({
-  orderId: z.string().min(1),
-  paymentRef: z.string().trim().min(2, "Please enter your InstaPay transaction reference."),
-  paymentNote: z.string().trim().optional(),
-});
+function buildPaymentRefSchema(t: Dictionary["checkout"]) {
+  return z.object({
+    orderId: z.string().min(1),
+    paymentRef: z.string().trim().min(2, t.paymentRefRequired),
+    paymentNote: z.string().trim().optional(),
+  });
+}
 
 export type PaymentRefFormState = { error?: string; success?: boolean } | undefined;
 
@@ -322,18 +335,22 @@ export async function submitPaymentReference(
   _prevState: PaymentRefFormState,
   formData: FormData,
 ): Promise<PaymentRefFormState> {
-  const parsed = paymentRefSchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = dict.checkout;
+
+  const parsed = buildPaymentRefSchema(t).safeParse({
     orderId: formData.get("orderId"),
     paymentRef: formData.get("paymentRef"),
     paymentNote: formData.get("paymentNote") || undefined,
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const order = await prisma.order.findUnique({ where: { id: parsed.data.orderId } });
-  if (!order) return { error: "Order not found." };
+  if (!order) return { error: t.orderNotFound };
   if (order.status !== "PENDING_PAYMENT") {
     return { success: true };
   }

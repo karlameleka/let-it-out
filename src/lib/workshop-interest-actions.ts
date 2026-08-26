@@ -5,10 +5,14 @@ import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 
-const schema = z.object({
-  email: z.string().trim().email("Please enter a valid email."),
-});
+function buildSchema(v: Dictionary["validation"]) {
+  return z.object({
+    email: z.string().trim().email(v.emailInvalid),
+  });
+}
 
 export type WorkshopInterestFormState = { error?: string; success?: boolean } | undefined;
 
@@ -16,10 +20,13 @@ export async function submitWorkshopInterest(
   _prevState: WorkshopInterestFormState,
   formData: FormData,
 ): Promise<WorkshopInterestFormState> {
-  const parsed = schema.safeParse({ email: formData.get("email") });
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildSchema(dict.validation).safeParse({ email: formData.get("email") });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const signup = await prisma.workshopInterestSignup.create({ data: parsed.data });
