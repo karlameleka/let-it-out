@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { getCbtStreak, type CbtStreakStats as Stats } from "@/lib/cbt-streak";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function CbtStreakStats() {
+export default function CbtStreakStats({ dict }: { dict: Dictionary["cbtExercises"] }) {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
@@ -17,12 +18,12 @@ export default function CbtStreakStats() {
     <div className="inline-flex divide-x divide-brand-100 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-sm">
       <div className="px-6 py-3.5">
         <p className="font-display text-2xl font-semibold leading-none text-brand-900">{stats.streak}</p>
-        <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">day streak</p>
+        <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">{dict.dayStreak}</p>
       </div>
       <div className="px-6 py-3.5">
         <p className="font-display text-2xl font-semibold leading-none text-brand-900">{stats.total}</p>
         <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
-          {stats.total === 1 ? "day practiced" : "days practiced"}
+          {stats.total === 1 ? dict.dayPracticed : dict.daysPracticed}
         </p>
       </div>
     </div>

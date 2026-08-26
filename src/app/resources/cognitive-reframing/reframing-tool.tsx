@@ -8,10 +8,13 @@ import {
   COGNITIVE_DISTORTIONS,
   EMOTIONS,
   INTENSITY_LABELS,
+  INTENSITY_LABELS_AR,
   type ReframingPrompt,
 } from "@/lib/content/reframing";
 import { recordCbtCompletion } from "@/lib/cbt-streak";
 import { saveCbtEntry } from "@/lib/cbt-history";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
 const STORAGE_KEY = "lio_reframe_count";
 
@@ -23,7 +26,9 @@ function randomPrompt(excludeSituation?: string): ReframingPrompt {
 
 type Step = 0 | 1 | 2 | 3 | 4;
 
-export default function ReframingTool() {
+export default function ReframingTool({ dict, locale }: { dict: Dictionary["reframingTool"]; locale: Locale }) {
+  const isAr = locale === "ar";
+  const intensityLabels = isAr ? INTENSITY_LABELS_AR : INTENSITY_LABELS;
   // Starts on a fixed first prompt (not a random one) so server and client
   // render identically, then shuffles to a random one after mount — using
   // Math.random() during the initial render would pick different scenarios
@@ -94,17 +99,19 @@ export default function ReframingTool() {
     setStep(4);
   }
 
-  const feelingLabel = EMOTIONS.find((e) => e.id === feeling)?.label;
+  const feelingLabel = isAr ? EMOTIONS.find((e) => e.id === feeling)?.labelAr : EMOTIONS.find((e) => e.id === feeling)?.label;
 
   return (
     <div className="overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
       {step < 4 && (
         <div className="flex items-center justify-between border-b border-brand-100 bg-brand-50 px-6 py-3 sm:px-8">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-            Step {step + 1} of 4
+            {dict.stepOf.replace("{current}", String(step + 1))}
           </p>
           {count !== null && count > 0 && (
-            <p className="text-xs text-ink/40">{count} reframe{count === 1 ? "" : "s"} so far</p>
+            <p className="text-xs text-ink/40">
+              {(count === 1 ? dict.reframeSoFar : dict.reframesSoFar).replace("{n}", String(count))}
+            </p>
           )}
         </div>
       )}
@@ -114,39 +121,30 @@ export default function ReframingTool() {
           <>
             <div className="flex items-start gap-2.5 rounded-xl bg-brand-50/70 p-4 text-sm text-ink/70">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
-              <p>
-                Automatic thoughts are quick, often harsh reactions our mind produces before we&apos;ve even
-                noticed them arrive. They can feel completely true in the moment — but feeling true and being
-                accurate aren&apos;t the same thing. This walks you through noticing one, checking it against
-                the evidence, and finding a version that fits the facts better. About 3–5 minutes, no wrong way
-                to do it.
-              </p>
+              <p>{dict.infoText}</p>
             </div>
 
             <div className="mt-5 flex items-start justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{prompt.category}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+                {isAr ? prompt.categoryAr : prompt.category}
+              </p>
               <button
                 type="button"
                 onClick={shuffle}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
               >
                 <Shuffle className="h-3.5 w-3.5" strokeWidth={2} />
-                Shuffle
+                {dict.shuffle}
               </button>
             </div>
-            <p className="mt-3 text-sm text-ink/70">{prompt.situation}</p>
+            <p className="mt-3 text-sm text-ink/70">{isAr ? prompt.situationAr : prompt.situation}</p>
             <p className="mt-3 rounded-xl border border-dashed border-brand-200 bg-brand-50/60 p-4 font-display text-lg italic leading-snug text-brand-900">
-              &ldquo;{prompt.thought}&rdquo;
+              &ldquo;{isAr ? prompt.thoughtAr : prompt.thought}&rdquo;
             </p>
-            <p className="mt-4 text-sm text-ink/60">
-              Pick whichever scenario feels closest to something you&apos;ve actually thought — or shuffle until
-              one does.
-            </p>
+            <p className="mt-4 text-sm text-ink/60">{dict.pickClosest}</p>
 
             <div className="mt-6 border-t border-brand-100 pt-5">
-              <p className="font-display text-lg font-medium text-brand-900">
-                If you had this thought, what would you feel — and how strongly?
-              </p>
+              <p className="font-display text-lg font-medium text-brand-900">{dict.feelingQuestion}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {EMOTIONS.map((e) => (
                   <button
@@ -159,14 +157,14 @@ export default function ReframingTool() {
                         : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
                     }`}
                   >
-                    {e.label}
+                    {isAr ? e.labelAr : e.label}
                   </button>
                 ))}
               </div>
               {feeling && (
                 <div className="mt-4">
-                  <p className="text-xs font-semibold text-ink/60">How strong is it?</p>
-                  <IntensityPicker value={intensityBefore} onChange={setIntensityBefore} />
+                  <p className="text-xs font-semibold text-ink/60">{dict.howStrong}</p>
+                  <IntensityPicker value={intensityBefore} onChange={setIntensityBefore} labels={intensityLabels} />
                 </div>
               )}
             </div>
@@ -176,7 +174,7 @@ export default function ReframingTool() {
               disabled={!feeling || intensityBefore === null}
               className="mt-6"
             >
-              Continue
+              {dict.continue}
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Button>
           </>
@@ -184,14 +182,9 @@ export default function ReframingTool() {
 
         {step === 1 && (
           <>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 2 · Spot the trap</p>
-            <p className="mt-2 font-display text-lg font-medium text-brand-900">
-              Which thinking traps might be shaping this thought?
-            </p>
-            <p className="mt-1 text-sm text-ink/60">
-              Optional — pick as many as apply, or none at all if nothing feels obviously right. This step is
-              here to help you recognize patterns, not to grade your thinking.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{dict.step2Label}</p>
+            <p className="mt-2 font-display text-lg font-medium text-brand-900">{dict.step2Question}</p>
+            <p className="mt-1 text-sm text-ink/60">{dict.step2Hint}</p>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {COGNITIVE_DISTORTIONS.map((d) => {
                 const active = distortions.has(d.id);
@@ -200,87 +193,84 @@ export default function ReframingTool() {
                     key={d.id}
                     type="button"
                     onClick={() => toggleDistortion(d.id)}
-                    title={d.description}
+                    title={isAr ? d.descriptionAr : d.description}
                     className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
                       active
                         ? "border-brand-600 bg-brand-50 text-brand-800"
                         : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
                     }`}
                   >
-                    <span className="font-medium">{d.label}</span>
-                    <span className="mt-0.5 block text-xs text-ink/50">{d.description}</span>
+                    <span className="font-medium">{isAr ? d.labelAr : d.label}</span>
+                    <span className="mt-0.5 block text-xs text-ink/50">{isAr ? d.descriptionAr : d.description}</span>
                   </button>
                 );
               })}
             </div>
-            <StepNav onBack={() => setStep(0)} onNext={() => setStep(2)} nextLabel={distortions.size === 0 ? "Skip" : "Next"} />
+            <StepNav
+              onBack={() => setStep(0)}
+              onNext={() => setStep(2)}
+              backLabel={dict.back}
+              nextLabel={distortions.size === 0 ? dict.skip : dict.next}
+            />
           </>
         )}
 
         {step === 2 && (
           <>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 3 · Weigh the evidence</p>
-            <p className="mt-2 font-display text-lg font-medium text-brand-900">What&apos;s the evidence?</p>
-            <p className="mt-1 text-sm text-ink/60">
-              This is the heart of reframing — comparing the thought against what actually happened, not how
-              it feels.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{dict.step3Label}</p>
+            <p className="mt-2 font-display text-lg font-medium text-brand-900">{dict.step3Question}</p>
+            <p className="mt-1 text-sm text-ink/60">{dict.step3Hint}</p>
             <div className="mt-4 space-y-4">
               <div>
                 <label htmlFor="evidenceFor" className="mb-1.5 block text-xs font-semibold text-ink/60">
-                  What supports this thought?
+                  {dict.supportsLabel}
                 </label>
                 <textarea
                   id="evidenceFor"
                   rows={3}
                   value={evidenceFor}
                   onChange={(e) => setEvidenceFor(e.target.value)}
-                  placeholder="Facts, not feelings — what actually happened?"
+                  placeholder={dict.supportsPlaceholder}
                   className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
                 />
               </div>
               <div>
                 <label htmlFor="evidenceAgainst" className="mb-1.5 block text-xs font-semibold text-ink/60">
-                  What doesn&apos;t fit, or points the other way?
+                  {dict.againstLabel}
                 </label>
                 <textarea
                   id="evidenceAgainst"
                   rows={3}
                   value={evidenceAgainst}
                   onChange={(e) => setEvidenceAgainst(e.target.value)}
-                  placeholder="Would you say this to a friend in the same situation?"
+                  placeholder={dict.againstPlaceholder}
                   className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
                 />
               </div>
             </div>
-            <StepNav onBack={() => setStep(1)} onNext={() => setStep(3)} />
+            <StepNav onBack={() => setStep(1)} onNext={() => setStep(3)} backLabel={dict.back} nextLabel={dict.next} />
           </>
         )}
 
         {step === 3 && (
           <>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Step 4 · Reframe it</p>
-            <p className="mt-2 font-display text-lg font-medium text-brand-900">
-              Given all that — what&apos;s a more balanced way to see it?
-            </p>
-            <p className="mt-1 text-sm text-ink/60">
-              Not forced positivity, just something more accurate than the all-or-nothing version.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{dict.step4Label}</p>
+            <p className="mt-2 font-display text-lg font-medium text-brand-900">{dict.step4Question}</p>
+            <p className="mt-1 text-sm text-ink/60">{dict.step4Hint}</p>
             <textarea
               rows={3}
               value={reframe}
               onChange={(e) => setReframe(e.target.value)}
-              placeholder="A more balanced thought..."
+              placeholder={dict.reframePlaceholder}
               className="mt-4 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
             />
 
             {reframe.trim() && feeling && (
               <div className="mt-5 border-t border-brand-100 pt-5">
                 <p className="text-sm font-medium text-ink/80">
-                  Now that you&apos;ve reframed it — how {feelingLabel?.toLowerCase()} do you feel, if you
-                  imagine having this new thought instead?
+                  {dict.afterFeelingQuestion.replace("{feeling}", (feelingLabel ?? "").toLowerCase())}
                 </p>
-                <IntensityPicker value={intensityAfter} onChange={setIntensityAfter} />
+                <IntensityPicker value={intensityAfter} onChange={setIntensityAfter} labels={intensityLabels} />
               </div>
             )}
 
@@ -291,10 +281,10 @@ export default function ReframingTool() {
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80 active:text-ink/80"
               >
                 <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-                Back
+                {dict.back}
               </button>
               <Button onClick={finish} disabled={!reframe.trim()}>
-                Finish
+                {dict.finish}
                 <Check className="h-4 w-4" strokeWidth={2} />
               </Button>
             </div>
@@ -306,27 +296,29 @@ export default function ReframingTool() {
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-600 text-white">
               <Sparkles className="h-5 w-5" strokeWidth={2} />
             </span>
-            <p className="mt-3 font-display text-lg font-semibold text-brand-900">Nice work.</p>
+            <p className="mt-3 font-display text-lg font-semibold text-brand-900">{dict.doneTitle}</p>
             <p className="mt-1 text-sm text-ink/60">
-              {streak !== null && streak > 1 && `${streak} day streak. `}
-              {count !== null && count > 0 && `${count} reframe${count === 1 ? "" : "s"} so far. `}
-              Here&apos;s what you worked through:
+              {streak !== null && streak > 1 && dict.streakLine.replace("{n}", String(streak))}
+              {count !== null &&
+                count > 0 &&
+                (count === 1 ? dict.reframeSoFar : dict.reframesSoFar).replace("{n}", String(count)) + " "}
+              {dict.hereIsWhatWorkedThrough}
             </p>
 
             <div className="mt-4 space-y-3 rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-sm">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">Original thought</p>
-                <p className="mt-1 italic text-ink/80">&ldquo;{prompt.thought}&rdquo;</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.originalThoughtLabel}</p>
+                <p className="mt-1 italic text-ink/80">&ldquo;{isAr ? prompt.thoughtAr : prompt.thought}&rdquo;</p>
               </div>
               {feeling && intensityBefore !== null && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">How it felt</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.howItFeltLabel}</p>
                   <p className="mt-1 text-ink/80">
-                    {feelingLabel} — {INTENSITY_LABELS[intensityBefore]}
+                    {feelingLabel} — {intensityLabels[intensityBefore]}
                     {intensityAfter !== null && (
                       <>
-                        {" "}&rarr; <span className="font-medium text-brand-700">{INTENSITY_LABELS[intensityAfter]}</span> after
-                        reframing
+                        {" "}&rarr; <span className="font-medium text-brand-700">{intensityLabels[intensityAfter]}</span>{" "}
+                        {dict.afterReframing}
                       </>
                     )}
                   </p>
@@ -334,32 +326,29 @@ export default function ReframingTool() {
               )}
               {distortions.size > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">Thinking traps spotted</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.thinkingTrapsSpottedLabel}</p>
                   <p className="mt-1 text-ink/80">
                     {COGNITIVE_DISTORTIONS.filter((d) => distortions.has(d.id))
-                      .map((d) => d.label)
+                      .map((d) => (isAr ? d.labelAr : d.label))
                       .join(", ")}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">Reframed thought</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.reframedThoughtLabel}</p>
                 <p className="mt-1 font-medium text-brand-800">&ldquo;{reframe}&rdquo;</p>
               </div>
             </div>
 
-            <p className="mt-4 text-xs text-ink/40">
-              Saved privately on this device only — never on our servers. Come back any time for another
-              scenario.
-            </p>
+            <p className="mt-4 text-xs text-ink/40">{dict.savedPrivately}</p>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Button onClick={() => startOver(true)}>
                 <Shuffle className="h-4 w-4" strokeWidth={2} />
-                Try another scenario
+                {dict.tryAnotherScenario}
               </Button>
               <ButtonLink href="/counseling" variant="text">
-                If this feels heavy, talk it through with a counselor &rarr;
+                {dict.talkToCounselor} &rarr;
               </ButtonLink>
             </div>
           </div>
@@ -369,10 +358,18 @@ export default function ReframingTool() {
   );
 }
 
-function IntensityPicker({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
+function IntensityPicker({
+  value,
+  onChange,
+  labels,
+}: {
+  value: number | null;
+  onChange: (v: number) => void;
+  labels: string[];
+}) {
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
-      {INTENSITY_LABELS.map((label, i) => (
+      {labels.map((label, i) => (
         <button
           key={label}
           type="button"
@@ -393,11 +390,13 @@ function IntensityPicker({ value, onChange }: { value: number | null; onChange: 
 function StepNav({
   onBack,
   onNext,
-  nextLabel = "Next",
+  backLabel,
+  nextLabel,
 }: {
   onBack: () => void;
   onNext: () => void;
-  nextLabel?: string;
+  backLabel: string;
+  nextLabel: string;
 }) {
   return (
     <div className="mt-6 flex items-center gap-3">
@@ -407,7 +406,7 @@ function StepNav({
         className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80 active:text-ink/80"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-        Back
+        {backLabel}
       </button>
       <Button onClick={onNext}>
         {nextLabel}

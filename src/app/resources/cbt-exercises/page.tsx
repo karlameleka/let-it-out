@@ -6,52 +6,54 @@ import { Ribbon, DoodleField } from "@/components/decor";
 import CbtStreakStats from "./cbt-streak-stats";
 import CbtHistoryList from "./cbt-history-list";
 import CbtThinkingPatterns from "./cbt-thinking-patterns";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "CBT Exercises",
   description: "Short, evidence-based CBT techniques — cognitive reframing, grounding, and behavioral activation.",
 };
 
-const EXERCISES = [
-  {
-    href: "/resources/cognitive-reframing",
-    icon: Brain,
-    duration: "3–5 min",
-    title: "Cognitive Reframing",
-    description: "Catch an automatic thought, weigh the evidence, and land on something more balanced.",
-  },
-  {
-    href: "/resources/cbt-exercises/grounding",
-    icon: Compass,
-    duration: "~2 min",
-    title: "5-4-3-2-1 Grounding",
-    description: "A sensory check-in that pulls your attention back into the present when your mind is racing.",
-  },
-  {
-    href: "/resources/cbt-exercises/next-step",
-    icon: Footprints,
-    duration: "~1 min",
-    title: "Tiny Next Step",
-    description: "Feeling stuck? Shrink whatever's weighing on you down to one small, doable action.",
-  },
-];
+export default async function CbtExercisesPage() {
+  const locale = await getLocale();
+  const t = getDictionary(locale).cbtExercises;
 
-export default function CbtExercisesPage() {
+  const EXERCISES = [
+    {
+      href: "/resources/cognitive-reframing",
+      icon: Brain,
+      duration: t.exercise1Duration,
+      title: t.exercise1Title,
+      description: t.exercise1Description,
+    },
+    {
+      href: "/resources/cbt-exercises/grounding",
+      icon: Compass,
+      duration: t.exercise2Duration,
+      title: t.exercise2Title,
+      description: t.exercise2Description,
+    },
+    {
+      href: "/resources/cbt-exercises/next-step",
+      icon: Footprints,
+      duration: t.exercise3Duration,
+      title: t.exercise3Title,
+      description: t.exercise3Description,
+    },
+  ];
+
   return (
     <>
       <section className="relative overflow-hidden bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
         <DoodleField />
         <Container className="relative max-w-2xl">
-          <Ribbon>CBT toolkit</Ribbon>
+          <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 font-display text-3xl font-medium leading-[1.1] text-brand-900 sm:text-4xl">
-            Quick techniques, backed by research.
+            {t.title}
           </h1>
-          <p className="mt-4 text-lg text-ink/70">
-            Short, evidence-based exercises drawn from cognitive behavioral therapy — pick whichever fits how
-            you&apos;re feeling right now. Your answers stay private, saved only on this device.
-          </p>
+          <p className="mt-4 text-lg text-ink/70">{t.description}</p>
           <div className="mt-6">
-            <CbtStreakStats />
+            <CbtStreakStats dict={t} />
           </div>
         </Container>
       </section>
@@ -83,8 +85,8 @@ export default function CbtExercisesPage() {
             ))}
           </div>
 
-          <CbtThinkingPatterns />
-          <CbtHistoryList />
+          <CbtThinkingPatterns dict={t} />
+          <CbtHistoryList dict={t} />
         </Container>
       </section>
     </>
