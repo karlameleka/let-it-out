@@ -20,7 +20,12 @@ Be brief and to the point in every reply: 1–3 short sentences, plain language,
 
 If the client asks about services, counselors, pricing, or where to find something in the app, include exactly one relevant link formatted as [Label](/path), using ONLY these internal paths — never any other URL, and never more than one per reply: [Our services](/services), [Book a counselor](/counseling), [Guided journals](/shop), [Open your journal](/journal), [Help articles](/resources). Only include a link when it's genuinely relevant to what they asked — don't force one into every reply.`;
 
-const GEMINI_MODEL = "gemini-3.6-flash";
+// gemini-3.6-flash's free tier is capped at just 20 requests/day total —
+// unusable for a live support chat (confirmed in production: a 429
+// RESOURCE_EXHAUSTED after normal light usage). gemini-2.5-flash is an
+// older, cheaper generation with a much more generous free daily quota,
+// still plenty capable for short, direct troubleshooting replies.
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 /**
  * Generates the assistant's next reply in a support chat, given the full
@@ -61,20 +66,21 @@ export async function generateSupportChatReply(
           // mid-sentence before the reply, or the trailing status tag, is
           // finished.
           //
-          // thinkingLevel: "minimal" keeps this model's internal
-          // "thinking" step as short as possible. Thinking tokens are
-          // drawn from the same maxOutputTokens budget as the visible
-          // reply and take extra generation time — for a short, direct
-          // support-bot answer that doesn't need multi-step reasoning,
-          // this was very likely both the "slow" and the "cut off
-          // mid-sentence" complaints at once.
+          // thinkingBudget: 0 disables this model's internal "thinking"
+          // step. Thinking tokens are drawn from the same maxOutputTokens
+          // budget as the visible reply and take extra generation time —
+          // for a short, direct support-bot answer that doesn't need
+          // multi-step reasoning, that's pure overhead.
           //
-          // IMPORTANT: this must be `thinkingLevel`, not `thinkingBudget`
-          // — thinkingBudget is the legacy field from the Gemini 2.5
-          // series. Gemini 3 models (this one included) reject a request
-          // carrying thinkingBudget with a 400 error, which is exactly
-          // what broke every single reply after that field was added.
-          generationConfig: { maxOutputTokens: 800, thinkingConfig: { thinkingLevel: "minimal" } },
+          // IMPORTANT: this must be `thinkingBudget`, not `thinkingLevel`
+          // — thinkingLevel is the newer field introduced for the Gemini 3
+          // series. gemini-2.5-flash is a Gemini 2.5-series model and only
+          // understands the legacy thinkingBudget field; sending the wrong
+          // one for a model's generation gets the whole request rejected
+          // with a 400 (this happened in the other direction when
+          // thinkingBudget was sent to the Gemini 3 model this app used
+          // before switching back to 2.5-flash for its free-tier quota).
+          generationConfig: { maxOutputTokens: 800, thinkingConfig: { thinkingBudget: 0 } },
         }),
       },
     );
