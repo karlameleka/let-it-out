@@ -15,7 +15,13 @@ const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password"
  * framework/page scripts get the nonce automatically (see
  * app/getting-started/proxy in the Next docs), and 'strict-dynamic' lets
  * those trusted scripts load further scripts without needing to allowlist
- * every third-party script origin by hand.
+ * every third-party script origin by hand. The trailing `'unsafe-inline'
+ * https:` on script-src is the standard strict-CSP backward-compat
+ * fallback (see Google's strict-CSP guide): browsers new enough to
+ * understand 'nonce-'/'strict-dynamic' ignore both tokens per the CSP3
+ * spec, so this changes nothing for them — it only keeps script loading
+ * from silently breaking on older browsers that don't understand
+ * strict-dynamic, which would otherwise see an empty allowlist.
  *
  * style-src allows 'unsafe-inline': several components use React inline
  * `style={{...}}` (mood colors, animation delays) which nonces can't cover
@@ -31,6 +37,15 @@ const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password"
  * that forgets to call requireAdmin() itself. Running the same role check
  * here, at the edge, before any admin route (page or API) executes, closes
  * that gap regardless of what gets added later.
+ *
+ * Trusted Types is added as `Content-Security-Policy-Report-Only`, not in
+ * the enforced policy above: it's a separate header, so this reports DOM
+ * XSS-sink violations (dangerouslySetInnerHTML aside, we have none in our
+ * own code, but React/Next internals or a future third-party script could
+ * still trip it) to the browser console without blocking anything. Once a
+ * production traffic period shows no violations, promote
+ * `require-trusted-types-for 'script'; trusted-types default` into the
+ * enforced cspHeader below to actually block DOM-based XSS sinks.
  */
 export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/admin")) {
@@ -60,7 +75,7 @@ export async function proxy(request: NextRequest) {
 
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""};
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' https:${isDev ? " 'unsafe-eval'" : ""};
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob:;
     font-src 'self';
@@ -75,12 +90,15 @@ export async function proxy(request: NextRequest) {
     .replace(/\s{2,}/g, " ")
     .trim();
 
+  const trustedTypesReportOnly = "require-trusted-types-for 'script'; trusted-types default";
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", cspHeader);
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", cspHeader);
+  response.headers.set("Content-Security-Policy-Report-Only", trustedTypesReportOnly);
   return response;
 }
 
