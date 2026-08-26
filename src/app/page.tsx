@@ -35,7 +35,7 @@ export default async function HomePage({
 
   return (
     <>
-      <InstallOverlay initialOpen={install === "true"} />
+      <InstallOverlay initialOpen={install === "true"} dict={dict.install} />
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-brand-50">
