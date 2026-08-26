@@ -54,11 +54,11 @@ export async function generateSupportChatReply(
             role: m.role === "assistant" ? "model" : "user",
             parts: [{ text: m.content }],
           })),
-          // Capped well below the old 500 to reinforce the brevity
-          // instruction structurally, not just via the prompt — 200 tokens
-          // is still comfortably enough for a 1-3 sentence reply plus a
-          // short numbered list and the status tag.
-          generationConfig: { maxOutputTokens: 200 },
+          // Brevity is enforced by the prompt, not this ceiling — cutting
+          // this too low (previously 200) risks the API hard-stopping
+          // mid-sentence before the reply, or the trailing status tag, is
+          // finished.
+          generationConfig: { maxOutputTokens: 500 },
         }),
       },
     );
