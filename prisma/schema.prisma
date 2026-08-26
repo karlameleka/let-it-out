@@ -928,6 +928,16 @@ model SupportChat {
   escalatedAt DateTime?
   resolvedAt  DateTime?
 
+  // Post-resolution feedback loop: once the bot marks a chat RESOLVED, the
+  // client is asked to confirm it actually fixed things and (optionally)
+  // rate the chat. Null on both until the client answers.
+  feedbackResolved Boolean?
+  feedbackRating   Int?
+  // Set when the client says the bot's "resolved" claim was wrong —
+  // surfaced prominently in the admin dashboard so a human follows up.
+  // Cleared automatically when an admin marks the chat resolved again.
+  flaggedUnresolved Boolean @default(false)
+
   @@index([userId])
   @@index([status])
 }

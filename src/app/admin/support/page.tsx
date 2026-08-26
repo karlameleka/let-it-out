@@ -7,6 +7,7 @@ import {
 } from "@/lib/support-chat-actions";
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import { Star } from "lucide-react";
 
 const STATUS_ORDER = { ESCALATED: 0, OPEN: 1, RESOLVED: 2 };
 
@@ -18,8 +19,14 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default async function AdminSupportPage() {
   const chats = await getAllSupportChats();
-  const sorted = [...chats].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+  const sorted = [...chats].sort((a, b) => {
+    // A client disputing "resolved" jumps to the very top — the bot got it
+    // wrong, so this needs eyes before anything else.
+    if (a.flaggedUnresolved !== b.flaggedUnresolved) return a.flaggedUnresolved ? -1 : 1;
+    return STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+  });
   const resolvedCount = chats.filter((c) => c.status === "RESOLVED").length;
+  const flaggedCount = chats.filter((c) => c.flaggedUnresolved).length;
 
   return (
     <div className="space-y-4">
@@ -30,6 +37,11 @@ export default async function AdminSupportPage() {
             Clients&rsquo; &ldquo;Having technical issues? Live Chat&rdquo; conversations from Account settings. The
             bot only handles app/technical issues — anything psychological gets redirected, never answered.
           </p>
+          {flaggedCount > 0 && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+              ⚠ {flaggedCount} client{flaggedCount === 1 ? "" : "s"} said their chat didn&rsquo;t actually solve it
+            </p>
+          )}
         </div>
         {resolvedCount > 0 && (
           <form action={deleteAllResolvedSupportChats}>
@@ -49,7 +61,10 @@ export default async function AdminSupportPage() {
         const messages = chat.messages as unknown as SupportChatMessage[];
         const firstMessage = messages.find((m) => m.role === "user")?.content ?? "";
         return (
-          <div key={chat.id} className="rounded-2xl border border-brand-100 bg-white p-5">
+          <div
+            key={chat.id}
+            className={`rounded-2xl border bg-white p-5 ${chat.flaggedUnresolved ? "border-red-300" : "border-brand-100"}`}
+          >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-display font-semibold text-brand-800">
@@ -59,9 +74,27 @@ export default async function AdminSupportPage() {
                   {chat.user.accountCode} · Updated {chat.updatedAt.toLocaleString("en-GB")}
                 </p>
               </div>
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[chat.status]}`}>
-                {chat.status === "ESCALATED" ? "Needs attention" : chat.status.toLowerCase()}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {chat.flaggedUnresolved && (
+                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                    ⚠ Not resolved
+                  </span>
+                )}
+                {chat.feedbackRating != null && (
+                  <span className="flex items-center gap-0.5" aria-label={`Rated ${chat.feedbackRating} of 5`}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={`h-3.5 w-3.5 ${n <= chat.feedbackRating! ? "fill-amber-400 text-amber-400" : "text-ink/15"}`}
+                        strokeWidth={1.75}
+                      />
+                    ))}
+                  </span>
+                )}
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[chat.status]}`}>
+                  {chat.status === "ESCALATED" ? "Needs attention" : chat.status.toLowerCase()}
+                </span>
+              </div>
             </div>
 
             <p className="mt-2 text-sm text-ink/70">{firstMessage.slice(0, 140)}{firstMessage.length > 140 ? "…" : ""}</p>

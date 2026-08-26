@@ -16,7 +16,7 @@ End EVERY reply with exactly one status tag on its own line, and nothing after i
 - [[STATUS:ESCALATED]] — the problem sounds like a real bug, a billing/account issue, or anything you can't walk them through yourself, OR they explicitly ask for a human.
 - [[STATUS:OPEN]] — anything still in progress (you just gave steps and are waiting to hear if they worked, or you're still gathering details).
 
-Keep replies short and plain — a few sentences, not a wall of text.`;
+Be brief and to the point in every reply: 1–3 short sentences, plain language, no preamble ("I understand", "Thank you for reaching out", "I'm sorry to hear that"), no restating the problem back, no sign-offs. If you're giving troubleshooting steps, list at most 2–3 as a tight numbered list — never a long explanation. Ask only one clarifying question at a time. Get straight to the point.`;
 
 const GEMINI_MODEL = "gemini-3.6-flash";
 
@@ -54,7 +54,11 @@ export async function generateSupportChatReply(
             role: m.role === "assistant" ? "model" : "user",
             parts: [{ text: m.content }],
           })),
-          generationConfig: { maxOutputTokens: 500 },
+          // Capped well below the old 500 to reinforce the brevity
+          // instruction structurally, not just via the prompt — 200 tokens
+          // is still comfortably enough for a 1-3 sentence reply plus a
+          // short numbered list and the status tag.
+          generationConfig: { maxOutputTokens: 200 },
         }),
       },
     );

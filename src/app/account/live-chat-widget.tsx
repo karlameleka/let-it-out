@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X } from "lucide-react";
-import { sendSupportChatMessage } from "@/lib/support-chat-actions";
+import { MessageCircle, Send, Star, X } from "lucide-react";
+import { sendSupportChatMessage, submitSupportChatFeedback } from "@/lib/support-chat-actions";
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import { Button } from "@/components/ui";
 
@@ -14,6 +14,9 @@ export default function LiveChatWidget() {
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [rating, setRating] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,6 +31,10 @@ export default function LiveChatWidget() {
     setError(null);
     setPending(true);
     setInput("");
+    // A new message means any prior resolution is back up for debate — let
+    // the feedback prompt reappear if the bot marks it resolved again.
+    setFeedbackGiven(false);
+    setRating(null);
     setMessages((prev) => [...prev, { role: "user", content: text, at: new Date().toISOString() }]);
 
     const result = await sendSupportChatMessage(chatId, text);
@@ -40,6 +47,15 @@ export default function LiveChatWidget() {
     setChatId(result.chatId);
     setMessages(result.messages);
     setStatus(result.status);
+  }
+
+  async function handleFeedback(resolved: boolean) {
+    if (!chatId || feedbackSubmitting) return;
+    setFeedbackSubmitting(true);
+    await submitSupportChatFeedback(chatId, resolved, rating ?? undefined);
+    setFeedbackSubmitting(false);
+    setFeedbackGiven(true);
+    if (!resolved) setStatus("ESCALATED");
   }
 
   if (!open) {
@@ -93,9 +109,49 @@ export default function LiveChatWidget() {
         <div ref={bottomRef} />
       </div>
 
-      {status === "RESOLVED" && (
+      {status === "RESOLVED" && !feedbackGiven && (
+        <div className="border-t border-brand-100 bg-brand-50 px-4 py-3">
+          <p className="text-xs font-semibold text-brand-800">Did this solve your problem?</p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleFeedback(true)}
+              disabled={feedbackSubmitting}
+              className="rounded-full border border-brand-300 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:opacity-60"
+            >
+              👍 Yes, that fixed it
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFeedback(false)}
+              disabled={feedbackSubmitting}
+              className="rounded-full border border-brand-300 bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:opacity-60"
+            >
+              👎 No, still stuck
+            </button>
+          </div>
+          <div className="mt-2 flex items-center gap-1">
+            <span className="text-[11px] text-ink/50">Rate this chat:</span>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                className="p-0.5"
+              >
+                <Star
+                  className={`h-3.5 w-3.5 ${rating && n <= rating ? "fill-brand-500 text-brand-500" : "text-ink/20"}`}
+                  strokeWidth={1.75}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {status === "RESOLVED" && feedbackGiven && (
         <p className="border-t border-brand-100 bg-brand-50 px-4 py-2 text-xs font-medium text-brand-700">
-          Marked as resolved. Still having trouble? Just send another message.
+          Thanks for the feedback! Still having trouble? Just send another message.
         </p>
       )}
       {status === "ESCALATED" && (

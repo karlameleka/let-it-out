@@ -2,15 +2,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 export default async function AdminOverviewPage() {
-  const [newLeads, pendingOrders, newBookings, newInquiries, messages, workshopSignups, eventRsvps] = await Promise.all([
-    prisma.lead.count({ where: { status: "NEW" } }),
-    prisma.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_SUBMITTED"] } } }),
-    prisma.bookingRequest.count({ where: { status: "PENDING" } }),
-    prisma.workshopInquiry.count({ where: { status: "NEW" } }),
-    prisma.contactMessage.count(),
-    prisma.workshopInterestSignup.count(),
-    prisma.eventRSVP.count(),
-  ]);
+  const [newLeads, pendingOrders, newBookings, newInquiries, messages, workshopSignups, eventRsvps, flaggedChats] =
+    await Promise.all([
+      prisma.lead.count({ where: { status: "NEW" } }),
+      prisma.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_SUBMITTED"] } } }),
+      prisma.bookingRequest.count({ where: { status: "PENDING" } }),
+      prisma.workshopInquiry.count({ where: { status: "NEW" } }),
+      prisma.contactMessage.count(),
+      prisma.workshopInterestSignup.count(),
+      prisma.eventRSVP.count(),
+      prisma.supportChat.count({ where: { flaggedUnresolved: true } }),
+    ]);
 
   const cards = [
     { href: "/admin/crm", label: "New leads in the CRM", value: newLeads },
@@ -20,6 +22,7 @@ export default async function AdminOverviewPage() {
     { href: "/admin/messages", label: "Contact messages", value: messages },
     { href: "/admin/workshop-signups", label: "Workshop notify signups", value: workshopSignups },
     { href: "/admin/events", label: "Event RSVPs", value: eventRsvps },
+    { href: "/admin/support", label: "Live chats flagged as unresolved", value: flaggedChats },
   ];
 
   return (

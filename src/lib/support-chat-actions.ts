@@ -86,9 +86,67 @@ export async function resolveSupportChat(formData: FormData) {
   const chatId = String(formData.get("chatId") ?? "");
   await prisma.supportChat.update({
     where: { id: chatId },
-    data: { status: "RESOLVED", resolvedAt: new Date() },
+    // Marking it resolved here is the human's own confirmation, so any
+    // earlier "client disputed this" flag no longer applies.
+    data: { status: "RESOLVED", resolvedAt: new Date(), flaggedUnresolved: false },
   });
   revalidatePath("/admin/support");
+}
+
+/**
+ * The post-resolution feedback loop: called from the chat widget once the
+ * bot marks a chat RESOLVED, asking the client to confirm it actually
+ * worked and (optionally) rate the chat. A "no" flips the chat back to
+ * ESCALATED and flags it in the admin dashboard, since the bot's own
+ * resolution claim turned out to be wrong.
+ */
+export async function submitSupportChatFeedback(
+  chatId: string,
+  resolved: boolean,
+  rating?: number,
+): Promise<{ success: boolean }> {
+  const session = await requireUser().catch(() => null);
+  if (!session) return { success: false };
+
+  const chat = await prisma.supportChat.findFirst({ where: { id: chatId, userId: session.userId } });
+  if (!chat) return { success: false };
+
+  const clampedRating = rating && Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
+  const wasAlreadyEscalated = chat.escalatedAt != null;
+
+  await prisma.supportChat.update({
+    where: { id: chat.id },
+    data: {
+      feedbackResolved: resolved,
+      feedbackRating: clampedRating,
+      ...(resolved
+        ? {}
+        : {
+            status: "ESCALATED",
+            flaggedUnresolved: true,
+            escalatedAt: wasAlreadyEscalated ? chat.escalatedAt : new Date(),
+          }),
+    },
+  });
+
+  // Same best-effort, one-time-per-chat notification pattern as escalating
+  // mid-conversation — a client disputing "resolved" is just as much a
+  // "needs a human" signal as the bot escalating on its own.
+  if (!resolved && !wasAlreadyEscalated) {
+    const baseUrl = await getBaseUrl();
+    const messages = chat.messages as unknown as SupportChatMessage[];
+    await sendSupportNotification({
+      subject: "Live chat: client says it's not actually resolved",
+      lines: [
+        { label: "Client", value: `${session.name} <${session.email}>` },
+        { label: "First message", value: messages.find((m) => m.role === "user")?.content ?? "" },
+        { label: "Review", value: `${baseUrl}/admin/support` },
+      ],
+    }).catch((err) => console.error("[support-chat] Failed to send unresolved-feedback email:", err));
+  }
+
+  revalidatePath("/admin/support");
+  return { success: true };
 }
 
 export async function reopenSupportChat(formData: FormData) {
