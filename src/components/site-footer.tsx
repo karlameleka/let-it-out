@@ -9,14 +9,13 @@ import { WaveDivider } from "@/components/decor";
 import { SOCIAL_LINKS } from "@/components/social-icons";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
-import { toArabicDigits } from "@/lib/format";
 
 const OFFICE_MAPS_URL = "https://maps.app.goo.gl/ym5Dc5zvyxfPVxcZA";
 const CONTACT_PHONE = "+20 128 8200533";
 const CONTACT_PHONE_HREF = "tel:+201288200533";
 const CONTACT_EMAIL = "letitoutsupport@gmail.com";
 
-export default function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary["footer"] }) {
+export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary["footer"] }) {
   const pathname = usePathname();
   // /support runs as a fixed, full-viewport chat screen — the footer
   // would just sit invisibly behind it.
@@ -68,10 +67,11 @@ export default function SiteFooter({ locale, dict }: { locale: Locale; dict: Dic
               <li>
                 <a
                   href={CONTACT_PHONE_HREF}
+                  dir="ltr"
                   className="inline-flex items-center gap-1.5 hover:text-white active:text-white"
                 >
                   <Phone className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-                  {locale === "ar" ? toArabicDigits(CONTACT_PHONE) : CONTACT_PHONE}
+                  {CONTACT_PHONE}
                 </a>
               </li>
               <li>

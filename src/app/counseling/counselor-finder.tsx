@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
@@ -54,6 +54,19 @@ export default function CounselorFinder({
   const t = dict.counseling;
   const [query, setQuery] = useState("");
 
+  // Read after mount (not as lazy initial state) so server and first
+  // client render match, same pattern as the other viewport/preference
+  // reads in this app.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMobile(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
   const results = useMemo(
     () => counselors.filter((c) => counselorMatchesSearch(c, query)),
     [counselors, query],
@@ -67,7 +80,7 @@ export default function CounselorFinder({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.searchPlaceholder}
+          placeholder={isMobile ? t.searchPlaceholderShort : t.searchPlaceholder}
           className="w-full rounded-2xl border border-brand-200 bg-white ps-11 pe-11 py-3.5 text-sm font-medium text-ink/80 outline-none transition-colors placeholder:text-ink/40 focus:border-brand-400"
         />
         {query && (

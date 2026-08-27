@@ -200,6 +200,7 @@ const ar: Dictionary = {
     chooseTitle: "تعرف على معالجينا النفسيين",
     chooseDescription: "كل معالج هو أخصائي نفسي مرخّص. اختر ملفًا شخصيًا للاطلاع على خلفيته وطلب جلسة.",
     searchPlaceholder: "ابحث حسب المشكلة أو التخصص أو الاسم (مثال: قلق، CBT، أسرة)",
+    searchPlaceholderShort: "ابحث حسب المشكلة أو التخصص أو الاسم",
     clear: "مسح",
     emptyStateText: "لا يوجد معالج يطابق ذلك تحديدًا، لكن تواصل معنا عبر",
     emptyStateLink: "صفحة التواصل",

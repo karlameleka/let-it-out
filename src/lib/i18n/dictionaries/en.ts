@@ -202,6 +202,7 @@ const en = {
     chooseDescription:
       "Every counselor is a licensed psychologist. Pick a profile to view their background and request a session.",
     searchPlaceholder: "Search by concern, specialty, or name (e.g. anxiety, CBT, family)",
+    searchPlaceholderShort: "Search by concern, specialty, or name",
     clear: "Clear",
     emptyStateText: "No counselor matches that specifically, but reach out through our",
     emptyStateLink: "contact page",
