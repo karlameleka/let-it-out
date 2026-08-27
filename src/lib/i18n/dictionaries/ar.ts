@@ -524,7 +524,7 @@ const ar: Dictionary = {
     gender: "الجنس",
     country: "الدولة",
     referralSource: "كيف سمعت عنا؟",
-    serviceInterests: "مهتم بـ",
+    serviceInterests: "ايه اكتر خدمة مهتم بيها؟",
     passwordHint: "8 أحرف على الأقل.",
     creatingAccount: "جارٍ إنشاء الحساب…",
     createAccount: "إنشاء حساب",
