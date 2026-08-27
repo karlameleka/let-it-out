@@ -12,22 +12,25 @@ export default function SendPushForm() {
   return (
     <form action={formAction} className="space-y-3">
       <div>
-        <label className={labelClass} htmlFor="push-title">Title (English)</label>
+        <label className={labelClass} htmlFor="push-title">Headline (English)</label>
         <input id="push-title" name="title" required placeholder="e.g. New workshop this Thursday" className={inputClass} />
+        <p className="mt-1 text-[11px] text-ink/40">
+          The notification itself always shows &ldquo;Let It Out&rdquo; as its title — this headline leads the message body underneath.
+        </p>
       </div>
       <div>
         <label className={labelClass} htmlFor="push-body">Message (English)</label>
         <textarea id="push-body" name="body" required rows={2} placeholder="A short line clients will see on their lock screen" className={inputClass} />
       </div>
       <div>
-        <label className={labelClass} htmlFor="push-title-ar">Title (Arabic, optional)</label>
+        <label className={labelClass} htmlFor="push-title-ar">Headline (Arabic, optional)</label>
         <input id="push-title-ar" name="titleAr" dir="rtl" placeholder="مثال: ورشة جديدة يوم الخميس" className={inputClass} />
       </div>
       <div>
         <label className={labelClass} htmlFor="push-body-ar">Message (Arabic, optional)</label>
         <textarea id="push-body-ar" name="bodyAr" dir="rtl" rows={2} placeholder="سطر قصير هيشوفه العملاء اللي عندهم اللغة العربية" className={inputClass} />
         <p className="mt-1 text-[11px] text-ink/40">
-          Sent to clients whose site language is Arabic; falls back to the English title/message above if left blank.
+          Sent to clients whose site language is Arabic; falls back to the English headline/message above if left blank.
         </p>
       </div>
       <div>

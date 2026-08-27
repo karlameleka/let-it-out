@@ -479,9 +479,13 @@ export async function sendManualPushNotification(
     return { error: "Push notifications aren't configured on this deployment yet." };
   }
 
+  // Notification title is always the brand name (see PushPayload docs in
+  // web-push.ts) — the admin-typed headline is folded into the body
+  // instead, so mobile doesn't show it above the OS-attributed "Let It
+  // Out" source line as a second, redundant title.
   const result = await sendPushToAllSubscribers({
-    en: { title, body, url },
-    ar: { title: titleAr || title, body: bodyAr || body, url },
+    en: { title: "Let It Out", body: `${title} — ${body}`, url },
+    ar: { title: "Let It Out", body: `${titleAr || title} — ${bodyAr || body}`, url },
   });
   return { success: true, sent: result.sent, total: result.total };
 }

@@ -12,6 +12,7 @@ import {
   type AssignedResourceKind,
 } from "@/lib/email";
 import { formatSlotTime } from "@/lib/format-slot";
+import { sendPushToEmails } from "@/lib/web-push";
 import type { Locale } from "@/lib/i18n/locale";
 import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/therapist-data";
 
@@ -438,14 +439,25 @@ async function notifyClientOfAssignedResource(
   const baseUrl = await getBaseUrl();
   const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { locale: true } });
   const locale: Locale = client?.locale === "ar" ? "ar" : "en";
+  const resourcesUrl = `${baseUrl}/resources#my-tools`;
   await sendAssignedResourceNotificationEmail({
     to: clientEmail,
     toName: clientName || "there",
     counselorName,
     kind,
-    resourcesUrl: `${baseUrl}/resources#my-tools`,
+    resourcesUrl,
     locale,
   });
+
+  // Best-effort — a missing/expired push subscription (or the client never
+  // having enabled push) must never block the resource itself or the email
+  // above. Title stays the brand name per the sitewide push convention;
+  // the "who" is in the body, matching what the email already conveys.
+  await sendPushToEmails([clientEmail], {
+    title: "Let It Out",
+    body: locale === "ar" ? `رسالة من ${counselorName}` : `Message from ${counselorName}`,
+    url: "/resources#my-tools",
+  }).catch((err) => console.error("[therapist-actions] Failed to send assigned-resource push:", err));
 }
 
 export async function assignResourceLink(

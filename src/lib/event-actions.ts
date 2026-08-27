@@ -51,19 +51,25 @@ export async function createEvent(formData: FormData) {
   // whichever language it's subscribed under.
   const dateLabel = startAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   const dateLabelAr = startAt.toLocaleDateString("ar-EG", { weekday: "short", day: "numeric", month: "short" });
+  // Notification title is always the brand name (see PushPayload docs in
+  // web-push.ts) — the specific headline goes in the body instead, so
+  // mobile doesn't show a redundant custom title above the OS-attributed
+  // "Let It Out" source line.
   await sendPushToAllSubscribers({
     en: {
-      title: "New event: " + title,
-      body: description ? description.slice(0, 140) : `${dateLabel}${location ? ` · ${location}` : ""}`,
+      title: "Let It Out",
+      body: `New event: ${title} — ${description ? description.slice(0, 120) : `${dateLabel}${location ? ` · ${location}` : ""}`}`,
       url: "/upcoming",
     },
     ar: {
-      title: "فعالية جديدة: " + (titleAr || title),
-      body: descriptionAr
-        ? descriptionAr.slice(0, 140)
-        : description
-          ? description.slice(0, 140)
-          : `${dateLabelAr}${location ? ` · ${location}` : ""}`,
+      title: "Let It Out",
+      body: `فعالية جديدة: ${titleAr || title} — ${
+        descriptionAr
+          ? descriptionAr.slice(0, 120)
+          : description
+            ? description.slice(0, 120)
+            : `${dateLabelAr}${location ? ` · ${location}` : ""}`
+      }`,
       url: "/upcoming",
     },
   }).catch((err) => console.error("[event-actions] Failed to send event announcement push:", err));
