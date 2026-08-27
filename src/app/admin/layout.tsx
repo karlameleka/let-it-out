@@ -21,6 +21,7 @@ const TABS = [
   { href: "/admin/support", label: "Live chat" },
   { href: "/admin/articles", label: "Articles" },
   { href: "/admin/intake-form", label: "Intake form" },
+  { href: "/admin/reflection-sheet", label: "Reflection sheet" },
   { href: "/admin/settings", label: "Site settings" },
   { href: "/account", label: "My account" },
 ];

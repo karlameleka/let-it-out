@@ -87,6 +87,7 @@ model User {
   webauthnCredentials WebAuthnCredential[]
   supportChats   SupportChat[]
   eventRsvps     EventRSVP[]
+  reflectionPrompts ReflectionPrompt[]
   notificationReads NotificationRead[]
   pageViews      PageView[]
 }
@@ -942,6 +943,45 @@ model IntakeFormConfig {
   // English questions (never a blank form).
   sectionsAr Json?
   updatedAt  DateTime @updatedAt
+}
+
+// Singleton row holding the "in-between sessions" reflection sheet's
+// questions (a flat, ordered list — see src/lib/reflection-sheet-config.ts
+// for the ReflectionQuestion[] shape). Admin-editable from
+// /admin/reflection-sheet. Seeded with a starter set of prompts via
+// migration (see 20260827190000_add_reflection_sheet), since this needs to
+// exist in production without an admin visiting the dashboard first.
+model ReflectionSheetConfig {
+  id          String   @id @default("singleton")
+  questions   Json
+  // Optional, fully independent Arabic version of `questions` (own
+  // question count/order — nothing requires it to mirror the English
+  // list, since answers are stored purely on the client's own device and
+  // never parsed against this config server-side). Null/empty falls back
+  // to English.
+  questionsAr Json?
+  updatedAt   DateTime @updatedAt
+}
+
+// One row per counseling session that has already prompted its client to
+// fill out the private "in-between sessions" reflection sheet — created by
+// the reflection-prompts cron once a session's day has passed. Doubles as
+// both the "already notified" guard (via the unique constraint below) and
+// the in-app notification record surfaced on /upcoming, read-tracked the
+// same way as sessions/events (see NotificationRead, itemId
+// "reflection-<id>"). The reflection sheet's actual answers are never
+// stored here or anywhere server-side — see src/lib/local-reflection.ts.
+model ReflectionPrompt {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  // Which booking triggered this — "session" (SessionBooking) or
+  // "request" (BookingRequest) — kept for debugging/traceability only.
+  sourceKind String
+  sourceId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([sourceKind, sourceId])
 }
 
 // Admin-editable overrides for specific English UI strings, keyed by

@@ -48,6 +48,13 @@ export type UpcomingEvent = {
   meetingLink: string | null;
 };
 
+export type UpcomingReflection = {
+  /** Composite bell/read-tracking key ("reflection-<ReflectionPrompt.id>"). */
+  id: string;
+  createdAt: string;
+  read: boolean;
+};
+
 function sessionCanCancel(status: string, date: string, time: string | null): boolean {
   if (status === "CANCELLED" || status === "COMPLETED") return false;
   if (status === "CONFIRMED") return !pastCancelWindow(date, time);
@@ -127,14 +134,28 @@ async function getUpcomingEvents(userId: string, locale: Locale): Promise<Upcomi
   });
 }
 
-/** Full data for the /upcoming page: every upcoming counseling
- * session/request for this client (whatever its status) plus every
- * upcoming broadcast Event with this client's own RSVP, if any — each
- * flagged with whether this client has already opened it. */
-export async function getUpcomingPageData(email: string, userId: string, locale: Locale = "en") {
-  const [sessions, events] = await Promise.all([getUpcomingSessions(email), getUpcomingEvents(userId, locale)]);
+async function getUpcomingReflections(userId: string): Promise<UpcomingReflection[]> {
+  const prompts = await prisma.reflectionPrompt.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, createdAt: true },
+  });
+  return prompts.map((p) => ({ id: `reflection-${p.id}`, createdAt: p.createdAt.toISOString(), read: false }));
+}
 
-  const allIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id)];
+/** Full data for the /upcoming page: every upcoming counseling
+ * session/request for this client (whatever its status), every upcoming
+ * broadcast Event with this client's own RSVP, if any, and every pending
+ * "fill out your reflection sheet" prompt — each flagged with whether this
+ * client has already opened it. */
+export async function getUpcomingPageData(email: string, userId: string, locale: Locale = "en") {
+  const [sessions, events, reflections] = await Promise.all([
+    getUpcomingSessions(email),
+    getUpcomingEvents(userId, locale),
+    getUpcomingReflections(userId),
+  ]);
+
+  const allIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id), ...reflections.map((r) => r.id)];
   const reads = allIds.length
     ? await prisma.notificationRead.findMany({
         where: { userId, itemId: { in: allIds } },
@@ -147,12 +168,17 @@ export async function getUpcomingPageData(email: string, userId: string, locale:
   return {
     sessions: sessions.filter((s) => !dismissedIds.has(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
     events: events.filter((e) => !dismissedIds.has(e.id)).map((e) => ({ ...e, read: readIds.has(e.id) })),
+    reflections: reflections.filter((r) => !dismissedIds.has(r.id)).map((r) => ({ ...r, read: readIds.has(r.id) })),
   };
 }
 
 /** Unread total — everything on /upcoming this client hasn't opened yet —
  * used to drive the header bell badge and the installed-app icon badge. */
 export async function getUpcomingCount(email: string, userId: string): Promise<number> {
-  const { sessions, events } = await getUpcomingPageData(email, userId);
-  return sessions.filter((s) => !s.read).length + events.filter((e) => !e.read).length;
+  const { sessions, events, reflections } = await getUpcomingPageData(email, userId);
+  return (
+    sessions.filter((s) => !s.read).length +
+    events.filter((e) => !e.read).length +
+    reflections.filter((r) => !r.read).length
+  );
 }

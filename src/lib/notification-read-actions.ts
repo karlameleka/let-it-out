@@ -37,8 +37,8 @@ export async function markAllNotificationsRead() {
   const session = await requireUser().catch(() => null);
   if (!session) return;
 
-  const { sessions, events } = await getUpcomingPageData(session.email, session.userId);
-  const itemIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id)];
+  const { sessions, events, reflections } = await getUpcomingPageData(session.email, session.userId);
+  const itemIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id), ...reflections.map((r) => r.id)];
   if (itemIds.length === 0) return;
 
   await prisma.notificationRead.createMany({
