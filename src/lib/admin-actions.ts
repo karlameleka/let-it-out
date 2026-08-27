@@ -462,6 +462,8 @@ export async function sendManualPushNotification(
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
+  const titleAr = String(formData.get("titleAr") ?? "").trim();
+  const bodyAr = String(formData.get("bodyAr") ?? "").trim();
   const urlRaw = String(formData.get("url") ?? "").trim();
 
   if (!title) return { error: "Please add a title." };
@@ -477,6 +479,9 @@ export async function sendManualPushNotification(
     return { error: "Push notifications aren't configured on this deployment yet." };
   }
 
-  const result = await sendPushToAllSubscribers({ title, body, url });
+  const result = await sendPushToAllSubscribers({
+    en: { title, body, url },
+    ar: { title: titleAr || title, body: bodyAr || body, url },
+  });
   return { success: true, sent: result.sent, total: result.total };
 }

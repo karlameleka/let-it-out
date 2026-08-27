@@ -39,7 +39,7 @@ export default async function UpcomingPage() {
 
   const dict = getDictionary(locale);
   const t = dict.upcoming;
-  const { sessions, events } = await getUpcomingPageData(session.email, session.userId);
+  const { sessions, events } = await getUpcomingPageData(session.email, session.userId, locale);
 
   const dateFormatter = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
     weekday: "short",

@@ -20,6 +20,15 @@ export function getWebPush() {
 
 export type PushPayload = { title: string; body: string; url: string };
 
+/** Either one payload sent to everyone, or a payload per site locale —
+ * each subscriber gets the payload matching their subscription's stored
+ * locale (falling back to "en" for anything else). */
+export type PushPayloadInput = PushPayload | Partial<Record<string, PushPayload>>;
+
+function isLocaleMap(payload: PushPayloadInput): payload is Partial<Record<string, PushPayload>> {
+  return !("title" in payload);
+}
+
 /**
  * Fans a push notification out to every subscribed browser (the daily
  * journal reminder cron and the new-event announcement both use this) —
@@ -28,22 +37,24 @@ export type PushPayload = { title: string; body: string; url: string };
  * this app. Expired/gone subscriptions (404/410) are cleaned up as they're
  * found rather than left to accumulate.
  */
-export async function sendPushToAllSubscribers(payload: PushPayload): Promise<{ sent: number; removed: number; total: number }> {
+export async function sendPushToAllSubscribers(payload: PushPayloadInput): Promise<{ sent: number; removed: number; total: number }> {
   if (!process.env.VAPID_PRIVATE_KEY) return { sent: 0, removed: 0, total: 0 };
 
   const webpushClient = getWebPush();
   const subscriptions = await prisma.pushSubscription.findMany();
-  const json = JSON.stringify(payload);
+  const localeMap = isLocaleMap(payload) ? payload : null;
 
   let sent = 0;
   let removed = 0;
 
   await Promise.all(
     subscriptions.map(async (sub) => {
+      const forSub = localeMap ? (localeMap[sub.locale] ?? localeMap.en) : payload;
+      if (!forSub) return;
       try {
         await webpushClient.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          json,
+          JSON.stringify(forSub),
         );
         sent++;
       } catch (err: unknown) {

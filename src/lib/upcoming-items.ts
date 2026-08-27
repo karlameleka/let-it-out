@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { todayISO } from "@/lib/therapist-data";
 import { pastCancelWindow } from "@/lib/cancel-window";
 import type { RSVPStatus } from "@/generated/prisma/enums";
+import type { Locale } from "@/lib/i18n/locale";
 
 export type UpcomingSession = {
   id: string;
@@ -99,7 +100,7 @@ async function getUpcomingSessions(email: string): Promise<UpcomingSession[]> {
   return items.map((i) => ({ ...i, read: false }));
 }
 
-async function getUpcomingEvents(userId: string): Promise<UpcomingEvent[]> {
+async function getUpcomingEvents(userId: string, locale: Locale): Promise<UpcomingEvent[]> {
   const today = todayISO();
 
   const events = await prisma.event.findMany({
@@ -112,8 +113,8 @@ async function getUpcomingEvents(userId: string): Promise<UpcomingEvent[]> {
     const myRsvp = e.rsvps[0]?.status ?? null;
     return {
       id: e.id,
-      title: e.title,
-      description: e.description,
+      title: locale === "ar" && e.titleAr ? e.titleAr : e.title,
+      description: locale === "ar" && e.descriptionAr ? e.descriptionAr : e.description,
       date: e.startAt.toISOString().slice(0, 10),
       time: e.startAt.toISOString().slice(11, 16),
       location: e.location,
@@ -130,8 +131,8 @@ async function getUpcomingEvents(userId: string): Promise<UpcomingEvent[]> {
  * session/request for this client (whatever its status) plus every
  * upcoming broadcast Event with this client's own RSVP, if any — each
  * flagged with whether this client has already opened it. */
-export async function getUpcomingPageData(email: string, userId: string) {
-  const [sessions, events] = await Promise.all([getUpcomingSessions(email), getUpcomingEvents(userId)]);
+export async function getUpcomingPageData(email: string, userId: string, locale: Locale = "en") {
+  const [sessions, events] = await Promise.all([getUpcomingSessions(email), getUpcomingEvents(userId, locale)]);
 
   const allIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id)];
   const reads = allIds.length

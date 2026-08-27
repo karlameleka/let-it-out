@@ -449,6 +449,12 @@ model Event {
   meetingLink String?
   createdAt   DateTime    @default(now())
   rsvps       EventRSVP[]
+  // Optional Arabic translations, admin-entered per event, falling back to
+  // the English fields whenever empty — shown to viewers whose site locale
+  // is Arabic (bell/notification list) and used for the Arabic half of the
+  // locale-split "new event" push notification.
+  titleAr       String?
+  descriptionAr String?  @db.Text
 
   @@index([startAt])
 }
@@ -770,6 +776,11 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+  // The site locale ("en"/"ar") active when this browser subscribed, kept
+  // in sync on every language switch (see setLocale) — lets a broadcast
+  // push pick the right language per recipient at send time, since a push
+  // payload is fixed the moment it's sent, unlike a page render.
+  locale    String   @default("en")
 }
 
 // One row per page a logged-in person opens — the only usage signal behind
