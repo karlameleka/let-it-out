@@ -55,7 +55,7 @@ export default async function AccountPage() {
         <h2 className="font-display font-semibold text-brand-900">{t.notificationsTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.notificationsDescription}</p>
         <div className="mt-4">
-          <JournalReminderToggle />
+          <JournalReminderToggle dict={dict.account} />
         </div>
       </div>
 
@@ -72,15 +72,15 @@ export default async function AccountPage() {
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-brand-900">Support</h2>
-        <p className="mt-1 text-sm text-ink/60">Trouble with the app itself — not how you&rsquo;re feeling.</p>
+        <h2 className="font-display font-semibold text-brand-900">{t.supportTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.supportDescription}</p>
         <div className="mt-4">
           <Link
             href="/support"
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 px-4 py-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50"
           >
             <MessageCircle className="h-4 w-4" strokeWidth={2} />
-            Having technical issues? Live Chat
+            {t.supportCta}
           </Link>
         </div>
       </div>

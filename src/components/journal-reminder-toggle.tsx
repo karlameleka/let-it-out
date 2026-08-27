@@ -6,10 +6,11 @@ import { Bell, BellOff, BellRing, Share } from "lucide-react";
 import { unsubscribeFromPush } from "@/lib/push-actions";
 import { subscribeBrowserToPush } from "@/lib/push-subscribe";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 type Status = "checking" | "unsupported" | "off" | "on" | "denied";
 
-export default function JournalReminderToggle() {
+export default function JournalReminderToggle({ dict }: { dict: Dictionary["account"] }) {
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +48,11 @@ export default function JournalReminderToggle() {
         // the actual error instead, so it's recoverable and debuggable.
         console.error("[push] checking existing subscription failed:", err);
         setStatus("off");
-        setError(err instanceof Error ? err.message : "Couldn't check your notification status.");
+        setError(err instanceof Error ? err.message : dict.remindersCouldNotCheck);
       });
+    // Runs once on mount to check existing subscription state — dict is
+    // only read inside a rarely-hit error path, not worth re-running for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function enable() {
@@ -73,7 +77,7 @@ export default function JournalReminderToggle() {
       // without remote-debugging tools.
       console.error("[push] enable failed:", err);
       setStatus("off");
-      setError(err instanceof Error ? err.message : "Something went wrong enabling reminders.");
+      setError(err instanceof Error ? err.message : dict.remindersEnableError);
     } finally {
       setBusy(false);
     }
@@ -102,11 +106,11 @@ export default function JournalReminderToggle() {
         <p className="flex items-start gap-1.5">
           <Share className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" strokeWidth={2} />
           <span>
-            On iPhone, push notifications only work once Let It Out is added to your Home Screen.{" "}
+            {dict.remindersIosInstallPrefix}{" "}
             <Link href="/install" className="font-medium text-brand-600 underline-offset-2 hover:underline">
-              Install the app
+              {dict.remindersIosInstallLink}
             </Link>{" "}
-            to enable reminders.
+            {dict.remindersIosInstallSuffix}
           </span>
         </p>
       </div>
@@ -119,7 +123,7 @@ export default function JournalReminderToggle() {
     return (
       <span className="inline-flex items-center gap-2 rounded-full border border-brand-100 px-4 py-2 text-xs text-ink/40">
         <BellOff className="h-3.5 w-3.5" strokeWidth={2} />
-        Reminders blocked in browser settings
+        {dict.remindersBlocked}
       </span>
     );
   }
@@ -141,7 +145,7 @@ export default function JournalReminderToggle() {
         ) : (
           <Bell className="h-4 w-4" strokeWidth={2} />
         )}
-        {status === "on" ? "Daily reminders on" : "Enable daily reminders"}
+        {status === "on" ? dict.remindersOn : dict.remindersEnable}
       </button>
       {error && <p className="mt-2 max-w-xs text-xs text-red-600">{error}</p>}
     </div>

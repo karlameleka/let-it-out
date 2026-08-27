@@ -9,6 +9,7 @@ import {
   verifyWebAuthnRegistration,
   removeWebAuthnCredentials,
 } from "@/lib/webauthn";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 type Status = "checking" | "unsupported" | "none" | "registered";
 
@@ -20,7 +21,7 @@ type Status = "checking" | "unsupported" | "none" | "registered";
  * or devices without a platform authenticator quietly don't show this at
  * all, since a password remains the only way to unlock either way.
  */
-export default function WebAuthnUnlockSettings() {
+export default function WebAuthnUnlockSettings({ dict }: { dict: Dictionary["account"] }) {
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export default function WebAuthnUnlockSettings() {
     try {
       const optionsResult = await getWebAuthnRegistrationOptions();
       if (!optionsResult.options) {
-        setError(optionsResult.error ?? "Couldn't start setup.");
+        setError(optionsResult.error ?? dict.webauthnCouldNotStart);
         return;
       }
       const attestation = await startRegistration({ optionsJSON: optionsResult.options });
@@ -52,12 +53,12 @@ export default function WebAuthnUnlockSettings() {
       if (result.success) {
         setStatus("registered");
       } else {
-        setError(result.error ?? "Couldn't finish setup.");
+        setError(result.error ?? dict.webauthnCouldNotFinish);
       }
     } catch (err) {
       // Covers the user cancelling the OS prompt, or the device having no
       // enrolled biometric/PIN at all — both surface as a thrown DOMException.
-      setError(err instanceof Error ? err.message : "Couldn't set that up — try again.");
+      setError(err instanceof Error ? err.message : dict.webauthnCouldNotSetUp);
     } finally {
       setBusy(false);
     }
@@ -74,7 +75,7 @@ export default function WebAuthnUnlockSettings() {
       setRemoving(false);
       setPassword("");
     } else {
-      setError(result.error ?? "Couldn't remove it.");
+      setError(result.error ?? dict.webauthnCouldNotRemove);
     }
   }
 
@@ -86,11 +87,9 @@ export default function WebAuthnUnlockSettings() {
         <div className="flex items-start gap-2.5">
           <Fingerprint className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
           <div>
-            <p className="text-sm font-medium text-ink/80">Unlock with Face ID / Touch ID</p>
+            <p className="text-sm font-medium text-ink/80">{dict.webauthnTitle}</p>
             <p className="mt-0.5 text-xs text-ink/50">
-              {status === "registered"
-                ? "Set up on this device — you won't need to type your password to open the journal here."
-                : "Skip re-typing your password on this device — use your fingerprint or face instead."}
+              {status === "registered" ? dict.webauthnRegisteredDescription : dict.webauthnUnregisteredDescription}
             </p>
           </div>
         </div>
@@ -101,7 +100,7 @@ export default function WebAuthnUnlockSettings() {
             disabled={busy}
             className="shrink-0 rounded-full border border-brand-200 px-3.5 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-60"
           >
-            {busy ? "Setting up…" : "Set up"}
+            {busy ? dict.webauthnSettingUp : dict.webauthnSetUp}
           </button>
         )}
         {status === "registered" && !removing && (
@@ -110,7 +109,7 @@ export default function WebAuthnUnlockSettings() {
             onClick={() => setRemoving(true)}
             className="shrink-0 text-xs font-medium text-ink/40 hover:text-red-600 active:text-red-600"
           >
-            Remove
+            {dict.webauthnRemove}
           </button>
         )}
       </div>
@@ -123,7 +122,7 @@ export default function WebAuthnUnlockSettings() {
             onChange={(e) => setPassword(e.target.value)}
             autoFocus
             required
-            placeholder="Confirm your password"
+            placeholder={dict.webauthnConfirmPasswordPlaceholder}
             className="min-w-0 flex-1 rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
           />
           <button
@@ -131,7 +130,7 @@ export default function WebAuthnUnlockSettings() {
             disabled={busy}
             className="rounded-lg bg-red-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
           >
-            {busy ? "Removing…" : "Remove"}
+            {busy ? dict.webauthnRemoving : dict.webauthnRemove}
           </button>
           <button
             type="button"
@@ -142,7 +141,7 @@ export default function WebAuthnUnlockSettings() {
             }}
             className="text-xs font-medium text-ink/50 hover:text-ink/70"
           >
-            Cancel
+            {dict.webauthnCancel}
           </button>
         </form>
       )}
