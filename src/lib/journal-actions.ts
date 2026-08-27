@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
+import { getLocale } from "@/lib/i18n/locale";
 
 /** Fetches a fresh, likely-different prompt for the "shuffle" button. */
 export async function shufflePrompt(currentPromptId?: string) {
@@ -14,7 +15,14 @@ export async function shufflePrompt(currentPromptId?: string) {
   if (prompt?.id === currentPromptId) {
     prompt = await getNextPrompt(user.userId);
   }
-  return prompt;
+  if (!prompt) return null;
+
+  const locale = await getLocale();
+  return {
+    id: prompt.id,
+    category: locale === "ar" && prompt.categoryAr ? prompt.categoryAr : prompt.category,
+    text: locale === "ar" && prompt.textAr ? prompt.textAr : prompt.text,
+  };
 }
 
 export type JournalExportEntry = {

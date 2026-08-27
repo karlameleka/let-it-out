@@ -17,13 +17,21 @@ export default async function NewJournalEntryPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [prompt, lockEnabled, locale] = await Promise.all([
+  const [rawPrompt, lockEnabled, locale] = await Promise.all([
     getNextPrompt(user.userId),
     getJournalLockEnabled(user.userId),
     getLocale(),
   ]);
   const dict = getDictionary(locale);
   const t = dict.entryForm;
+
+  const prompt = rawPrompt
+    ? {
+        id: rawPrompt.id,
+        category: locale === "ar" && rawPrompt.categoryAr ? rawPrompt.categoryAr : rawPrompt.category,
+        text: locale === "ar" && rawPrompt.textAr ? rawPrompt.textAr : rawPrompt.text,
+      }
+    : null;
 
   return (
     <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>

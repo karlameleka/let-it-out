@@ -738,6 +738,10 @@ model JournalPrompt {
   dayNumber Int      @unique
   category  String
   text      String   @db.Text
+  // Optional Arabic translations, falling back to the English fields when
+  // empty — same pattern as Article/Product/Counselor above.
+  textAr     String? @db.Text
+  categoryAr String?
 
   entries JournalEntry[]
 }
