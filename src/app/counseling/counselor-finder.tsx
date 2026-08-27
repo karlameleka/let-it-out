@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 import { counselorMatchesSearch } from "@/lib/counseling-search-keywords";
 
 type Counselor = {
@@ -14,6 +15,10 @@ type Counselor = {
   credentials: string;
   specialties: string[];
   languages: string[];
+  displayName: string;
+  displayCredentials: string;
+  displaySpecialties: string[];
+  displayLanguages: string[];
   photoUrl: string | null;
   availabilityStatus: "AVAILABLE" | "WAITLIST" | "UNAVAILABLE";
 };
@@ -40,9 +45,11 @@ function AvailabilityBadge({
 export default function CounselorFinder({
   counselors,
   dict,
+  locale,
 }: {
   counselors: Counselor[];
   dict: Dictionary;
+  locale: Locale;
 }) {
   const t = dict.counseling;
   const [query, setQuery] = useState("");
@@ -94,35 +101,35 @@ export default function CounselorFinder({
               {c.photoUrl ? (
                 <Image
                   src={c.photoUrl}
-                  alt={c.name}
+                  alt={c.displayName}
                   width={56}
                   height={56}
                   className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30"
                 />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-hover:bg-white/10 group-hover:text-white group-active:border-white/30 group-active:bg-white/10 group-active:text-white">
-                  {c.name.split(" ").map((n) => n[0]).join("")}
+                  {c.displayName.split(" ").map((n) => n[0]).join("")}
                 </div>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.name}</h3>
+                <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.displayName}</h3>
                 <AvailabilityBadge status={c.availabilityStatus} dict={t} />
               </div>
-              <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
+              <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.displayCredentials}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {c.specialties.slice(0, 3).map((s) => (
-                  <span key={s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors duration-300 group-hover:bg-white/10 group-hover:text-white group-active:bg-white/10 group-active:text-white">
+                {c.displaySpecialties.slice(0, 3).map((s, i) => (
+                  <span key={c.specialties[i] ?? s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors duration-300 group-hover:bg-white/10 group-hover:text-white group-active:bg-white/10 group-active:text-white">
                     {s}
                   </span>
                 ))}
               </div>
-              {c.languages.length > 0 && (
+              {c.displayLanguages.length > 0 && (
                 <p className="mt-3 text-xs text-ink/50 transition-colors duration-300 group-hover:text-white/60 group-active:text-white/60">
-                  <span className="font-medium text-ink/60 transition-colors duration-300 group-hover:text-white/80 group-active:text-white/80">{t.speaks}:</span> {c.languages.join(", ")}
+                  <span className="font-medium text-ink/60 transition-colors duration-300 group-hover:text-white/80 group-active:text-white/80">{t.speaks}:</span> {c.displayLanguages.join(locale === "ar" ? "، " : ", ")}
                 </p>
               )}
               <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                {t.viewProfileCta} &rarr;
+                {t.viewProfileCta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
               </p>
             </Link>
           ))}

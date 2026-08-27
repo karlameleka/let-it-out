@@ -306,7 +306,7 @@ export default function BreathingTool({ dict }: { dict: Dictionary["breathing"] 
               {dict.breatheAgain}
             </Button>
             <ButtonLink href="/counseling" variant="text">
-              {dict.talkToCounselor} &rarr;
+              {dict.talkToCounselor} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
             </ButtonLink>
           </div>
         </div>

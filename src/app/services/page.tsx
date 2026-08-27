@@ -52,7 +52,7 @@ export default async function ServicesPage() {
                   {home.service1Description}
                 </p>
                 <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                  {home.service1Cta} &rarr;
+                  {home.service1Cta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
                 </p>
               </Link>
 
@@ -70,7 +70,7 @@ export default async function ServicesPage() {
                   {home.service2Description}
                 </p>
                 <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                  {home.service2Cta} &rarr;
+                  {home.service2Cta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
                 </p>
               </Link>
 
@@ -88,7 +88,7 @@ export default async function ServicesPage() {
                   {home.service3Description}
                 </p>
                 <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                  {home.service3Cta} &rarr;
+                  {home.service3Cta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
                 </p>
               </Link>
             </div>

@@ -175,7 +175,7 @@ export default function ReframingTool({ dict, locale }: { dict: Dictionary["refr
               className="mt-6"
             >
               {dict.continue}
-              <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
             </Button>
           </>
         )}
@@ -280,7 +280,7 @@ export default function ReframingTool({ dict, locale }: { dict: Dictionary["refr
                 onClick={() => setStep(2)}
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80 active:text-ink/80"
               >
-                <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+                <ArrowLeft className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
                 {dict.back}
               </button>
               <Button onClick={finish} disabled={!reframe.trim()}>
@@ -348,7 +348,7 @@ export default function ReframingTool({ dict, locale }: { dict: Dictionary["refr
                 {dict.tryAnotherScenario}
               </Button>
               <ButtonLink href="/counseling" variant="text">
-                {dict.talkToCounselor} &rarr;
+                {dict.talkToCounselor} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
               </ButtonLink>
             </div>
           </div>
@@ -405,12 +405,12 @@ function StepNav({
         onClick={onBack}
         className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80 active:text-ink/80"
       >
-        <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+        <ArrowLeft className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
         {backLabel}
       </button>
       <Button onClick={onNext}>
         {nextLabel}
-        <ArrowRight className="h-4 w-4" strokeWidth={2} />
+        <ArrowRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
       </Button>
     </div>
   );

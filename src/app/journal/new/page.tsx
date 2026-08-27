@@ -29,7 +29,7 @@ export default async function NewJournalEntryPage() {
     <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>
       <Container className="max-w-2xl py-16 sm:py-20">
         <Link href="/journal" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
-          &larr; {t.backToJournal}
+          <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToJournal}
         </Link>
         <div className="mt-4">
           <Eyebrow>{t.newEntryEyebrow}</Eyebrow>

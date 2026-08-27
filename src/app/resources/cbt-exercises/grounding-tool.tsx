@@ -92,7 +92,7 @@ export default function GroundingTool({ dict }: { dict: Dictionary["groundingToo
                   onClick={() => setStep((s) => s - 1)}
                   className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-ink/60 hover:text-ink/80 active:text-ink/80"
                 >
-                  <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+                  <ArrowLeft className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
                   {dict.back}
                 </button>
               )}
@@ -101,7 +101,7 @@ export default function GroundingTool({ dict }: { dict: Dictionary["groundingToo
                 {step === SENSES.length - 1 ? (
                   <Check className="h-4 w-4" strokeWidth={2} />
                 ) : (
-                  <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                  <ArrowRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
                 )}
               </Button>
             </div>
@@ -130,7 +130,7 @@ export default function GroundingTool({ dict }: { dict: Dictionary["groundingToo
                 {dict.doItAgain}
               </Button>
               <ButtonLink href="/counseling" variant="text">
-                {dict.talkToCounselor} &rarr;
+                {dict.talkToCounselor} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
               </ButtonLink>
             </div>
           </div>

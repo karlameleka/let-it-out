@@ -122,6 +122,14 @@ model Counselor {
   bio          String   @db.Text
   specialties  String[]
   languages    String[] @default([])
+  // Optional Arabic translations, nullable/empty and falling back to the
+  // English fields whenever unset — same pattern as Article/Product above.
+  // specialtiesAr/languagesAr are matched to specialties/languages by index.
+  nameAr        String?
+  credentialsAr String?
+  bioAr         String?  @db.Text
+  specialtiesAr String[] @default([])
+  languagesAr   String[] @default([])
   photoUrl     String?
   active       Boolean  @default(true)
   sortOrder    Int      @default(0)

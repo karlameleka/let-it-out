@@ -185,7 +185,7 @@ export default async function HomePage({
                         {formatEGP(price)}
                       </p>
                       <p className="mt-2 text-sm font-medium text-brand-600 link-grow w-fit">
-                        {t.shopNow} &rarr;
+                        {t.shopNow} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
                       </p>
                     </div>
                   </Link>
@@ -225,7 +225,7 @@ function ServiceCard({
       <h3 className="mt-2 font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{title}</h3>
       <p className="mt-3 flex-1 text-sm text-ink/70 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{description}</p>
       <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-        {cta} &rarr;
+        {cta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
       </p>
     </Link>
   );

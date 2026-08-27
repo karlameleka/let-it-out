@@ -85,7 +85,11 @@ export default function SiteHeader({
       className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 md:py-6">
-        <LogoLink height={48} className="h-10 w-auto sm:h-11 md:h-12" />
+        <LogoLink
+          variant={locale === "ar" ? "icon-teal" : "horizontal-teal"}
+          height={48}
+          className="h-10 w-auto sm:h-11 md:h-12"
+        />
 
         <nav className="hidden items-center gap-6 md:flex lg:gap-8">
           {NAV_LINKS.map((link) => {

@@ -22,7 +22,7 @@ export default async function BreathingPage() {
         <DoodleField />
         <Container className="relative max-w-2xl">
           <Link href="/resources" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
-            &larr; {t.backToResources}
+            <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToResources}
           </Link>
           <div className="mt-4">
             <Ribbon>{t.ribbon}</Ribbon>

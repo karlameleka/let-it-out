@@ -58,7 +58,7 @@ export default function MonthCalendar({
           aria-label="Previous month"
           className="rounded-lg p-1.5 text-ink/50 transition-colors hover:bg-brand-50 hover:text-ink/80"
         >
-          <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+          <ChevronLeft className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
         </button>
         <p className="text-sm font-semibold text-brand-900">{monthLabel}</p>
         <button
@@ -67,7 +67,7 @@ export default function MonthCalendar({
           aria-label="Next month"
           className="rounded-lg p-1.5 text-ink/50 transition-colors hover:bg-brand-50 hover:text-ink/80"
         >
-          <ChevronRight className="h-4 w-4" strokeWidth={2} />
+          <ChevronRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
         </button>
       </div>
       <div className="mt-2 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase text-ink/40">

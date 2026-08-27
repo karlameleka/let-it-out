@@ -64,7 +64,7 @@ export default function InstallPreview({ dict }: { dict: Dictionary["install"] }
               <p className="text-[7px] font-semibold uppercase tracking-wide text-brand-200">{dict.previewCbtExercise}</p>
               <p className="truncate text-[9px] font-semibold">{dict.previewCognitiveReframing}</p>
             </div>
-            <ArrowRight className="h-3 w-3 shrink-0" strokeWidth={2} />
+            <ArrowRight className="h-3 w-3 shrink-0 rtl:rotate-180" strokeWidth={2} />
           </div>
           {[
             { cat: dict.previewArticle1Cat, title: dict.previewArticle1Title },

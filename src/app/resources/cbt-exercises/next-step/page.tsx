@@ -24,7 +24,7 @@ export default async function NextStepPage() {
             href="/resources/cbt-exercises"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow"
           >
-            &larr; {t.backToCbt}
+            <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToCbt}
           </Link>
           <div className="mt-4">
             <Ribbon>{t.ribbon}</Ribbon>

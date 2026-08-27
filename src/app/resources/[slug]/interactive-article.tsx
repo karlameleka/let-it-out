@@ -173,7 +173,7 @@ export default function InteractiveArticle({
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
         <Link href="/resources" className="font-medium text-brand-600 underline">
-          &larr; {dict.backToResources}
+          <span className="inline-block rtl:-scale-x-100">&larr;</span> {dict.backToResources}
         </Link>
         {progressCount > 0 && (
           <button

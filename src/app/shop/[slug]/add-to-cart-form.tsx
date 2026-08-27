@@ -81,7 +81,7 @@ export default function AddToCartForm({
 
       {added && (
         <p className="text-sm font-medium text-brand-600">
-          {dict.addedToCart} <a href="/cart" className="underline">{dict.viewCart} &rarr;</a>
+          {dict.addedToCart} <a href="/cart" className="underline">{dict.viewCart} <span className="inline-block rtl:-scale-x-100">&rarr;</span></a>
         </p>
       )}
     </div>

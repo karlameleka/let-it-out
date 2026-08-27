@@ -248,7 +248,7 @@ export default function SupportChat({ dict }: { dict: Dictionary["supportChat"] 
           aria-label={dict.backAriaLabel}
           className="rounded-lg p-1.5 text-ink/40 hover:bg-white hover:text-ink/70"
         >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+          <ArrowLeft className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
         </button>
         <AssistantAvatar />
         <div>

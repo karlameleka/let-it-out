@@ -109,7 +109,7 @@ export default function ArticleFilter({
               </h3>
               <p className="mt-2 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{article.excerpt}</p>
               <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                {dict.readArticle} &rarr;
+                {dict.readArticle} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
               </p>
             </Link>
           ))}

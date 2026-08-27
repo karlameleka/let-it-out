@@ -24,10 +24,21 @@ export default async function CounselingPage() {
   const t = applyOverrides(baseDict.counseling, "counseling", overrides, locale);
   const dict = { ...baseDict, counseling: t };
 
-  const counselors = await prisma.counselor.findMany({
+  const counselorRows = await prisma.counselor.findMany({
     where: { active: true },
     orderBy: { sortOrder: "asc" },
   });
+
+  // Arabic display fields fall back to English whenever untranslated; the
+  // English specialties/languages arrays stay untouched (unrenamed) below
+  // since counselorMatchesSearch matches against the canonical English tags.
+  const counselors = counselorRows.map((c) => ({
+    ...c,
+    displayName: locale === "ar" && c.nameAr ? c.nameAr : c.name,
+    displayCredentials: locale === "ar" && c.credentialsAr ? c.credentialsAr : c.credentials,
+    displaySpecialties: locale === "ar" && c.specialtiesAr.length > 0 ? c.specialtiesAr : c.specialties,
+    displayLanguages: locale === "ar" && c.languagesAr.length > 0 ? c.languagesAr : c.languages,
+  }));
 
   const COUNSELING_FAQ = [
     { question: t.faq1Q, answer: t.faq1A },
@@ -62,7 +73,7 @@ export default async function CounselingPage() {
               description={t.chooseDescription}
             />
             <div className="mt-8">
-              <CounselorFinder counselors={counselors} dict={dict} />
+              <CounselorFinder counselors={counselors} dict={dict} locale={locale} />
             </div>
           </Container>
         </Reveal>

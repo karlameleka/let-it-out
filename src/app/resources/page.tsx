@@ -50,7 +50,7 @@ export default async function ResourcesPage() {
               <p className="mt-1.5 text-sm text-brand-50/85">{t.journalPromoDescription}</p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold link-grow w-fit">
-              {t.journalPromoCta} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              {t.journalPromoCta} <ArrowRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
             </span>
           </Link>
         </Container>
@@ -75,7 +75,7 @@ export default async function ResourcesPage() {
               <p className="mt-1.5 text-sm text-brand-50/85">{t.cbtPromoDescription}</p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold link-grow w-fit">
-              {t.cbtPromoCta} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              {t.cbtPromoCta} <ArrowRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
             </span>
           </Link>
         </Container>
@@ -100,7 +100,7 @@ export default async function ResourcesPage() {
               <p className="mt-1.5 text-sm text-brand-50/85">{t.breathingPromoDescription}</p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold link-grow w-fit">
-              {t.breathingPromoCta} <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              {t.breathingPromoCta} <ArrowRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
             </span>
           </Link>
         </Container>

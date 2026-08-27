@@ -60,7 +60,7 @@ export default function EntryDetailClient({
       <Container className="max-w-3xl py-16 text-center sm:py-20">
         <p className="text-ink/60">{dict.notFound}</p>
         <Link href="/journal" className="mt-3 inline-block text-sm font-medium text-brand-600 link-grow">
-          &larr; {dict.backToEntries}
+          <span className="inline-block rtl:-scale-x-100">&larr;</span> {dict.backToEntries}
         </Link>
       </Container>
     );
@@ -69,7 +69,7 @@ export default function EntryDetailClient({
   return (
     <Container className="max-w-3xl py-16 sm:py-20">
       <Link href="/journal" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
-        &larr; {dict.backToEntries}
+        <span className="inline-block rtl:-scale-x-100">&larr;</span> {dict.backToEntries}
       </Link>
 
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
