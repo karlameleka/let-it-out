@@ -7,6 +7,7 @@ import { sendIntakeFormRequestEmail, sendIntakeSubmissionEmail } from "@/lib/ema
 import { generateIntakeInsights } from "@/lib/ai-insights";
 import { buildIntakeAnswers, INTAKE_CONSENT_FIELD_NAME } from "@/lib/intake-form-schema";
 import { getIntakeSections } from "@/lib/intake-form-config";
+import type { Locale } from "@/lib/i18n/locale";
 
 const INTAKE_TOKEN_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
@@ -19,12 +20,14 @@ export async function sendIntakeFormLink({
   counselorId,
   counselorName,
   counselorEmail,
+  locale = "en",
 }: {
   clientName: string;
   clientEmail: string;
   counselorId: string;
   counselorName: string;
   counselorEmail: string | null;
+  locale?: Locale;
 }) {
   try {
     const rawToken = crypto.randomBytes(32).toString("hex");
@@ -38,13 +41,14 @@ export async function sendIntakeFormLink({
         counselorId,
         counselorName,
         counselorEmail,
+        locale,
         expiresAt: new Date(Date.now() + INTAKE_TOKEN_TTL_MS),
       },
     });
 
     const baseUrl = await getBaseUrl();
     const intakeUrl = `${baseUrl}/intake?token=${rawToken}`;
-    await sendIntakeFormRequestEmail({ to: clientEmail, name: clientName, counselorName, intakeUrl });
+    await sendIntakeFormRequestEmail({ to: clientEmail, name: clientName, counselorName, intakeUrl, locale });
   } catch (err) {
     console.error("[intake] Failed to create/send intake form link:", err);
   }
@@ -53,16 +57,24 @@ export async function sendIntakeFormLink({
 export type IntakeTokenInfo = {
   clientName: string;
   counselorName: string;
+  locale: Locale;
 };
 
 /** Validates a raw token from the URL. Returns null for missing, unknown,
  * expired, or already-used links — the page shows a generic invalid state
- * either way, never distinguishing why. */
+ * either way, never distinguishing why. locale is snapshotted from when
+ * the session was requested (not read from a cookie) so the form renders
+ * in the right language even when opened on a device that never had the
+ * original visitor's locale cookie set. */
 export async function validateIntakeToken(rawToken: string): Promise<IntakeTokenInfo | null> {
   const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
   const record = await prisma.intakeFormToken.findUnique({ where: { tokenHash } });
   if (!record || record.usedAt || record.expiresAt < new Date()) return null;
-  return { clientName: record.clientName, counselorName: record.counselorName };
+  return {
+    clientName: record.clientName,
+    counselorName: record.counselorName,
+    locale: record.locale === "ar" ? "ar" : "en",
+  };
 }
 
 export type IntakeSubmitState = { error?: string; success?: boolean } | undefined;
@@ -94,7 +106,11 @@ export async function submitIntakeFormAction(
     return { error: "Please confirm you understand how this information is used before submitting." };
   }
 
-  const sections = await getIntakeSections();
+  // Parsed against whichever sections were actually rendered to this client
+  // (record.locale, snapshotted when the link was created) — the Arabic and
+  // English section arrays are fully independent, so parsing against the
+  // wrong one would silently drop every answer.
+  const sections = await getIntakeSections(record.locale === "ar" ? "ar" : "en");
   const answers = buildIntakeAnswers(sections, formData);
 
   const aiSummary = await generateIntakeInsights(answers);

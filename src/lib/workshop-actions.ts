@@ -96,8 +96,12 @@ export async function submitWorkshopInquiry(
   await sendCustomerConfirmation({
     to: inquiry.email,
     name: inquiry.contactName,
-    subject: "We've received your workshop request",
-    intro: `Thank you for your interest in a "${inquiry.workshopTopic}" workshop for ${inquiry.organizationName}. Our team will follow up with you shortly to design a session together.`,
+    locale,
+    subject: locale === "ar" ? "استلمنا طلب الورشة" : "We've received your workshop request",
+    intro:
+      locale === "ar"
+        ? `شكرًا لاهتمامك بورشة "${inquiry.workshopTopic}" لـ ${inquiry.organizationName}. فريقنا هيتواصل معاك قريب لتصميم الجلسة مع بعض.`
+        : `Thank you for your interest in a "${inquiry.workshopTopic}" workshop for ${inquiry.organizationName}. Our team will follow up with you shortly to design a session together.`,
   });
 
   return { success: true };

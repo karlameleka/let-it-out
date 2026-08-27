@@ -19,7 +19,7 @@ import { sendSms, isSmsOtpEnabled } from "@/lib/sms";
 import { createLead } from "@/lib/leads";
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
-import { getLocale } from "@/lib/i18n/locale";
+import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -77,11 +77,18 @@ function maskPhone(phone: string): string {
 async function sendOtpCode(
   channel: "EMAIL" | "PHONE",
   { email, phone, name, code }: { email: string; phone: string; name: string; code: string },
+  locale: Locale,
 ): Promise<boolean> {
   if (channel === "EMAIL") {
-    return sendOtpEmail({ to: email, name, code });
+    return sendOtpEmail({ to: email, name, code, locale });
   }
-  return sendSms({ to: phone, body: `Your Let It Out verification code is ${code}. It expires in 10 minutes.` });
+  return sendSms({
+    to: phone,
+    body:
+      locale === "ar"
+        ? `كود التحقق الخاص بك في Let It Out هو ${code}. صالح لمدة 10 دقائق.`
+        : `Your Let It Out verification code is ${code}. It expires in 10 minutes.`,
+  });
 }
 
 export type SignupFormState =
@@ -155,7 +162,7 @@ export async function requestSignupOtp(
     },
   });
 
-  const sent = await sendOtpCode(otpChannel, { email, phone, name, code });
+  const sent = await sendOtpCode(otpChannel, { email, phone, name, code }, locale);
   if (!sent) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
     return { error: a.couldNotSendCode };
@@ -237,6 +244,7 @@ export async function verifySignupOtp(
       country: pending.country,
       referralSource: pending.referralSource,
       serviceInterests: pending.serviceInterests,
+      locale,
     },
   });
 
@@ -260,7 +268,7 @@ export async function verifySignupOtp(
   });
 
   const baseUrl = await getBaseUrl();
-  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
+  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy`, locale });
 
   await createSession({
     userId: user.id,
@@ -295,12 +303,11 @@ export async function resendSignupOtp(
   }
 
   const code = generateOtpCode();
-  const sent = await sendOtpCode(pending.otpChannel, {
-    email: pending.email,
-    phone: pending.phone,
-    name: pending.name,
-    code,
-  });
+  const sent = await sendOtpCode(
+    pending.otpChannel,
+    { email: pending.email, phone: pending.phone, name: pending.name, code },
+    locale,
+  );
   if (!sent) {
     return { error: a.couldNotResendCode };
   }
@@ -530,7 +537,7 @@ export async function forgotPasswordAction(
 
     const baseUrl = await getBaseUrl();
     const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
-    await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+    await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl, locale });
   }
 
   return { success: true };

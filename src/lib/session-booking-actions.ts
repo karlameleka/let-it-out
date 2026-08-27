@@ -124,6 +124,7 @@ export async function createSessionBooking(
         priceEGP: counselor.priceEGP!,
         promoCodeId,
         discountEGP,
+        locale,
       },
     });
     if (promoCodeId) {
@@ -175,18 +176,24 @@ export async function createSessionBooking(
     extraRecipients: [counselor.email],
   });
 
+  const isAr = locale === "ar";
   await sendCustomerConfirmation({
     to: booking.email,
     name: booking.name,
-    subject: "Complete your payment to book your session",
+    locale,
+    subject: isAr ? "أكمل الدفع لحجز جلستك" : "Complete your payment to book your session",
     intro: booking.preferredTime
-      ? `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
-      : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} — we'll confirm your exact session time with you afterward.`,
+      ? isAr
+        ? `شكرًا لاختيارك ${counselor.name}! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} لتأكيد جلستك.`
+        : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
+      : isAr
+        ? `شكرًا لاختيارك ${counselor.name}! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} — هنأكد ميعاد جلستك بالظبط بعد كده.`
+        : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} — we'll confirm your exact session time with you afterward.`,
     lines: [
-      { label: "Counselor", value: counselor.name },
-      { label: "Preferred day", value: booking.preferredDate },
-      ...(booking.preferredTime ? [{ label: "Time", value: booking.preferredTime }] : []),
-      { label: "Price", value: formatEGP(finalPriceEGP) },
+      { label: isAr ? "المعالج" : "Counselor", value: counselor.name },
+      { label: isAr ? "اليوم المفضل" : "Preferred day", value: booking.preferredDate },
+      ...(booking.preferredTime ? [{ label: isAr ? "الوقت" : "Time", value: booking.preferredTime }] : []),
+      { label: isAr ? "السعر" : "Price", value: formatEGP(finalPriceEGP) },
     ],
   });
 
@@ -196,6 +203,7 @@ export async function createSessionBooking(
     counselorId: counselor.id,
     counselorName: counselor.name,
     counselorEmail: counselor.email,
+    locale,
   });
 
   return { sessionBookingId: booking.id };

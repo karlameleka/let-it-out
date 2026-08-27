@@ -18,20 +18,23 @@ function emptySection(): IntakeSection {
 
 function FieldEditor({
   field,
+  dir,
   onChange,
   onRemove,
 }: {
   field: IntakeField;
+  dir?: "rtl";
   onChange: (f: IntakeField) => void;
   onRemove: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-4">
+    <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-4" dir={dir}>
       <div className="flex items-start justify-between gap-3">
         <div className="grid flex-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-medium text-ink/60">Question / label</label>
             <input
+              dir={dir}
               value={field.label}
               onChange={(e) => onChange({ ...field, label: e.target.value })}
               className={inputClasses}
@@ -74,6 +77,7 @@ function FieldEditor({
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-ink/60">Options (one per line)</label>
               <textarea
+                dir={dir}
                 rows={2}
                 value={(field.options ?? []).join("\n")}
                 onChange={(e) =>
@@ -86,6 +90,7 @@ function FieldEditor({
           <div className="sm:col-span-2">
             <label className="mb-1 block text-xs font-medium text-ink/60">Help text (optional)</label>
             <input
+              dir={dir}
               value={field.helpText ?? ""}
               onChange={(e) => onChange({ ...field, helpText: e.target.value || undefined })}
               className={inputClasses}
@@ -110,25 +115,27 @@ function FieldEditor({
   );
 }
 
-export default function IntakeFormEditor({
-  sections: initialSections,
-  action,
+/** One full section/field tree editor — used twice by IntakeFormEditor
+ * below (once for the English sections, once for the fully independent
+ * Arabic sections), so this owns nothing about which language it is beyond
+ * the optional `dir="rtl"` passed down to its text inputs. */
+function SectionsEditor({
+  sections,
+  setSections,
+  dir,
+  addSectionLabel,
 }: {
   sections: IntakeSection[];
-  action: (formData: FormData) => void | Promise<void>;
+  setSections: (updater: (arr: IntakeSection[]) => IntakeSection[]) => void;
+  dir?: "rtl";
+  addSectionLabel: string;
 }) {
-  const [sections, setSections] = useState<IntakeSection[]>(
-    initialSections.length > 0 ? initialSections : [emptySection()]
-  );
-
   function updateSection(i: number, patch: Partial<IntakeSection>) {
     setSections((arr) => arr.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
   }
 
   return (
-    <form action={action} className="space-y-6">
-      <input type="hidden" name="sectionsJson" value={JSON.stringify(sections)} readOnly />
-
+    <div className="space-y-4">
       {sections.map((section, i) => (
         <div key={section.id} className="rounded-2xl border border-brand-100 bg-white p-5">
           <div className="flex items-start justify-between gap-3">
@@ -148,6 +155,7 @@ export default function IntakeFormEditor({
               <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${section.id}-title`}>Section title</label>
               <input
                 id={`${section.id}-title`}
+                dir={dir}
                 value={section.title}
                 onChange={(e) => updateSection(i, { title: e.target.value })}
                 className={inputClasses}
@@ -157,6 +165,7 @@ export default function IntakeFormEditor({
               <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${section.id}-description`}>Description (optional)</label>
               <input
                 id={`${section.id}-description`}
+                dir={dir}
                 value={section.description ?? ""}
                 onChange={(e) => updateSection(i, { description: e.target.value || undefined })}
                 className={inputClasses}
@@ -168,6 +177,7 @@ export default function IntakeFormEditor({
               </label>
               <input
                 id={`${section.id}-note`}
+                dir={dir}
                 value={section.note ?? ""}
                 onChange={(e) => updateSection(i, { note: e.target.value || undefined })}
                 className={inputClasses}
@@ -180,6 +190,7 @@ export default function IntakeFormEditor({
               <FieldEditor
                 key={fi}
                 field={field}
+                dir={dir}
                 onChange={(f) =>
                   updateSection(i, { fields: section.fields.map((x, idx) => (idx === fi ? f : x)) })
                 }
@@ -202,8 +213,74 @@ export default function IntakeFormEditor({
         onClick={() => setSections((arr) => [...arr, emptySection()])}
         className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
       >
-        <Plus className="h-4 w-4" strokeWidth={2} /> Add section
+        <Plus className="h-4 w-4" strokeWidth={2} /> {addSectionLabel}
       </button>
+    </div>
+  );
+}
+
+export default function IntakeFormEditor({
+  sections: initialSections,
+  sectionsAr: initialSectionsAr,
+  action,
+}: {
+  sections: IntakeSection[];
+  sectionsAr: IntakeSection[];
+  action: (formData: FormData) => void | Promise<void>;
+}) {
+  const [sections, setSections] = useState<IntakeSection[]>(
+    initialSections.length > 0 ? initialSections : [emptySection()]
+  );
+  const [sectionsAr, setSectionsAr] = useState<IntakeSection[]>(initialSectionsAr);
+  const [showArabic, setShowArabic] = useState(initialSectionsAr.length > 0);
+
+  return (
+    <form action={action} className="space-y-8">
+      <input type="hidden" name="sectionsJson" value={JSON.stringify(sections)} readOnly />
+      <input type="hidden" name="sectionsArJson" value={JSON.stringify(showArabic ? sectionsAr : [])} readOnly />
+
+      <SectionsEditor sections={sections} setSections={setSections} addSectionLabel="Add section" />
+
+      <div className="rounded-2xl border border-dashed border-brand-300 bg-brand-50/40 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-display font-semibold text-brand-900">Arabic version</h3>
+            <p className="mt-1 text-xs text-ink/50">
+              Fully independent from the English form above — its own sections and questions, own order, own
+              field count. Whichever version a client actually filled out is what a submission is parsed
+              against, so nothing here needs to mirror the English side one-to-one.
+            </p>
+          </div>
+          {!showArabic && (
+            <button
+              type="button"
+              onClick={() => {
+                setSectionsAr((arr) => (arr.length > 0 ? arr : [emptySection()]));
+                setShowArabic(true);
+              }}
+              className="shrink-0 rounded-lg border border-brand-300 bg-white px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50"
+            >
+              Add Arabic version
+            </button>
+          )}
+        </div>
+
+        {showArabic && (
+          <div className="mt-4 space-y-4">
+            <SectionsEditor sections={sectionsAr} setSections={setSectionsAr} dir="rtl" addSectionLabel="أضف قسم" />
+            <button
+              type="button"
+              onClick={() => {
+                setSectionsAr([]);
+                setShowArabic(false);
+              }}
+              className="text-xs font-medium text-red-600 hover:underline"
+            >
+              Remove Arabic version (Arabic-locale clients will see the English form)
+            </button>
+          </div>
+        )}
+      </div>
 
       <div>
         <button

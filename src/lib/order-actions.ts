@@ -222,6 +222,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         // Cash on Delivery has no online payment step to wait on — the order
         // goes straight to confirmed, and cash is collected on delivery.
         status: paymentMethod === "CASH_ON_DELIVERY" ? "CONFIRMED" : "PENDING_PAYMENT",
+        locale,
         items: { create: orderItemsData },
       },
     });
@@ -275,6 +276,16 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     : shippingCalculatedOnDelivery
       ? "Calculated upon delivery (outside Egypt)"
       : formatEGP(shippingFeeEGP);
+  const isAr = locale === "ar";
+  const shippingFeeSummaryLocalized = !needsShipping
+    ? isAr
+      ? "غير منطبق (نسخة إلكترونية فقط)"
+      : "N/A (ebook only)"
+    : shippingCalculatedOnDelivery
+      ? isAr
+        ? "يُحسب عند التسليم (خارج مصر)"
+        : "Calculated upon delivery (outside Egypt)"
+      : formatEGP(shippingFeeEGP);
 
   const paymentMethodLabel =
     paymentMethod === "CASH_ON_DELIVERY" ? "Cash on Delivery" : paymentMethod === "PAYMOB" ? "Card / Wallet (Paymob)" : "InstaPay";
@@ -304,17 +315,24 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   await sendCustomerConfirmation({
     to: guestEmail,
     name: guestName,
-    subject: isPendingOnlinePayment ? "Complete your payment" : "Your order is confirmed",
+    locale,
+    subject: isPendingOnlinePayment
+      ? isAr ? "أكمل عملية الدفع" : "Complete your payment"
+      : isAr ? "تم تأكيد طلبك" : "Your order is confirmed",
     intro: isPendingOnlinePayment
-      ? `Thanks for your order! Complete your payment of ${formatEGP(totalEGP)} to confirm it.`
-      : `Thanks for your order! It's confirmed and will ship soon — pay ${formatEGP(totalEGP)} in cash when it arrives.`,
+      ? isAr
+        ? `شكرًا لطلبك! أكمل عملية الدفع بقيمة ${formatEGP(totalEGP)} لتأكيد طلبك.`
+        : `Thanks for your order! Complete your payment of ${formatEGP(totalEGP)} to confirm it.`
+      : isAr
+        ? `شكرًا لطلبك! تم تأكيده وهيتشحن قريبًا — ادفع ${formatEGP(totalEGP)} كاش عند الاستلام.`
+        : `Thanks for your order! It's confirmed and will ship soon — pay ${formatEGP(totalEGP)} in cash when it arrives.`,
     lines: [
-      { label: "Order #", value: order.id.slice(-8).toUpperCase() },
-      { label: "Items", value: itemsSummary },
-      { label: "Subtotal", value: formatEGP(subtotalEGP) },
-      ...(discountEGP > 0 ? [{ label: "Discount", value: `-${formatEGP(discountEGP)}` }] : []),
-      { label: "Shipping fee", value: shippingFeeSummary },
-      { label: "Total", value: formatEGP(totalEGP) },
+      { label: isAr ? "رقم الطلب" : "Order #", value: order.id.slice(-8).toUpperCase() },
+      { label: isAr ? "المنتجات" : "Items", value: itemsSummary },
+      { label: isAr ? "الإجمالي الفرعي" : "Subtotal", value: formatEGP(subtotalEGP) },
+      ...(discountEGP > 0 ? [{ label: isAr ? "الخصم" : "Discount", value: `-${formatEGP(discountEGP)}` }] : []),
+      { label: isAr ? "رسوم الشحن" : "Shipping fee", value: shippingFeeSummaryLocalized },
+      { label: isAr ? "الإجمالي" : "Total", value: formatEGP(totalEGP) },
     ],
   });
 

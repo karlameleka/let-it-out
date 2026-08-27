@@ -16,11 +16,11 @@ export default async function IntakePage({
 }: {
   searchParams: Promise<{ token?: string }>;
 }) {
-  const [{ token }, locale] = await Promise.all([searchParams, getLocale()]);
+  const [{ token }, cookieLocale] = await Promise.all([searchParams, getLocale()]);
   const info = token ? await validateIntakeToken(token) : null;
-  const t = getDictionary(locale).intake;
 
   if (!info || !token) {
+    const t = getDictionary(cookieLocale).intake;
     return (
       <Container className="max-w-lg py-20 text-center">
         <h1 className="font-display text-2xl font-semibold text-brand-900">{t.invalidLinkTitle}</h1>
@@ -29,7 +29,11 @@ export default async function IntakePage({
     );
   }
 
-  const sections = await getIntakeSections();
+  // Renders in the language active when the session was requested, not the
+  // opening device's own cookie — the emailed link may be opened on a
+  // different browser/phone than the one that set that cookie.
+  const t = getDictionary(info.locale).intake;
+  const sections = await getIntakeSections(info.locale);
 
   return (
     <IntakeForm

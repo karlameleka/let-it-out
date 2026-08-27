@@ -5,8 +5,14 @@ import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
 import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES } from "@/lib/therapist-toolkit";
 import { getBaseUrl } from "@/lib/base-url";
-import { sendReferralNotificationEmail, sendAssignedResourceNotificationEmail, sendMeetingLinkEmail } from "@/lib/email";
+import {
+  sendReferralNotificationEmail,
+  sendAssignedResourceNotificationEmail,
+  sendMeetingLinkEmail,
+  type AssignedResourceKind,
+} from "@/lib/email";
 import { formatSlotTime } from "@/lib/format-slot";
+import type { Locale } from "@/lib/i18n/locale";
 import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/therapist-data";
 
 export type TherapistProfileFormState = { error?: string; success?: boolean } | undefined;
@@ -418,20 +424,27 @@ export async function acknowledgeReferral(formData: FormData) {
 export type AssignResourceFormState = { error?: string; success?: boolean } | undefined;
 
 /** Best-effort, non-blocking — a missing/misspelled clientName or email
- * config must never stop the resource itself from being saved. */
+ * config must never stop the resource itself from being saved. This runs
+ * from the counselor's own browser session, which has no access to the
+ * client's locale cookie, so it looks up the client's own stored
+ * preference (User.locale) instead — absent for clients without an
+ * account, in which case it falls back to English. */
 async function notifyClientOfAssignedResource(
   clientEmail: string,
   clientName: string,
   counselorName: string,
-  kindLabel: string,
+  kind: AssignedResourceKind,
 ) {
   const baseUrl = await getBaseUrl();
+  const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { locale: true } });
+  const locale: Locale = client?.locale === "ar" ? "ar" : "en";
   await sendAssignedResourceNotificationEmail({
     to: clientEmail,
     toName: clientName || "there",
     counselorName,
-    kindLabel,
+    kind,
     resourcesUrl: `${baseUrl}/resources#my-tools`,
+    locale,
   });
 }
 
@@ -460,7 +473,7 @@ export async function assignResourceLink(
   await prisma.assignedResource.create({
     data: { counselorId: session.counselorId, clientEmail, title, description: description || null, kind: "LINK", url },
   });
-  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "a tool");
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "TOOL");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -498,7 +511,7 @@ export async function assignResourcePdf(
       fileName: fileName || `${title}.pdf`,
     },
   });
-  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "a PDF");
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "PDF");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -524,7 +537,7 @@ export async function assignResourceNote(
   await prisma.assignedResource.create({
     data: { counselorId: session.counselorId, clientEmail, title, kind: isAssignment ? "ASSIGNMENT" : "TEXT", content },
   });
-  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, isAssignment ? "an assignment" : "a note");
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, isAssignment ? "ASSIGNMENT" : "NOTE");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -582,12 +595,15 @@ export async function setMeetingLink(
     preferredTime = booking.preferredTime;
   }
 
-  const dateLabel = new Date(`${preferredDate}T00:00:00`).toLocaleDateString("en-GB", {
+  const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { locale: true } });
+  const clientLocale: Locale = client?.locale === "ar" ? "ar" : "en";
+
+  const dateLabel = new Date(`${preferredDate}T00:00:00`).toLocaleDateString(clientLocale === "ar" ? "ar-EG" : "en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
   });
-  const sessionLabel = preferredTime ? `${dateLabel} · ${formatSlotTime(preferredTime, "en")}` : dateLabel;
+  const sessionLabel = preferredTime ? `${dateLabel} · ${formatSlotTime(preferredTime, clientLocale)}` : dateLabel;
 
   await sendMeetingLinkEmail({
     to: clientEmail,
@@ -595,6 +611,7 @@ export async function setMeetingLink(
     counselorName: session.name,
     meetingLink,
     sessionLabel,
+    locale: clientLocale,
   });
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmailForRevalidate)}`);

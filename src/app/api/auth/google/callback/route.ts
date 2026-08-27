@@ -4,6 +4,7 @@ import { createSession } from "@/lib/session";
 import { createLead } from "@/lib/leads";
 import { sendWelcomeEmail } from "@/lib/email";
 import { getGoogleOAuthConfig } from "@/lib/google-auth";
+import { getLocale } from "@/lib/i18n/locale";
 
 const STATE_COOKIE = "lio_google_oauth_state";
 
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
 
     let user = await prisma.user.findUnique({ where: { googleId: profile.sub } });
     let isNewUser = false;
+    const locale = await getLocale();
 
     if (!user) {
       const existingByEmail = await prisma.user.findUnique({ where: { email: profile.email } });
@@ -80,6 +82,7 @@ export async function GET(request: NextRequest) {
             email: profile.email,
             name: profile.name ?? profile.email.split("@")[0],
             googleId: profile.sub,
+            locale,
           },
         });
         isNewUser = true;
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
         notes: "Signed up via Google.",
       });
       const baseUrl = new URL(request.url).origin;
-      await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
+      await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy`, locale });
     }
 
     await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });

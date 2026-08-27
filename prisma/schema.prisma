@@ -72,6 +72,14 @@ model User {
   // Off by default, matching Apple Journal — opt-in from account settings.
   journalLockEnabled Boolean @default(false)
 
+  // Site language preference, captured at signup and kept in sync on every
+  // setLocale() call (see src/lib/i18n/actions.ts) — the same pattern as
+  // PushSubscription.locale. Needed so staff-triggered emails (a counselor
+  // assigning a resource or posting a meeting link) can be sent in the
+  // client's own language even though the action runs from the counselor's
+  // browser, which has no access to the client's locale cookie.
+  locale String @default("en")
+
   journalEntries JournalEntry[]
   bookingRequests BookingRequest[]
   orders         Order[]
@@ -231,6 +239,10 @@ model SessionBooking {
   // Set once the day-before push reminder (see the session-reminders cron)
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
+  // Site language active when this booking was made — the Paymob webhook
+  // that confirms payment runs server-to-server with no visitor cookie, so
+  // it needs this to send the confirmation email in the right language.
+  locale        String               @default("en")
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 }
@@ -249,6 +261,11 @@ model IntakeFormToken {
   counselorId    String
   counselorName  String
   counselorEmail String?
+  // Site language active when the session was requested — snapshotted so
+  // the intake page renders in the right language regardless of whether
+  // the device that later opens the emailed link carries the same locale
+  // cookie (e.g. the client opens it on a different browser or phone).
+  locale         String    @default("en")
   createdAt      DateTime  @default(now())
   expiresAt      DateTime
   usedAt         DateTime?
@@ -698,6 +715,10 @@ model Order {
   status          OrderStatus   @default(PENDING_PAYMENT)
   paymentRef      String?
   paymentNote     String?       @db.Text
+  // Site language active when this order was placed — the Paymob webhook
+  // that confirms payment runs server-to-server with no visitor cookie, so
+  // it needs this to send the confirmation email in the right language.
+  locale          String        @default("en")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -913,9 +934,14 @@ model Article {
 // from /admin/intake-form instead of being hardcoded, since it's clinical
 // content the practice owner needs to be able to adjust without a deploy.
 model IntakeFormConfig {
-  id        String   @id @default("singleton")
-  sections  Json
-  updatedAt DateTime @updatedAt
+  id         String   @id @default("singleton")
+  sections   Json
+  // Optional Arabic translation of `sections`, same IntakeSection[] shape —
+  // admin-editable from /admin/intake-form. Null/missing means no Arabic
+  // version has been entered yet, so Arabic-locale clients still see the
+  // English questions (never a blank form).
+  sectionsAr Json?
+  updatedAt  DateTime @updatedAt
 }
 
 // Admin-editable overrides for specific English UI strings, keyed by

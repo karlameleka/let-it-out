@@ -71,8 +71,12 @@ export async function submitContactMessage(
   await sendCustomerConfirmation({
     to: contact.email,
     name: contact.name,
-    subject: "We've received your message",
-    intro: `Thank you for reaching out about "${contact.subject}". We'll get back to you soon.`,
+    locale,
+    subject: locale === "ar" ? "استلمنا رسالتك" : "We've received your message",
+    intro:
+      locale === "ar"
+        ? `شكرًا لتواصلك بخصوص "${contact.subject}". هنرد عليك قريب.`
+        : `Thank you for reaching out about "${contact.subject}". We'll get back to you soon.`,
   });
 
   return { success: true };

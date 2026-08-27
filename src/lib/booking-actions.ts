@@ -17,6 +17,19 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
+function sessionTypeLabelFor(sessionType: string, b: Dictionary["bookingForm"]): string {
+  switch (sessionType) {
+    case "INDIVIDUAL_COUNSELING":
+      return b.typeIndividual;
+    case "COUPLES_COUNSELING":
+      return b.typeCouples;
+    case "FOLLOW_UP":
+      return b.typeFollowUp;
+    default:
+      return b.typeOther;
+  }
+}
+
 function buildBookingSchema(v: Dictionary["validation"], b: Dictionary["bookingForm"]) {
   return z.object({
     counselorId: z.string().min(1),
@@ -110,16 +123,20 @@ export async function submitBookingRequest(
     extraRecipients: [booking.counselor.email],
   });
 
+  const isAr = locale === "ar";
   await sendCustomerConfirmation({
     to: booking.email,
     name: booking.name,
-    subject: "We've received your session request",
-    intro: `Thank you for requesting a session with ${booking.counselor.name}. Your preferred date and time aren't guaranteed yet — we'll reach out to confirm your appointment as soon as possible.`,
+    locale,
+    subject: isAr ? "استلمنا طلب جلستك" : "We've received your session request",
+    intro: isAr
+      ? `شكرًا لطلبك جلسة مع ${booking.counselor.name}. الموعد المفضل مش مؤكد لسه — هنتواصل معاك لتأكيد موعدك في أقرب وقت.`
+      : `Thank you for requesting a session with ${booking.counselor.name}. Your preferred date and time aren't guaranteed yet — we'll reach out to confirm your appointment as soon as possible.`,
     lines: [
-      { label: "Counselor", value: booking.counselor.name },
-      { label: "Session type", value: booking.sessionType.replaceAll("_", " ") },
-      { label: "Preferred date", value: booking.preferredDate },
-      { label: "Preferred time", value: booking.preferredTime },
+      { label: isAr ? "المعالج" : "Counselor", value: booking.counselor.name },
+      { label: isAr ? "نوع الجلسة" : "Session type", value: sessionTypeLabelFor(booking.sessionType, dict.bookingForm) },
+      { label: isAr ? "التاريخ المفضل" : "Preferred date", value: booking.preferredDate },
+      { label: isAr ? "الوقت المفضل" : "Preferred time", value: booking.preferredTime },
     ],
   });
 
@@ -129,6 +146,7 @@ export async function submitBookingRequest(
     counselorId: booking.counselor.id,
     counselorName: booking.counselor.name,
     counselorEmail: booking.counselor.email,
+    locale,
   });
 
   return { success: true };

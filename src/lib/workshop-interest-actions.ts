@@ -55,9 +55,13 @@ export async function submitWorkshopInterest(
 
   await sendCustomerConfirmation({
     to: signup.email,
-    name: "there",
-    subject: "You're on the list!",
-    intro: "You're on the list — we'll email you the moment we announce our next training or workshop.",
+    name: locale === "ar" ? "صديقنا" : "there",
+    locale,
+    subject: locale === "ar" ? "أنت على القائمة!" : "You're on the list!",
+    intro:
+      locale === "ar"
+        ? "أنت على القائمة — هنبعتلك إيميل أول ما نعلن عن ورشة أو تدريب جديد."
+        : "You're on the list — we'll email you the moment we announce our next training or workshop.",
   });
 
   return { success: true };

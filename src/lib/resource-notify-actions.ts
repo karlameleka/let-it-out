@@ -55,9 +55,13 @@ export async function submitResourceNotify(
 
   await sendCustomerConfirmation({
     to: signup.email,
-    name: "there",
-    subject: "You're on the list!",
-    intro: "You're on the list — we'll email you the moment we publish a new resource.",
+    name: locale === "ar" ? "صديقنا" : "there",
+    locale,
+    subject: locale === "ar" ? "أنت على القائمة!" : "You're on the list!",
+    intro:
+      locale === "ar"
+        ? "أنت على القائمة — هنبعتلك إيميل أول ما ننشر مقال جديد."
+        : "You're on the list — we'll email you the moment we publish a new resource.",
   });
 
   return { success: true };
