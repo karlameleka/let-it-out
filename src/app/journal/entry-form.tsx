@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { ImagePlus, PenLine, Shuffle, Sparkles, X } from "lucide-react";
+import { ImagePlus, PenLine, Shuffle, Sparkles, WifiOff, X } from "lucide-react";
+import { useOffline } from "next/offline";
 import { shufflePrompt } from "@/lib/journal-actions";
 import { createEntry, type EntryFormState } from "@/lib/local-journal";
 import { compressImage } from "@/lib/compress-image";
@@ -38,6 +39,10 @@ export default function EntryForm({
     () => [dict.celebration1, dict.celebration2, dict.celebration3, dict.celebration4, dict.celebration5],
     [dict],
   );
+  // Saving is always local (IndexedDB, no network) so it works offline
+  // regardless — this is only read to relabel the network-dependent prompt
+  // shuffle and reassure the user their entry isn't blocked on a connection.
+  const isOffline = useOffline();
   const [moods, setMoods] = useState<string[]>([]);
   const [key, setKey] = useState(0);
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -192,8 +197,8 @@ export default function EntryForm({
               disabled={shuffling}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
             >
-              <Shuffle className={`h-3.5 w-3.5 ${shuffling ? "animate-spin" : ""}`} strokeWidth={2} />
-              {shuffling ? dict.shuffling : dict.shufflePrompt}
+              <Shuffle className={`h-3.5 w-3.5 ${shuffling && !isOffline ? "animate-spin" : ""}`} strokeWidth={2} />
+              {shuffling ? (isOffline ? dict.shufflingOffline : dict.shuffling) : dict.shufflePrompt}
             </button>
           </div>
           <p
@@ -264,6 +269,13 @@ export default function EntryForm({
           {photoError && <p className="mt-1.5 text-xs text-red-600">{photoError}</p>}
           <input type="hidden" name="photoUrl" value={photo ?? ""} />
         </div>
+
+        {isOffline && !state?.success && (
+          <p className="flex items-center gap-1.5 text-xs text-ink/50">
+            <WifiOff className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            {dict.offlineSaveNotice}
+          </p>
+        )}
 
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         {state?.success && (
