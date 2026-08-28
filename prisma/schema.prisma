@@ -557,8 +557,15 @@ model CounselorAvailability {
   id          String    @id @default(cuid())
   counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
   counselorId String
-  // 0 = Sunday … 6 = Saturday, matching JS Date#getDay().
-  dayOfWeek   Int
+  // Exactly one of dayOfWeek/date is set (enforced in
+  // therapist-availability-actions.ts, not at the DB level — same
+  // application-level-validation convention as the rest of this app).
+  // 0 = Sunday … 6 = Saturday, matching JS Date#getDay(). Set for a
+  // recurring weekly window; null for a one-off single-date window.
+  dayOfWeek   Int?
+  // "YYYY-MM-DD". Set for a one-off window opened for a specific day
+  // (today up to a month out); null for a recurring weekly window.
+  date        String?
   // 24-hour "HH:mm", e.g. "09:00" / "17:00". No timezone — like the rest of
   // this app, times are plain Cairo-local values, never converted.
   startTime   String
