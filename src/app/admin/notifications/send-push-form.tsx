@@ -15,7 +15,7 @@ export default function SendPushForm() {
         <label className={labelClass} htmlFor="push-title">Headline (English)</label>
         <input id="push-title" name="title" required placeholder="e.g. New workshop this Thursday" className={inputClass} />
         <p className="mt-1 text-[11px] text-ink/40">
-          The notification itself always shows &ldquo;Let It Out&rdquo; as its title — this headline leads the message body underneath.
+          Shown as the notification&rsquo;s title — the app name is already shown separately by the browser/OS.
         </p>
       </div>
       <div>

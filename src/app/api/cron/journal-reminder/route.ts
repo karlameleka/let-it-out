@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   }
 
   const result = await sendPushToAllSubscribers({
-    title: "Let It Out",
+    title: "Time to journal",
     body: MESSAGES[Math.floor(Math.random() * MESSAGES.length)],
     url: "/journal",
   });

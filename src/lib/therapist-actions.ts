@@ -451,11 +451,15 @@ async function notifyClientOfAssignedResource(
 
   // Best-effort — a missing/expired push subscription (or the client never
   // having enabled push) must never block the resource itself or the email
-  // above. Title stays the brand name per the sitewide push convention;
-  // the "who" is in the body, matching what the email already conveys.
+  // above. The OS/browser already shows the app as the notification's
+  // source, so the title carries the specific "who" instead of repeating
+  // the brand name.
   await sendPushToEmails([clientEmail], {
-    title: "Let It Out",
-    body: locale === "ar" ? `رسالة من ${counselorName}` : `Message from ${counselorName}`,
+    title: locale === "ar" ? `رسالة من ${counselorName}` : `Message from ${counselorName}`,
+    body:
+      locale === "ar"
+        ? "بعتلك حاجة جديدة في أدواتي — دوس عشان تشوفها."
+        : "Sent you something new in My Tools — tap to take a look.",
     url: "/resources#my-tools",
   }).catch((err) => console.error("[therapist-actions] Failed to send assigned-resource push:", err));
 }

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   // the exact time varies per booking, so it's left out of the shared
   // copy and clients see it on /upcoming after tapping through.
   const result = await sendPushToEmails(emails, {
-    title: "Let It Out",
+    title: "Session reminder",
     body: "You have a counseling session coming up tomorrow — tap for the details.",
     url: "/upcoming",
   });
