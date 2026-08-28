@@ -54,6 +54,8 @@ export default async function PastSessionsPage() {
                   title={`Session with ${s.counselorName}`}
                   dateTimeLabel={dateTimeLabel}
                   deleteLabel={dict.upcoming.deleteNotification}
+                  href="/journal/reflection"
+                  cta={dict.upcoming.reflectionCta}
                 />
               );
             })}
