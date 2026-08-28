@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
-import { getPastItems } from "@/lib/upcoming-items";
+import { getPastItems, getUpcomingPageData } from "@/lib/upcoming-items";
 import { formatSlotTime } from "@/lib/format-slot";
 import { Container, Eyebrow } from "@/components/ui";
 import PastItemRow from "./past-item-row";
 import SessionsTabSwitcher from "../sessions-tab-switcher";
+import ReflectionRow from "../reflection-row";
 
 export const metadata: Metadata = { title: "Past Sessions" };
 
@@ -17,7 +18,10 @@ export default async function PastSessionsPage() {
 
   const dict = getDictionary(locale);
   const t = dict.pastSessions;
-  const { sessions, events } = await getPastItems(session.email, session.userId, locale);
+  const [{ sessions, events }, { reflections }] = await Promise.all([
+    getPastItems(session.email, session.userId, locale),
+    getUpcomingPageData(session.email, session.userId, locale),
+  ]);
 
   const dateFormatter = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
     weekday: "short",
@@ -90,6 +94,25 @@ export default async function PastSessionsPage() {
           </div>
         )}
       </div>
+
+      {reflections.length > 0 && (
+        <div className="mt-10">
+          <h2 className="font-display text-lg font-semibold text-brand-900">{dict.upcoming.reflectionsHeading}</h2>
+          <div className="mt-4 space-y-3">
+            {reflections.map((r) => (
+              <ReflectionRow
+                key={r.id}
+                itemId={r.id}
+                title={dict.upcoming.reflectionTitle}
+                body={dict.upcoming.reflectionBody}
+                cta={dict.upcoming.reflectionCta}
+                read={r.read}
+                dict={dict.upcoming}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </Container>
   );
 }

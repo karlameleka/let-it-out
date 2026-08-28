@@ -8,7 +8,6 @@ import { formatSlotTime } from "@/lib/format-slot";
 import { Container, Eyebrow } from "@/components/ui";
 import SessionRow from "./session-row";
 import EventRow from "./event-row";
-import ReflectionRow from "./reflection-row";
 import MarkAllReadButton from "./mark-all-read-button";
 import SessionsTabSwitcher from "./sessions-tab-switcher";
 
@@ -123,25 +122,6 @@ export default async function UpcomingPage() {
           </div>
         )}
       </div>
-
-      {reflections.length > 0 && (
-        <div className="mt-10">
-          <h2 className="font-display text-lg font-semibold text-brand-900">{t.reflectionsHeading}</h2>
-          <div className="mt-4 space-y-3">
-            {reflections.map((r) => (
-              <ReflectionRow
-                key={r.id}
-                itemId={r.id}
-                title={t.reflectionTitle}
-                body={t.reflectionBody}
-                cta={t.reflectionCta}
-                read={r.read}
-                dict={t}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {(sessions.length > 0 || events.length > 0 || reflections.length > 0) && (
         <div className="mt-10 flex justify-center border-t border-brand-100 pt-8">

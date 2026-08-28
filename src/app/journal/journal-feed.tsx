@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BarChart3, BookOpen, LockKeyhole, NotebookPen, PlusCircle, Search, Star } from "lucide-react";
 import { exportJournalEntries } from "@/lib/journal-actions";
-import { getFeedData, toggleBookmark, migrateFromServer, type JournalFeedEntry, type JournalStats } from "@/lib/local-journal";
+import {
+  getFeedData,
+  toggleBookmark,
+  deleteEntry,
+  migrateFromServer,
+  type JournalFeedEntry,
+  type JournalStats,
+} from "@/lib/local-journal";
 import { relockJournal } from "@/components/journal-lock-gate";
 import { moodColor, moodLabel } from "@/lib/moods";
+import { hapticWarning } from "@/lib/haptics";
 import { ButtonLink } from "@/components/ui";
 import JournalDataNotice from "@/components/journal-data-notice";
 import type { Dictionary } from "@/lib/i18n/dictionary";
@@ -19,6 +27,7 @@ export default function JournalFeed({
   lockEnabled,
   dict,
   dataNoticeDict,
+  deleteDict,
   locale,
 }: {
   userId: string;
@@ -26,12 +35,15 @@ export default function JournalFeed({
   lockEnabled: boolean;
   dict: Dictionary["journalFeed"];
   dataNoticeDict: Dictionary["journalDataNotice"];
+  deleteDict: Dictionary["entryDetail"];
   locale: Locale;
 }) {
   const [entries, setEntries] = useState<JournalFeedEntry[] | null>(null);
   const [stats, setStats] = useState<JournalStats | null>(null);
   const [query, setQuery] = useState("");
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -42,6 +54,19 @@ export default function JournalFeed({
     }
     load();
   }, [userId]);
+
+  async function handleConfirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    const result = await deleteEntry(userId, pendingDeleteId);
+    if (result.success) {
+      const data = await getFeedData(userId);
+      setEntries(data.entries);
+      setStats(data.stats);
+      setPendingDeleteId(null);
+    }
+    setDeleting(false);
+  }
 
   const filtered = useMemo(() => {
     if (!entries) return [];
@@ -186,29 +211,120 @@ export default function JournalFeed({
         ) : (
           <ul className="mt-6 space-y-3">
             {filtered.map((e) => (
-              <EntryCard key={e.id} entry={e} onToggleBookmark={() => handleToggleBookmark(e.id)} dict={dict} />
+              <EntryCard
+                key={e.id}
+                entry={e}
+                onToggleBookmark={() => handleToggleBookmark(e.id)}
+                onLongPressDelete={() => setPendingDeleteId(e.id)}
+                dict={dict}
+              />
             ))}
           </ul>
         )}
       </div>
+
+      {pendingDeleteId && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-sm animate-pop-in overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+            <div className="px-6 py-5">
+              <h2 className="font-display text-lg font-semibold text-brand-900">{deleteDict.deleteEntry}</h2>
+              <p className="mt-2 text-sm text-ink/70">{deleteDict.deleteConfirm}</p>
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPendingDeleteId(null)}
+                  disabled={deleting}
+                  className="flex-1 rounded-full border border-brand-200 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+                >
+                  {deleteDict.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? deleteDict.deleting : deleteDict.delete}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
+const LONG_PRESS_MS = 550;
+// Cancels the pending long-press if the finger has moved this far —
+// otherwise a scroll gesture starting on a card would trigger a delete.
+const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+
 function EntryCard({
   entry,
   onToggleBookmark,
+  onLongPressDelete,
   dict,
 }: {
   entry: JournalFeedEntry;
   onToggleBookmark: () => void;
+  onLongPressDelete: () => void;
   dict: Dictionary["journalFeed"];
 }) {
   const router = useRouter();
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
+
+  function clearPressTimer() {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
+  function handlePointerDown(e: React.PointerEvent) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    longPressFired.current = false;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    clearPressTimer();
+    pressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      hapticWarning();
+      onLongPressDelete();
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!pressStart.current) return;
+    const dx = e.clientX - pressStart.current.x;
+    const dy = e.clientY - pressStart.current.y;
+    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE_PX) clearPressTimer();
+  }
+
+  function handlePointerEnd() {
+    clearPressTimer();
+  }
+
+  function handleClick() {
+    // A long-press release also fires a click — swallow it so it doesn't
+    // navigate into the entry right after opening the delete confirm.
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      return;
+    }
+    router.push(`/journal/${entry.id}`);
+  }
 
   return (
     <li
-      onClick={() => router.push(`/journal/${entry.id}`)}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onPointerLeave={handlePointerEnd}
+      style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", touchAction: "manipulation" }}
       className="group flex cursor-pointer gap-4 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 active:-translate-y-0.5 hover:border-brand-300 active:border-brand-300 hover:shadow-md active:shadow-md"
     >
       {entry.photoUrl && (
@@ -244,6 +360,7 @@ function EntryCard({
           </div>
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onToggleBookmark();

@@ -179,6 +179,7 @@ export default async function JournalPage() {
         lockEnabled={lockEnabled}
         dict={dict.journalFeed}
         dataNoticeDict={dict.journalDataNotice}
+        deleteDict={dict.entryDetail}
         locale={locale}
       />
     </JournalLockGate>

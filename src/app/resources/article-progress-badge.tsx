@@ -25,7 +25,7 @@ export default function ArticleProgressBadge({
   const isComplete = count >= totalMilestones;
   return (
     <span
-      className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+      className={`ml-2 inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${
         isComplete ? "bg-brand-600 text-white" : "bg-brand-100 text-brand-700"
       }`}
     >

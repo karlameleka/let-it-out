@@ -10,8 +10,7 @@ import {
   toggleBookmark,
   type JournalEntryDetail,
 } from "@/lib/local-journal";
-import { moodLabel } from "@/lib/moods";
-import { MoodDot } from "@/components/mood-dot";
+import { moodColor, moodLabel } from "@/lib/moods";
 import { Container } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
@@ -97,7 +96,10 @@ export default function EntryDetailClient({
                   key={m}
                   className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white py-1 pl-1 pr-3 text-xs font-medium text-brand-700 shadow-sm"
                 >
-                  <MoodDot mood={m} size="xs" locale={locale} />
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10"
+                    style={{ backgroundColor: moodColor(m) }}
+                  />
                   {moodLabel(m, locale)}
                 </span>
               ))}
