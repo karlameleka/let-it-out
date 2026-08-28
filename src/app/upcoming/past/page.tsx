@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale } from "@/lib/i18n/locale";
@@ -8,6 +7,7 @@ import { getPastItems } from "@/lib/upcoming-items";
 import { formatSlotTime } from "@/lib/format-slot";
 import { Container, Eyebrow } from "@/components/ui";
 import PastItemRow from "./past-item-row";
+import SessionsTabSwitcher from "../sessions-tab-switcher";
 
 export const metadata: Metadata = { title: "Past Sessions" };
 
@@ -27,15 +27,17 @@ export default async function PastSessionsPage() {
 
   return (
     <Container className="py-10 sm:py-14">
-      <Link href="/upcoming" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
-        <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToUpcoming}
-      </Link>
-
-      <div className="mt-4">
-        <Eyebrow>{t.heading}</Eyebrow>
-      </div>
+      <Eyebrow>{t.heading}</Eyebrow>
       <h1 className="mt-2 font-display text-3xl font-medium text-brand-900 sm:text-4xl">{t.heading}</h1>
       <p className="mt-2 text-sm text-ink/60">{t.subtitle}</p>
+
+      <div className="mt-5 max-w-sm">
+        <SessionsTabSwitcher
+          active="past"
+          upcomingLabel={dict.upcoming.upcomingTabLabel}
+          pastLabel={dict.upcoming.pastTabLabel}
+        />
+      </div>
 
       <div className="mt-8">
         <h2 className="font-display text-lg font-semibold text-brand-900">{t.sessionsHeading}</h2>

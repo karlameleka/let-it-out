@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale } from "@/lib/i18n/locale";
@@ -11,6 +10,7 @@ import SessionRow from "./session-row";
 import EventRow from "./event-row";
 import ReflectionRow from "./reflection-row";
 import MarkAllReadButton from "./mark-all-read-button";
+import SessionsTabSwitcher from "./sessions-tab-switcher";
 
 export const metadata: Metadata = { title: "Upcoming" };
 
@@ -53,11 +53,10 @@ export default async function UpcomingPage() {
   return (
     <Container className="py-10 sm:py-14">
       <Eyebrow>{t.heading}</Eyebrow>
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-3xl font-medium text-brand-900 sm:text-4xl">{t.heading}</h1>
-        <Link href="/upcoming/past" className="text-sm font-medium text-brand-600 link-grow">
-          {t.pastSessionsLink}
-        </Link>
+      <h1 className="mt-2 font-display text-3xl font-medium text-brand-900 sm:text-4xl">{t.heading}</h1>
+
+      <div className="mt-5 max-w-sm">
+        <SessionsTabSwitcher active="upcoming" upcomingLabel={t.upcomingTabLabel} pastLabel={t.pastTabLabel} />
       </div>
 
       <div className="mt-8">

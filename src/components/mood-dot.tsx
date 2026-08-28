@@ -2,6 +2,7 @@ import { moodColor, moodLabel } from "@/lib/moods";
 import type { Locale } from "@/lib/i18n/locale";
 
 const SIZES = {
+  xs: { badge: "h-5 w-5", dot: "h-2 w-2" },
   sm: { badge: "h-8 w-8", dot: "h-3 w-3" },
   md: { badge: "h-10 w-10", dot: "h-4 w-4" },
 };

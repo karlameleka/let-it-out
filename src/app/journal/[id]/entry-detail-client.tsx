@@ -72,36 +72,40 @@ export default function EntryDetailClient({
         <span className="inline-block rtl:-scale-x-100">&larr;</span> {dict.backToEntries}
       </Link>
 
-      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
-        <div className="flex items-center justify-between bg-brand-50 px-6 py-4 sm:px-8">
-          <p className="text-sm font-medium text-brand-700">
-            {new Date(entry.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-          </p>
-          <div className="flex items-center gap-3">
-            {entry.moods.length > 0 && (
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {entry.moods.map((m) => (
-                  <div key={m} className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-brand-700">{moodLabel(m, locale)}</span>
-                    <MoodDot mood={m} size="md" locale={locale} />
-                  </div>
-                ))}
-              </div>
-            )}
+      <div className="mt-6 overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-[0_24px_50px_-32px_rgba(18,53,67,0.25)]">
+        <div className="bg-gradient-to-b from-brand-50 to-white px-6 pt-6 pb-5 sm:px-8">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm font-medium text-brand-700">
+              {new Date(entry.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
             <button
               type="button"
               onClick={handleToggleBookmark}
               aria-label={entry.bookmarked ? dict.removeBookmark : dict.bookmarkThis}
-              className={`rounded-full p-1.5 transition-colors ${
+              className={`shrink-0 rounded-full p-1.5 transition-colors ${
                 entry.bookmarked ? "text-brand-600" : "text-ink/30 hover:text-ink/50 active:text-ink/50"
               }`}
             >
               <Star className="h-5 w-5" strokeWidth={2} fill={entry.bookmarked ? "currentColor" : "none"} />
             </button>
           </div>
+
+          {entry.moods.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {entry.moods.map((m) => (
+                <span
+                  key={m}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white py-1 pl-1 pr-3 text-xs font-medium text-brand-700 shadow-sm"
+                >
+                  <MoodDot mood={m} size="xs" locale={locale} />
+                  {moodLabel(m, locale)}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="px-6 py-8 sm:px-8">
+        <div className="px-6 py-7 sm:px-8">
           {entry.photoUrl && (
             // eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer
             <img
@@ -120,12 +124,12 @@ export default function EntryDetailClient({
             </div>
           )}
 
-          <p className="mt-6 whitespace-pre-line font-display text-lg leading-relaxed text-ink/80">
+          <p className="mt-6 whitespace-pre-line font-display text-lg leading-[1.8] text-ink/80 sm:text-xl">
             {entry.content}
           </p>
         </div>
 
-        <div className="border-t border-brand-100 px-6 py-3.5 sm:px-8">
+        <div className="border-t border-brand-50 px-6 py-3.5 sm:px-8">
           {!confirmingDelete ? (
             <button
               type="button"
