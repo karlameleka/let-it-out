@@ -852,6 +852,16 @@ const ar: Dictionary = {
     rsvpMaybe: "ربما",
     rsvpNotAttending: "لن أحضر",
     yourResponse: "إجابتك",
+    pastSessionsLink: "الجلسات السابقة",
+  },
+  pastSessions: {
+    heading: "الجلسات السابقة",
+    subtitle: "الجلسات الاستشارية وورش العمل اللي حضرتها بالفعل.",
+    backToUpcoming: "رجوع للقادم",
+    sessionsHeading: "الجلسات",
+    noSessions: "لسه مفيش جلسات سابقة.",
+    eventsHeading: "ورش العمل",
+    noEvents: "لسه مفيش ورش عمل سابقة.",
   },
   journalHome: {
     ribbon: "تطبيق يوميات مجاني",

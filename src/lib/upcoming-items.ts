@@ -182,3 +182,92 @@ export async function getUpcomingCount(email: string, userId: string): Promise<n
     reflections.filter((r) => !r.read).length
   );
 }
+
+export type PastSession = {
+  /** Composite bell/dismiss-tracking key — same "session-<id>"/"request-<id>"
+   * scheme as UpcomingSession, safely reused since a booking's date having
+   * passed already removes it from the live /upcoming query above. */
+  id: string;
+  bookingId: string;
+  kind: "paid" | "request";
+  counselorName: string;
+  date: string;
+  time?: string | null;
+};
+
+export type PastEvent = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string | null;
+};
+
+/** Attended history for the /upcoming/past subpage: counseling sessions
+ * that actually happened (confirmed, not cancelled, date already past) and
+ * workshops the client RSVP'd ATTENDING to that have already happened —
+ * never sessions/events that were cancelled, missed, or never RSVP'd to. */
+export async function getPastItems(email: string, userId: string, locale: Locale = "en") {
+  const today = todayISO();
+
+  const [sessions, requests, events] = await Promise.all([
+    prisma.sessionBooking.findMany({
+      where: { email, status: "CONFIRMED", preferredDate: { lt: today } },
+      include: { counselor: true },
+      orderBy: { preferredDate: "desc" },
+    }),
+    prisma.bookingRequest.findMany({
+      where: { email, status: { in: ["CONFIRMED", "COMPLETED"] }, preferredDate: { lt: today } },
+      include: { counselor: true },
+      orderBy: { preferredDate: "desc" },
+    }),
+    prisma.event.findMany({
+      where: { startAt: { lt: new Date(`${today}T00:00:00`) } },
+      include: { rsvps: { where: { userId, status: "ATTENDING" } } },
+      orderBy: { startAt: "desc" },
+    }),
+  ]);
+
+  const pastSessions: PastSession[] = [
+    ...sessions.map((s) => ({
+      id: `session-${s.id}`,
+      bookingId: s.id,
+      kind: "paid" as const,
+      counselorName: s.counselor.name,
+      date: s.preferredDate,
+      time: s.preferredTime,
+    })),
+    ...requests.map((r) => ({
+      id: `request-${r.id}`,
+      bookingId: r.id,
+      kind: "request" as const,
+      counselorName: r.counselor.name,
+      date: r.preferredDate,
+      time: r.preferredTime,
+    })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
+  const pastEvents: PastEvent[] = events
+    .filter((e) => e.rsvps.length > 0)
+    .map((e) => ({
+      id: e.id,
+      title: locale === "ar" && e.titleAr ? e.titleAr : e.title,
+      date: e.startAt.toISOString().slice(0, 10),
+      time: e.startAt.toISOString().slice(11, 16),
+      location: e.location,
+    }));
+
+  const allIds = [...pastSessions.map((s) => s.id), ...pastEvents.map((e) => e.id)];
+  const dismissed = allIds.length
+    ? await prisma.notificationRead.findMany({
+        where: { userId, itemId: { in: allIds }, dismissed: true },
+        select: { itemId: true },
+      })
+    : [];
+  const dismissedIds = new Set(dismissed.map((d) => d.itemId));
+
+  return {
+    sessions: pastSessions.filter((s) => !dismissedIds.has(s.id)),
+    events: pastEvents.filter((e) => !dismissedIds.has(e.id)),
+  };
+}

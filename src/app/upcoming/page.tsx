@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getLocale } from "@/lib/i18n/locale";
@@ -52,7 +53,12 @@ export default async function UpcomingPage() {
   return (
     <Container className="py-10 sm:py-14">
       <Eyebrow>{t.heading}</Eyebrow>
-      <h1 className="mt-2 font-display text-3xl font-medium text-brand-900 sm:text-4xl">{t.heading}</h1>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-3xl font-medium text-brand-900 sm:text-4xl">{t.heading}</h1>
+        <Link href="/upcoming/past" className="text-sm font-medium text-brand-600 link-grow">
+          {t.pastSessionsLink}
+        </Link>
+      </div>
 
       <div className="mt-8">
         <h2 className="font-display text-lg font-semibold text-brand-900">{t.sessionsHeading}</h2>

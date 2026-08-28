@@ -865,6 +865,16 @@ const en = {
     rsvpMaybe: "Maybe",
     rsvpNotAttending: "Not attending",
     yourResponse: "Your response",
+    pastSessionsLink: "Past sessions",
+  },
+  pastSessions: {
+    heading: "Past sessions",
+    subtitle: "Counseling sessions and workshops you've already attended.",
+    backToUpcoming: "Back to Upcoming",
+    sessionsHeading: "Sessions",
+    noSessions: "No past sessions yet.",
+    eventsHeading: "Workshops",
+    noEvents: "No past workshops yet.",
   },
   journalHome: {
     ribbon: "Free journaling app",

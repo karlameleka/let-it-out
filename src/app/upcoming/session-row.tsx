@@ -48,6 +48,11 @@ export default function SessionRow({
 
   function handleToggle() {
     hapticTap();
+    // Called synchronously so the browser still attributes it to this tap
+    // (and doesn't block it as a pop-up) — a session with a link is most
+    // often opened to join it, so that happens immediately rather than
+    // requiring an expand-then-tap-Join round trip.
+    if (meetingLink) window.open(meetingLink, "_blank", "noopener,noreferrer");
     if (expandable) setExpanded((v) => !v);
     startTransition(async () => {
       await markNotificationRead(itemId);

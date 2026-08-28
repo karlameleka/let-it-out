@@ -607,7 +607,7 @@ export async function setMeetingLink(
     preferredTime = booking.preferredTime;
   }
 
-  const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { locale: true } });
+  const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { id: true, locale: true } });
   const clientLocale: Locale = client?.locale === "ar" ? "ar" : "en";
 
   const dateLabel = new Date(`${preferredDate}T00:00:00`).toLocaleDateString(clientLocale === "ar" ? "ar-EG" : "en-GB", {
@@ -626,7 +626,17 @@ export async function setMeetingLink(
     locale: clientLocale,
   });
 
+  // Resets this booking's /upcoming notification back to unread — a
+  // client who already opened it before the link existed would otherwise
+  // never see that it now has one. Only meaningful for clients with an
+  // account (NotificationRead is keyed by userId, not email).
+  if (client) {
+    const itemId = bookingKind === "paid" ? `session-${bookingId}` : `request-${bookingId}`;
+    await prisma.notificationRead.deleteMany({ where: { userId: client.id, itemId } });
+  }
+
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmailForRevalidate)}`);
+  revalidatePath("/upcoming");
   return { success: true };
 }
 
