@@ -11,9 +11,11 @@ import JournalReminderToggle from "@/components/journal-reminder-toggle";
 import ExportDataButton from "./export-data-button";
 import DeleteAccountForm from "./delete-account-form";
 import LanguageSwitcher from "@/components/language-switcher";
+import InviteFriendCard from "./invite-friend-card";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getReferralInviteData } from "@/lib/referral-actions";
 
 export const metadata: Metadata = { title: "Account Settings" };
 
@@ -23,10 +25,13 @@ export default async function AccountPage() {
   const dict = getDictionary(locale);
   const t = dict.account;
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: { journalLockEnabled: true, passwordHash: true },
-  });
+  const [user, referralData] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { journalLockEnabled: true, passwordHash: true },
+    }),
+    getReferralInviteData(),
+  ]);
   const hasPassword = user?.passwordHash != null;
 
   return (
@@ -70,6 +75,19 @@ export default async function AccountPage() {
         <p className="mt-1 text-sm text-ink/60">{t.yourDataDescription}</p>
         <ExportDataButton dict={dict} userId={session.userId} />
       </div>
+
+      {referralData && (
+        <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+          <h2 className="font-display font-semibold text-brand-900">{t.inviteTitle}</h2>
+          <p className="mt-1 text-sm text-ink/60">{t.inviteDescription}</p>
+          <InviteFriendCard
+            link={referralData.link}
+            qrDataUrl={referralData.qrDataUrl}
+            friendsJoined={referralData.friendsJoined}
+            dict={t}
+          />
+        </div>
+      )}
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{t.supportTitle}</h2>
