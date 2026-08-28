@@ -11,6 +11,7 @@ import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { localizeProduct } from "@/lib/content/products";
+import { SHOP_TESTIMONIALS } from "@/lib/testimonials";
 
 export const metadata: Metadata = {
   title: "Guided Journals",
@@ -108,6 +109,27 @@ export default async function ShopPage() {
       </section>
 
       <section className="bg-brand-50 py-16 sm:py-20">
+        <Reveal>
+          <Container>
+            <SectionHeading eyebrow={t.testimonialsEyebrow} title={t.testimonialsTitle} />
+            <div className="mt-10 columns-1 gap-6 sm:columns-2 lg:columns-3">
+              {SHOP_TESTIMONIALS.map((quote, i) => (
+                <div
+                  key={i}
+                  className="mb-6 break-inside-avoid rounded-2xl border border-brand-100 bg-white p-6"
+                >
+                  <p aria-hidden="true" className="font-display text-4xl leading-none text-brand-200">
+                    &ldquo;
+                  </p>
+                  <p className="-mt-3 whitespace-pre-line text-sm leading-relaxed text-ink/75">{quote}</p>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </Reveal>
+      </section>
+
+      <section className="py-16 sm:py-20">
         <Reveal>
           <Container className="max-w-2xl">
             <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />

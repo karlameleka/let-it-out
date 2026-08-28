@@ -362,6 +362,8 @@ const en = {
     soldBadge: "1,000+ sold copies",
     ourJournalsEyebrow: "Shop",
     ourJournalsTitle: "Our journals",
+    testimonialsEyebrow: "In their words",
+    testimonialsTitle: "What our journalers say",
     faqEyebrow: "Good to know",
     faqTitle: "Frequently asked questions",
     faq1Q: "How long does delivery take?",

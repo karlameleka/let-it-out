@@ -354,6 +354,8 @@ const ar: Dictionary = {
     soldBadge: "أكثر من 1000 نسخة مباعة",
     ourJournalsEyebrow: "المتجر",
     ourJournalsTitle: "يومياتنا",
+    testimonialsEyebrow: "بكلماتهم",
+    testimonialsTitle: "ماذا يقول من يستخدمون يومياتنا",
     faqEyebrow: "معلومات مفيدة",
     faqTitle: "الأسئلة الشائعة",
     faq1Q: "كم تستغرق مدة التوصيل؟",
