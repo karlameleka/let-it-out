@@ -37,6 +37,7 @@ export type Article = {
   excerptAr?: string | null;
   sectionsAr?: ArticleSection[] | null;
   checkInsAr?: ArticleCheckIn[] | null;
+  categoryAr?: string | null;
 };
 
 function rowToArticle(row: {
@@ -53,6 +54,7 @@ function rowToArticle(row: {
   excerptAr: string | null;
   sectionsAr: unknown;
   checkInsAr: unknown;
+  categoryAr: string | null;
 }): Article {
   return {
     id: row.id,
@@ -68,6 +70,7 @@ function rowToArticle(row: {
     excerptAr: row.excerptAr,
     sectionsAr: row.sectionsAr as ArticleSection[] | null,
     checkInsAr: row.checkInsAr as ArticleCheckIn[] | null,
+    categoryAr: row.categoryAr,
   };
 }
 
@@ -84,6 +87,7 @@ export function localizeArticle(article: Article, locale: "en" | "ar"): Article 
     excerpt: article.excerptAr || article.excerpt,
     sections: article.sectionsAr && article.sectionsAr.length > 0 ? article.sectionsAr : article.sections,
     checkIns: article.checkInsAr && article.checkInsAr.length > 0 ? article.checkInsAr : article.checkIns,
+    category: article.categoryAr || article.category,
   };
 }
 
@@ -135,11 +139,25 @@ function parseArticleFormData(formData: FormData) {
     .filter(Boolean);
   const titleAr = String(formData.get("titleAr") ?? "").trim() || null;
   const excerptAr = String(formData.get("excerptAr") ?? "").trim() || null;
+  const categoryAr = String(formData.get("categoryAr") ?? "").trim() || null;
   const sectionsArRaw = String(formData.get("sectionsArJson") ?? "").trim();
   const checkInsArRaw = String(formData.get("checkInsArJson") ?? "").trim();
   const sectionsAr = sectionsArRaw ? (JSON.parse(sectionsArRaw) as ArticleSection[]) : Prisma.JsonNull;
   const checkInsAr = checkInsArRaw ? (JSON.parse(checkInsArRaw) as ArticleCheckIn[]) : Prisma.JsonNull;
-  return { title, excerpt, category, readMinutes, sections, checkIns, references, titleAr, excerptAr, sectionsAr, checkInsAr };
+  return {
+    title,
+    excerpt,
+    category,
+    readMinutes,
+    sections,
+    checkIns,
+    references,
+    titleAr,
+    excerptAr,
+    sectionsAr,
+    checkInsAr,
+    categoryAr,
+  };
 }
 
 export async function createArticle(formData: FormData) {

@@ -6,17 +6,21 @@ import { Search } from "lucide-react";
 import type { Article } from "@/lib/content/articles";
 import ArticleProgressBadge from "./article-progress-badge";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
+import { toArabicDigits } from "@/lib/format";
 
 export default function ArticleFilter({
   articles,
   hiddenSlugs = [],
   dict,
   progressDict,
+  locale,
 }: {
   articles: Article[];
   hiddenSlugs?: string[];
   dict: Dictionary["articleFilter"];
   progressDict: Dictionary["articleProgressBadge"];
+  locale: Locale;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -97,7 +101,9 @@ export default function ArticleFilter({
               className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
             >
               <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">
-                {article.category} · {article.readMinutes} {dict.minRead}
+                {article.category} ·{" "}
+                {locale === "ar" ? toArabicDigits(String(article.readMinutes)) : article.readMinutes}{" "}
+                {dict.minRead}
                 <ArticleProgressBadge
                   slug={article.slug}
                   totalMilestones={article.sections.length + article.checkIns.length}

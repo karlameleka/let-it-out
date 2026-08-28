@@ -118,6 +118,7 @@ export default async function ResourcesPage() {
             hiddenSlugs={settings.hiddenArticleSlugs}
             dict={dict.articleFilter}
             progressDict={dict.articleProgressBadge}
+            locale={locale}
           />
         </Container>
       </Reveal>

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, Video } from "lucide-react";
-import { markNotificationRead, dismissNotification } from "@/lib/notification-read-actions";
+import { markNotificationRead, markSessionJoined, dismissNotification } from "@/lib/notification-read-actions";
 import { cancelSessionBooking, cancelBookingRequest } from "@/lib/session-cancel-actions";
 import { useUpcoming } from "@/lib/upcoming-context";
 import { hapticTap, hapticWarning } from "@/lib/haptics";
@@ -56,6 +56,16 @@ export default function SessionRow({
     if (expandable) setExpanded((v) => !v);
     startTransition(async () => {
       await markNotificationRead(itemId);
+      if (meetingLink) await markSessionJoined(itemId);
+      router.refresh();
+      refetch();
+    });
+  }
+
+  function handleJoinClick() {
+    hapticTap();
+    startTransition(async () => {
+      await markSessionJoined(itemId);
       router.refresh();
       refetch();
     });
@@ -126,7 +136,7 @@ export default function SessionRow({
                 href={meetingLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={hapticTap}
+                onClick={handleJoinClick}
                 className="inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
               >
                 <Video className="h-3.5 w-3.5" strokeWidth={2} />

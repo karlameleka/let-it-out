@@ -155,6 +155,18 @@ export default function ArticleForm({
               className={inputClasses}
             />
           </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="categoryAr">
+              Category <span className="font-normal text-ink/40">(Arabic, optional)</span>
+            </label>
+            <input
+              id="categoryAr"
+              name="categoryAr"
+              dir="rtl"
+              defaultValue={article?.categoryAr ?? ""}
+              className={inputClasses}
+            />
+          </div>
         </div>
       </div>
 

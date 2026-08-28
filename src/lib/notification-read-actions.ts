@@ -33,6 +33,33 @@ export async function dismissNotification(itemId: string) {
   revalidatePath("/upcoming");
 }
 
+/** Marks a session booking as joined the first time the client taps its
+ * meeting link from /upcoming — from then on it shows under
+ * /upcoming/past instead of waiting for preferredDate to pass, since
+ * tapping the link means the client actually had the session. Scoped to
+ * this client's own email so one client can't flip another's booking. */
+export async function markSessionJoined(itemId: string) {
+  const session = await requireUser().catch(() => null);
+  if (!session || !itemId) return;
+
+  if (itemId.startsWith("session-")) {
+    const id = itemId.slice("session-".length);
+    await prisma.sessionBooking.updateMany({
+      where: { id, email: session.email, joinedAt: null },
+      data: { joinedAt: new Date() },
+    });
+  } else if (itemId.startsWith("request-")) {
+    const id = itemId.slice("request-".length);
+    await prisma.bookingRequest.updateMany({
+      where: { id, email: session.email, joinedAt: null },
+      data: { joinedAt: new Date() },
+    });
+  }
+
+  revalidatePath("/upcoming");
+  revalidatePath("/upcoming/past");
+}
+
 export async function markAllNotificationsRead() {
   const session = await requireUser().catch(() => null);
   if (!session) return;

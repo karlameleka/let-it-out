@@ -66,12 +66,12 @@ async function getUpcomingSessions(email: string): Promise<UpcomingSession[]> {
 
   const [sessions, requests] = await Promise.all([
     prisma.sessionBooking.findMany({
-      where: { email, preferredDate: { gte: today } },
+      where: { email, preferredDate: { gte: today }, joinedAt: null },
       include: { counselor: true },
       orderBy: { preferredDate: "asc" },
     }),
     prisma.bookingRequest.findMany({
-      where: { email, status: { not: "COMPLETED" }, preferredDate: { gte: today } },
+      where: { email, status: { not: "COMPLETED" }, preferredDate: { gte: today }, joinedAt: null },
       include: { counselor: true },
       orderBy: { preferredDate: "asc" },
     }),
@@ -212,12 +212,20 @@ export async function getPastItems(email: string, userId: string, locale: Locale
 
   const [sessions, requests, events] = await Promise.all([
     prisma.sessionBooking.findMany({
-      where: { email, status: "CONFIRMED", preferredDate: { lt: today } },
+      where: {
+        email,
+        status: "CONFIRMED",
+        OR: [{ preferredDate: { lt: today } }, { joinedAt: { not: null } }],
+      },
       include: { counselor: true },
       orderBy: { preferredDate: "desc" },
     }),
     prisma.bookingRequest.findMany({
-      where: { email, status: { in: ["CONFIRMED", "COMPLETED"] }, preferredDate: { lt: today } },
+      where: {
+        email,
+        status: { in: ["CONFIRMED", "COMPLETED"] },
+        OR: [{ preferredDate: { lt: today } }, { joinedAt: { not: null } }],
+      },
       include: { counselor: true },
       orderBy: { preferredDate: "desc" },
     }),

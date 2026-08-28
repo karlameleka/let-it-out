@@ -48,7 +48,12 @@ export default async function ArticlePage({
 
       <section className="py-16 sm:py-20">
         <Container className="max-w-3xl">
-          <InteractiveArticle article={article} dict={dict.interactiveArticle} notifyDict={dict.resourceNotifyBell} />
+          <InteractiveArticle
+            article={article}
+            dict={dict.interactiveArticle}
+            notifyDict={dict.resourceNotifyBell}
+            locale={locale}
+          />
         </Container>
       </section>
     </>

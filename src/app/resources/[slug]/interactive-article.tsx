@@ -8,6 +8,8 @@ import type { Article, ArticleCheckIn, ArticleSection } from "@/lib/content/arti
 import { getArticleProgress, saveArticleProgress, clearArticleProgress } from "@/lib/article-progress";
 import ResourceNotifyBell from "../resource-notify-bell";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
+import { toArabicDigits } from "@/lib/format";
 
 function sectionKey(index: number) {
   return `section-${index}`;
@@ -23,10 +25,12 @@ export default function InteractiveArticle({
   article,
   dict,
   notifyDict,
+  locale,
 }: {
   article: Article;
   dict: Dictionary["interactiveArticle"];
   notifyDict: Dictionary["resourceNotifyBell"];
+  locale: Locale;
 }) {
   const totalMilestones = article.sections.length + article.checkIns.length;
   const [progress, setProgress] = useState<Progress>(() => ({
@@ -85,7 +89,12 @@ export default function InteractiveArticle({
     <>
       <div className="mt-3 flex items-center gap-3">
         <p className="text-sm text-ink/50">
-          {isComplete ? dict.completed : dict.minRead.replace("{n}", String(article.readMinutes))}
+          {isComplete
+            ? dict.completed
+            : dict.minRead.replace(
+                "{n}",
+                locale === "ar" ? toArabicDigits(String(article.readMinutes)) : String(article.readMinutes),
+              )}
         </p>
         {hydrated && (
           <div className="h-1.5 w-28 overflow-hidden rounded-full bg-brand-100" aria-hidden="true">

@@ -237,6 +237,10 @@ model SessionBooking {
   // Set by the counselor from their portal once a session is confirmed —
   // immediately surfaced to the client on /upcoming and emailed to them.
   meetingLink   String?
+  // Set the first time the client taps this booking's meeting link from
+  // /upcoming — lets it move to /upcoming/past right away instead of
+  // waiting for preferredDate to roll into the past.
+  joinedAt      DateTime?
   // Set once the day-before push reminder (see the session-reminders cron)
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
@@ -533,6 +537,10 @@ model BookingRequest {
   // Set by the counselor from their portal once a session is confirmed —
   // immediately surfaced to the client on /upcoming and emailed to them.
   meetingLink    String?
+  // Set the first time the client taps this booking's meeting link from
+  // /upcoming — lets it move to /upcoming/past right away instead of
+  // waiting for preferredDate to roll into the past.
+  joinedAt       DateTime?
   // Set once the day-before push reminder (see the session-reminders cron)
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
@@ -928,6 +936,7 @@ model Article {
   excerptAr   String?  @db.Text
   sectionsAr  Json?
   checkInsAr  Json?
+  categoryAr  String?
 }
 
 // Singleton row holding the counseling intake form's questions (see
