@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { deleteBookingRequest } from "@/lib/admin-actions";
+import { deleteBookingRequest, markSessionBookingPaid } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import SessionBookingEditForm from "./session-booking-edit-form";
 import BookingRequestEditForm from "./booking-request-edit-form";
@@ -37,20 +37,33 @@ export default async function AdminBookingsPage() {
                   </a>
                 )}
                 <p className="mt-1 text-xs text-ink/40">{b.createdAt.toLocaleString("en-GB")}</p>
-                <SessionBookingEditForm
-                  booking={{
-                    id: b.id,
-                    name: b.name,
-                    email: b.email,
-                    phone: b.phone,
-                    counselorId: b.counselorId,
-                    preferredDate: b.preferredDate,
-                    preferredTime: b.preferredTime,
-                    status: b.status,
-                    meetingLink: b.meetingLink,
-                  }}
-                  counselors={counselors}
-                />
+                <div className="mt-3 flex flex-wrap items-start gap-2">
+                  {b.status === "PENDING_PAYMENT" && (
+                    <form action={markSessionBookingPaid}>
+                      <input type="hidden" name="bookingId" value={b.id} />
+                      <button
+                        type="submit"
+                        className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+                      >
+                        Mark as paid
+                      </button>
+                    </form>
+                  )}
+                  <SessionBookingEditForm
+                    booking={{
+                      id: b.id,
+                      name: b.name,
+                      email: b.email,
+                      phone: b.phone,
+                      counselorId: b.counselorId,
+                      preferredDate: b.preferredDate,
+                      preferredTime: b.preferredTime,
+                      status: b.status,
+                      meetingLink: b.meetingLink,
+                    }}
+                    counselors={counselors}
+                  />
+                </div>
               </div>
             </div>
           ))}

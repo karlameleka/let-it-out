@@ -38,6 +38,22 @@ function parseOptionalMeetingLink(raw: string): { ok: true; value: string | null
   }
 }
 
+/** One-click shortcut for the common case of a paid SessionBooking that
+ * was actually paid outside the automatic Paymob flow (e.g. a manual bank
+ * transfer or cash arrangement confirmed by phone) — sets it straight to
+ * CONFIRMED without opening the full edit form. Same effect as picking
+ * "CONFIRMED" from that form's status dropdown and saving. */
+export async function markSessionBookingPaid(formData: FormData) {
+  await requireAdmin();
+  const bookingId = String(formData.get("bookingId") ?? "");
+  if (!bookingId) return;
+
+  await prisma.sessionBooking.update({ where: { id: bookingId }, data: { status: "CONFIRMED" } });
+
+  revalidatePath("/admin/bookings");
+  revalidatePath("/upcoming");
+}
+
 export type SessionBookingEditFormState = { error?: string; success?: boolean } | undefined;
 
 /** Full edit for a paid SessionBooking — everything but the amount actually

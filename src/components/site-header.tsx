@@ -74,10 +74,8 @@ export default function SiteHeader({
     { href: "/counseling", label: dict.nav.counseling },
     { href: "/workshops", label: dict.nav.workshops },
     { href: "/shop", label: dict.nav.shop },
-    { href: "/journal", label: dict.nav.journal },
     { href: "/resources", label: dict.nav.resources },
   ];
-  const MOBILE_NAV_LINKS = NAV_LINKS.filter((link) => link.href !== "/journal");
 
   return (
     <header
@@ -171,7 +169,7 @@ export default function SiteHeader({
       {open && (
         <div className="border-t border-brand-100 bg-white px-4 pb-4 md:hidden">
           <nav className="flex flex-col gap-1 pt-2">
-            {MOBILE_NAV_LINKS.map((link) => (
+            {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

@@ -8,7 +8,6 @@ const ar: Dictionary = {
     counseling: "الاستشارات النفسية",
     workshops: "ورش العمل",
     shop: "المتجر",
-    journal: "اليوميات",
     resources: "الموارد",
     cart: "السلة",
     settings: "الإعدادات",

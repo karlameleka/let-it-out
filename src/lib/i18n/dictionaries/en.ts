@@ -6,7 +6,6 @@ const en = {
     counseling: "Counseling",
     workshops: "Workshops",
     shop: "Shop",
-    journal: "Journal",
     resources: "Resources",
     cart: "Cart",
     settings: "Settings",
