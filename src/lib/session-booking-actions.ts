@@ -184,11 +184,11 @@ export async function createSessionBooking(
     subject: isAr ? "أكمل الدفع لحجز جلستك" : "Complete your payment to book your session",
     intro: booking.preferredTime
       ? isAr
-        ? `شكرًا لاختيارك ${counselor.name}! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} لتأكيد جلستك.`
-        : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
+        ? `شكرًا لاختيارك Let It Out! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} لتأكيد جلستك.`
+        : `Thanks for choosing Let It Out! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
       : isAr
-        ? `شكرًا لاختيارك ${counselor.name}! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} — هنأكد ميعاد جلستك بالظبط بعد كده.`
-        : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} — we'll confirm your exact session time with you afterward.`,
+        ? `شكرًا لاختيارك Let It Out! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} — هنأكد ميعاد جلستك بالظبط بعد كده.`
+        : `Thanks for choosing Let It Out! Complete your payment of ${formatEGP(finalPriceEGP)} — we'll confirm your exact session time with you afterward.`,
     lines: [
       { label: isAr ? "المعالج" : "Counselor", value: counselor.name },
       { label: isAr ? "اليوم المفضل" : "Preferred day", value: booking.preferredDate },
