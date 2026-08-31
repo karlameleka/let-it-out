@@ -41,6 +41,7 @@ async function main() {
       languages: ["Arabic", "English"],
       sortOrder: 3,
       active: true,
+      priceEGP: 1000,
       photoUrl: "/counselors/hana-khaled.jpg",
     },
     {

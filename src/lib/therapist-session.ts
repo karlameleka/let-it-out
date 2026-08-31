@@ -2,6 +2,7 @@ import "server-only";
 import { SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { getSessionSecretKey } from "@/lib/session-edge";
+import { prisma } from "@/lib/db";
 import {
   THERAPIST_SESSION_COOKIE,
   verifyTherapistSessionToken,
@@ -48,7 +49,23 @@ export async function getCurrentCounselor(): Promise<TherapistSessionPayload | n
   const cookieStore = await cookies();
   const token = cookieStore.get(THERAPIST_SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifyTherapistSessionToken(token);
+
+  const session = await verifyTherapistSessionToken(token);
+  if (!session) return null;
+
+  // Same reasoning as getCurrentUser() in session.ts: the JWT itself stays
+  // valid for its full lifetime regardless of what happens to the
+  // counselor row, so a deleted counselor (from the admin dashboard) would
+  // otherwise keep portal access until the cookie expires. Checking
+  // existence here — the single funnel every /therapist page/action reads
+  // the session through — makes deletion take effect immediately instead.
+  const exists = await prisma.counselor.findUnique({ where: { id: session.counselorId }, select: { id: true } });
+  if (!exists) {
+    await destroyTherapistSession().catch(() => {});
+    return null;
+  }
+
+  return session;
 }
 
 export async function requireCounselor(): Promise<TherapistSessionPayload> {

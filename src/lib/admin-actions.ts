@@ -465,6 +465,44 @@ export async function revokeTherapistPortalAccess(formData: FormData) {
   revalidatePath("/admin/counselors/[id]", "page");
 }
 
+// Real hard delete — unlike archiving (the "Visible" checkbox), this
+// removes the counselor row outright and immediately cuts off their
+// /therapist portal access (see the existence check in getCurrentCounselor,
+// therapist-session.ts). Only safe to run when the counselor has no real
+// booking/session/referral history, since SessionBooking.counselorId and
+// BookingRequest.counselorId are required fields — deleting a counselor
+// with history would either violate those foreign keys or, if we cascaded,
+// silently erase real accounting/clinical records. The admin UI only ever
+// renders this action for a counselor with zero of that history; this
+// re-check is defense in depth, not the primary gate.
+export async function deleteCounselor(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+
+  const [sessionBookings, bookingRequests, intakeSubmissions, clientNotes, assignedResources, referralsSent, referralsReceived] =
+    await Promise.all([
+      prisma.sessionBooking.count({ where: { counselorId } }),
+      prisma.bookingRequest.count({ where: { counselorId } }),
+      prisma.intakeSubmission.count({ where: { counselorId } }),
+      prisma.clientNote.count({ where: { counselorId } }),
+      prisma.assignedResource.count({ where: { counselorId } }),
+      prisma.referral.count({ where: { fromCounselorId: counselorId } }),
+      prisma.referral.count({ where: { toCounselorId: counselorId } }),
+    ]);
+  const hasHistory =
+    sessionBookings + bookingRequests + intakeSubmissions + clientNotes + assignedResources + referralsSent + referralsReceived > 0;
+  if (hasHistory) return;
+
+  // CounselorAvailability and PromoCodeCounselor cascade on delete at the
+  // DB level already — only ToolkitItem (a counselor's own personal
+  // toolkit config, not client data) needs clearing by hand first.
+  await prisma.$transaction([
+    prisma.toolkitItem.deleteMany({ where: { counselorId } }),
+    prisma.counselor.delete({ where: { id: counselorId } }),
+  ]);
+  revalidatePath("/admin/counselors");
+}
+
 export type SendPushFormState = { error?: string; success?: boolean; sent?: number; total?: number } | undefined;
 
 /** Manual push blast to every subscribed browser — the ad hoc counterpart
