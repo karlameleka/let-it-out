@@ -33,6 +33,17 @@ async function main() {
       photoUrl: "/counselors/karla-meleka.jpg",
     },
     {
+      slug: "hana-khaled",
+      name: "Hana Khaled",
+      credentials: "Clinical Psychologist & Assistant Lecturer, MSc Clinical Psychology (British University in Egypt)",
+      bio: "Hana Khaled Aman is a Clinical Psychologist and Assistant Lecturer with a Master of Science in Clinical Psychology from the British University in Egypt in collaboration with London South Bank University. She has received certified training in Cognitive Behavioral Therapy for depression, social anxiety, post-traumatic stress disorder (PTSD), obsessive-compulsive disorder (OCD), personality disorders, as well as ethical practice in therapy. Hana has trained and worked in several clinical settings, including Abou El Azayem Psychiatric Hospital, the Drug and Addiction Fund, and a university counseling center. Hana has five years of teaching experience at the BUE. She has worked extensively with children, adolescents, and young adults, supporting them with a range of concerns including anxiety, depression, health anxiety, insomnia and sleep disorders, and eating disorders. In her practice, she focuses on drawing from diverse therapeutic modalities to develop personalized treatment plans and interventions that are aligned with each client's presentation and goals.",
+      specialties: ["Anxiety", "Depression", "CBT", "Sleep & Insomnia", "Eating Disorders"],
+      languages: ["Arabic", "English"],
+      sortOrder: 3,
+      active: true,
+      photoUrl: "/counselors/hana-khaled.jpg",
+    },
+    {
       slug: "lora-samuel",
       name: "Lora Samuel",
       credentials: "Psychotherapist & Trainer, MSc Clinical Psychology (British University in Egypt)",
