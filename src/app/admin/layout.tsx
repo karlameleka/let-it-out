@@ -11,6 +11,7 @@ const TABS = [
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/counselors", label: "Counselors" },
+  { href: "/admin/counseling-filters", label: "Counseling filters" },
   { href: "/admin/promo-codes", label: "Promo codes" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/events", label: "Events" },

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
-import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES } from "@/lib/therapist-toolkit";
+import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES, type PromptCard } from "@/lib/therapist-toolkit";
 import { getBaseUrl } from "@/lib/base-url";
 import {
   sendReferralNotificationEmail,
@@ -310,6 +310,39 @@ export async function toggleDefaultTool(formData: FormData) {
     : [...counselor.hiddenDefaultTools, key];
 
   await prisma.counselor.update({ where: { id: session.counselorId }, data: { hiddenDefaultTools: hidden } });
+
+  revalidatePath("/therapist/toolkit");
+}
+
+/** Overwrites this counselor's own "Session prompts" cards on the Toolkit
+ * page with whatever was submitted — same replace-the-whole-set approach as
+ * updateCounselorFilterAssignments, simpler than diffing individual prompts.
+ * Cards with an empty title or no non-empty prompts are dropped. */
+export async function updateSessionPrompts(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(String(formData.get("cardsJson") ?? "[]"));
+  } catch {
+    return;
+  }
+  if (!Array.isArray(parsed)) return;
+
+  const cards: PromptCard[] = parsed
+    .map((c) => ({
+      title: String((c as { title?: unknown })?.title ?? "").trim(),
+      prompts: Array.isArray((c as { prompts?: unknown })?.prompts)
+        ? (c as { prompts: unknown[] }).prompts.map((p) => String(p).trim()).filter(Boolean)
+        : [],
+    }))
+    .filter((c) => c.title && c.prompts.length > 0);
+
+  await prisma.counselor.update({
+    where: { id: session.counselorId },
+    data: { sessionPromptCards: cards },
+  });
 
   revalidatePath("/therapist/toolkit");
 }

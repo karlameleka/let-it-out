@@ -21,7 +21,13 @@ type Counselor = {
   displayLanguages: string[];
   photoUrl: string | null;
   availabilityStatus: "AVAILABLE" | "WAITLIST" | "UNAVAILABLE";
-  prescribesMedication: boolean;
+  filterIds: string[];
+};
+
+type CounselingFilter = {
+  id: string;
+  label: string;
+  labelAr: string | null;
 };
 
 function AvailabilityBadge({
@@ -45,16 +51,22 @@ function AvailabilityBadge({
 
 export default function CounselorFinder({
   counselors,
+  filters,
   dict,
   locale,
 }: {
   counselors: Counselor[];
+  filters: CounselingFilter[];
   dict: Dictionary;
   locale: Locale;
 }) {
   const t = dict.counseling;
   const [query, setQuery] = useState("");
-  const [medicationOnly, setMedicationOnly] = useState(false);
+  const [activeFilterIds, setActiveFilterIds] = useState<string[]>([]);
+
+  function toggleFilter(id: string) {
+    setActiveFilterIds((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
+  }
 
   // Read after mount (not as lazy initial state) so server and first
   // client render match, same pattern as the other viewport/preference
@@ -72,9 +84,10 @@ export default function CounselorFinder({
   const results = useMemo(
     () =>
       counselors.filter(
-        (c) => (!medicationOnly || c.prescribesMedication) && counselorMatchesSearch(c, query),
+        (c) =>
+          activeFilterIds.every((id) => c.filterIds.includes(id)) && counselorMatchesSearch(c, query),
       ),
-    [counselors, query, medicationOnly],
+    [counselors, query, activeFilterIds],
   );
 
   return (
@@ -100,20 +113,29 @@ export default function CounselorFinder({
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setMedicationOnly((v) => !v)}
-          aria-pressed={medicationOnly}
-          className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-            medicationOnly
-              ? "border-brand-600 bg-brand-600 text-white"
-              : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
-          }`}
-        >
-          {t.prescribesMedicationFilter}
-        </button>
-      </div>
+      {filters.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {filters.map((f) => {
+            const active = activeFilterIds.includes(f.id);
+            const label = locale === "ar" && f.labelAr ? f.labelAr : f.label;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => toggleFilter(f.id)}
+                aria-pressed={active}
+                className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  active
+                    ? "border-brand-600 bg-brand-600 text-white"
+                    : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {results.length === 0 ? (
         <p className="mt-8 text-sm text-ink/60">

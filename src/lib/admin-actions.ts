@@ -365,13 +365,11 @@ export async function updateCounselorDetails(formData: FormData) {
   const counselorId = String(formData.get("counselorId"));
   const priceRaw = String(formData.get("priceEGP") ?? "").trim();
   const availabilityStatus = String(formData.get("availabilityStatus") ?? "AVAILABLE");
-  const prescribesMedication = formData.get("prescribesMedication") === "on";
   await prisma.counselor.update({
     where: { id: counselorId },
     data: {
       priceEGP: priceRaw === "" ? null : Math.max(0, Number(priceRaw)),
       availabilityStatus: availabilityStatus as never,
-      prescribesMedication,
     },
   });
   revalidatePath("/admin/counselors");
@@ -379,6 +377,50 @@ export async function updateCounselorDetails(formData: FormData) {
   revalidatePath("/counseling");
   revalidatePath("/counseling/[slug]", "page");
   revalidatePath("/");
+}
+
+/** Full CRUD for the filter chips shown on /counseling (see
+ * CounselorFilter in schema.prisma) — lets an admin add or remove filters
+ * without a code change. Per-counselor assignment is a separate action
+ * (updateCounselorFilterAssignments), set from /admin/counselors/[id]. */
+export async function createCounselingFilter(formData: FormData) {
+  await requireAdmin();
+  const label = String(formData.get("label") ?? "").trim();
+  const labelAr = String(formData.get("labelAr") ?? "").trim() || null;
+  if (!label) return;
+  const maxSort = await prisma.counselorFilter.aggregate({ _max: { sortOrder: true } });
+  await prisma.counselorFilter.create({
+    data: { label, labelAr, sortOrder: (maxSort._max.sortOrder ?? -1) + 1 },
+  });
+  revalidatePath("/admin/counseling-filters");
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
+}
+
+export async function deleteCounselingFilter(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await prisma.counselorFilter.delete({ where: { id } });
+  revalidatePath("/admin/counseling-filters");
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
+}
+
+/** Replaces the full set of filters assigned to one counselor with
+ * whichever checkboxes were submitted — simpler and less error-prone than
+ * diffing add/remove, and this form only ever represents the complete set. */
+export async function updateCounselorFilterAssignments(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const filterIds = formData.getAll("filterIds").map(String);
+  await prisma.$transaction([
+    prisma.counselorFilterAssignment.deleteMany({ where: { counselorId } }),
+    prisma.counselorFilterAssignment.createMany({
+      data: filterIds.map((filterId) => ({ counselorId, filterId })),
+    }),
+  ]);
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
 }
 
 /** Grants/revokes a counselor's access to edit the shared, sitewide intake

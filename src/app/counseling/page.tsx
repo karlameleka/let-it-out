@@ -29,25 +29,31 @@ export default async function CounselingPage() {
   // as props, which get serialized into the page's RSC payload — the full
   // row would otherwise ship passwordHash/resetTokenHash/loginTokenHash
   // (therapist portal login credentials) to every visitor's browser.
-  const counselorRows = await prisma.counselor.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      credentials: true,
-      specialties: true,
-      languages: true,
-      nameAr: true,
-      credentialsAr: true,
-      specialtiesAr: true,
-      languagesAr: true,
-      photoUrl: true,
-      availabilityStatus: true,
-      prescribesMedication: true,
-    },
-  });
+  const [counselorRows, filters] = await Promise.all([
+    prisma.counselor.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        credentials: true,
+        specialties: true,
+        languages: true,
+        nameAr: true,
+        credentialsAr: true,
+        specialtiesAr: true,
+        languagesAr: true,
+        photoUrl: true,
+        availabilityStatus: true,
+        filters: { select: { filterId: true } },
+      },
+    }),
+    prisma.counselorFilter.findMany({
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, label: true, labelAr: true },
+    }),
+  ]);
 
   // Arabic display fields fall back to English whenever untranslated; the
   // English specialties/languages arrays stay untouched (unrenamed) below
@@ -61,7 +67,7 @@ export default async function CounselingPage() {
     languages: c.languages,
     photoUrl: c.photoUrl,
     availabilityStatus: c.availabilityStatus,
-    prescribesMedication: c.prescribesMedication,
+    filterIds: c.filters.map((f) => f.filterId),
     displayName: locale === "ar" && c.nameAr ? c.nameAr : c.name,
     displayCredentials: locale === "ar" && c.credentialsAr ? c.credentialsAr : c.credentials,
     displaySpecialties: locale === "ar" && c.specialtiesAr.length > 0 ? c.specialtiesAr : c.specialties,
@@ -101,7 +107,7 @@ export default async function CounselingPage() {
               description={t.chooseDescription}
             />
             <div className="mt-8">
-              <CounselorFinder counselors={counselors} dict={dict} locale={locale} />
+              <CounselorFinder counselors={counselors} filters={filters} dict={dict} locale={locale} />
             </div>
           </Container>
         </Reveal>

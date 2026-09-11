@@ -57,7 +57,6 @@ async function main() {
       active: true,
       email: "A.shehabmo@gmail.com",
       photoUrl: "/counselors/ahmed-shehab.jpg",
-      prescribesMedication: true,
     },
     {
       slug: "lora-samuel",
@@ -76,6 +75,23 @@ async function main() {
       where: { slug: c.slug },
       update: c,
       create: c,
+    });
+  }
+
+  // --- Counseling filters (admin-manageable, /admin/counseling-filters) ---
+  // Fixed id matches the one used by the counselor_filters migration's data
+  // fix, so local seeding and the production migration agree on the same row.
+  const prescribesMedicationFilter = await prisma.counselorFilter.upsert({
+    where: { id: "cf-prescribes-medication" },
+    update: { label: "Prescribes medication", sortOrder: 0 },
+    create: { id: "cf-prescribes-medication", label: "Prescribes medication", sortOrder: 0 },
+  });
+  const ahmedShehab = await prisma.counselor.findUnique({ where: { slug: "ahmed-shehab" } });
+  if (ahmedShehab) {
+    await prisma.counselorFilterAssignment.upsert({
+      where: { counselorId_filterId: { counselorId: ahmedShehab.id, filterId: prescribesMedicationFilter.id } },
+      update: {},
+      create: { counselorId: ahmedShehab.id, filterId: prescribesMedicationFilter.id },
     });
   }
 

@@ -7,6 +7,7 @@ import {
   updateCounselorDetails,
   updateCounselorProfileFromAdmin,
   updateCounselorFormsPermission,
+  updateCounselorFilterAssignments,
   deleteCounselorClient,
   sendTherapistPortalSetupLink,
   sendTherapistLoginLink,
@@ -32,14 +33,19 @@ export default async function AdminCounselorDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const counselor = await prisma.counselor.findUnique({
-    where: { id },
-    include: {
-      sessionBookings: { orderBy: { createdAt: "desc" } },
-      bookingRequests: { orderBy: { createdAt: "desc" } },
-    },
-  });
+  const [counselor, filters] = await Promise.all([
+    prisma.counselor.findUnique({
+      where: { id },
+      include: {
+        sessionBookings: { orderBy: { createdAt: "desc" } },
+        bookingRequests: { orderBy: { createdAt: "desc" } },
+        filters: { select: { filterId: true } },
+      },
+    }),
+    prisma.counselorFilter.findMany({ orderBy: { sortOrder: "asc" } }),
+  ]);
   if (!counselor) notFound();
+  const assignedFilterIds = new Set(counselor.filters.map((f) => f.filterId));
 
   const sessionCounts = countByStatus(counselor.sessionBookings);
   const requestCounts = countByStatus(counselor.bookingRequests);
@@ -131,15 +137,6 @@ export default async function AdminCounselorDetailPage({
               ))}
             </select>
           </label>
-          <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-ink/80">
-            <input
-              type="checkbox"
-              name="prescribesMedication"
-              defaultChecked={counselor.prescribesMedication}
-              className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
-            />
-            Prescribes medication
-          </label>
           <button
             type="submit"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
@@ -155,9 +152,49 @@ export default async function AdminCounselorDetailPage({
             : counselor.availabilityStatus === "WAITLIST"
               ? "Showing a Waitlist badge, booking hidden"
               : "Showing an Unavailable badge, booking hidden"}
-          {" · "}
-          {counselor.prescribesMedication ? "Prescribes medication" : "Does not prescribe medication"}
         </p>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display font-semibold text-brand-900">Counseling filters</h2>
+          <Link href="/admin/counseling-filters" className="text-xs font-medium text-brand-600 underline">
+            Add or remove filters
+          </Link>
+        </div>
+        <p className="mt-1 text-sm text-ink/60">
+          Which filter chips on /counseling this counselor matches. Manage the list of available filters from
+          the link above.
+        </p>
+        {filters.length === 0 ? (
+          <p className="mt-4 text-sm text-ink/50">
+            No filters defined yet — <Link href="/admin/counseling-filters" className="font-medium text-brand-600 underline">add one</Link>.
+          </p>
+        ) : (
+          <form action={updateCounselorFilterAssignments} className="mt-4">
+            <input type="hidden" name="counselorId" value={counselor.id} />
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {filters.map((f) => (
+                <label key={f.id} className="flex items-center gap-2 text-sm font-medium text-ink/80">
+                  <input
+                    type="checkbox"
+                    name="filterIds"
+                    value={f.id}
+                    defaultChecked={assignedFilterIds.has(f.id)}
+                    className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+                  />
+                  {f.label}
+                </label>
+              ))}
+            </div>
+            <button
+              type="submit"
+              className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Save
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="rounded-2xl border border-brand-100 bg-white p-5">

@@ -161,10 +161,6 @@ model Counselor {
   // Controls whether the booking UI on this counselor's page is live.
   // WAITLIST/UNAVAILABLE both show a badge and hide the booking form.
   availabilityStatus AvailabilityStatus @default(AVAILABLE)
-  // True only for counselors licensed to prescribe (psychiatrists) — drives
-  // the "Prescribes medication" filter on /counseling. Admin-set, not
-  // inferred from specialties/credentials text.
-  prescribesMedication Boolean @default(false)
   // Admin-granted permission letting this counselor edit the *shared,
   // sitewide* intake form and reflection sheet question sets from their
   // own /therapist portal (see requireFormsConfigEditor in
@@ -200,6 +196,12 @@ model Counselor {
   // from their own Toolkit page — the built-in tools stay real app
   // features, just personally toggled off rather than deleted.
   hiddenDefaultTools String[] @default([])
+  // Per-counselor override of the "Session prompts" cards shown on their own
+  // Toolkit page (PromptCard[] shape, see therapist-toolkit.ts). Null means
+  // this counselor hasn't customized it yet, so the built-in SESSION_PROMPTS
+  // constant is shown instead — same null-means-defaults pattern as
+  // specialtiesAr/languagesAr elsewhere on this model.
+  sessionPromptCards Json?
 
   bookingRequests     BookingRequest[]
   sessionBookings     SessionBooking[]
@@ -211,6 +213,33 @@ model Counselor {
   referralsReceived   Referral[]              @relation("ReferralsReceived")
   assignedResources   AssignedResource[]
   availabilityWindows CounselorAvailability[]
+  filters             CounselorFilterAssignment[]
+}
+
+// Admin-defined filter chips shown on /counseling (e.g. "Prescribes
+// medication") — replaces what used to be a single hardcoded boolean on
+// Counselor, so the admin dashboard (/admin/counseling-filters) can add or
+// remove filters freely instead of needing a code change per filter.
+// Filter chips combine with AND semantics on the public page: a counselor
+// must carry every currently-selected filter to match.
+model CounselorFilter {
+  id        String   @id @default(cuid())
+  label     String
+  labelAr   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  counselors CounselorFilterAssignment[]
+}
+
+model CounselorFilterAssignment {
+  id          String          @id @default(cuid())
+  counselor   Counselor       @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  counselorId String
+  filter      CounselorFilter @relation(fields: [filterId], references: [id], onDelete: Cascade)
+  filterId    String
+
+  @@unique([counselorId, filterId])
 }
 
 enum AvailabilityStatus {
