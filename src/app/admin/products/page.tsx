@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db";
-import { updateVariantStock, updateProductPlacement, updateProductArabicContent } from "@/lib/admin-actions";
+import { updateVariantStock, updateProductPlacement, updateProductArabicContent, deleteProduct } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 export default async function AdminProductsPage() {
   const products = await prisma.product.findMany({
     orderBy: { sortOrder: "asc" },
-    include: { variants: true },
+    include: { variants: true, _count: { select: { orderItems: true } } },
   });
 
   return (
@@ -135,6 +136,24 @@ export default async function AdminProductsPage() {
               Save Arabic content
             </button>
           </form>
+          <div className="mt-3 border-t border-brand-50 pt-3">
+            {product._count.orderItems > 0 ? (
+              <p className="text-xs text-ink/40">
+                Has order history — can&rsquo;t be deleted. Uncheck &ldquo;Visible&rdquo; above to archive
+                instead.
+              </p>
+            ) : (
+              <form action={deleteProduct}>
+                <input type="hidden" name="productId" value={product.id} />
+                <ConfirmSubmitButton
+                  confirmMessage={`Delete ${product.title}? This removes it permanently. It has no order history yet, so nothing else is affected.`}
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                >
+                  Delete product
+                </ConfirmSubmitButton>
+              </form>
+            )}
+          </div>
         </div>
       ))}
     </div>

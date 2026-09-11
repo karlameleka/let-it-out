@@ -308,6 +308,32 @@ export async function updateProductPlacement(formData: FormData) {
   revalidatePath("/");
 }
 
+// Real hard delete — unlike archiving (the "Visible" checkbox), this
+// removes the product row outright. Only safe to run when no order has
+// ever included it: OrderItem.productId/productVariantId are required
+// fields, so deleting a product with order history would either violate
+// those foreign keys or, if cascaded, silently erase real purchase
+// records. The admin UI only ever renders this action for a product with
+// zero orders; this re-check is defense in depth, not the primary gate.
+export async function deleteProduct(formData: FormData) {
+  await requireAdmin();
+  const productId = String(formData.get("productId"));
+
+  const orderItemCount = await prisma.orderItem.count({ where: { productId } });
+  if (orderItemCount > 0) return;
+
+  // PromoCodeProduct cascades on delete at the DB level already — only
+  // ProductVariant (no order history if we got this far) needs clearing
+  // by hand first.
+  await prisma.$transaction([
+    prisma.productVariant.deleteMany({ where: { productId } }),
+    prisma.product.delete({ where: { id: productId } }),
+  ]);
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  revalidatePath("/");
+}
+
 export async function updateProductArabicContent(formData: FormData) {
   await requireAdmin();
   const productId = String(formData.get("productId"));
