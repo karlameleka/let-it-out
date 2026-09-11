@@ -19,6 +19,7 @@ async function main() {
       active: true,
       priceEGP: 1000,
       photoUrl: "/counselors/verna-awad.jpg",
+      canEditFormsConfig: true,
     },
     {
       slug: "karla-meleka",
@@ -31,6 +32,7 @@ async function main() {
       active: true,
       priceEGP: 800,
       photoUrl: "/counselors/karla-meleka.jpg",
+      canEditFormsConfig: true,
     },
     {
       slug: "hana-khaled",

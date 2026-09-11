@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/lib/session";
+import { requireFormsConfigEditor } from "@/lib/forms-config-auth";
 import { revalidatePath } from "next/cache";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -31,7 +31,7 @@ export async function getReflectionQuestions(locale: Locale = "en"): Promise<Ref
  * on the client's own device and are never parsed against this config. */
 export async function updateReflectionSheetQuestions(formData: FormData) {
   "use server";
-  await requireAdmin();
+  await requireFormsConfigEditor();
   const questions = JSON.parse(String(formData.get("questionsJson") ?? "[]"));
   const questionsAr = JSON.parse(String(formData.get("questionsArJson") ?? "[]"));
 
@@ -42,4 +42,5 @@ export async function updateReflectionSheetQuestions(formData: FormData) {
   });
 
   revalidatePath("/admin/reflection-sheet");
+  revalidatePath("/therapist/reflection-sheet");
 }

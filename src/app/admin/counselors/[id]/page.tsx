@@ -6,6 +6,7 @@ import { formatEGP } from "@/lib/format";
 import {
   updateCounselorDetails,
   updateCounselorProfileFromAdmin,
+  updateCounselorFormsPermission,
   deleteCounselorClient,
   sendTherapistPortalSetupLink,
   sendTherapistLoginLink,
@@ -214,6 +215,36 @@ export default async function AdminCounselorDetailPage({
             </form>
           )}
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <h2 className="font-display font-semibold text-brand-900">Permissions</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Extra access beyond {counselor.name.split(" ")[0]}&rsquo;s own clients and profile.
+        </p>
+        <form action={updateCounselorFormsPermission} className="mt-4">
+          <input type="hidden" name="counselorId" value={counselor.id} />
+          <label className="flex items-center gap-2 text-sm font-medium text-ink/80">
+            <input
+              type="checkbox"
+              name="canEditFormsConfig"
+              defaultChecked={counselor.canEditFormsConfig}
+              className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            Can edit the sitewide intake form &amp; reflection sheet
+          </label>
+          <p className="mt-1 text-xs text-ink/50">
+            Adds &ldquo;Intake form&rdquo; and &ldquo;Reflection sheet&rdquo; tabs to their therapist portal. These
+            are shared, sitewide question sets used for every counselor&rsquo;s clients, not a per-counselor copy —
+            changes they save apply everywhere, same as when an admin edits them here.
+          </p>
+          <button
+            type="submit"
+            className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            Save
+          </button>
+        </form>
       </div>
 
       <div className="rounded-2xl border border-brand-100 bg-white p-5">

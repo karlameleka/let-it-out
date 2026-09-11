@@ -381,6 +381,17 @@ export async function updateCounselorDetails(formData: FormData) {
   revalidatePath("/");
 }
 
+/** Grants/revokes a counselor's access to edit the shared, sitewide intake
+ * form and reflection sheet question sets from their own /therapist
+ * portal — see forms-config-auth.ts. */
+export async function updateCounselorFormsPermission(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const canEditFormsConfig = formData.get("canEditFormsConfig") === "on";
+  await prisma.counselor.update({ where: { id: counselorId }, data: { canEditFormsConfig } });
+  revalidatePath("/admin/counselors/[id]", "page");
+}
+
 export async function updateCounselorProfileFromAdmin(formData: FormData) {
   await requireAdmin();
   const counselorId = String(formData.get("counselorId"));

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS = [
+const BASE_TABS = [
   { href: "/therapist", label: "Overview" },
   { href: "/therapist/clients", label: "Clients" },
   { href: "/therapist/calendar", label: "Calendar" },
@@ -13,8 +13,17 @@ const TABS = [
   { href: "/therapist/settings", label: "Settings" },
 ];
 
-export default function TherapistNav() {
+// Only shown to counselors an admin has granted Counselor.canEditFormsConfig
+// — editing the shared sitewide intake form / reflection sheet, not
+// something every counselor needs access to.
+const FORMS_CONFIG_TABS = [
+  { href: "/therapist/intake-form", label: "Intake form" },
+  { href: "/therapist/reflection-sheet", label: "Reflection sheet" },
+];
+
+export default function TherapistNav({ canEditFormsConfig = false }: { canEditFormsConfig?: boolean }) {
   const pathname = usePathname();
+  const TABS = canEditFormsConfig ? [...BASE_TABS, ...FORMS_CONFIG_TABS] : BASE_TABS;
 
   return (
     <nav className="mt-6 flex flex-wrap gap-2 border-b border-brand-200 pb-2">

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/lib/session";
+import { requireFormsConfigEditor } from "@/lib/forms-config-auth";
 import { revalidatePath } from "next/cache";
 import type { IntakeSection } from "@/lib/intake-form-schema";
 import type { Locale } from "@/lib/i18n/locale";
@@ -36,7 +36,7 @@ export async function getIntakeSections(locale: Locale = "en"): Promise<IntakeSe
  */
 export async function updateIntakeFormSections(formData: FormData) {
   "use server";
-  await requireAdmin();
+  await requireFormsConfigEditor();
   // Parsed straight from JSON, so it's already a plain JSON-compatible
   // value — Prisma's Json input type just wants that structurally, not the
   // IntakeSection[] shape.
@@ -50,4 +50,5 @@ export async function updateIntakeFormSections(formData: FormData) {
   });
 
   revalidatePath("/admin/intake-form");
+  revalidatePath("/therapist/intake-form");
 }

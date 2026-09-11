@@ -165,6 +165,13 @@ model Counselor {
   // the "Prescribes medication" filter on /counseling. Admin-set, not
   // inferred from specialties/credentials text.
   prescribesMedication Boolean @default(false)
+  // Admin-granted permission letting this counselor edit the *shared,
+  // sitewide* intake form and reflection sheet question sets from their
+  // own /therapist portal (see requireFormsConfigEditor in
+  // forms-config-auth.ts) — the same singleton config the admin dashboard
+  // edits, not a per-counselor copy. Off by default; most counselors never
+  // see those tabs.
+  canEditFormsConfig Boolean @default(false)
 
   // Self-service therapist portal login (/therapist). Null passwordHash
   // means portal access hasn't been set up yet for this counselor — an
