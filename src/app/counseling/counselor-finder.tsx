@@ -21,6 +21,7 @@ type Counselor = {
   displayLanguages: string[];
   photoUrl: string | null;
   availabilityStatus: "AVAILABLE" | "WAITLIST" | "UNAVAILABLE";
+  prescribesMedication: boolean;
 };
 
 function AvailabilityBadge({
@@ -53,6 +54,7 @@ export default function CounselorFinder({
 }) {
   const t = dict.counseling;
   const [query, setQuery] = useState("");
+  const [medicationOnly, setMedicationOnly] = useState(false);
 
   // Read after mount (not as lazy initial state) so server and first
   // client render match, same pattern as the other viewport/preference
@@ -68,8 +70,11 @@ export default function CounselorFinder({
   }, []);
 
   const results = useMemo(
-    () => counselors.filter((c) => counselorMatchesSearch(c, query)),
-    [counselors, query],
+    () =>
+      counselors.filter(
+        (c) => (!medicationOnly || c.prescribesMedication) && counselorMatchesSearch(c, query),
+      ),
+    [counselors, query, medicationOnly],
   );
 
   return (
@@ -93,6 +98,21 @@ export default function CounselorFinder({
             <X className="h-4 w-4" strokeWidth={2} />
           </button>
         )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setMedicationOnly((v) => !v)}
+          aria-pressed={medicationOnly}
+          className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            medicationOnly
+              ? "border-brand-600 bg-brand-600 text-white"
+              : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
+          }`}
+        >
+          {t.prescribesMedicationFilter}
+        </button>
       </div>
 
       {results.length === 0 ? (

@@ -130,6 +130,15 @@ export default async function AdminCounselorDetailPage({
               ))}
             </select>
           </label>
+          <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-ink/80">
+            <input
+              type="checkbox"
+              name="prescribesMedication"
+              defaultChecked={counselor.prescribesMedication}
+              className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            Prescribes medication
+          </label>
           <button
             type="submit"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
@@ -145,6 +154,8 @@ export default async function AdminCounselorDetailPage({
             : counselor.availabilityStatus === "WAITLIST"
               ? "Showing a Waitlist badge, booking hidden"
               : "Showing an Unavailable badge, booking hidden"}
+          {" · "}
+          {counselor.prescribesMedication ? "Prescribes medication" : "Does not prescribe medication"}
         </p>
       </div>
 

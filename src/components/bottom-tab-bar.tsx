@@ -24,8 +24,8 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85 lg:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-brand-200 bg-white shadow-[0_-4px_16px_-4px_rgba(18,53,67,0.12)] lg:hidden"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.25rem)" }}
     >
       {TABS.map(({ href, label, icon: Icon, matches, badge }) => {
         const active = matches.some((m) => (m === "/" ? pathname === "/" : pathname === m || pathname?.startsWith(m + "/")));
@@ -34,7 +34,7 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
             key={href}
             href={href}
             onClick={hapticTap}
-            className={`flex flex-1 flex-col items-center gap-1 py-3 text-[11.5px] font-bold transition-colors ${
+            className={`flex flex-1 flex-col items-center gap-1 py-3.5 text-[11.5px] font-bold transition-colors ${
               active ? "text-brand-700" : "text-ink/40"
             }`}
           >

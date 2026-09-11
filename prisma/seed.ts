@@ -55,6 +55,7 @@ async function main() {
       active: true,
       email: "A.shehabmo@gmail.com",
       photoUrl: "/counselors/ahmed-shehab.jpg",
+      prescribesMedication: true,
     },
     {
       slug: "lora-samuel",

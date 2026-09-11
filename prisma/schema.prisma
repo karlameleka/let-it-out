@@ -161,6 +161,10 @@ model Counselor {
   // Controls whether the booking UI on this counselor's page is live.
   // WAITLIST/UNAVAILABLE both show a badge and hide the booking form.
   availabilityStatus AvailabilityStatus @default(AVAILABLE)
+  // True only for counselors licensed to prescribe (psychiatrists) — drives
+  // the "Prescribes medication" filter on /counseling. Admin-set, not
+  // inferred from specialties/credentials text.
+  prescribesMedication Boolean @default(false)
 
   // Self-service therapist portal login (/therapist). Null passwordHash
   // means portal access hasn't been set up yet for this counselor — an

@@ -203,6 +203,7 @@ const en = {
     searchPlaceholder: "Search by concern, specialty, or name (e.g. anxiety, CBT, family)",
     searchPlaceholderShort: "Search by concern, specialty, or name",
     clear: "Clear",
+    prescribesMedicationFilter: "Prescribes medication",
     emptyStateText: "No counselor matches that specifically, but reach out through our",
     emptyStateLink: "contact page",
     emptyStateSuffix: "and we'll help you find the right fit.",

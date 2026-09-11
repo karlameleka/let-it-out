@@ -201,6 +201,7 @@ const ar: Dictionary = {
     searchPlaceholder: "ابحث حسب المشكلة أو التخصص أو الاسم (مثال: قلق، CBT، أسرة)",
     searchPlaceholderShort: "ابحث حسب المشكلة أو التخصص أو الاسم",
     clear: "مسح",
+    prescribesMedicationFilter: "بيصرف أدوية",
     emptyStateText: "لا يوجد معالج يطابق ذلك تحديدًا، لكن تواصل معنا عبر",
     emptyStateLink: "صفحة التواصل",
     emptyStateSuffix: "وسنساعدك في إيجاد الأنسب لك.",

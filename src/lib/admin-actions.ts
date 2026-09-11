@@ -339,11 +339,13 @@ export async function updateCounselorDetails(formData: FormData) {
   const counselorId = String(formData.get("counselorId"));
   const priceRaw = String(formData.get("priceEGP") ?? "").trim();
   const availabilityStatus = String(formData.get("availabilityStatus") ?? "AVAILABLE");
+  const prescribesMedication = formData.get("prescribesMedication") === "on";
   await prisma.counselor.update({
     where: { id: counselorId },
     data: {
       priceEGP: priceRaw === "" ? null : Math.max(0, Number(priceRaw)),
       availabilityStatus: availabilityStatus as never,
+      prescribesMedication,
     },
   });
   revalidatePath("/admin/counselors");

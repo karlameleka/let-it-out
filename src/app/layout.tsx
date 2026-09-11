@@ -82,7 +82,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       dir={dirForLocale(locale)}
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-ink pb-20 lg:pb-0">
+      <body className="min-h-full flex flex-col bg-white text-ink pb-24 lg:pb-0">
         <InitialSplash />
         <OfflineBanner message={dict.offline.bannerMessage} />
         <CurrencyProvider>
