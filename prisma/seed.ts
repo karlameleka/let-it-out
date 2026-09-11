@@ -45,6 +45,18 @@ async function main() {
       photoUrl: "/counselors/hana-khaled.jpg",
     },
     {
+      slug: "ahmed-shehab",
+      name: "Ahmed Shehab",
+      credentials: "Psychiatrist",
+      bio: "Dr. Ahmed Shehab is a psychiatrist with a broad clinical practice spanning general and adult psychiatry, child and adolescent psychiatry, addiction psychiatry, and consultation-liaison psychiatry. In general and adult psychiatry, he works with depression, anxiety, bipolar disorder, schizophrenia, suicide prevention, personality disorders, stress-related disorders, PTSD, burnout, and family counseling. In child and adolescent psychiatry, he supports young clients and their families with ADHD, ASD, ODD, learning and intellectual disabilities, personality and conduct concerns, and parenting skills. His addiction psychiatry practice covers substance use disorders, gambling and gaming addiction, and dual-diagnosis presentations, alongside sleep psychiatry for insomnia and parasomnias. His psychotherapy practice draws on CBT, ACT, DBT, and parenting and family therapy.",
+      specialties: ["General & Adult Psychiatry", "Child & Adolescent Psychiatry", "Addiction Psychiatry", "CBT", "DBT"],
+      languages: ["Arabic", "English"],
+      sortOrder: 4,
+      active: true,
+      email: "A.shehabmo@gmail.com",
+      photoUrl: "/counselors/ahmed-shehab.jpg",
+    },
+    {
       slug: "lora-samuel",
       name: "Lora Samuel",
       credentials: "Psychotherapist & Trainer, MSc Clinical Psychology (British University in Egypt)",
