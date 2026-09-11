@@ -53,7 +53,7 @@ export default async function AccountPage() {
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{t.journalPrivacyTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.journalPrivacyDescription}</p>
-        <JournalLockToggle initialEnabled={user?.journalLockEnabled ?? false} dict={dict} />
+        <JournalLockToggle initialEnabled={user?.journalLockEnabled ?? false} dict={dict} hasPassword={hasPassword} />
       </div>
 
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">

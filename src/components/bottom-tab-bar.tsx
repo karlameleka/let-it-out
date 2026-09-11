@@ -24,7 +24,7 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85 lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {TABS.map(({ href, label, icon: Icon, matches, badge }) => {

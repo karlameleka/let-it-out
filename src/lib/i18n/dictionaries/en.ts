@@ -783,6 +783,9 @@ const en = {
     lockToggleLabel: "Require password to open your journal",
     lockToggleDescription:
       "Off by default. When on, you'll re-enter your password each time you open the journal in a new tab.",
+    lockToggleOffConfirmPrompt: "Confirm your password to turn this off.",
+    lockToggleTurnOff: "Turn off",
+    lockToggleIncorrectPassword: "Incorrect password.",
     changePasswordTitle: "Change password",
     changePasswordDescription: "Choose a new password with at least 8 characters.",
     currentPassword: "Current password",
@@ -1012,6 +1015,13 @@ const en = {
     deleting: "Deleting…",
     delete: "Delete",
     cancel: "Cancel",
+    edit: "Edit",
+    editThisEntry: "Edit this entry",
+    saveChanges: "Save changes",
+    savingChanges: "Saving…",
+    edited: "Edited",
+    editWriteSomethingError: "Write a little something before saving.",
+    editSaveError: "Couldn't save your changes — try again.",
   },
   moodPatterns: {
     title: "Mood patterns",
@@ -1083,9 +1093,13 @@ const en = {
   articleFilter: {
     searchPlaceholder: "Search articles...",
     allTopics: "All topics",
+    favoritesOnly: "Favorites",
     noMatches: "No articles match that search.",
+    noFavorites: "You haven't favorited any articles yet.",
     minRead: "min read",
     readArticle: "Read article",
+    favoriteArticle: "Favorite this article",
+    removeFavorite: "Remove from favorites",
   },
   articleProgressBadge: {
     completed: "Completed",

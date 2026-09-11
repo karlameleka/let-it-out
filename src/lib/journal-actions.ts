@@ -70,11 +70,31 @@ export async function exportJournalEntries(): Promise<JournalExportData | null> 
   };
 }
 
-export async function updateJournalLockSetting(enabled: boolean): Promise<{ success: boolean }> {
-  const user = await requireUser().catch(() => null);
-  if (!user) return { success: false };
+/**
+ * Turning the lock ON never needs confirmation — it can only make the
+ * journal harder to get into. Turning it OFF removes that protection, so
+ * (mirroring deleteAccountAction's same distinction) it requires the
+ * account password first, except for a Google-only account with no
+ * password to confirm with, where the session cookie already is the
+ * authorization.
+ */
+export async function updateJournalLockSetting(
+  enabled: boolean,
+  password?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await requireUser().catch(() => null);
+  if (!session) return { success: false, error: "Please log in again." };
 
-  await prisma.user.update({ where: { id: user.userId }, data: { journalLockEnabled: enabled } });
+  if (!enabled) {
+    const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { passwordHash: true } });
+    if (user?.passwordHash) {
+      if (!password) return { success: false, error: "Enter your password to turn this off." };
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) return { success: false, error: "Incorrect password." };
+    }
+  }
+
+  await prisma.user.update({ where: { id: session.userId }, data: { journalLockEnabled: enabled } });
   return { success: true };
 }
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, Star } from "lucide-react";
 import type { Article } from "@/lib/content/articles";
 import ArticleProgressBadge from "./article-progress-badge";
+import { getFavoriteArticleSlugs, toggleArticleFavorite } from "@/lib/article-favorites";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 import { toArabicDigits } from "@/lib/format";
@@ -24,6 +25,19 @@ export default function ArticleFilter({
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  // Read after mount (not as a lazy initial state) so the server-rendered
+  // and first client render stay identical — same hydration-mismatch
+  // avoidance as ArticleProgressBadge.
+  const [favorites, setFavorites] = useState<string[]>([]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFavorites(getFavoriteArticleSlugs());
+  }, []);
+
+  function handleToggleFavorite(slug: string) {
+    setFavorites(toggleArticleFavorite(slug));
+  }
 
   const visibleArticles = useMemo(
     () => articles.filter((a) => !hiddenSlugs.includes(a.slug)),
@@ -35,6 +49,7 @@ export default function ArticleFilter({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return visibleArticles.filter((a) => {
+      if (favoritesOnly && !favorites.includes(a.slug)) return false;
       if (category && a.category !== category) return false;
       if (!q) return true;
       return (
@@ -43,7 +58,7 @@ export default function ArticleFilter({
         a.category.toLowerCase().includes(q)
       );
     });
-  }, [visibleArticles, query, category]);
+  }, [visibleArticles, query, category, favoritesOnly, favorites]);
 
   return (
     <>
@@ -87,38 +102,69 @@ export default function ArticleFilter({
               {c}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setFavoritesOnly((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+              favoritesOnly
+                ? "border-brand-600 bg-brand-600 text-white"
+                : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
+            }`}
+          >
+            <Star className="h-3.5 w-3.5" strokeWidth={2} fill={favoritesOnly ? "currentColor" : "none"} />
+            {dict.favoritesOnly}
+          </button>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="mt-10 text-sm text-ink/60">{dict.noMatches}</p>
+        <p className="mt-10 text-sm text-ink/60">{favoritesOnly ? dict.noFavorites : dict.noMatches}</p>
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          {filtered.map((article) => (
-            <Link
-              key={article.slug}
-              href={`/resources/${article.slug}`}
-              className="group rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
-            >
-              <p className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-500 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">
-                {article.category} ·{" "}
-                {locale === "ar" ? toArabicDigits(String(article.readMinutes)) : article.readMinutes}{" "}
-                {dict.minRead}
-                <ArticleProgressBadge
-                  slug={article.slug}
-                  totalMilestones={article.sections.length + article.checkIns.length}
-                  dict={progressDict}
-                />
-              </p>
-              <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
-                {article.title}
-              </h3>
-              <p className="mt-2 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{article.excerpt}</p>
-              <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                {dict.readArticle} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
-              </p>
-            </Link>
-          ))}
+          {filtered.map((article) => {
+            const favorited = favorites.includes(article.slug);
+            return (
+              <Link
+                key={article.slug}
+                href={`/resources/${article.slug}`}
+                className="group relative rounded-2xl border-[1.5px] border-brand-900 bg-white p-6 transition-colors duration-300 hover:bg-brand-900 active:bg-brand-900"
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggleFavorite(article.slug);
+                  }}
+                  aria-label={favorited ? dict.removeFavorite : dict.favoriteArticle}
+                  className={`absolute end-4 top-4 z-10 rounded-full p-1 transition-colors ${
+                    favorited
+                      ? "text-brand-600 group-hover:text-white group-active:text-white"
+                      : "text-ink/25 hover:text-ink/50 active:text-ink/50 group-hover:text-white/40 group-active:text-white/40"
+                  }`}
+                >
+                  <Star className="h-4 w-4" strokeWidth={2} fill={favorited ? "currentColor" : "none"} />
+                </button>
+                <p className="flex items-center pe-6 text-xs font-semibold uppercase tracking-wide text-brand-500 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">
+                  {article.category} ·{" "}
+                  {locale === "ar" ? toArabicDigits(String(article.readMinutes)) : article.readMinutes}{" "}
+                  {dict.minRead}
+                  <ArticleProgressBadge
+                    slug={article.slug}
+                    totalMilestones={article.sections.length + article.checkIns.length}
+                    dict={progressDict}
+                  />
+                </p>
+                <h3 className="mt-2 font-display text-xl font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">
+                  {article.title}
+                </h3>
+                <p className="mt-2 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{article.excerpt}</p>
+                <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
+                  {dict.readArticle} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
+                </p>
+              </Link>
+            );
+          })}
         </div>
       )}
     </>

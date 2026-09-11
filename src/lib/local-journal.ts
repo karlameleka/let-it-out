@@ -31,7 +31,7 @@ export type JournalStats = { total: number; streak: number; totalWords: number }
 
 export type JournalFeedData = { entries: JournalFeedEntry[]; stats: JournalStats };
 
-export type JournalEntryDetail = JournalFeedEntry;
+export type JournalEntryDetail = JournalFeedEntry & { updatedAt: string };
 
 export type JournalExportEntry = JournalFeedEntry & { updatedAt: string };
 
@@ -192,7 +192,7 @@ export async function getEntryDetail(userId: string, id: string): Promise<Journa
   const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
   if (!stored) return null;
   const key = await getKey(db);
-  return decryptEntry(key, stored);
+  return { ...(await decryptEntry(key, stored)), updatedAt: stored.updatedAt };
 }
 
 export async function createEntry(
@@ -213,6 +213,26 @@ export async function createEntry(
     prompt: input.prompt,
   };
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+}
+
+/** Edits an existing entry's content/moods/photo in place — the original
+ * prompt and createdAt stay fixed, only updatedAt moves. */
+export async function updateEntry(
+  userId: string,
+  id: string,
+  input: { content: string; moods: string[]; photoUrl: string | null },
+): Promise<{ success: boolean }> {
+  const db = await openDb(userId);
+  const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
+  if (!stored) return { success: false };
+
+  const key = await getKey(db);
+  stored.encContent = await encryptString(key, input.content);
+  stored.encPhoto = input.photoUrl ? await encryptString(key, input.photoUrl) : null;
+  stored.mood = input.moods;
+  stored.updatedAt = new Date().toISOString();
+  await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+  return { success: true };
 }
 
 export async function toggleBookmark(userId: string, id: string): Promise<{ success: boolean; bookmarked?: boolean }> {

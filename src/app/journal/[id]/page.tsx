@@ -23,7 +23,14 @@ export default async function JournalEntryPage({
 
   return (
     <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>
-      <EntryDetailClient userId={user.userId} id={id} dict={dict.entryDetail} locale={locale} />
+      <EntryDetailClient
+        userId={user.userId}
+        id={id}
+        dict={dict.entryDetail}
+        entryFormDict={dict.entryForm}
+        moodPickerDict={dict.moodPicker}
+        locale={locale}
+      />
     </JournalLockGate>
   );
 }
