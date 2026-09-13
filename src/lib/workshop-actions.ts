@@ -7,17 +7,18 @@ import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission } from "@/lib/anti-spam";
 
 function buildWorkshopInquirySchema(v: Dictionary["validation"], w: Dictionary["workshopForm"]) {
   return z.object({
-    organizationName: z.string().trim().min(1, w.orgNameRequired),
-    contactName: z.string().trim().min(1, v.nameRequired),
-    email: z.string().trim().email(v.emailInvalid),
-    phone: z.string().trim().min(5, v.phoneInvalid),
-    workshopTopic: z.string().trim().min(1, w.topicRequired),
-    groupSize: z.string().trim().optional(),
-    preferredDates: z.string().trim().optional(),
-    message: z.string().trim().optional(),
+    organizationName: z.string().trim().min(1, w.orgNameRequired).max(200),
+    contactName: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    phone: z.string().trim().min(5, v.phoneInvalid).max(30),
+    workshopTopic: z.string().trim().min(1, w.topicRequired).max(200),
+    groupSize: z.string().trim().max(50).optional(),
+    preferredDates: z.string().trim().max(300).optional(),
+    message: z.string().trim().max(5000).optional(),
   });
 }
 
@@ -27,6 +28,9 @@ export async function submitWorkshopInquiry(
   _prevState: WorkshopFormState,
   formData: FormData,
 ): Promise<WorkshopFormState> {
+  const blocked = await screenSubmission(formData, "workshop-inquiry");
+  if (blocked) return blocked;
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
 

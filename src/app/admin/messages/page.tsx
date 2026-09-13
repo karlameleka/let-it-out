@@ -1,12 +1,33 @@
 import { prisma } from "@/lib/db";
 import { deleteContactMessage } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import AdminPagination from "@/components/admin-pagination";
+import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 
-export default async function AdminMessagesPage() {
-  const messages = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
+export default async function AdminMessagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const page = parseAdminPage(pageParam);
+
+  const [messages, totalCount] = await Promise.all([
+    prisma.contactMessage.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
+    }),
+    prisma.contactMessage.count(),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_PAGE_SIZE));
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-ink/60">
+        {totalCount} {totalCount === 1 ? "message" : "messages"}
+        {totalPages > 1 && ` — showing page ${page} of ${totalPages}`}
+      </p>
       {messages.length === 0 && <p className="text-sm text-ink/60">No messages yet.</p>}
       {messages.map((m) => (
         <div key={m.id} className="rounded-2xl border border-brand-100 bg-white p-5">
@@ -29,6 +50,7 @@ export default async function AdminMessagesPage() {
           <p className="mt-1 text-xs text-ink/40">{m.createdAt.toLocaleString("en-GB")}</p>
         </div>
       ))}
+      <AdminPagination page={page} totalPages={totalPages} basePath="/admin/messages" />
     </div>
   );
 }

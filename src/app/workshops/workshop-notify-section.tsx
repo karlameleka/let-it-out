@@ -4,6 +4,8 @@ import { useActionState } from "react";
 import { submitWorkshopInterest } from "@/lib/workshop-interest-actions";
 import { Logo } from "@/components/logo";
 import { Button, Container } from "@/components/ui";
+import HoneypotField from "@/components/honeypot-field";
+import TurnstileWidget from "@/components/turnstile-widget";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function WorkshopNotifySection({ dict }: { dict: Dictionary["workshopNotify"] }) {
@@ -20,17 +22,21 @@ export default function WorkshopNotifySection({ dict }: { dict: Dictionary["work
         ) : (
           <>
             <p className="mt-3 text-sm text-white/70">{dict.description}</p>
-            <form action={formAction} className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder={dict.emailPlaceholder}
-                className="w-full flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/50 outline-none focus:border-white/60 sm:max-w-xs"
-              />
-              <Button type="submit" variant="bright" disabled={pending} className="shrink-0">
-                {pending ? dict.submitting : dict.submit}
-              </Button>
+            <form action={formAction} className="mt-6 flex flex-col items-center gap-2">
+              <HoneypotField />
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  placeholder={dict.emailPlaceholder}
+                  className="w-full flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/50 outline-none focus:border-white/60 sm:max-w-xs"
+                />
+                <Button type="submit" variant="bright" disabled={pending} className="shrink-0">
+                  {pending ? dict.submitting : dict.submit}
+                </Button>
+              </div>
+              <TurnstileWidget theme="dark" />
             </form>
             {state?.error && <p className="mt-2 text-xs text-red-200">{state.error}</p>}
           </>

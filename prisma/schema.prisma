@@ -593,6 +593,8 @@ model BookingRequest {
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
   createdAt      DateTime      @default(now())
+
+  @@index([createdAt])
 }
 
 // A recurring weekly window (e.g. "Monday 09:00–17:00") a counselor has
@@ -641,6 +643,8 @@ model WorkshopInquiry {
   message          String?       @db.Text
   status           InquiryStatus @default(NEW)
   createdAt        DateTime      @default(now())
+
+  @@index([createdAt])
 }
 
 enum ProductCategory {
@@ -833,18 +837,24 @@ model ContactMessage {
   subject   String
   message   String   @db.Text
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model WorkshopInterestSignup {
   id        String   @id @default(cuid())
   email     String
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model ResourceNotifySignup {
   id        String   @id @default(cuid())
   email     String
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model JournalPrompt {
@@ -964,6 +974,26 @@ model Lead {
   notes         String?    @db.Text
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+
+  @@index([type, createdAt])
+  @@index([createdAt])
+}
+
+// One row per public-form submission attempt, used only to enforce the
+// 3-requests-per-10-minutes-per-IP limit shared across every unauthenticated
+// lead-capturing form (contact, workshop interest/inquiry, resource notify,
+// booking request) — see checkRateLimit() in anti-spam.ts. `key` is
+// "<routeKey>:<ip>" so each form has its own quota per IP. Rows past their
+// window are opportunistically deleted the next time that same key is hit,
+// which keeps this table's size roughly proportional to actual traffic
+// instead of growing without bound the way Lead/ContactMessage did during
+// the September 2026 spam-bot incident.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }
 
 enum ResourcesPromoPlacement {

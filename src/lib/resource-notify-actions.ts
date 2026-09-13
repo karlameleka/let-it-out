@@ -7,10 +7,11 @@ import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission } from "@/lib/anti-spam";
 
 function buildSchema(v: Dictionary["validation"]) {
   return z.object({
-    email: z.string().trim().email(v.emailInvalid),
+    email: z.string().trim().email(v.emailInvalid).max(320),
   });
 }
 
@@ -20,6 +21,9 @@ export async function submitResourceNotify(
   _prevState: ResourceNotifyFormState,
   formData: FormData,
 ): Promise<ResourceNotifyFormState> {
+  const blocked = await screenSubmission(formData, "resource-notify");
+  if (blocked) return blocked;
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
 

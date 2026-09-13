@@ -7,13 +7,14 @@ import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission } from "@/lib/anti-spam";
 
 function buildContactSchema(v: Dictionary["validation"], c: Dictionary["contact"]) {
   return z.object({
-    name: z.string().trim().min(1, v.nameRequired),
-    email: z.string().trim().email(v.emailInvalid),
-    subject: z.string().trim().min(1, c.subjectRequired),
-    message: z.string().trim().min(5, c.messageRequired),
+    name: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    subject: z.string().trim().min(1, c.subjectRequired).max(300),
+    message: z.string().trim().min(5, c.messageRequired).max(5000),
   });
 }
 
@@ -23,6 +24,9 @@ export async function submitContactMessage(
   _prevState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
+  const blocked = await screenSubmission(formData, "contact");
+  if (blocked) return blocked;
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
 

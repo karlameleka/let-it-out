@@ -9,6 +9,7 @@ import { createLead } from "@/lib/leads";
 import { sendIntakeFormLink } from "@/lib/intake-actions";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission } from "@/lib/anti-spam";
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   INDIVIDUAL_COUNSELING: "Individual",
@@ -33,13 +34,13 @@ function sessionTypeLabelFor(sessionType: string, b: Dictionary["bookingForm"]):
 function buildBookingSchema(v: Dictionary["validation"], b: Dictionary["bookingForm"]) {
   return z.object({
     counselorId: z.string().min(1),
-    name: z.string().trim().min(1, v.nameRequired),
-    email: z.string().trim().email(v.emailInvalid),
-    phone: z.string().trim().min(5, v.phoneInvalid),
+    name: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    phone: z.string().trim().min(5, v.phoneInvalid).max(30),
     sessionType: z.enum(["INDIVIDUAL_COUNSELING", "COUPLES_COUNSELING", "FOLLOW_UP", "OTHER"]),
-    preferredDate: z.string().trim().min(1, b.dateRequired),
-    preferredTime: z.string().trim().min(1, b.timeRequired),
-    message: z.string().trim().optional(),
+    preferredDate: z.string().trim().min(1, b.dateRequired).max(50),
+    preferredTime: z.string().trim().min(1, b.timeRequired).max(50),
+    message: z.string().trim().max(5000).optional(),
   });
 }
 
@@ -49,6 +50,9 @@ export async function submitBookingRequest(
   _prevState: BookingFormState,
   formData: FormData,
 ): Promise<BookingFormState> {
+  const blocked = await screenSubmission(formData, "booking-request");
+  if (blocked) return blocked;
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
 
