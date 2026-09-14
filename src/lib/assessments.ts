@@ -15,6 +15,11 @@ export type AssessmentCategory = {
   label: string;
   /** Shown under this category on the results screen. */
   description: string;
+  /** True for patterns worth flagging for support (e.g. avoidance,
+   * self-blame, or the less-adaptive defense mechanisms). When this
+   * category comes out on top, the results screen points toward
+   * counseling instead of just showing the score. */
+  concern?: boolean;
 };
 
 export type AssessmentQuestion = {
@@ -28,6 +33,9 @@ export type AssessmentDefinition = {
   title: string;
   eyebrow: string;
   intro: string;
+  /** One short paragraph on why this particular assessment is worth taking,
+   * shown on the intro screen above "What to expect". */
+  whyTakeThis: string;
   /** Short bullets shown on the intro screen before the quiz starts, e.g.
    * question count / time / format — sets expectations up front. */
   whatToExpect: string[];
@@ -45,6 +53,8 @@ const loveLanguages: AssessmentDefinition = {
   eyebrow: "Self-Exploration",
   intro:
     "How do you most naturally feel loved, and how do you most naturally show love to others? Rate how much each statement sounds like you, there's no right answer, and most people relate to more than one.",
+  whyTakeThis:
+    "Understanding how you give and receive love can make your closest relationships feel a lot less like guesswork, whether that's with a partner, a family member, or a close friend. It gives you and the people you care about a shared language for what actually makes each other feel valued.",
   whatToExpect: [
     "20 short statements, rated on a scale from “not at all like me” to “extremely like me”",
     "Takes about 5 minutes",
@@ -93,6 +103,8 @@ const copingStrategies: AssessmentDefinition = {
   eyebrow: "Self-Exploration",
   intro:
     "When you're stressed, upset, or facing a hard situation, what do you tend to reach for? Rate how often you find yourself doing each of these, most people use a mix, and noticing your own patterns is the point.",
+  whyTakeThis:
+    "Most people default to the same handful of coping habits without ever stepping back to notice the pattern. Seeing yours clearly, including the ones that quietly make things harder, is usually the first real step toward leaning on what actually helps.",
   whatToExpect: [
     "24 short statements, rated on a scale from “never” to “very often”",
     "Takes about 6 minutes",
@@ -108,8 +120,8 @@ const copingStrategies: AssessmentDefinition = {
     { id: "problem-solving", label: "Active Problem-Solving", description: "You tend to meet stress head-on, making a plan and taking concrete steps to actually change the situation." },
     { id: "support", label: "Seeking Support", description: "You tend to lean on the people around you, talking things through, asking for advice, or just being comforted." },
     { id: "reframing", label: "Positive Reframing", description: "You tend to look for a different angle on a hard situation, what's manageable about it, or what it might teach you." },
-    { id: "avoidance", label: "Avoidance", description: "You tend to put distance between yourself and the stressor, not thinking about it, delaying it, or staying busy with other things instead." },
-    { id: "self-blame", label: "Self-Blame", description: "You tend to turn stress inward, criticizing yourself for what's happening even when it isn't fully in your control." },
+    { id: "avoidance", label: "Avoidance", description: "You tend to put distance between yourself and the stressor, not thinking about it, delaying it, or staying busy with other things instead.", concern: true },
+    { id: "self-blame", label: "Self-Blame", description: "You tend to turn stress inward, criticizing yourself for what's happening even when it isn't fully in your control.", concern: true },
     { id: "humor", label: "Humor", description: "You tend to find something to laugh about, using humor to take the edge off a hard moment." },
     { id: "acceptance", label: "Acceptance", description: "You tend to work toward acknowledging a situation as real and adjusting to it, rather than fighting it." },
     { id: "reflection", label: "Turning Inward", description: "You tend to slow down and sit with what you're feeling, writing, thinking, or trying to understand your own reaction before acting." },
@@ -148,6 +160,8 @@ const defenseMechanisms: AssessmentDefinition = {
   eyebrow: "Self-Exploration",
   intro:
     "Defense mechanisms are the mostly-automatic ways we protect ourselves from difficult feelings, everyone uses a mix, and none of them are “bad” on their own. Rate how much each statement sounds like you to get a sense of the patterns you lean on most.",
+  whyTakeThis:
+    "We all protect ourselves from hard feelings in ways we rarely notice in the moment. Naming your own patterns, especially the ones that work against you more than for you, is one of the most direct paths to real self-awareness.",
   whatToExpect: [
     "16 short statements, rated on a scale from “not like me at all” to “very much like me”",
     "Takes about 4 minutes",
@@ -160,12 +174,12 @@ const defenseMechanisms: AssessmentDefinition = {
   scaleLow: "Not like me at all",
   scaleHigh: "Very much like me",
   categories: [
-    { id: "denial", label: "Denial", description: "Keeping something painful at a distance by not fully acknowledging it's happening." },
-    { id: "projection", label: "Projection", description: "Attributing your own uncomfortable feelings to someone else, rather than owning them directly." },
-    { id: "rationalization", label: "Rationalization", description: "Explaining away a difficult choice or feeling with logic, after the fact, rather than sitting with it." },
-    { id: "displacement", label: "Displacement", description: "Redirecting a strong feeling from where it actually started toward a safer, less risky target." },
-    { id: "intellectualization", label: "Intellectualization", description: "Processing hard emotions by analyzing them rather than actually feeling them." },
-    { id: "avoidance", label: "Avoidance / Repression", description: "Pushing uncomfortable thoughts, memories, or feelings out of conscious awareness." },
+    { id: "denial", label: "Denial", description: "Keeping something painful at a distance by not fully acknowledging it's happening.", concern: true },
+    { id: "projection", label: "Projection", description: "Attributing your own uncomfortable feelings to someone else, rather than owning them directly.", concern: true },
+    { id: "rationalization", label: "Rationalization", description: "Explaining away a difficult choice or feeling with logic, after the fact, rather than sitting with it.", concern: true },
+    { id: "displacement", label: "Displacement", description: "Redirecting a strong feeling from where it actually started toward a safer, less risky target.", concern: true },
+    { id: "intellectualization", label: "Intellectualization", description: "Processing hard emotions by analyzing them rather than actually feeling them.", concern: true },
+    { id: "avoidance", label: "Avoidance / Repression", description: "Pushing uncomfortable thoughts, memories, or feelings out of conscious awareness.", concern: true },
     { id: "humor", label: "Humor", description: "Using jokes and lightness to make something genuinely difficult easier to get through, generally considered one of the more adaptive defenses." },
     { id: "sublimation", label: "Sublimation", description: "Redirecting difficult emotional energy into something constructive, work, exercise, creativity, also generally considered one of the more adaptive defenses." },
   ],
@@ -199,7 +213,14 @@ export function getAssessment(slug: string): AssessmentDefinition | null {
   return slug in ASSESSMENTS ? ASSESSMENTS[slug as AssessmentSlug] : null;
 }
 
-export type CategoryScore = { categoryId: string; label: string; description: string; average: number; percent: number };
+export type CategoryScore = {
+  categoryId: string;
+  label: string;
+  description: string;
+  average: number;
+  percent: number;
+  concern?: boolean;
+};
 
 /** Averages each category's raw 1-5 answers and ranks them descending.
  * `percent` maps the 1-5 average onto a 0-100 bar for display. */
@@ -218,6 +239,7 @@ export function scoreAssessment(
         description: category.description,
         average,
         percent: Math.round(((average - 1) / 4) * 100),
+        concern: category.concern,
       };
     })
     .sort((a, b) => b.average - a.average);

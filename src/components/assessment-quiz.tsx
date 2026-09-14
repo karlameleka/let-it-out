@@ -1,17 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronDown, Trash2, CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Trash2, CheckCircle2, Heart, LifeBuoy, Brain, type LucideIcon } from "lucide-react";
 import {
   createAssessmentResult,
   deleteAssessmentResult,
   getAssessmentResults,
   type AssessmentResultRecord,
 } from "@/lib/local-assessments";
-import { scoreAssessment, type AssessmentDefinition, type CategoryScore } from "@/lib/assessments";
-import { Button } from "@/components/ui";
+import { scoreAssessment, type AssessmentDefinition, type AssessmentSlug, type CategoryScore } from "@/lib/assessments";
+import { Button, ButtonLink } from "@/components/ui";
 
 const SCALE = [1, 2, 3, 4, 5] as const;
+
+const ASSESSMENT_ICONS: Record<AssessmentSlug, LucideIcon> = {
+  "love-languages": Heart,
+  "coping-strategies": LifeBuoy,
+  "defense-mechanisms": Brain,
+};
+
+/** Shown when a result's top category is flagged as worth extra support
+ * (see AssessmentCategory.concern) — points toward booking a session
+ * instead of just leaving the score on the screen. */
+function CounselingCallout() {
+  return (
+    <div className="rounded-2xl border border-brand-200 bg-brand-50 p-5">
+      <p className="text-sm font-semibold text-brand-900">Worth talking through with someone</p>
+      <p className="mt-1.5 text-sm text-ink/70">
+        Patterns like this are common, and they are also exactly the kind of thing a good therapist can help you loosen. If this result rings true, our psychologists are here for it.
+      </p>
+      <ButtonLink href="/counseling" variant="primary" className="mt-4">
+        Explore counseling
+      </ButtonLink>
+    </div>
+  );
+}
 
 /** Each category's score bar doubles as a toggle — click any row to reveal
  * its 1-line explanation. The top-scoring category starts expanded. */
@@ -73,6 +96,19 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
     getAssessmentResults(userId, definition.slug).then(setResults);
   }, [userId, definition.slug]);
 
+  // Switching between the (long) quiz and the (short) results screen leaves
+  // scrollY wherever it was, which the browser then clamps to the new,
+  // shorter page height — reading as an unwanted jump to the bottom. Reset
+  // to the top on every screen change, but not on first mount.
+  const skipNextScrollReset = useRef(true);
+  useEffect(() => {
+    if (skipNextScrollReset.current) {
+      skipNextScrollReset.current = false;
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [view]);
+
   const answeredCount = definition.questions.filter((q) => typeof answers[q.id] === "number").length;
   const complete = answeredCount === definition.questions.length;
 
@@ -124,22 +160,32 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
   );
 
   if (view === "intro") {
+    const Icon = ASSESSMENT_ICONS[definition.slug];
     return (
       <div className="space-y-8">
-        <div className="rounded-2xl border border-brand-100 bg-white p-6">
-          <h2 className="font-display text-lg font-semibold text-brand-900">What to expect</h2>
-          <ul className="mt-4 space-y-2.5">
-            {definition.whatToExpect.map((line) => (
-              <li key={line} className="flex items-start gap-2.5 text-sm text-ink/70">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
-                {line}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-5 text-xs text-ink/45">{definition.disclaimer}</p>
+        <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white">
+          <div className="flex flex-col items-center gap-3 border-b border-brand-100 bg-brand-50/60 px-6 py-9 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-sm shadow-brand-900/20">
+              <Icon className="h-7 w-7" strokeWidth={2} />
+            </div>
+            <h2 className="font-display text-lg font-semibold text-brand-900">Why take this assessment</h2>
+            <p className="max-w-md text-sm leading-relaxed text-ink/70">{definition.whyTakeThis}</p>
+          </div>
+          <div className="px-6 py-6">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-600">What to expect</h3>
+            <ul className="mt-4 space-y-2.5">
+              {definition.whatToExpect.map((line) => (
+                <li key={line} className="flex items-start gap-2.5 text-sm text-ink/70">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
+                  {line}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-xs text-ink/45">{definition.disclaimer}</p>
+          </div>
         </div>
-        <Button type="button" onClick={() => setView("quiz")}>
-          Continue
+        <Button type="button" onClick={() => setView("quiz")} className="w-full sm:w-auto">
+          Start the assessment
         </Button>
         {pastResults}
       </div>
@@ -156,6 +202,7 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
             <ResultBars scores={latestScore} />
           </div>
         </div>
+        {latestScore[0]?.concern && <CounselingCallout />}
         <p className="text-xs text-ink/45">{definition.disclaimer}</p>
         <Button type="button" variant="outline" onClick={handleRetake}>
           Retake the assessment
@@ -268,6 +315,7 @@ function PastResults({
               {isOpen && (
                 <div className="space-y-4 border-t border-brand-100 px-5 py-4">
                   <ResultBars scores={score} />
+                  {score[0]?.concern && <CounselingCallout />}
                   {confirmingDeleteId === entry.id ? (
                     <div className="flex flex-wrap items-center gap-3 text-xs">
                       <span className="text-ink/50">Delete this result permanently?</span>

@@ -7,6 +7,7 @@ import { getAssessment, type AssessmentSlug } from "@/lib/assessments";
 import { Container, Eyebrow } from "@/components/ui";
 import JournalLockGate from "@/components/journal-lock-gate";
 import AssessmentQuiz from "@/components/assessment-quiz";
+import OpenInAppBanner from "@/components/open-in-app-banner";
 
 /**
  * Shared body for every /qr/<slug> assessment page — these exist only to
@@ -31,6 +32,7 @@ export default async function AssessmentPageContent({ slug }: { slug: Assessment
   return (
     <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>
       <Container className="max-w-2xl py-16 sm:py-20">
+        <OpenInAppBanner />
         <Eyebrow>{definition.eyebrow}</Eyebrow>
         <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">{definition.title}</h1>
         <p className="mt-3 text-sm text-ink/70">{definition.intro}</p>
