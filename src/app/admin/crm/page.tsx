@@ -5,7 +5,10 @@ import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 
-const RECENT_HOURS = 48;
+const RECENT_WINDOWS = [
+  { hours: 48, label: "48h" },
+  { hours: 24 * 7, label: "week" },
+];
 
 const TYPE_FILTERS = [
   { value: "ALL", label: "All" },
@@ -42,9 +45,8 @@ export default async function AdminCrmPage({
   const page = parseAdminPage(pageParam);
 
   const where = activeType !== "ALL" ? { type: activeType as never } : undefined;
-  const recentCutoff = new Date();
-  recentCutoff.setHours(recentCutoff.getHours() - RECENT_HOURS);
-  const [leads, totalCount, recentCount] = await Promise.all([
+  const now = new Date();
+  const [leads, totalCount, ...recentCounts] = await Promise.all([
     prisma.lead.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -52,7 +54,9 @@ export default async function AdminCrmPage({
       take: ADMIN_PAGE_SIZE,
     }),
     prisma.lead.count({ where }),
-    prisma.lead.count({ where: { createdAt: { gte: recentCutoff } } }),
+    ...RECENT_WINDOWS.map((w) =>
+      prisma.lead.count({ where: { createdAt: { gte: new Date(now.getTime() - w.hours * 60 * 60 * 1000) } } }),
+    ),
   ]);
   const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_PAGE_SIZE));
 
@@ -65,16 +69,23 @@ export default async function AdminCrmPage({
             counseling request, journal order, and contact message lands here automatically.
             {totalPages > 1 && ` Showing page ${page} of ${totalPages}.`}
           </p>
-          {recentCount > 0 && (
-            <form action={deleteRecentLeads}>
-              <ConfirmSubmitButton
-                confirmMessage={`Delete all ${recentCount} lead(s) received in the last ${RECENT_HOURS} hours? This deletes every type, including any real leads from that window — check the list below first if you're not sure. This can't be undone.`}
-                className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
-              >
-                Delete last {RECENT_HOURS}h ({recentCount})
-              </ConfirmSubmitButton>
-            </form>
-          )}
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {RECENT_WINDOWS.map((w, i) => {
+              const count = recentCounts[i];
+              if (count === 0) return null;
+              return (
+                <form key={w.label} action={deleteRecentLeads}>
+                  <input type="hidden" name="hours" value={w.hours} />
+                  <ConfirmSubmitButton
+                    confirmMessage={`Delete all ${count} lead(s) received in the last ${w.label}? This deletes every type, including any real leads from that window — check the list below first if you're not sure. This can't be undone.`}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                  >
+                    Delete last {w.label} ({count})
+                  </ConfirmSubmitButton>
+                </form>
+              );
+            })}
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {TYPE_FILTERS.map((t) => (

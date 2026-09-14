@@ -4,7 +4,10 @@ import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 
-const RECENT_HOURS = 48;
+const RECENT_WINDOWS = [
+  { hours: 48, label: "48h" },
+  { hours: 24 * 7, label: "week" },
+];
 
 export default async function AdminMessagesPage({
   searchParams,
@@ -13,17 +16,18 @@ export default async function AdminMessagesPage({
 }) {
   const { page: pageParam } = await searchParams;
   const page = parseAdminPage(pageParam);
-  const recentCutoff = new Date();
-  recentCutoff.setHours(recentCutoff.getHours() - RECENT_HOURS);
+  const now = new Date();
 
-  const [messages, totalCount, recentCount] = await Promise.all([
+  const [messages, totalCount, ...recentCounts] = await Promise.all([
     prisma.contactMessage.findMany({
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * ADMIN_PAGE_SIZE,
       take: ADMIN_PAGE_SIZE,
     }),
     prisma.contactMessage.count(),
-    prisma.contactMessage.count({ where: { createdAt: { gte: recentCutoff } } }),
+    ...RECENT_WINDOWS.map((w) =>
+      prisma.contactMessage.count({ where: { createdAt: { gte: new Date(now.getTime() - w.hours * 60 * 60 * 1000) } } }),
+    ),
   ]);
   const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_PAGE_SIZE));
 
@@ -34,16 +38,23 @@ export default async function AdminMessagesPage({
           {totalCount} {totalCount === 1 ? "message" : "messages"}
           {totalPages > 1 && ` — showing page ${page} of ${totalPages}`}
         </p>
-        {recentCount > 0 && (
-          <form action={deleteRecentContactMessages}>
-            <ConfirmSubmitButton
-              confirmMessage={`Delete all ${recentCount} message(s) received in the last ${RECENT_HOURS} hours? This includes any real messages from that window — check the list below first if you're not sure. This can't be undone.`}
-              className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
-            >
-              Delete last {RECENT_HOURS}h ({recentCount})
-            </ConfirmSubmitButton>
-          </form>
-        )}
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {RECENT_WINDOWS.map((w, i) => {
+            const count = recentCounts[i];
+            if (count === 0) return null;
+            return (
+              <form key={w.label} action={deleteRecentContactMessages}>
+                <input type="hidden" name="hours" value={w.hours} />
+                <ConfirmSubmitButton
+                  confirmMessage={`Delete all ${count} message(s) received in the last ${w.label}? This includes any real messages from that window — check the list below first if you're not sure. This can't be undone.`}
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                >
+                  Delete last {w.label} ({count})
+                </ConfirmSubmitButton>
+              </form>
+            );
+          })}
+        </div>
       </div>
       {messages.length === 0 && <p className="text-sm text-ink/60">No messages yet.</p>}
       {messages.map((m) => (

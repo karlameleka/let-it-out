@@ -208,12 +208,14 @@ export async function deleteContactMessage(formData: FormData) {
 }
 
 /** Fast, blunt "a spam bot just hit us again" cleanup from the dashboard —
- * deletes every contact message from the last 48 hours, regardless of
- * whether it's spam. For anything needing a precise time window or a look
- * at the data first, scripts/cleanup-lead-spam.mjs is the safer tool. */
-export async function deleteRecentContactMessages() {
+ * deletes every contact message from the last N hours (see RECENT_WINDOWS
+ * in the admin page), regardless of whether it's spam. For anything needing
+ * a precise time window or a look at the data first,
+ * scripts/cleanup-lead-spam.mjs is the safer tool. */
+export async function deleteRecentContactMessages(formData: FormData) {
   await requireAdmin();
-  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  const hours = Number(formData.get("hours")) || 48;
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
   await prisma.contactMessage.deleteMany({ where: { createdAt: { gte: cutoff } } });
   revalidatePath("/admin/messages");
 }
@@ -227,9 +229,10 @@ export async function deleteLead(formData: FormData) {
 
 /** Same "spam wave just hit" cleanup as deleteRecentContactMessages, for
  * the CRM's Lead table. */
-export async function deleteRecentLeads() {
+export async function deleteRecentLeads(formData: FormData) {
   await requireAdmin();
-  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  const hours = Number(formData.get("hours")) || 48;
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
   await prisma.lead.deleteMany({ where: { createdAt: { gte: cutoff } } });
   revalidatePath("/admin/crm");
 }
