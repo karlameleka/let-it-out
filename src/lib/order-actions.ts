@@ -11,6 +11,7 @@ import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission, HONEYPOT_FIELD } from "@/lib/anti-spam";
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   INSTAPAY: "InstaPay",
@@ -26,11 +27,11 @@ const itemSchema = z.object({
 function buildCreateOrderSchema(v: Dictionary["validation"]) {
   return z.object({
     items: z.array(itemSchema).min(1),
-    guestName: z.string().trim().min(1, v.nameRequired),
-    guestEmail: z.string().trim().email(v.emailInvalid),
-    guestPhone: z.string().trim().min(5, v.phoneInvalid),
-    shippingAddress: z.string().trim().optional(),
-    googleMapsLink: z.string().trim().optional(),
+    guestName: z.string().trim().min(1, v.nameRequired).max(200),
+    guestEmail: z.string().trim().email(v.emailInvalid).max(320),
+    guestPhone: z.string().trim().min(5, v.phoneInvalid).max(30),
+    shippingAddress: z.string().trim().max(1000).optional(),
+    googleMapsLink: z.string().trim().max(500).optional(),
     country: z.string().trim().optional(),
     governorate: z.string().trim().optional(),
     paymentMethod: z.enum(["INSTAPAY", "CASH_ON_DELIVERY", "PAYMOB"]),
@@ -88,10 +89,23 @@ export async function checkPromoCode(rawCode: string, items: PromoCartItem[]): P
   return { valid: true, code, discountEGP, label };
 }
 
-export type CreateOrderInput = z.infer<ReturnType<typeof buildCreateOrderSchema>>;
+export type CreateOrderInput = z.infer<ReturnType<typeof buildCreateOrderSchema>> & {
+  // Not real order data — read only by screenSubmission() below. See
+  // HoneypotField/TurnstileWidget in checkout-form.tsx, which calls this
+  // action directly (not as a <form action>), so those values have to be
+  // threaded through explicitly instead of read off a submitted FormData.
+  honeypot?: string;
+  turnstileToken?: string;
+};
 export type CreateOrderResult = { error: string } | { orderId: string };
 
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
+  const screenData = new FormData();
+  screenData.set(HONEYPOT_FIELD, input.honeypot ?? "");
+  if (input.turnstileToken) screenData.set("cf-turnstile-response", input.turnstileToken);
+  const blocked = await screenSubmission(screenData, "checkout");
+  if (blocked) return { error: blocked.error ?? "Something went wrong. Please try again." };
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = dict.checkout;

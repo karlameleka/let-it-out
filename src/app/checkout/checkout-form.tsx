@@ -11,6 +11,9 @@ import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 import { EGYPT_SHIPPING_FEE_EGP } from "@/lib/shipping";
 import PriceDisplay from "@/components/price-display";
 import PaymentSelector from "@/components/PaymentSelector";
+import HoneypotField from "@/components/honeypot-field";
+import TurnstileWidget from "@/components/turnstile-widget";
+import { HONEYPOT_FIELD } from "@/lib/anti-spam-shared";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const inputClass =
@@ -97,6 +100,8 @@ export default function CheckoutForm({
       governorate: String(formData.get("governorate") || ""),
       paymentMethod: method,
       promoCode: promoApplied?.code,
+      honeypot: String(formData.get(HONEYPOT_FIELD) || ""),
+      turnstileToken: String(formData.get("cf-turnstile-response") || ""),
     };
   }
 
@@ -161,6 +166,7 @@ export default function CheckoutForm({
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <form ref={formRef} onSubmit={handleCodSubmit} className="space-y-6 lg:col-span-2">
+          <HoneypotField />
           <div className="space-y-4">
             {account && (
               <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm">
@@ -312,6 +318,7 @@ export default function CheckoutForm({
             </div>
           </div>
 
+          <TurnstileWidget />
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {paymentMethod === "CASH_ON_DELIVERY" ? (

@@ -9,13 +9,14 @@ import { sendIntakeFormLink } from "@/lib/intake-actions";
 import { formatEGP } from "@/lib/format";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission, HONEYPOT_FIELD } from "@/lib/anti-spam";
 
 function buildCreateSessionBookingSchema(v: Dictionary["validation"], c: Dictionary["counselorProfile"]) {
   return z.object({
     counselorId: z.string().min(1),
-    name: z.string().trim().min(1, v.nameRequired),
-    email: z.string().trim().email(v.emailInvalid),
-    phone: z.string().trim().min(5, v.phoneInvalid),
+    name: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    phone: z.string().trim().min(5, v.phoneInvalid).max(30),
     preferredDate: z.string().trim().min(1, c.dayRequired),
     // Set when picked from the in-app slot picker (counselor has
     // CounselorAvailability windows configured) — empty/omitted for the
@@ -25,7 +26,14 @@ function buildCreateSessionBookingSchema(v: Dictionary["validation"], c: Diction
   });
 }
 
-export type CreateSessionBookingInput = z.infer<ReturnType<typeof buildCreateSessionBookingSchema>>;
+export type CreateSessionBookingInput = z.infer<ReturnType<typeof buildCreateSessionBookingSchema>> & {
+  // Not real booking data — read only by screenSubmission() below. See
+  // HoneypotField/TurnstileWidget in session-booking-flow.tsx, which this
+  // action calls directly (not as a <form action>), so those values have to
+  // be threaded through explicitly instead of read off a submitted FormData.
+  honeypot?: string;
+  turnstileToken?: string;
+};
 export type CreateSessionBookingResult = { error: string } | { sessionBookingId: string };
 
 export type CounselingPromoCheckResult =
@@ -73,6 +81,12 @@ export async function checkCounselingPromoCode(
 export async function createSessionBooking(
   input: CreateSessionBookingInput,
 ): Promise<CreateSessionBookingResult> {
+  const screenData = new FormData();
+  screenData.set(HONEYPOT_FIELD, input.honeypot ?? "");
+  if (input.turnstileToken) screenData.set("cf-turnstile-response", input.turnstileToken);
+  const blocked = await screenSubmission(screenData, "session-booking");
+  if (blocked) return { error: blocked.error ?? "Something went wrong. Please try again." };
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const c = dict.counselorProfile;

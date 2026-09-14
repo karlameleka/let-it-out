@@ -11,6 +11,9 @@ import type { Locale } from "@/lib/i18n/locale";
 import { formatSlotTime } from "@/lib/format-slot";
 import PrivacyBadge from "@/components/privacy-badge";
 import MonthCalendar from "@/components/month-calendar";
+import HoneypotField from "@/components/honeypot-field";
+import TurnstileWidget from "@/components/turnstile-widget";
+import { HONEYPOT_FIELD } from "@/lib/anti-spam-shared";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -123,6 +126,8 @@ export default function SessionBookingFlow({
       preferredDate,
       preferredTime,
       promoCode: promoApplied?.code,
+      honeypot: String(formData.get(HONEYPOT_FIELD) || ""),
+      turnstileToken: String(formData.get("cf-turnstile-response") || ""),
     });
 
     setPending(false);
@@ -164,6 +169,7 @@ export default function SessionBookingFlow({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <HoneypotField />
       <div className="rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-800">
         {promoApplied ? (
           <div className="flex items-center justify-between gap-2">
@@ -299,6 +305,7 @@ export default function SessionBookingFlow({
           <p className="mt-1 text-xs text-ink/45">{t.preferredDayHint}</p>
         </div>
       )}
+      <TurnstileWidget />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <PrivacyBadge text={dict.privacyBadge.booking} />
       <button
