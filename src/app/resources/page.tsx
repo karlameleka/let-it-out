@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, Brain, Wind } from "lucide-react";
 import { Container, SectionHeading } from "@/components/ui";
@@ -10,6 +11,8 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { getArticles, localizeArticle } from "@/lib/content/articles";
 import { getCurrentUser } from "@/lib/session";
 import { getMyAssignedResources } from "@/lib/client-resources";
+import { getResourceBlocks, type ResourceBlockKind } from "@/lib/resource-blocks";
+import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
 import MyToolsItem from "./my-tools-item";
 import MyToolsViewedTracker from "./my-tools-viewed-tracker";
 import MyAssessmentsPromo from "./my-assessments-promo";
@@ -22,18 +25,20 @@ export const metadata: Metadata = {
 };
 
 export default async function ResourcesPage() {
-  const [settings, rawArticleList, user, locale] = await Promise.all([
+  const [settings, rawArticleList, user, locale, blocks, overrides] = await Promise.all([
     getSiteSettings(),
     getArticles(),
     getCurrentUser(),
     getLocale(),
+    getResourceBlocks(),
+    getSiteTextOverrides(),
   ]);
   const myTools = user ? await getMyAssignedResources(user.email) : [];
   const articleList = rawArticleList.map((a) => localizeArticle(a, locale));
   const dict = getDictionary(locale);
-  const t = dict.resourcesHome;
+  const t = applyOverrides(dict.resourcesHome, "resourcesHome", overrides, locale);
 
-  const journalPromo = settings.resourcesPromoHidden ? null : (
+  const journalPromo = (
     <section className="pt-2 pb-8 sm:py-10 scroll-mt-24" id="journal-promo" key="journal-promo">
       <Reveal>
         <Container>
@@ -126,12 +131,27 @@ export default async function ResourcesPage() {
     </section>
   );
 
-  const assessmentsPromo = <MyAssessmentsPromo key="assessments-promo" userId={user?.userId} />;
+  const assessmentsPromo = (
+    <MyAssessmentsPromo
+      key="assessments-promo"
+      userId={user?.userId}
+      label={t.assessmentsPromoLabel}
+      title={t.assessmentsPromoTitle}
+      description={t.assessmentsPromoDescription}
+      ctaLocked={t.assessmentsPromoCtaLocked}
+      ctaUnlocked={t.assessmentsPromoCtaUnlocked}
+    />
+  );
 
-  const sections =
-    settings.resourcesPromoPlacement === "BOTTOM"
-      ? [articles, journalPromo, cbtPromo, breathingPromo, assessmentsPromo]
-      : [journalPromo, cbtPromo, breathingPromo, assessmentsPromo, articles];
+  const blockContent: Record<ResourceBlockKind, ReactNode> = {
+    JOURNAL_PROMO: journalPromo,
+    CBT_PROMO: cbtPromo,
+    BREATHING_PROMO: breathingPromo,
+    ASSESSMENTS_PROMO: assessmentsPromo,
+    ARTICLES: articles,
+  };
+
+  const sections = blocks.filter((b) => !b.hidden).map((b) => blockContent[b.kind]);
 
   const myToolsSection = user ? (
     <section className="pt-2 pb-8 sm:py-10" key="my-tools" id="my-tools">

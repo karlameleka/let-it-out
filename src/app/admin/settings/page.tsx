@@ -3,10 +3,10 @@ import { getSiteSettings, updateSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, updateSiteText } from "@/lib/site-text";
 import en from "@/lib/i18n/dictionaries/en";
 import ar from "@/lib/i18n/dictionaries/ar";
-import { getArticles } from "@/lib/content/articles";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import TwoFactorSettings from "@/components/two-factor-settings";
+import TextOverrideField from "@/components/text-override-field";
 
 const HERO_FIELDS: [key: string, label: string][] = [
   ["heroRibbon", "Ribbon text above the headline"],
@@ -39,60 +39,12 @@ const NAV_FIELDS: [key: string, label: string][] = [
   ["bookASession", "\"Book a session\" button"],
 ];
 
-function TextOverrideField({
-  prefix,
-  fieldKey,
-  label,
-  defaultText,
-  defaultTextAr,
-  overrides,
-}: {
-  prefix: string;
-  fieldKey: string;
-  label: string;
-  defaultText: string;
-  defaultTextAr: string;
-  overrides: Map<string, string>;
-}) {
-  const name = `text.${prefix}.${fieldKey}`;
-  const nameAr = `${name}.ar`;
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={name}>
-        {label}
-      </label>
-      <div className="flex items-center gap-2">
-        <span className="w-6 shrink-0 text-center text-[10px] font-semibold uppercase text-ink/30">EN</span>
-        <input
-          id={name}
-          name={name}
-          defaultValue={overrides.get(`${prefix}.${fieldKey}`) ?? ""}
-          placeholder={defaultText}
-          className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
-        />
-      </div>
-      <div className="mt-1.5 flex items-center gap-2">
-        <span className="w-6 shrink-0 text-center text-[10px] font-semibold uppercase text-ink/30">AR</span>
-        <input
-          id={nameAr}
-          name={nameAr}
-          dir="rtl"
-          defaultValue={overrides.get(`${prefix}.${fieldKey}.ar`) ?? ""}
-          placeholder={defaultTextAr}
-          className="w-full rounded-lg border border-brand-200 bg-brand-50/40 px-3 py-2 text-right text-sm outline-none focus:border-brand-500"
-        />
-      </div>
-    </div>
-  );
-}
-
 export default async function AdminSettingsPage() {
   const session = await getCurrentUser();
-  const [settings, textOverrides, currentUser, articleList] = await Promise.all([
+  const [settings, textOverrides, currentUser] = await Promise.all([
     getSiteSettings(),
     getSiteTextOverrides(),
     session ? prisma.user.findUnique({ where: { id: session.userId }, select: { totpEnabled: true } }) : null,
-    getArticles(),
   ]);
 
   return (
@@ -121,6 +73,12 @@ export default async function AdminSettingsPage() {
             className="rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
           >
             Counseling intake form &rarr;
+          </Link>
+          <Link
+            href="/admin/resources"
+            className="rounded-lg border border-brand-200 px-3.5 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+          >
+            Resources page sections &rarr;
           </Link>
         </div>
       </div>
@@ -167,63 +125,6 @@ export default async function AdminSettingsPage() {
               </span>
             </span>
           </label>
-        </div>
-
-        <div className="rounded-2xl border border-brand-100 bg-white p-5">
-          <label className="block text-sm font-semibold text-brand-900" htmlFor="resourcesPromoPlacement">
-            Journal promo placement
-          </label>
-          <p className="mt-0.5 text-xs text-ink/60">
-            Where the journaling-app promo card sits on the Resources page, relative to the article list.
-          </p>
-          <select
-            id="resourcesPromoPlacement"
-            name="resourcesPromoPlacement"
-            defaultValue={settings.resourcesPromoPlacement}
-            className="mt-3 w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
-          >
-            <option value="TOP">Above the article list (default)</option>
-            <option value="BOTTOM">Below the article list</option>
-          </select>
-        </div>
-
-        <div className="rounded-2xl border border-brand-100 bg-white p-5">
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              name="resourcesPromoHidden"
-              defaultChecked={settings.resourcesPromoHidden}
-              className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
-            />
-            <span>
-              <span className="block text-sm font-semibold text-brand-900">Hide the journal promo card</span>
-              <span className="mt-0.5 block text-xs text-ink/60">
-                Removes the journaling-app promo card from the Resources page.
-              </span>
-            </span>
-          </label>
-        </div>
-
-        <div className="rounded-2xl border border-brand-100 bg-white p-5">
-          <p className="text-sm font-semibold text-brand-900">Hide articles</p>
-          <p className="mt-0.5 text-xs text-ink/60">
-            Removes a checked article from the Resources listing. Still reachable at its direct link — this
-            archives it, it doesn&apos;t delete it.
-          </p>
-          <div className="mt-3 space-y-2">
-            {articleList.map((a) => (
-              <label key={a.slug} className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  name="hiddenArticleSlugs"
-                  value={a.slug}
-                  defaultChecked={settings.hiddenArticleSlugs.includes(a.slug)}
-                  className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
-                />
-                <span className="text-sm text-ink/80">{a.title}</span>
-              </label>
-            ))}
-          </div>
         </div>
 
         <button

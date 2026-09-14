@@ -1087,8 +1087,26 @@ const en = {
     breathingPromoDescription:
       "A guided, paced breathing exercise — box breathing, 4-7-8, or coherent breathing, with a visual guide to slow things down.",
     breathingPromoCta: "Start breathing",
+    assessmentsPromoLabel: "Self-Exploration",
+    assessmentsPromoTitle: "My Assessments",
+    assessmentsPromoDescription:
+      "Love Languages, Coping Strategies, and Defense Mechanisms self-assessments live inside our guided journals — scan the QR code in your copy to unlock them here.",
+    assessmentsPromoCtaLocked: "Shop guided journals",
+    assessmentsPromoCtaUnlocked: "View my results",
     readEyebrow: "Read",
     latestArticlesTitle: "Latest articles",
+  },
+  myAssessments: {
+    backToResources: "Back to resources",
+    ribbon: "Self-Exploration",
+    title: "My Assessments",
+    description:
+      "Your results from the Love Languages, Coping Strategies, and Defense Mechanisms self-assessments — tap any of them to revisit your results or retake it.",
+    empty: "You haven't unlocked any assessments yet. Scan the QR code inside your guided journal to get started.",
+    emptyCta: "Shop guided journals",
+    topLabel: "Top: {label}",
+    resultsCountOne: "1 result · last taken {date}",
+    resultsCountMany: "{n} results · last taken {date}",
   },
   articleFilter: {
     searchPlaceholder: "Search articles...",
