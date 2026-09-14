@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, CheckCircle2 } from "lucide-react";
 import {
   createAssessmentResult,
   deleteAssessmentResult,
@@ -13,28 +13,42 @@ import { Button } from "@/components/ui";
 
 const SCALE = [1, 2, 3, 4, 5] as const;
 
-function ResultBars({ scores, highlightTop = true }: { scores: CategoryScore[]; highlightTop?: boolean }) {
-  const topAverage = scores[0]?.average ?? 0;
+/** Each category's score bar doubles as a toggle — click any row to reveal
+ * its 1-line explanation. The top-scoring category starts expanded. */
+function ResultBars({ scores }: { scores: CategoryScore[] }) {
+  const [openId, setOpenId] = useState<string | null>(scores[0]?.categoryId ?? null);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-1">
       {scores.map((score, i) => {
-        const isTop = highlightTop && score.average === topAverage && i === 0;
+        const isTop = i === 0;
+        const isOpen = openId === score.categoryId;
         return (
-          <div key={score.categoryId}>
-            <div className="flex items-baseline justify-between gap-3">
-              <p className={`text-sm font-semibold ${isTop ? "text-brand-800" : "text-ink/70"}`}>
-                {score.label}
-                {isTop && <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">Top</span>}
-              </p>
-              <p className="shrink-0 text-xs font-medium text-ink/40">{score.percent}%</p>
-            </div>
-            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-brand-50">
-              <div
-                className={`h-full rounded-full ${isTop ? "bg-brand-600" : "bg-brand-300"}`}
-                style={{ width: `${Math.max(4, score.percent)}%` }}
-              />
-            </div>
-            {isTop && <p className="mt-1.5 text-sm text-ink/60">{score.description}</p>}
+          <div key={score.categoryId} className="py-2.5">
+            <button
+              type="button"
+              onClick={() => setOpenId(isOpen ? null : score.categoryId)}
+              aria-expanded={isOpen}
+              className="w-full text-left"
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <p className={`text-sm font-semibold ${isTop ? "text-brand-800" : "text-ink/70"}`}>
+                  {score.label}
+                  {isTop && <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">Top</span>}
+                </p>
+                <span className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-ink/40">
+                  {score.percent}%
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} strokeWidth={2} />
+                </span>
+              </div>
+              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-brand-50">
+                <div
+                  className={`h-full rounded-full ${isTop ? "bg-brand-600" : "bg-brand-300"}`}
+                  style={{ width: `${Math.max(4, score.percent)}%` }}
+                />
+              </div>
+            </button>
+            {isOpen && <p className="mt-2 text-sm text-ink/60">{score.description}</p>}
           </div>
         );
       })}
@@ -42,7 +56,10 @@ function ResultBars({ scores, highlightTop = true }: { scores: CategoryScore[]; 
   );
 }
 
+type View = "intro" | "quiz" | "results";
+
 export default function AssessmentQuiz({ definition, userId }: { definition: AssessmentDefinition; userId: string }) {
+  const [view, setView] = useState<View>("intro");
   const [results, setResults] = useState<AssessmentResultRecord[] | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [latestScore, setLatestScore] = useState<CategoryScore[] | null>(null);
@@ -70,6 +87,7 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
       await createAssessmentResult(userId, definition.slug, answerList);
       setLatestScore(score);
       setResults(await getAssessmentResults(userId, definition.slug));
+      setView("results");
     } catch {
       setError("Something went wrong saving your result. Please try again.");
     } finally {
@@ -81,6 +99,7 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
     setAnswers({});
     setLatestScore(null);
     setError(null);
+    setView("quiz");
   }
 
   async function handleDelete(id: string) {
@@ -91,12 +110,48 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
     if (openId === id) setOpenId(null);
   }
 
-  if (latestScore) {
+  const pastResults = results && results.length > 0 && (
+    <PastResults
+      definition={definition}
+      results={results}
+      openId={openId}
+      setOpenId={setOpenId}
+      confirmingDeleteId={confirmingDeleteId}
+      setConfirmingDeleteId={setConfirmingDeleteId}
+      deletingId={deletingId}
+      onDelete={handleDelete}
+    />
+  );
+
+  if (view === "intro") {
+    return (
+      <div className="space-y-8">
+        <div className="rounded-2xl border border-brand-100 bg-white p-6">
+          <h2 className="font-display text-lg font-semibold text-brand-900">What to expect</h2>
+          <ul className="mt-4 space-y-2.5">
+            {definition.whatToExpect.map((line) => (
+              <li key={line} className="flex items-start gap-2.5 text-sm text-ink/70">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" strokeWidth={2} />
+                {line}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 text-xs text-ink/45">{definition.disclaimer}</p>
+        </div>
+        <Button type="button" onClick={() => setView("quiz")}>
+          Continue
+        </Button>
+        {pastResults}
+      </div>
+    );
+  }
+
+  if (view === "results" && latestScore) {
     return (
       <div className="space-y-8">
         <div className="rounded-2xl border border-brand-100 bg-white p-6">
           <h2 className="font-display text-lg font-semibold text-brand-900">Your results</h2>
-          <p className="mt-1 text-sm text-ink/60">Saved to your journal — only visible to you.</p>
+          <p className="mt-1 text-sm text-ink/60">Saved to your journal — only visible to you. Tap a result to read what it means.</p>
           <div className="mt-5">
             <ResultBars scores={latestScore} />
           </div>
@@ -105,19 +160,7 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
         <Button type="button" variant="outline" onClick={handleRetake}>
           Retake the assessment
         </Button>
-
-        {results && results.length > 0 && (
-          <PastResults
-            definition={definition}
-            results={results}
-            openId={openId}
-            setOpenId={setOpenId}
-            confirmingDeleteId={confirmingDeleteId}
-            setConfirmingDeleteId={setConfirmingDeleteId}
-            deletingId={deletingId}
-            onDelete={handleDelete}
-          />
-        )}
+        {pastResults}
       </div>
     );
   }
@@ -171,19 +214,6 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
           </span>
         </div>
       </form>
-
-      {results && results.length > 0 && (
-        <PastResults
-          definition={definition}
-          results={results}
-          openId={openId}
-          setOpenId={setOpenId}
-          confirmingDeleteId={confirmingDeleteId}
-          setConfirmingDeleteId={setConfirmingDeleteId}
-          deletingId={deletingId}
-          onDelete={handleDelete}
-        />
-      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { getCurrentUser } from "@/lib/session";
 import { getMyAssignedResources } from "@/lib/client-resources";
 import MyToolsItem from "./my-tools-item";
 import MyToolsViewedTracker from "./my-tools-viewed-tracker";
+import MyAssessmentsPromo from "./my-assessments-promo";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
@@ -125,10 +126,12 @@ export default async function ResourcesPage() {
     </section>
   );
 
+  const assessmentsPromo = <MyAssessmentsPromo key="assessments-promo" userId={user?.userId} />;
+
   const sections =
     settings.resourcesPromoPlacement === "BOTTOM"
-      ? [articles, journalPromo, cbtPromo, breathingPromo]
-      : [journalPromo, cbtPromo, breathingPromo, articles];
+      ? [articles, journalPromo, cbtPromo, breathingPromo, assessmentsPromo]
+      : [journalPromo, cbtPromo, breathingPromo, assessmentsPromo, articles];
 
   const myToolsSection = user ? (
     <section className="pt-2 pb-8 sm:py-10" key="my-tools" id="my-tools">

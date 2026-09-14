@@ -28,6 +28,9 @@ export type AssessmentDefinition = {
   title: string;
   eyebrow: string;
   intro: string;
+  /** Short bullets shown on the intro screen before the quiz starts, e.g.
+   * question count / time / format — sets expectations up front. */
+  whatToExpect: string[];
   sourceNote: string;
   disclaimer: string;
   scaleLow: string;
@@ -39,9 +42,15 @@ export type AssessmentDefinition = {
 const loveLanguages: AssessmentDefinition = {
   slug: "love-languages",
   title: "Love Languages",
-  eyebrow: "Self-reflection",
+  eyebrow: "Self-Exploration",
   intro:
     "How do you most naturally feel loved, and how do you most naturally show love to others? Rate how much each statement sounds like you — there's no right answer, and most people relate to more than one.",
+  whatToExpect: [
+    "20 short statements, rated on a scale from “not at all like me” to “extremely like me”",
+    "Takes about 5 minutes",
+    "See your results immediately, ranked from strongest to weakest",
+    "Your results save privately to your account — no one else can see them",
+  ],
   sourceNote: "Informed by Dr. Gary Chapman's The Five Love Languages (1992) — original questions, not a reproduction of his published assessment.",
   disclaimer:
     "This is an informal self-reflection tool, not a validated psychological instrument. It's meant to prompt useful conversation with the people close to you, not to diagnose or define anyone.",
@@ -81,9 +90,15 @@ const loveLanguages: AssessmentDefinition = {
 const copingStrategies: AssessmentDefinition = {
   slug: "coping-strategies",
   title: "Coping Strategies",
-  eyebrow: "Self-reflection",
+  eyebrow: "Self-Exploration",
   intro:
     "When you're stressed, upset, or facing a hard situation, what do you tend to reach for? Rate how often you find yourself doing each of these — most people use a mix, and noticing your own patterns is the point.",
+  whatToExpect: [
+    "24 short statements, rated on a scale from “never” to “very often”",
+    "Takes about 6 minutes",
+    "Covers both helpful and less-helpful coping patterns — there's no perfect score",
+    "Your results save privately to your account — no one else can see them",
+  ],
   sourceNote: "Informed by the Brief COPE inventory (Carver, 1997) — original questions covering a subset of its coping styles, not a reproduction of the published instrument.",
   disclaimer:
     "This is an informal self-reflection tool, not a validated psychological instrument or a clinical screening. If stress or a specific situation feels like more than you can manage alone, talking to one of our psychologists can genuinely help.",
@@ -130,9 +145,15 @@ const copingStrategies: AssessmentDefinition = {
 const defenseMechanisms: AssessmentDefinition = {
   slug: "defense-mechanisms",
   title: "Defense Mechanisms",
-  eyebrow: "Self-reflection",
+  eyebrow: "Self-Exploration",
   intro:
     "Defense mechanisms are the mostly-automatic ways we protect ourselves from difficult feelings — everyone uses a mix, and none of them are “bad” on their own. Rate how much each statement sounds like you to get a sense of the patterns you lean on most.",
+  whatToExpect: [
+    "16 short statements, rated on a scale from “not like me at all” to “very much like me”",
+    "Takes about 4 minutes",
+    "There's no good or bad score — the goal is self-awareness, not judgment",
+    "Your results save privately to your account — no one else can see them",
+  ],
   sourceNote: "Informed by Vaillant's hierarchy of ego defenses and the Defense Style Questionnaire (Bond et al., 1983) — original questions covering a subset of common defense mechanisms, not a reproduction of any published instrument.",
   disclaimer:
     "This is an informal self-reflection tool, not a validated psychological or diagnostic instrument. Defense mechanisms are a normal part of how everyone's mind works — this is meant to build self-awareness, not to label or pathologize you. A therapist can help you explore any of this in real depth.",
