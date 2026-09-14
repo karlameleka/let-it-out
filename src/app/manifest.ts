@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Let It Out",
     short_name: "Let It Out",
     description:
-      "A psychologist-led mental health service — online counseling, guided journals, and workshops.",
+      "A psychologist-led mental health service, online counseling, guided journals, and workshops.",
     start_url: "/",
     display: "standalone",
     background_color: "#1e5b73",

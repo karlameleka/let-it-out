@@ -8,7 +8,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "Tiny Next Step",
-  description: "A behavioral activation exercise for when something feels stuck — shrink it to one tiny step.",
+  description: "A behavioral activation exercise for when something feels stuck, shrink it to one tiny step.",
 };
 
 export default async function NextStepPage() {

@@ -89,14 +89,14 @@ export async function GET(req: NextRequest) {
       enEmails.length > 0
         ? sendPushToEmails(enEmails, {
             title: "Between-session reflection",
-            body: "Time for your between-session reflection — a private space just for you.",
+            body: "Time for your between-session reflection, a private space just for you.",
             url: "/journal/reflection",
           })
         : Promise.resolve({ sent: 0 }),
       arEmails.length > 0
         ? sendPushToEmails(arEmails, {
             title: "تأمل بين الجلسات",
-            body: "وقت تعمل تأملك بين الجلسات — مساحة خاصة ليك بس.",
+            body: "وقت تعمل تأملك بين الجلسات، مساحة خاصة ليك بس.",
             url: "/journal/reflection",
           })
         : Promise.resolve({ sent: 0 }),

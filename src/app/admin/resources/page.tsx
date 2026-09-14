@@ -51,7 +51,7 @@ export default async function AdminResourcesPage() {
       <div>
         <h1 className="font-display text-xl font-semibold text-brand-900">Resources page sections</h1>
         <p className="mt-1 text-sm text-ink/60">
-          Hide, reorder, or edit the text of each section on the public /resources page — the journal, CBT, and
+          Hide, reorder, or edit the text of each section on the public /resources page, the journal, CBT, and
           breathing promo cards, the My Assessments card, and the article list itself. Changes apply immediately.
         </p>
       </div>
@@ -134,7 +134,7 @@ export default async function AdminResourcesPage() {
             {block.kind === "ARTICLES" && (
               <form action={updateHiddenArticles} className="mt-4 space-y-3 border-t border-brand-100 pt-4">
                 <p className="text-xs text-ink/60">
-                  Uncheck an article to remove it from this listing — it&rsquo;s still reachable at its direct
+                  Uncheck an article to remove it from this listing, it&rsquo;s still reachable at its direct
                   link, this only archives it here.
                 </p>
                 <div className="space-y-2">

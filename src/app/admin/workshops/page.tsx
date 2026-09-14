@@ -29,14 +29,14 @@ export default async function AdminWorkshopsPage({
       {totalCount > 0 && (
         <p className="text-sm text-ink/60">
           {totalCount} {totalCount === 1 ? "inquiry" : "inquiries"}
-          {totalPages > 1 && ` — showing page ${page} of ${totalPages}`}
+          {totalPages > 1 && `, showing page ${page} of ${totalPages}`}
         </p>
       )}
       {inquiries.length === 0 && <p className="text-sm text-ink/60">No workshop inquiries yet.</p>}
       {inquiries.map((i) => (
         <div key={i.id} className="rounded-2xl border border-brand-100 bg-white p-5">
           <p className="font-display font-semibold text-brand-800">
-            {i.organizationName} — {i.workshopTopic}
+            {i.organizationName}: {i.workshopTopic}
           </p>
           <p className="text-sm text-ink/60">
             {i.contactName} · {i.email} · {i.phone}

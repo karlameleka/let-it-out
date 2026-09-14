@@ -13,7 +13,7 @@ export default async function AdminClientsPage() {
     <div className="space-y-4">
       <p className="text-sm text-ink/60">
         {clients.length} registered {clients.length === 1 ? "client" : "clients"}. Journal entry counts
-        aren&apos;t shown here — journal entries are stored only on each client&apos;s own device (encrypted,
+        aren&apos;t shown here, journal entries are stored only on each client&apos;s own device (encrypted,
         never sent to our servers), so there&apos;s nothing about their content or volume for us to see.
       </p>
       <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white">

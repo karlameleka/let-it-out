@@ -3,7 +3,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 
 /** Stylized phone-frame previews of the journal and resources screens, so
     someone deciding whether to install can see roughly what they're getting
-    before they commit — not real screenshots, but close enough to be honest. */
+    before they commit, not real screenshots, but close enough to be honest. */
 export default function InstallPreview({ dict }: { dict: Dictionary["install"] }) {
   return (
     <div className="grid gap-6 sm:grid-cols-2">

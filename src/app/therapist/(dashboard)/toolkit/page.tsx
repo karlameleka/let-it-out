@@ -27,7 +27,7 @@ export default async function TherapistToolkitPage() {
       <div>
         <h2 className="font-display font-semibold text-brand-900">Your toolbox</h2>
         <p className="mt-1 text-sm text-ink/60">
-          The built-in exercises, plus anything you&rsquo;ve added yourself — links or PDFs. Hide what you
+          The built-in exercises, plus anything you&rsquo;ve added yourself, links or PDFs. Hide what you
           don&rsquo;t use, add what you do.
         </p>
 
@@ -108,7 +108,7 @@ export default async function TherapistToolkitPage() {
       <div>
         <h2 className="font-display font-semibold text-brand-900">Session prompts</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Quick starting points — adapt to your own style and this client. Edit freely; this is your own copy,
+          Quick starting points, adapt to your own style and this client. Edit freely; this is your own copy,
           not shared with other counselors.
         </p>
         <div className="mt-4">

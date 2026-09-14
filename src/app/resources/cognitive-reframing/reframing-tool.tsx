@@ -314,7 +314,7 @@ export default function ReframingTool({ dict, locale }: { dict: Dictionary["refr
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.howItFeltLabel}</p>
                   <p className="mt-1 text-ink/80">
-                    {feelingLabel} — {intensityLabels[intensityBefore]}
+                    {feelingLabel}, {intensityLabels[intensityBefore]}
                     {intensityAfter !== null && (
                       <>
                         {" "}&rarr; <span className="font-medium text-brand-700">{intensityLabels[intensityAfter]}</span>{" "}

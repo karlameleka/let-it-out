@@ -173,7 +173,7 @@ function SectionsEditor({
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${section.id}-note`}>
-                Callout note (optional) <span className="font-normal text-ink/40">— shown in a highlighted box, e.g. crisis-line info</span>
+                Callout note (optional) <span className="font-normal text-ink/40">(shown in a highlighted box, e.g. crisis-line info)</span>
               </label>
               <input
                 id={`${section.id}-note`}
@@ -246,7 +246,7 @@ export default function IntakeFormEditor({
           <div>
             <h3 className="font-display font-semibold text-brand-900">Arabic version</h3>
             <p className="mt-1 text-xs text-ink/50">
-              Fully independent from the English form above — its own sections and questions, own order, own
+              Fully independent from the English form above, its own sections and questions, own order, own
               field count. Whichever version a client actually filled out is what a submission is parsed
               against, so nothing here needs to mirror the English side one-to-one.
             </p>

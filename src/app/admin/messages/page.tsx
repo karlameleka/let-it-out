@@ -36,7 +36,7 @@ export default async function AdminMessagesPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="text-sm text-ink/60">
           {totalCount} {totalCount === 1 ? "message" : "messages"}
-          {totalPages > 1 && ` — showing page ${page} of ${totalPages}`}
+          {totalPages > 1 && `, showing page ${page} of ${totalPages}`}
         </p>
         <div className="flex shrink-0 flex-wrap gap-2">
           {RECENT_WINDOWS.map((w, i) => {
@@ -46,7 +46,7 @@ export default async function AdminMessagesPage({
               <form key={w.label} action={deleteRecentContactMessages}>
                 <input type="hidden" name="hours" value={w.hours} />
                 <ConfirmSubmitButton
-                  confirmMessage={`Delete all ${count} message(s) received in the last ${w.label}? This includes any real messages from that window — check the list below first if you're not sure. This can't be undone.`}
+                  confirmMessage={`Delete all ${count} message(s) received in the last ${w.label}? This includes any real messages from that window, check the list below first if you're not sure. This can't be undone.`}
                   className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
                 >
                   Delete last {w.label} ({count})

@@ -106,7 +106,7 @@ export async function verifyJournalLock(password: string): Promise<{ success: bo
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return { success: false, error: "Account not found." };
   if (!user.passwordHash) {
-    return { success: false, error: "This account has no password set — set one from Account settings first." };
+    return { success: false, error: "This account has no password set, set one from Account settings first." };
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);

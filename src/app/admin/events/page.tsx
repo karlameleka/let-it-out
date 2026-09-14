@@ -62,7 +62,7 @@ export default async function AdminEventsPage() {
               placeholder="مثال: ورشة إدارة الضغط النفسي"
               className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
             />
-            <p className="mt-1 text-[11px] text-ink/40">Shown to clients on the Arabic site — falls back to the English title if left blank.</p>
+            <p className="mt-1 text-[11px] text-ink/40">Shown to clients on the Arabic site, falls back to the English title if left blank.</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="date">Date</label>

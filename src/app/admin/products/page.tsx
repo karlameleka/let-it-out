@@ -91,7 +91,7 @@ export default async function AdminProductsPage() {
                     )}
                   </div>
                 ) : (
-                  <span className="text-xs text-ink/40">Digital — no inventory to track</span>
+                  <span className="text-xs text-ink/40">Digital, no inventory to track</span>
                 )}
               </form>
             ))}
@@ -102,7 +102,7 @@ export default async function AdminProductsPage() {
           >
             <input type="hidden" name="productId" value={product.id} />
             <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">
-              Arabic (optional — falls back to English until filled in)
+              Arabic (optional, falls back to English until filled in)
             </p>
             <div>
               <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${product.id}-titleAr`}>
@@ -139,7 +139,7 @@ export default async function AdminProductsPage() {
           <div className="mt-3 border-t border-brand-50 pt-3">
             {product._count.orderItems > 0 ? (
               <p className="text-xs text-ink/40">
-                Has order history — can&rsquo;t be deleted. Uncheck &ldquo;Visible&rdquo; above to archive
+                Has order history, can&rsquo;t be deleted. Uncheck &ldquo;Visible&rdquo; above to archive
                 instead.
               </p>
             ) : (

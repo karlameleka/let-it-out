@@ -111,7 +111,7 @@ export default function AvailabilityManager({ windows }: { windows: Availability
       <div className="rounded-2xl border border-brand-100 bg-white p-5">
         <h2 className="font-display font-semibold text-brand-900">Open a specific day</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Open extra slots for a single day — today or any day up to a month from now — without adding it to your
+          Open extra slots for a single day (today or any day up to a month from now) without adding it to your
           weekly schedule.
         </p>
 

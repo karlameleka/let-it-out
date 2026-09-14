@@ -53,7 +53,7 @@ function ReferralFormBody({
               {colleagues.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                  {c.credentials ? ` — ${c.credentials}` : ""}
+                  {c.credentials ? `, ${c.credentials}` : ""}
                 </option>
               ))}
             </select>
@@ -69,13 +69,13 @@ function ReferralFormBody({
             <div className="flex gap-4">
               <label className="flex items-center gap-2 text-sm text-ink/80">
                 <input type="radio" name="type" value="COLLABORATE" defaultChecked required />
-                Collaborate — I&rsquo;m keeping this client, just looping them in
+                Collaborate, I&rsquo;m keeping this client, just looping them in
               </label>
             </div>
             <div className="mt-1.5 flex gap-4">
               <label className="flex items-center gap-2 text-sm text-ink/80">
                 <input type="radio" name="type" value="FULL_REFERRAL" required />
-                Full referral — I&rsquo;m handing this client off
+                Full referral, I&rsquo;m handing this client off
               </label>
             </div>
           </div>
@@ -97,7 +97,7 @@ function ReferralFormBody({
                     <input type="checkbox" name="noteIds" value={n.id} className="mt-0.5" />
                     <span>
                       {n.sessionDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                      {" — "}
+                      {", "}
                       <span className="text-ink/50">{n.notes.slice(0, 60)}{n.notes.length > 60 ? "…" : ""}</span>
                     </span>
                   </label>

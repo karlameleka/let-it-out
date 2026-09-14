@@ -78,7 +78,7 @@ export default async function AdminOrdersPage() {
           {order.paymentRef && (
             <p className="mt-2 text-sm text-ink/60">
               Payment ref: <span className="font-medium text-ink/80">{order.paymentRef}</span>
-              {order.paymentNote && ` — ${order.paymentNote}`}
+              {order.paymentNote && `, ${order.paymentNote}`}
             </p>
           )}
 

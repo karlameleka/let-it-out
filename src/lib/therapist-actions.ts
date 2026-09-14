@@ -238,7 +238,7 @@ export async function addToolkitLink(
   try {
     new URL(url);
   } catch {
-    return { error: "That link doesn't look valid — include https://" };
+    return { error: "That link doesn't look valid, include https://" };
   }
 
   await prisma.toolkitItem.create({
@@ -264,7 +264,7 @@ export async function addToolkitPdf(
   if (!title) return { error: "Please give it a title." };
   if (!fileData.startsWith("data:application/pdf")) return { error: "Please attach a PDF file." };
   if (dataUriByteSize(fileData) > MAX_TOOLKIT_PDF_BYTES) {
-    return { error: `That PDF is too large — please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
+    return { error: `That PDF is too large, please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
   }
 
   await prisma.toolkitItem.create({
@@ -491,8 +491,8 @@ async function notifyClientOfAssignedResource(
     title: locale === "ar" ? `رسالة من ${counselorName}` : `Message from ${counselorName}`,
     body:
       locale === "ar"
-        ? "بعتلك حاجة جديدة في أدواتي — دوس عشان تشوفها."
-        : "Sent you something new in My Tools — tap to take a look.",
+        ? "بعتلك حاجة جديدة في أدواتي، دوس عشان تشوفها."
+        : "Sent you something new in My Tools, tap to take a look.",
     url: "/resources#my-tools",
   }).catch((err) => console.error("[therapist-actions] Failed to send assigned-resource push:", err));
 }
@@ -516,7 +516,7 @@ export async function assignResourceLink(
   try {
     new URL(url);
   } catch {
-    return { error: "That link doesn't look valid — include https://" };
+    return { error: "That link doesn't look valid, include https://" };
   }
 
   await prisma.assignedResource.create({
@@ -546,7 +546,7 @@ export async function assignResourcePdf(
   if (!title) return { error: "Please give it a title." };
   if (!fileData.startsWith("data:application/pdf")) return { error: "Please attach a PDF file." };
   if (dataUriByteSize(fileData) > MAX_TOOLKIT_PDF_BYTES) {
-    return { error: `That PDF is too large — please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
+    return { error: `That PDF is too large, please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
   }
 
   await prisma.assignedResource.create({
@@ -618,7 +618,7 @@ export async function setMeetingLink(
   try {
     new URL(meetingLink);
   } catch {
-    return { error: "That link doesn't look valid — include https://" };
+    return { error: "That link doesn't look valid, include https://" };
   }
 
   let clientEmail: string;

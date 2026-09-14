@@ -24,7 +24,7 @@ export default async function AdminCounselorsPage() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink/60">
-        Uncheck &ldquo;Visible&rdquo; to archive a counselor without deleting them — their profile and any past
+        Uncheck &ldquo;Visible&rdquo; to archive a counselor without deleting them, their profile and any past
         bookings stay intact, they just stop showing up on the site. Lower placement numbers show first. Email
         is notified alongside the admin inbox on every counseling inquiry/booking for that counselor.
       </p>
@@ -95,7 +95,7 @@ export default async function AdminCounselorsPage() {
             <div className="mt-3 border-t border-brand-50 pt-3">
               {hasHistory ? (
                 <p className="text-xs text-ink/40">
-                  Has booking, session, or client history — can&rsquo;t be deleted. Uncheck &ldquo;Visible&rdquo;
+                  Has booking, session, or client history, can&rsquo;t be deleted. Uncheck &ldquo;Visible&rdquo;
                   above to archive instead.
                 </p>
               ) : (

@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { sendPushToAllSubscribers } from "@/lib/web-push";
 
 const MESSAGES = [
-  "A new prompt is waiting for you — take a few minutes to write.",
+  "A new prompt is waiting for you, take a few minutes to write.",
   "Your journal missed you today. A few sentences is enough.",
-  "Time to let it out — how has today felt so far?",
+  "Time to let it out, how has today felt so far?",
   "A quiet moment for yourself: your journal is ready when you are.",
 ];
 

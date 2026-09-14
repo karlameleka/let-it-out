@@ -79,7 +79,7 @@ export default function ReflectionSheetEditor({
       <div className="rounded-2xl border border-brand-100 bg-white p-5">
         <h3 className="font-display font-semibold text-brand-900">Questions</h3>
         <p className="mt-1 text-xs text-ink/50">
-          Shown to clients any time between sessions — answers are saved only on the client&rsquo;s own device and are
+          Shown to clients any time between sessions, answers are saved only on the client&rsquo;s own device and are
           never sent to or visible on our servers.
         </p>
         <div className="mt-4">
@@ -92,7 +92,7 @@ export default function ReflectionSheetEditor({
           <div>
             <h3 className="font-display font-semibold text-brand-900">Arabic version</h3>
             <p className="mt-1 text-xs text-ink/50">
-              Fully independent from the English list above — its own questions, own order, own count.
+              Fully independent from the English list above, its own questions, own order, own count.
             </p>
           </div>
           {!showArabic && (

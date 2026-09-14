@@ -244,7 +244,7 @@ export default function ArticleForm({
               </div>
               <div className="rounded-xl border border-dashed border-brand-200 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-                  Arabic (optional — fill in every section to publish an Arabic version)
+                  Arabic (optional, fill in every section to publish an Arabic version)
                 </p>
                 <div className="space-y-3">
                   <div>
@@ -354,7 +354,7 @@ export default function ArticleForm({
               </div>
               <div className="rounded-xl border border-dashed border-brand-200 p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-                  Arabic (optional — fill in every check-in to publish an Arabic version)
+                  Arabic (optional, fill in every check-in to publish an Arabic version)
                 </p>
                 <div className="space-y-3">
                   <div>

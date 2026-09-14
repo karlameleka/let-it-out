@@ -168,7 +168,7 @@ export default async function AdminCounselorDetailPage({
         </p>
         {filters.length === 0 ? (
           <p className="mt-4 text-sm text-ink/50">
-            No filters defined yet — <Link href="/admin/counseling-filters" className="font-medium text-brand-600 underline">add one</Link>.
+            No filters defined yet, <Link href="/admin/counseling-filters" className="font-medium text-brand-600 underline">add one</Link>.
           </p>
         ) : (
           <form action={updateCounselorFilterAssignments} className="mt-4">
@@ -233,7 +233,7 @@ export default async function AdminCounselorDetailPage({
               <input type="hidden" name="counselorId" value={counselor.id} />
               <button
                 type="submit"
-                title="One-click login, valid 30 minutes — doesn't change their password"
+                title="One-click login, valid 30 minutes, doesn't change their password"
                 className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
               >
                 Send login link
@@ -272,7 +272,7 @@ export default async function AdminCounselorDetailPage({
           </label>
           <p className="mt-1 text-xs text-ink/50">
             Adds &ldquo;Intake form&rdquo; and &ldquo;Reflection sheet&rdquo; tabs to their therapist portal. These
-            are shared, sitewide question sets used for every counselor&rsquo;s clients, not a per-counselor copy —
+            are shared, sitewide question sets used for every counselor&rsquo;s clients, not a per-counselor copy,
             changes they save apply everywhere, same as when an admin edits them here.
           </p>
           <button

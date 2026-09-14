@@ -11,7 +11,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "CBT Exercises",
-  description: "Short, evidence-based CBT techniques — cognitive reframing, grounding, and behavioral activation.",
+  description: "Short, evidence-based CBT techniques, cognitive reframing, grounding, and behavioral activation.",
 };
 
 export default async function CbtExercisesPage() {

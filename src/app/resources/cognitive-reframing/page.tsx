@@ -9,7 +9,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 export const metadata: Metadata = {
   title: "Cognitive Reframing",
   description:
-    "A guided CBT exercise for catching thinking traps and reframing automatic negative thoughts — with a shuffling bank of everyday scenarios.",
+    "A guided CBT exercise for catching thinking traps and reframing automatic negative thoughts, with a shuffling bank of everyday scenarios.",
 };
 
 export default async function CognitiveReframingPage() {

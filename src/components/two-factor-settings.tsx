@@ -91,7 +91,7 @@ function EnrollmentFlow() {
       <div>
         <p className="text-sm font-semibold text-brand-900">1. Scan this with your authenticator app</p>
         <p className="mt-0.5 text-xs text-ink/60">
-          Google Authenticator, 1Password, Authy — any TOTP app works.
+          Google Authenticator, 1Password, Authy, any TOTP app works.
         </p>
         {/* eslint-disable-next-line @next/next/no-img-element -- locally generated data: URI, not a remote image */}
         <img
@@ -108,7 +108,7 @@ function EnrollmentFlow() {
       <div>
         <p className="text-sm font-semibold text-brand-900">2. Save these backup codes</p>
         <p className="mt-0.5 text-xs text-ink/60">
-          Each works once, if you ever lose access to your authenticator app. Store them somewhere safe — they
+          Each works once, if you ever lose access to your authenticator app. Store them somewhere safe, they
           won&apos;t be shown again.
         </p>
         <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-lg border border-brand-100 bg-white p-3 font-mono text-xs text-ink/80 sm:grid-cols-4">

@@ -34,7 +34,7 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
     id: "4-7-8",
     name: "4-7-8 Breathing",
     tagline: "4-7-8",
-    description: "A longer exhale than inhale, designed to wind you down — often used before sleep.",
+    description: "A longer exhale than inhale, designed to wind you down, often used before sleep.",
     shape: "triangle",
     phases: [
       { label: "Inhale", seconds: 4 },
@@ -46,7 +46,7 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
     id: "coherent",
     name: "Coherent Breathing",
     tagline: "5-5",
-    description: "Smooth, equal in-and-out breathing at about six breaths a minute — shown to improve heart-rate variability.",
+    description: "Smooth, equal in-and-out breathing at about six breaths a minute, shown to improve heart-rate variability.",
     shape: "circle",
     phases: [
       { label: "Inhale", seconds: 5 },

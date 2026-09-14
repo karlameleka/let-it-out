@@ -84,7 +84,7 @@ export default function PatternsClient({
                   {heatmap.map((day) => (
                     <div
                       key={day.date}
-                      title={`${day.date}${day.moods.length ? ` — ${day.moods.map((m) => moodLabel(m, locale)).join(", ")}` : ""}`}
+                      title={`${day.date}${day.moods.length ? `: ${day.moods.map((m) => moodLabel(m, locale)).join(", ")}` : ""}`}
                       className={`flex h-6 w-6 overflow-hidden rounded-md border ${
                         day.date === today ? "ring-2 ring-brand-400" : ""
                       } ${day.moods.length ? "border-black/10" : "border-transparent bg-brand-50/60"}`}

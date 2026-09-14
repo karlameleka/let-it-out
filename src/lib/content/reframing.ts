@@ -222,8 +222,8 @@ export const REFRAMING_PROMPTS: ReframingPrompt[] = [
     categoryAr: "الفلوس",
     situation: "You had to ask a friend to cover you for something small.",
     situationAr: "اضطريت تطلب من صاحبك يدفع عنك حاجة صغيرة.",
-    thought: "This is embarrassing — they probably think I can't manage my life.",
-    thoughtAr: "ده محرج — أكيد شايفني مش قادر أدير حياتي.",
+    thought: "This is embarrassing, they probably think I can't manage my life.",
+    thoughtAr: "ده محرج، أكيد شايفني مش قادر أدير حياتي.",
   },
   {
     category: "Money",
@@ -239,7 +239,7 @@ export const REFRAMING_PROMPTS: ReframingPrompt[] = [
     categoryAr: "الإبداع والطموح",
     situation: "You shared something you made and it got barely any response.",
     situationAr: "شاركت حاجة عملتها ومحدش رد عليها تقريبًا.",
-    thought: "That confirms it — I'm just not good at this.",
+    thought: "That confirms it, I'm just not good at this.",
     thoughtAr: "ده بيأكد إني مش كويس في ده.",
   },
   {
@@ -255,8 +255,8 @@ export const REFRAMING_PROMPTS: ReframingPrompt[] = [
     categoryAr: "الإبداع والطموح",
     situation: "Someone else finished something similar to what you'd been planning.",
     situationAr: "حد تاني خلّص حاجة شبه اللي كنت ناوي تعملها.",
-    thought: "There's no point now — mine won't matter.",
-    thoughtAr: "مفيش فايدة دلوقتي — بتاعتي مش هتفرق.",
+    thought: "There's no point now, mine won't matter.",
+    thoughtAr: "مفيش فايدة دلوقتي، بتاعتي مش هتفرق.",
   },
 ];
 

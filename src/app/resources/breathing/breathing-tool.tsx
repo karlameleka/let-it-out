@@ -31,7 +31,7 @@ function shapeRounding(shape: BreathingShape): string {
 
 /** Small shape preview shown next to each pattern's name in the setup
     picker, so the shape difference is visible before starting. Uses its own
-    (smaller) corner rounding than the big paced visual — rounded-2xl on a
+    (smaller) corner rounding than the big paced visual, rounded-2xl on a
     14px box would round it into a circle. */
 function ShapeSwatch({ shape }: { shape: BreathingShape }) {
   const rounding = shape === "circle" ? "rounded-full" : shape === "square" ? "rounded-[3px]" : "";

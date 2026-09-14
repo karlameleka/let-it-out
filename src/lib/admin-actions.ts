@@ -81,7 +81,7 @@ export async function updateSessionBooking(
   }
 
   const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
-  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid — include https://" };
+  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid, include https://" };
 
   await prisma.sessionBooking.update({
     where: { id: bookingId },
@@ -130,7 +130,7 @@ export async function updateBookingRequestFull(
   }
 
   const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
-  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid — include https://" };
+  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid, include https://" };
 
   await prisma.bookingRequest.update({
     where: { id: bookingId },

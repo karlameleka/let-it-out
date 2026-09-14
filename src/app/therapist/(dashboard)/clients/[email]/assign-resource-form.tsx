@@ -121,7 +121,7 @@ function PdfTab({ clientEmail, clientName }: { clientEmail: string; clientName: 
       return;
     }
     if (file.size > MAX_TOOLKIT_PDF_BYTES) {
-      setFileError(`That file is too large — please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.`);
+      setFileError(`That file is too large, please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.`);
       return;
     }
     setFileError(null);
@@ -187,7 +187,7 @@ function NoteTab({ clientEmail, clientName }: { clientEmail: string; clientName:
       </div>
       <label className="flex items-center gap-2 text-sm text-ink/80">
         <input type="checkbox" name="isAssignment" defaultChecked />
-        This is an assignment — let them mark it done
+        This is an assignment, let them mark it done
       </label>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending} variant="outline" className="!px-4 !py-2 text-xs">
@@ -204,7 +204,7 @@ export default function AssignResourceForm({ clientEmail, clientName }: { client
     <div className="rounded-2xl border border-brand-100 bg-white p-5">
       <p className="font-display font-semibold text-brand-900">Send a resource to this client</p>
       <p className="mt-1 text-sm text-ink/60">
-        Appears only to them, under &ldquo;My tools&rdquo; on their Resources page — they&rsquo;ll also get an email letting them know.
+        Appears only to them, under &ldquo;My tools&rdquo; on their Resources page, they&rsquo;ll also get an email letting them know.
       </p>
       <div className="mt-3 flex gap-2">
         {(["link", "pdf", "note"] as const).map((t) => (

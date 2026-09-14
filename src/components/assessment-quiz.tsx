@@ -151,7 +151,7 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
       <div className="space-y-8">
         <div className="rounded-2xl border border-brand-100 bg-white p-6">
           <h2 className="font-display text-lg font-semibold text-brand-900">Your results</h2>
-          <p className="mt-1 text-sm text-ink/60">Saved to your journal — only visible to you. Tap a result to read what it means.</p>
+          <p className="mt-1 text-sm text-ink/60">Saved to your journal, only visible to you. Tap a result to read what it means.</p>
           <div className="mt-5">
             <ResultBars scores={latestScore} />
           </div>
@@ -184,7 +184,7 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
                       <button
                         key={v}
                         type="button"
-                        aria-label={`${v} — ${q.text}`}
+                        aria-label={`${v}: ${q.text}`}
                         aria-pressed={active}
                         onClick={() => setAnswers((a) => ({ ...a, [q.id]: v }))}
                         className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
@@ -258,7 +258,7 @@ function PastResults({
                 className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
               >
                 <span className="text-sm font-medium text-ink/80">
-                  {dateLabel} — top: {score[0]?.label}
+                  {dateLabel}, top: {score[0]?.label}
                 </span>
                 <ChevronDown
                   className={`h-4 w-4 shrink-0 text-ink/40 transition-transform ${isOpen ? "rotate-180" : ""}`}

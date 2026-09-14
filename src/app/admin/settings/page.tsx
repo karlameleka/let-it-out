@@ -10,9 +10,9 @@ import TextOverrideField from "@/components/text-override-field";
 
 const HERO_FIELDS: [key: string, label: string][] = [
   ["heroRibbon", "Ribbon text above the headline"],
-  ["heroTitlePrefix", "Headline — before the highlighted word"],
-  ["heroTitleHighlight", "Headline — highlighted word"],
-  ["heroTitleSuffix", "Headline — after the highlighted word"],
+  ["heroTitlePrefix", "Headline, before the highlighted word"],
+  ["heroTitleHighlight", "Headline, highlighted word"],
+  ["heroTitleSuffix", "Headline, after the highlighted word"],
   ["heroDescription", "Description paragraph"],
   ["heroCtaServices", "Primary button"],
   ["heroPromptQuote", "Today's-prompt quote"],
@@ -84,7 +84,7 @@ export default async function AdminSettingsPage() {
       </div>
 
       <p className="text-sm text-ink/60">
-        Sitewide toggles — changes apply immediately, no redeploy needed.
+        Sitewide toggles, changes apply immediately, no redeploy needed.
       </p>
 
       <form action={updateSiteSettings} className="space-y-6">
@@ -100,7 +100,7 @@ export default async function AdminSettingsPage() {
               <span className="block text-sm font-semibold text-brand-900">Arabic language</span>
               <span className="mt-0.5 block text-xs text-ink/60">
                 Turn off to hide the language switcher and serve every page in English, even for visitors who
-                previously chose Arabic. Their choice isn&apos;t lost — turning this back on picks it back up
+                previously chose Arabic. Their choice isn&apos;t lost, turning this back on picks it back up
                 automatically.
               </span>
             </span>
@@ -140,7 +140,7 @@ export default async function AdminSettingsPage() {
         <h2 className="font-display text-lg font-semibold text-brand-900">Homepage &amp; navigation text</h2>
         <p className="mt-1 text-sm text-ink/60">
           Override specific text on the site without touching code, in either language. Leave a field blank to
-          use the default shown as its placeholder — English and Arabic are saved and applied independently.
+          use the default shown as its placeholder. English and Arabic are saved and applied independently.
         </p>
 
         <form action={updateSiteText} className="mt-5 space-y-8">

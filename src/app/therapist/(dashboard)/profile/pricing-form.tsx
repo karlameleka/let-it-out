@@ -9,9 +9,9 @@ const fieldClass =
 const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink/40";
 
 const AVAILABILITY_OPTIONS = [
-  { value: "AVAILABLE", label: "Available — booking is live" },
-  { value: "WAITLIST", label: "Waitlist — shows a badge, booking hidden" },
-  { value: "UNAVAILABLE", label: "Unavailable — shows a badge, booking hidden" },
+  { value: "AVAILABLE", label: "Available, booking is live" },
+  { value: "WAITLIST", label: "Waitlist, shows a badge, booking hidden" },
+  { value: "UNAVAILABLE", label: "Unavailable, shows a badge, booking hidden" },
 ] as const;
 
 export default function TherapistPricingForm({

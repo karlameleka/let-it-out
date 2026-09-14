@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   // copy and clients see it on /upcoming after tapping through.
   const result = await sendPushToEmails(emails, {
     title: "Session reminder",
-    body: "You have a counseling session coming up tomorrow — tap for the details.",
+    body: "You have a counseling session coming up tomorrow, tap for the details.",
     url: "/upcoming",
   });
 

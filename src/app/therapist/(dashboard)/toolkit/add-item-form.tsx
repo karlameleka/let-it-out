@@ -76,7 +76,7 @@ function PdfForm() {
       return;
     }
     if (file.size > MAX_TOOLKIT_PDF_BYTES) {
-      setFileError(`That file is too large — please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.`);
+      setFileError(`That file is too large, please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.`);
       return;
     }
     setFileError(null);

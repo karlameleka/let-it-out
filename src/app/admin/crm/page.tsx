@@ -65,7 +65,7 @@ export default async function AdminCrmPage({
       <div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <p className="text-sm text-ink/60">
-            {totalCount} {totalCount === 1 ? "lead" : "leads"} — every real workshop inquiry,
+            {totalCount} {totalCount === 1 ? "lead" : "leads"}, every real workshop inquiry,
             counseling request, journal order, and contact message lands here automatically.
             {totalPages > 1 && ` Showing page ${page} of ${totalPages}.`}
           </p>
@@ -77,7 +77,7 @@ export default async function AdminCrmPage({
                 <form key={w.label} action={deleteRecentLeads}>
                   <input type="hidden" name="hours" value={w.hours} />
                   <ConfirmSubmitButton
-                    confirmMessage={`Delete all ${count} lead(s) received in the last ${w.label}? This deletes every type, including any real leads from that window — check the list below first if you're not sure. This can't be undone.`}
+                    confirmMessage={`Delete all ${count} lead(s) received in the last ${w.label}? This deletes every type, including any real leads from that window, check the list below first if you're not sure. This can't be undone.`}
                     className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
                   >
                     Delete last {w.label} ({count})
