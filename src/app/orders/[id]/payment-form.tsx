@@ -5,7 +5,15 @@ import { submitPaymentReference } from "@/lib/order-actions";
 import { Button } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function PaymentForm({ orderId, dict }: { orderId: string; dict: Dictionary["orderStatus"] }) {
+export default function PaymentForm({
+  orderId,
+  accessToken,
+  dict,
+}: {
+  orderId: string;
+  accessToken?: string;
+  dict: Dictionary["orderStatus"];
+}) {
   const [state, formAction, pending] = useActionState(submitPaymentReference, undefined);
 
   if (state?.success) {
@@ -20,6 +28,7 @@ export default function PaymentForm({ orderId, dict }: { orderId: string; dict: 
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="orderId" value={orderId} />
+      {accessToken && <input type="hidden" name="accessToken" value={accessToken} />}
       <div>
         <label htmlFor="paymentRef" className="mb-1 block text-sm font-medium text-ink/80">
           {dict.paymentRefLabel}

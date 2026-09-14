@@ -10,6 +10,7 @@ import { formatEGP } from "@/lib/format";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { screenSubmission, HONEYPOT_FIELD } from "@/lib/anti-spam";
+import { generateOrderAccessToken } from "@/lib/order-access";
 
 function buildCreateSessionBookingSchema(v: Dictionary["validation"], c: Dictionary["counselorProfile"]) {
   return z.object({
@@ -34,7 +35,7 @@ export type CreateSessionBookingInput = z.infer<ReturnType<typeof buildCreateSes
   honeypot?: string;
   turnstileToken?: string;
 };
-export type CreateSessionBookingResult = { error: string } | { sessionBookingId: string };
+export type CreateSessionBookingResult = { error: string } | { sessionBookingId: string; accessToken: string };
 
 export type CounselingPromoCheckResult =
   | { valid: true; code: string; discountEGP: number; label: string }
@@ -126,6 +127,8 @@ export async function createSessionBooking(
     promoCodeId = (await prisma.promoCode.findUnique({ where: { code: check.code } }))!.id;
   }
 
+  const { rawToken: accessToken, tokenHash: accessTokenHash } = generateOrderAccessToken();
+
   const booking = await prisma.$transaction(async (tx) => {
     const created = await tx.sessionBooking.create({
       data: {
@@ -139,6 +142,7 @@ export async function createSessionBooking(
         promoCodeId,
         discountEGP,
         locale,
+        accessTokenHash,
       },
     });
     if (promoCodeId) {
@@ -220,5 +224,5 @@ export async function createSessionBooking(
     locale,
   });
 
-  return { sessionBookingId: booking.id };
+  return { sessionBookingId: booking.id, accessToken };
 }

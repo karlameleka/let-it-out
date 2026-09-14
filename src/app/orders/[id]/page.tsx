@@ -7,18 +7,31 @@ import PaymentForm from "./payment-form";
 import RetryPaymobPayment from "./retry-paymob-payment";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { getCurrentUser } from "@/lib/session";
+import { verifyOrderAccessToken } from "@/lib/order-access";
 
 export default async function OrderConfirmationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { id } = await params;
-  const [order, locale] = await Promise.all([
+  const { token } = await searchParams;
+  const [order, locale, user] = await Promise.all([
     prisma.order.findUnique({ where: { id }, include: { items: true } }),
     getLocale(),
+    getCurrentUser(),
   ]);
   if (!order) notFound();
+
+  // The order id alone (a Prisma cuid()) isn't a safe stand-in for an
+  // ownership check — see order-access.ts. A logged-in customer is
+  // recognized by userId; a guest needs the access token minted alongside
+  // this order and carried in the confirmation link/redirect.
+  const isOwner = (user && order.userId === user.userId) || verifyOrderAccessToken(token, order.accessTokenHash);
+  if (!isOwner) notFound();
 
   const fullDict = getDictionary(locale);
   const t = fullDict.orderStatus;
@@ -134,7 +147,7 @@ export default async function OrderConfirmationPage({
             </ol>
 
             <div className="mt-6">
-              <PaymentForm orderId={order.id} dict={t} />
+              <PaymentForm orderId={order.id} accessToken={token} dict={t} />
             </div>
           </div>
         )}
@@ -144,7 +157,7 @@ export default async function OrderConfirmationPage({
             <h2 className="font-display font-semibold text-brand-900">{t.paymobPendingHeading}</h2>
             <p className="mt-3 text-sm text-ink/80">{t.paymobPendingText}</p>
             <div className="mt-6">
-              <RetryPaymobPayment orderId={order.id} amountEGP={order.totalEGP} dict={fullDict.paymentSelector} />
+              <RetryPaymobPayment orderId={order.id} accessToken={token} amountEGP={order.totalEGP} dict={fullDict.paymentSelector} />
             </div>
           </div>
         )}

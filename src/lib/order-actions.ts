@@ -12,6 +12,7 @@ import { createLead } from "@/lib/leads";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { screenSubmission, HONEYPOT_FIELD } from "@/lib/anti-spam";
+import { generateOrderAccessToken, verifyOrderAccessToken } from "@/lib/order-access";
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   INSTAPAY: "InstaPay",
@@ -97,7 +98,7 @@ export type CreateOrderInput = z.infer<ReturnType<typeof buildCreateOrderSchema>
   honeypot?: string;
   turnstileToken?: string;
 };
-export type CreateOrderResult = { error: string } | { orderId: string };
+export type CreateOrderResult = { error: string } | { orderId: string; accessToken: string };
 
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
   const screenData = new FormData();
@@ -214,6 +215,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const totalEGP = subtotalEGP - discountEGP + shippingFeeEGP;
 
   const user = await getCurrentUser();
+  const { rawToken: accessToken, tokenHash: accessTokenHash } = generateOrderAccessToken();
 
   const order = await prisma.$transaction(async (tx) => {
     const created = await tx.order.create({
@@ -237,6 +239,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         // goes straight to confirmed, and cash is collected on delivery.
         status: paymentMethod === "CASH_ON_DELIVERY" ? "CONFIRMED" : "PENDING_PAYMENT",
         locale,
+        accessTokenHash,
         items: { create: orderItemsData },
       },
     });
@@ -350,7 +353,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     ],
   });
 
-  return { orderId: order.id };
+  return { orderId: order.id, accessToken };
 }
 
 function buildPaymentRefSchema(t: Dictionary["checkout"]) {
@@ -358,6 +361,7 @@ function buildPaymentRefSchema(t: Dictionary["checkout"]) {
     orderId: z.string().min(1),
     paymentRef: z.string().trim().min(2, t.paymentRefRequired),
     paymentNote: z.string().trim().optional(),
+    accessToken: z.string().trim().optional(),
   });
 }
 
@@ -375,6 +379,7 @@ export async function submitPaymentReference(
     orderId: formData.get("orderId"),
     paymentRef: formData.get("paymentRef"),
     paymentNote: formData.get("paymentNote") || undefined,
+    accessToken: formData.get("accessToken") || undefined,
   });
 
   if (!parsed.success) {
@@ -383,6 +388,14 @@ export async function submitPaymentReference(
 
   const order = await prisma.order.findUnique({ where: { id: parsed.data.orderId } });
   if (!order) return { error: t.orderNotFound };
+
+  // Same ownership rule as the confirmation page itself (order-access.ts):
+  // otherwise anyone who knows/guesses an order id could falsely claim they
+  // paid for someone else's order.
+  const user = await getCurrentUser();
+  const isOwner = (user && order.userId === user.userId) || verifyOrderAccessToken(parsed.data.accessToken, order.accessTokenHash);
+  if (!isOwner) return { error: t.orderNotFound };
+
   if (order.status !== "PENDING_PAYMENT") {
     return { success: true };
   }

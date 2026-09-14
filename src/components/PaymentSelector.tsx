@@ -13,8 +13,14 @@ export default function PaymentSelector({
   dict,
 }: {
   amountEGP: number;
-  /** Resolves to the record id to pay for (creating it first if needed), or null on failure. */
-  getOrderId: () => Promise<string | null>;
+  /**
+   * Resolves to the record id to pay for (creating it first if needed) plus
+   * its access token, or null on failure. Returned together, not as two
+   * separate props, so a component creating the order right here (rather
+   * than already having both from an earlier page load) can't end up
+   * sending a stale token from a previous render's props/state.
+   */
+  getOrderId: () => Promise<{ id: string; accessToken: string } | null>;
   /**
    * Called right before redirecting to the Paymob checkout page — e.g. to
    * clear a cart. Deliberately NOT called just for creating the order, so
@@ -34,8 +40,8 @@ export default function PaymentSelector({
     setLoading(paymentMethod);
     setError(null);
 
-    const orderId = await getOrderId();
-    if (!orderId) {
+    const resolved = await getOrderId();
+    if (!resolved) {
       setLoading(null);
       return;
     }
@@ -44,7 +50,7 @@ export default function PaymentSelector({
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [idField]: orderId, paymentMethod }),
+        body: JSON.stringify({ [idField]: resolved.id, accessToken: resolved.accessToken, paymentMethod }),
       });
       const data = await res.json();
 

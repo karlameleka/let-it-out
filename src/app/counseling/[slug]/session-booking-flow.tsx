@@ -48,6 +48,7 @@ export default function SessionBookingFlow({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionBookingId, setSessionBookingId] = useState<string | null>(null);
+  const [sessionBookingAccessToken, setSessionBookingAccessToken] = useState<string | null>(null);
   const [finalPriceEGP, setFinalPriceEGP] = useState(priceEGP);
   const [finalDate, setFinalDate] = useState<string | null>(null);
   const [finalTime, setFinalTime] = useState<string | null>(null);
@@ -139,6 +140,7 @@ export default function SessionBookingFlow({
     setFinalDate(preferredDate);
     setFinalTime(preferredTime ?? null);
     setSessionBookingId(result.sessionBookingId);
+    setSessionBookingAccessToken(result.accessToken);
   }
 
   if (sessionBookingId) {
@@ -156,10 +158,10 @@ export default function SessionBookingFlow({
         <div className="mt-4">
           <PaymentSelector
             amountEGP={finalPriceEGP}
-            getOrderId={async () => sessionBookingId}
+            getOrderId={async () => ({ id: sessionBookingId, accessToken: sessionBookingAccessToken ?? "" })}
             endpoint="/api/checkout/paymob-session"
             idField="sessionBookingId"
-            onRedirect={() => router.push(`/counseling/session/${sessionBookingId}`)}
+            onRedirect={() => router.push(`/counseling/session/${sessionBookingId}?token=${sessionBookingAccessToken}`)}
             dict={dict.paymentSelector}
           />
         </div>

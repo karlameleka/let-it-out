@@ -5,18 +5,32 @@ import { formatEGP } from "@/lib/format";
 import RetrySessionPayment from "./retry-session-payment";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { getCurrentUser } from "@/lib/session";
+import { verifyOrderAccessToken } from "@/lib/order-access";
 
 export default async function SessionBookingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { id } = await params;
-  const [booking, locale] = await Promise.all([
+  const { token } = await searchParams;
+  const [booking, locale, user] = await Promise.all([
     prisma.sessionBooking.findUnique({ where: { id }, include: { counselor: true } }),
     getLocale(),
+    getCurrentUser(),
   ]);
   if (!booking) notFound();
+
+  // The booking id alone (a Prisma cuid()) isn't a safe stand-in for an
+  // ownership check — see order-access.ts. A logged-in client is recognized
+  // by their account email matching the booking; a guest needs the access
+  // token minted alongside this booking and carried in the confirmation
+  // link/redirect.
+  const isOwner = (user && user.email === booking.email) || verifyOrderAccessToken(token, booking.accessTokenHash);
+  if (!isOwner) notFound();
 
   const fullDict = getDictionary(locale);
   const t = fullDict.sessionStatus;
@@ -82,6 +96,7 @@ export default async function SessionBookingPage({
             <div className="mt-6">
               <RetrySessionPayment
                 sessionBookingId={booking.id}
+                accessToken={token}
                 amountEGP={booking.priceEGP - booking.discountEGP}
                 dict={fullDict.paymentSelector}
               />

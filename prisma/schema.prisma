@@ -296,6 +296,14 @@ model SessionBooking {
   // that confirms payment runs server-to-server with no visitor cookie, so
   // it needs this to send the confirmation email in the right language.
   locale        String               @default("en")
+  // Hashed bearer token required to view/act on this booking's
+  // confirmation page as a guest — the id alone is a cuid(), not a
+  // cryptographically random secret, so it isn't a safe substitute for an
+  // ownership check (see order-access.ts). Null only for bookings created
+  // before this field existed, which fall back to the old id-only
+  // behavior; every booking created from here on always gets one. Logged-in
+  // clients bypass this entirely via an email match instead.
+  accessTokenHash String?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 }
@@ -810,6 +818,10 @@ model Order {
   // that confirms payment runs server-to-server with no visitor cookie, so
   // it needs this to send the confirmation email in the right language.
   locale          String        @default("en")
+  // Hashed bearer token required to view/act on this order's confirmation
+  // page as a guest — see the matching field on SessionBooking above for
+  // the full reasoning. Logged-in customers bypass this via userId instead.
+  accessTokenHash String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

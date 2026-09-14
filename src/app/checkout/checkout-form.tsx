@@ -41,7 +41,7 @@ export default function CheckoutForm({
   const [country, setCountry] = useState(account?.country ?? "");
   const [useAccount, setUseAccount] = useState(!!account);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH_ON_DELIVERY");
-  const [paymobOrderId, setPaymobOrderId] = useState<string | null>(null);
+  const [paymobOrder, setPaymobOrder] = useState<{ id: string; accessToken: string } | null>(null);
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState<{ code: string; discountEGP: number; label: string } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -131,13 +131,13 @@ export default function CheckoutForm({
     }
 
     clear();
-    router.push(`/orders/${result.orderId}`);
+    router.push(`/orders/${result.orderId}?token=${result.accessToken}`);
   }
 
-  async function handleCreatePaymobOrder(): Promise<string | null> {
+  async function handleCreatePaymobOrder(): Promise<{ id: string; accessToken: string } | null> {
     // Reuse the order from an earlier attempt on this page (e.g. after a
     // gateway hiccup) instead of creating a duplicate pending order.
-    if (paymobOrderId) return paymobOrderId;
+    if (paymobOrder) return paymobOrder;
 
     setError(null);
     if (isOffline) {
@@ -156,8 +156,9 @@ export default function CheckoutForm({
     // Don't clear the cart yet — only once we're actually about to redirect
     // to Paymob (see onRedirect below). If the gateway call fails, the
     // order already exists but the cart and this page should stay intact.
-    setPaymobOrderId(result.orderId);
-    return result.orderId;
+    const order = { id: result.orderId, accessToken: result.accessToken };
+    setPaymobOrder(order);
+    return order;
   }
 
   return (
