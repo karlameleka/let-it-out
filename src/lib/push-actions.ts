@@ -37,9 +37,14 @@ export async function subscribeToPush(input: PushSubscriptionInput): Promise<{ e
   return { success: true };
 }
 
-/** Removes a subscription — e.g. when the user turns reminders off. */
+/** Removes a subscription — e.g. when the user turns reminders off. Scoped
+ * to the logged-in user's own subscriptions, so a guessed/observed endpoint
+ * can't be used to unsubscribe someone else. */
 export async function unsubscribeFromPush(endpoint: string): Promise<{ success: boolean }> {
-  await prisma.pushSubscription.deleteMany({ where: { endpoint } });
+  const user = await requireUser().catch(() => null);
+  if (!user) return { success: false };
+
+  await prisma.pushSubscription.deleteMany({ where: { endpoint, userId: user.userId } });
   return { success: true };
 }
 

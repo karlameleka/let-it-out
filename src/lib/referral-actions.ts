@@ -4,10 +4,17 @@ import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
 import { getCurrentUser, requireUser } from "@/lib/session";
 import { getBaseUrl } from "@/lib/base-url";
+import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 import { PromoDiscountType } from "@/generated/prisma/enums";
 
 const REWARD_DISCOUNT_PERCENT = 20;
 const REWARD_EXPIRY_DAYS = 60;
+// Hard ceiling on how many reward codes one referrer's link can ever mint —
+// this is meant to cover one code per friend who actually installs the PWA,
+// not to be called in a loop. High enough that no real referrer would ever
+// hit it organically, low enough to cap the damage if the "only called
+// after a completed install" client-side gate is bypassed (see below).
+const MAX_REWARDS_PER_REFERRER = 50;
 
 function buildReferralLink(baseUrl: string, code: string) {
   return `${baseUrl}/r/${code}`;
@@ -63,10 +70,21 @@ export type ActivateReferralResult =
  * install time, so there's no account to attribute the reward to beyond
  * "whoever's browser just triggered this" — the generated code itself,
  * shown to them right away, is what they redeem at checkout later.
+ *
+ * That "only called after a completed install" gate is purely client-side
+ * (see referral-activation-watcher.tsx) — nothing stops this action being
+ * called directly and repeatedly with any referral code, which is public by
+ * design (it's meant to be shared). Two server-side backstops make that not
+ * worth doing: a per-IP rate limit, and a hard cap on how many reward codes
+ * one referrer's code can ever mint (MAX_REWARDS_PER_REFERRER).
  */
 export async function activateReferral(code: string): Promise<ActivateReferralResult> {
   const trimmed = code.trim().toUpperCase();
   if (!trimmed) return { success: false };
+
+  const ip = await getClientIp();
+  const allowed = await checkRateLimit("activate-referral", ip, { windowMs: 60 * 60 * 1000, max: 5 });
+  if (!allowed) return { success: false };
 
   const referrer = await prisma.user.findUnique({ where: { referralCode: trimmed }, select: { id: true } });
   if (!referrer) return { success: false };
@@ -75,6 +93,9 @@ export async function activateReferral(code: string): Promise<ActivateReferralRe
   // happens to already be logged in on this device at install time.
   const currentUser = await getCurrentUser().catch(() => null);
   if (currentUser && currentUser.userId === referrer.id) return { success: false };
+
+  const rewardsSoFar = await prisma.userReferral.count({ where: { referrerId: referrer.id } });
+  if (rewardsSoFar >= MAX_REWARDS_PER_REFERRER) return { success: false };
 
   const promoCodeValue = await generateUniquePromoCode();
   const expiresAt = new Date();

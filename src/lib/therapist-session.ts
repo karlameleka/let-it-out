@@ -59,8 +59,15 @@ export async function getCurrentCounselor(): Promise<TherapistSessionPayload | n
   // otherwise keep portal access until the cookie expires. Checking
   // existence here — the single funnel every /therapist page/action reads
   // the session through — makes deletion take effect immediately instead.
-  const exists = await prisma.counselor.findUnique({ where: { id: session.counselorId }, select: { id: true } });
-  if (!exists) {
+  // Also re-checks passwordHash: revokeTherapistPortalAccess (admin-actions.ts)
+  // nulls it out without deleting the row, and that revocation should take
+  // effect just as immediately as a deletion would, not wait out the
+  // remainder of this session's 70-minute lifetime.
+  const counselor = await prisma.counselor.findUnique({
+    where: { id: session.counselorId },
+    select: { id: true, passwordHash: true },
+  });
+  if (!counselor || !counselor.passwordHash) {
     await destroyTherapistSession().catch(() => {});
     return null;
   }

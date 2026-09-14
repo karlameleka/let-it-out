@@ -20,19 +20,29 @@ export async function getClientIp(): Promise<string> {
 }
 
 /**
- * True if this route+IP is still within the shared 3-requests-per-10-minutes
- * budget. Writes a hit row on every allowed call, and opportunistically
- * prunes this key's own rows that have aged out of the window — the table
- * stays roughly proportional to real traffic instead of growing unbounded.
+ * True if this route+IP is still within budget — 3 requests per 10 minutes
+ * by default, but callers can pass a stricter (or looser) budget for a
+ * specific route via `opts`. Writes a hit row on every allowed call, and
+ * opportunistically prunes this key's own rows that have aged out of the
+ * window — the table stays roughly proportional to real traffic instead of
+ * growing unbounded. Exported directly (not just via screenSubmission) for
+ * server actions that don't receive a FormData to run the full honeypot +
+ * Turnstile check against — e.g. activateReferral, requestSignupOtp.
  */
-async function checkRateLimit(routeKey: string, ip: string): Promise<boolean> {
+export async function checkRateLimit(
+  routeKey: string,
+  ip: string,
+  opts?: { windowMs?: number; max?: number },
+): Promise<boolean> {
+  const windowMs = opts?.windowMs ?? RATE_LIMIT_WINDOW_MS;
+  const max = opts?.max ?? RATE_LIMIT_MAX_REQUESTS;
   const key = `${routeKey}:${ip}`;
-  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const windowStart = new Date(Date.now() - windowMs);
 
   const recentCount = await prisma.rateLimitHit.count({
     where: { key, createdAt: { gt: windowStart } },
   });
-  if (recentCount >= RATE_LIMIT_MAX_REQUESTS) return false;
+  if (recentCount >= max) return false;
 
   await prisma.rateLimitHit.create({ data: { key } });
   await prisma.rateLimitHit.deleteMany({ where: { key, createdAt: { lte: windowStart } } });

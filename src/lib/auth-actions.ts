@@ -21,6 +21,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 import { getLocale, type Locale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -129,6 +130,15 @@ export async function requestSignupOtp(
 
   if (otpChannel === "PHONE" && !isSmsOtpEnabled()) {
     return { error: a.smsNotAvailable };
+  }
+
+  // Every OTP request sends a real email or SMS (SMS costs money per
+  // message) — without this, requestSignupOtp is an open OTP-bombing
+  // primitive against any email/phone, not just the caller's own.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-otp", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { error: a.couldNotSendCode };
   }
 
   const existingUser = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
@@ -300,6 +310,16 @@ export async function resendSignupOtp(
 
   if (Date.now() - pending.otpSentAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
     return { error: a.resendCooldown };
+  }
+
+  // Same reasoning as requestSignupOtp: this sends a real email/SMS, and the
+  // per-record cooldown above only throttles resends against one specific
+  // pending signup — an IP could still cycle through many different pending
+  // signups without it.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-otp-resend", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { error: a.couldNotResendCode };
   }
 
   const code = generateOtpCode();
@@ -510,6 +530,16 @@ export async function forgotPasswordAction(
   const parsed = buildForgotPasswordSchema(dict.validation).safeParse({ email: formData.get("email") });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+
+  // Per-IP throttle, on top of the per-account cooldown below — that cooldown
+  // alone doesn't stop one IP from cycling through many different emails.
+  // Rate-limited the same way regardless of whether the email exists, so
+  // this can't be used to infer an account's existence either.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("forgot-password", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { success: true };
   }
 
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });

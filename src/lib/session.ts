@@ -47,9 +47,12 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   // different browser) would otherwise keep working until the cookie
   // expires. Checking existence here — the single funnel every page/action
   // reads the session through — makes deletion take effect immediately on
-  // that account's very next request instead.
-  const exists = await prisma.user.findUnique({ where: { id: session.userId }, select: { id: true } });
-  if (!exists) {
+  // that account's very next request instead. Also re-reads role from the
+  // DB rather than trusting the JWT's own role claim: nothing in this app
+  // currently changes a user's role, but requireAdmin() should never end up
+  // trusting a 30-day-old claim over the account's actual current role.
+  const current = await prisma.user.findUnique({ where: { id: session.userId }, select: { role: true } });
+  if (!current) {
     // Clearing the cookie only works from a Server Function/Route Handler,
     // not while a Server Component is rendering — swallow that case since
     // returning null already treats this request as logged out either way.
@@ -57,7 +60,7 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
     return null;
   }
 
-  return session;
+  return { ...session, role: current.role };
 }
 
 export async function requireUser(): Promise<SessionPayload> {

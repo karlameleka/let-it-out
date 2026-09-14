@@ -8,6 +8,7 @@ import { sendSupportNotification } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { checkRateLimit } from "@/lib/anti-spam";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -34,6 +35,13 @@ export async function sendSupportChatMessage(
   const trimmed = message.trim();
   if (!trimmed) return { error: t.pleaseTypeMessage };
   if (trimmed.length > MAX_MESSAGE_LENGTH) return { error: t.messageTooLong };
+
+  // Every message costs a real Gemini API call against a shared quota (20/day
+  // on the current free tier — see ai-support-chat.ts) — keyed per-user
+  // (not IP) since this is already behind login, so this can't be used to
+  // exhaust that quota for everyone else in one account's burst.
+  const rateLimitOk = await checkRateLimit("support-chat", session.userId, { windowMs: 60 * 60 * 1000, max: 20 });
+  if (!rateLimitOk) return { error: t.somethingWrongReply };
 
   const existing = chatId
     ? await prisma.supportChat.findFirst({ where: { id: chatId, userId: session.userId } })
