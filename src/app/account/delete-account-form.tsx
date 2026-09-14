@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { deleteAccountAction } from "@/lib/auth-actions";
 import { clearAllEntries } from "@/lib/local-journal";
 import { clearAllReflectionEntries } from "@/lib/local-reflection";
+import { clearAllAssessmentResults } from "@/lib/local-assessments";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function DeleteAccountForm({
@@ -41,7 +42,7 @@ export default function DeleteAccountForm({
       return;
     }
 
-    await Promise.all([clearAllEntries(userId), clearAllReflectionEntries(userId)]);
+    await Promise.all([clearAllEntries(userId), clearAllReflectionEntries(userId), clearAllAssessmentResults(userId)]);
     router.push("/");
   }
 

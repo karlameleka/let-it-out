@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { exportEntries } from "@/lib/local-journal";
 import { exportReflectionEntries } from "@/lib/local-reflection";
+import { exportAssessmentResults } from "@/lib/local-assessments";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function ExportDataButton({ dict, userId }: { dict: Dictionary; userId: string }) {
@@ -16,8 +17,12 @@ export default function ExportDataButton({ dict, userId }: { dict: Dictionary; u
 
     let data;
     try {
-      const [journal, reflections] = await Promise.all([exportEntries(userId), exportReflectionEntries(userId)]);
-      data = { ...journal, reflections };
+      const [journal, reflections, assessments] = await Promise.all([
+        exportEntries(userId),
+        exportReflectionEntries(userId),
+        exportAssessmentResults(userId),
+      ]);
+      data = { ...journal, reflections, assessments };
     } catch {
       setPending(false);
       setError(t.exportError);
