@@ -40,7 +40,7 @@ export const CLIENT_TOOLS: ClientTool[] = [
   {
     key: "next-step",
     title: "Tiny Next Step",
-    description: "Behavioral activation — shrinks an overwhelming task to one tiny step.",
+    description: "Behavioral activation, shrinks an overwhelming task to one tiny step.",
     href: "/resources/cbt-exercises/next-step",
   },
 ];
@@ -94,10 +94,10 @@ export const CRISIS_PROTOCOL = {
   hotline: "16328",
   hotlineLabel: "Egyptian National Crisis Hotline",
   steps: [
-    "Stay present — don't rush to end the call/session.",
+    "Stay present, don't rush to end the call/session.",
     "Ask directly: \"Are you thinking about harming yourself?\" Direct questions don't plant the idea.",
     "Assess immediacy: do they have a plan, means, and timeline?",
-    "If there's immediate danger, help them contact emergency services or the hotline above — offer to stay on the line while they do.",
+    "If there's immediate danger, help them contact emergency services or the hotline above, offer to stay on the line while they do.",
     "Document what was discussed and follow up according to your own clinical protocol.",
   ],
 };

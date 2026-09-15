@@ -1,5 +1,14 @@
 import "server-only";
 import nodemailer from "nodemailer";
+import type { Locale } from "@/lib/i18n/locale";
+
+/** Wraps an email's HTML body so it reads right-to-left when the recipient's
+ * site language is Arabic — every customer-facing template below is built
+ * with this, English-only staff/therapist emails are not. */
+function emailShell(bodyHtml: string, locale: Locale) {
+  const isAr = locale === "ar";
+  return `<div dir="${isAr ? "rtl" : "ltr"}" style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6; text-align: ${isAr ? "right" : "left"};">${bodyHtml}</div>`;
+}
 
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "letitoutsupport@gmail.com";
 
@@ -91,6 +100,7 @@ export async function sendCustomerConfirmation({
   intro,
   lines,
   closing,
+  locale = "en",
 }: {
   to: string;
   name: string;
@@ -98,6 +108,10 @@ export async function sendCustomerConfirmation({
   intro: string;
   lines?: { label: string; value: string }[];
   closing?: string;
+  /** Site language active when the recipient submitted the form this
+   * confirms — subject/intro/lines are passed pre-translated by the
+   * caller, this only localizes the greeting/closing and RTL layout. */
+  locale?: Locale;
 }) {
   const transport = getTransporter();
   if (!transport) {
@@ -107,10 +121,12 @@ export async function sendCustomerConfirmation({
     return;
   }
 
-  const closingText = closing ?? "Warmly,\nThe Let It Out team";
+  const isAr = locale === "ar";
+  const greeting = isAr ? `أهلاً ${name}،` : `Hi ${name},`;
+  const closingText = closing ?? (isAr ? "مع خالص التحية،\nفريق Let It Out" : "Warmly,\nThe Let It Out team");
 
   const text = [
-    `Hi ${name},`,
+    greeting,
     "",
     intro,
     ...(lines ? ["", ...lines.map((l) => `${l.label}: ${l.value}`)] : []),
@@ -118,10 +134,10 @@ export async function sendCustomerConfirmation({
     closingText,
   ].join("\n");
 
-  const html = `
-    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+  const html = emailShell(
+    `
       <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
-      <p>Hi ${escapeHtml(name)},</p>
+      <p>${escapeHtml(greeting)}</p>
       <p>${escapeHtml(intro)}</p>
       ${
         lines
@@ -130,7 +146,7 @@ export async function sendCustomerConfirmation({
           .map(
             (l) => `
           <tr>
-            <td style="font-weight: 600; vertical-align: top; padding-right: 12px;">${l.label}</td>
+            <td style="font-weight: 600; vertical-align: top; padding-${isAr ? "left" : "right"}: 12px;">${l.label}</td>
             <td style="white-space: pre-line;">${escapeHtml(l.value)}</td>
           </tr>`,
           )
@@ -139,8 +155,9 @@ export async function sendCustomerConfirmation({
           : ""
       }
       <p style="white-space: pre-line;">${escapeHtml(closingText)}</p>
-    </div>
-  `;
+    `,
+    locale,
+  );
 
   try {
     await transport.sendMail({
@@ -167,14 +184,95 @@ export async function sendWelcomeEmail({
   to,
   name,
   privacyUrl,
+  locale = "en",
 }: {
   to: string;
   name: string;
   privacyUrl: string;
+  locale?: Locale;
 }) {
   const transport = getTransporter();
   if (!transport) {
     console.warn(`[email] Skipped welcome email to ${to} — not configured.`);
+    return;
+  }
+
+  if (locale === "ar") {
+    const text = [
+      `أهلاً ${name}،`,
+      "",
+      "أهلاً بيك في Let It Out. مبسوطين إنك معانا.",
+      "",
+      "التسجيل في منصة للصحة النفسية بيتطلب ثقة حقيقية، وإحنا مش مستهينين بيها — فقبل أي حاجة تانية، إليك بالظبط إزاي بياناتك محمية:",
+      "",
+      "يومياتك ليك وحدك. التدوينات مشفّرة على جهازك (AES-256-GCM) ومش بترسل أو تتخزن على السيرفرات بتاعتنا، يعني محدّش في Let It Out يقدر يقراها.",
+      "",
+      "كلمة السر بتاعتك محدّش شايفها. بتتشفّر لحظة ما بتحددها — حتى فريقنا مش شايفها.",
+      "",
+      "إحنا مش بنبيع بياناتك خالص. مفيش تتبع، مفيش ملفات إعلانية، ومفيش أطراف تالتة بتشتري أي معلومة عنك.",
+      "",
+      "التحكم دايمًا في إيدك. صدّر أو احذف بياناتك نهائيًا في أي وقت من إعدادات الحساب — من غير انتظار ومن غير أي تبرير.",
+      "",
+      "تقدر تقرا كل التفاصيل عن إزاي بنتعامل مع بياناتك هنا:",
+      privacyUrl,
+      "",
+      "لو أي حاجة مش واضحة، رد على الإيميل ده أو تواصل معانا على letitoutsupport@gmail.com — هيرد عليك شخص حقيقي.",
+      "",
+      "مع خالص التحية،\nفريق Let It Out",
+    ].join("\n");
+
+    const html = emailShell(
+      `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>أهلاً ${escapeHtml(name)}،</p>
+        <p>أهلاً بيك في Let It Out. مبسوطين إنك معانا.</p>
+        <p>التسجيل في منصة للصحة النفسية بيتطلب ثقة حقيقية، وإحنا مش مستهينين بيها — فقبل أي حاجة تانية، إليك بالظبط إزاي بياناتك محمية.</p>
+        <table cellpadding="0" cellspacing="0" style="width: 100%; margin: 20px 0; border-collapse: separate; border-spacing: 0 10px;">
+          <tr>
+            <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+              <strong>يومياتك ليك وحدك.</strong> التدوينات مشفّرة على جهازك (AES-256-GCM)
+              ومش بترسل أو تتخزن على السيرفرات بتاعتنا — محدّش في Let It Out يقدر يقراها.
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+              <strong>كلمة السر بتاعتك محدّش شايفها.</strong> بتتشفّر لحظة ما بتحددها — حتى فريقنا
+              مش شايفها.
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+              <strong>إحنا مش بنبيع بياناتك خالص.</strong> مفيش تتبع، مفيش ملفات إعلانية، ومفيش أطراف
+              تالتة بتشتري أي معلومة عنك.
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+              <strong>التحكم دايمًا في إيدك.</strong> صدّر أو احذف بياناتك نهائيًا في أي وقت من إعدادات
+              الحساب — من غير انتظار ومن غير أي تبرير.
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 24px 0;">
+          <a href="${privacyUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">اقرأ سياسة الخصوصية كاملة</a>
+        </p>
+        <p style="color: #6b7c80; font-size: 13px;">لو أي حاجة مش واضحة، رد على الإيميل ده أو تواصل معانا على letitoutsupport@gmail.com — هيرد عليك شخص حقيقي.</p>
+        <p>مع خالص التحية،<br />فريق Let It Out</p>
+      `,
+      locale,
+    );
+
+    try {
+      await transport.sendMail({
+        from: `"Let It Out" <${process.env.EMAIL_USER}>`,
+        to,
+        subject: "أهلاً بيك في Let It Out — وكلمة سريعة عن الخصوصية",
+        text,
+        html,
+      });
+    } catch (err) {
+      console.error(`[email] Failed to send welcome email to ${to}:`, err);
+    }
     return;
   }
 
@@ -201,8 +299,8 @@ export async function sendWelcomeEmail({
     "Warmly,\nThe Let It Out team",
   ].join("\n");
 
-  const html = `
-    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
+  const html = emailShell(
+    `
       <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
       <p>Hi ${escapeHtml(name)},</p>
       <p>Welcome to Let It Out. We're glad you're here.</p>
@@ -238,8 +336,9 @@ export async function sendWelcomeEmail({
       </p>
       <p style="color: #6b7c80; font-size: 13px;">If anything about this ever feels unclear, just reply to this email or reach us at letitoutsupport@gmail.com — a real person will answer.</p>
       <p>Warmly,<br />The Let It Out team</p>
-    </div>
-  `;
+    `,
+    locale,
+  );
 
   try {
     await transport.sendMail({
@@ -263,10 +362,12 @@ export async function sendOtpEmail({
   to,
   name,
   code,
+  locale = "en",
 }: {
   to: string;
   name: string;
   code: string;
+  locale?: Locale;
 }): Promise<boolean> {
   const transport = getTransporter();
   if (!transport) {
@@ -274,29 +375,49 @@ export async function sendOtpEmail({
     return false;
   }
 
-  const text = [
-    `Hi ${name},`,
-    "",
-    `Your Let It Out verification code is: ${code}`,
-    "",
-    "This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.",
-  ].join("\n");
+  const isAr = locale === "ar";
+  const greeting = isAr ? `أهلاً ${name}،` : `Hi ${name},`;
 
-  const html = `
-    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
-      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
-      <p>Hi ${escapeHtml(name)},</p>
-      <p>Your verification code is:</p>
-      <p style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1e5b73; margin: 20px 0;">${escapeHtml(code)}</p>
-      <p style="color: #6b7c80; font-size: 13px;">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
-    </div>
-  `;
+  const text = isAr
+    ? [
+        greeting,
+        "",
+        `كود التحقق الخاص بك في Let It Out هو: ${code}`,
+        "",
+        "الكود صالح لمدة 10 دقائق. لو مطلبتوش، تجاهل الإيميل ده بأمان.",
+      ].join("\n")
+    : [
+        greeting,
+        "",
+        `Your Let It Out verification code is: ${code}`,
+        "",
+        "This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.",
+      ].join("\n");
+
+  const html = emailShell(
+    isAr
+      ? `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p>كود التحقق الخاص بك هو:</p>
+        <p style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1e5b73; margin: 20px 0;">${escapeHtml(code)}</p>
+        <p style="color: #6b7c80; font-size: 13px;">الكود صالح لمدة 10 دقائق. لو مطلبتوش، تجاهل الإيميل ده بأمان.</p>
+      `
+      : `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p>Your verification code is:</p>
+        <p style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1e5b73; margin: 20px 0;">${escapeHtml(code)}</p>
+        <p style="color: #6b7c80; font-size: 13px;">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
+      `,
+    locale,
+  );
 
   try {
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: `${code} is your Let It Out verification code`,
+      subject: isAr ? `${code} هو كود التحقق الخاص بك في Let It Out` : `${code} is your Let It Out verification code`,
       text,
       html,
     });
@@ -316,10 +437,12 @@ export async function sendPasswordResetEmail({
   to,
   name,
   resetUrl,
+  locale = "en",
 }: {
   to: string;
   name: string;
   resetUrl: string;
+  locale?: Locale;
 }) {
   const transport = getTransporter();
   if (!transport) {
@@ -327,36 +450,63 @@ export async function sendPasswordResetEmail({
     return;
   }
 
-  const text = [
-    `Hi ${name},`,
-    "",
-    "Someone requested a password reset for your Let It Out account. If this was you, use the link below to choose a new password — it expires in 1 hour:",
-    "",
-    resetUrl,
-    "",
-    "If you didn't request this, you can safely ignore this email.",
-    "",
-    "Warmly,\nThe Let It Out team",
-  ].join("\n");
+  const isAr = locale === "ar";
+  const greeting = isAr ? `أهلاً ${name}،` : `Hi ${name},`;
 
-  const html = `
-    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
-      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
-      <p>Hi ${escapeHtml(name)},</p>
-      <p>Someone requested a password reset for your account. If this was you, click below to choose a new password — this link expires in 1 hour.</p>
-      <p style="margin: 24px 0;">
-        <a href="${resetUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Reset your password</a>
-      </p>
-      <p style="color: #6b7c80; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
-      <p>Warmly,<br />The Let It Out team</p>
-    </div>
-  `;
+  const text = isAr
+    ? [
+        greeting,
+        "",
+        "حد طلب إعادة تعيين كلمة السر لحسابك في Let It Out. لو ده إنت، استخدم الرابط ده لاختيار كلمة سر جديدة — صالح لمدة ساعة واحدة:",
+        "",
+        resetUrl,
+        "",
+        "لو مطلبتش ده، تجاهل الإيميل ده بأمان.",
+        "",
+        "مع خالص التحية،\nفريق Let It Out",
+      ].join("\n")
+    : [
+        greeting,
+        "",
+        "Someone requested a password reset for your Let It Out account. If this was you, use the link below to choose a new password — it expires in 1 hour:",
+        "",
+        resetUrl,
+        "",
+        "If you didn't request this, you can safely ignore this email.",
+        "",
+        "Warmly,\nThe Let It Out team",
+      ].join("\n");
+
+  const html = emailShell(
+    isAr
+      ? `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p>حد طلب إعادة تعيين كلمة السر لحسابك. لو ده إنت، اضغط تحت لاختيار كلمة سر جديدة — الرابط صالح لمدة ساعة واحدة.</p>
+        <p style="margin: 24px 0;">
+          <a href="${resetUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">إعادة تعيين كلمة السر</a>
+        </p>
+        <p style="color: #6b7c80; font-size: 13px;">لو مطلبتش ده، تجاهل الإيميل ده بأمان.</p>
+        <p>مع خالص التحية،<br />فريق Let It Out</p>
+      `
+      : `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p>Someone requested a password reset for your account. If this was you, click below to choose a new password — this link expires in 1 hour.</p>
+        <p style="margin: 24px 0;">
+          <a href="${resetUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Reset your password</a>
+        </p>
+        <p style="color: #6b7c80; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
+        <p>Warmly,<br />The Let It Out team</p>
+      `,
+    locale,
+  );
 
   try {
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: "Let It Out — Reset your password",
+      subject: isAr ? "Let It Out — إعادة تعيين كلمة السر" : "Let It Out — Reset your password",
       text,
       html,
     });
@@ -434,11 +584,13 @@ export async function sendIntakeFormRequestEmail({
   name,
   counselorName,
   intakeUrl,
+  locale = "en",
 }: {
   to: string;
   name: string;
   counselorName: string;
   intakeUrl: string;
+  locale?: Locale;
 }) {
   const transport = getTransporter();
   if (!transport) {
@@ -446,43 +598,76 @@ export async function sendIntakeFormRequestEmail({
     return;
   }
 
-  const text = [
-    `Hi ${name},`,
-    "",
-    `Thanks for requesting a session with ${counselorName}. Before your first session, we ask every client to fill out a short intake form — it helps your therapist understand your background and prepare for your work together.`,
-    "",
-    "This form goes directly and only to your therapist, and is saved to your private profile in their client records. It is never seen by anyone else at Let It Out, and never shared with any third party — it exists solely between you and your therapist.",
-    "",
-    intakeUrl,
-    "",
-    "It takes about 10-15 minutes. Please fill it out before your session if you can.",
-    "",
-    "Warmly,\nThe Let It Out team",
-  ].join("\n");
+  const isAr = locale === "ar";
+  const greeting = isAr ? `أهلاً ${name}،` : `Hi ${name},`;
 
-  const html = `
-    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
-      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
-      <p>Hi ${escapeHtml(name)},</p>
-      <p>Thanks for requesting a session with ${escapeHtml(counselorName)}. Before your first session, we ask every client to fill out a short intake form — it helps your therapist understand your background and prepare for your work together.</p>
-      <p style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
-        This form goes directly and only to your therapist, and is saved to your private profile in their
-        client records. It is <strong>never seen by anyone else at Let It Out</strong>, and never shared with
-        any third party — it exists solely between you and your therapist.
-      </p>
-      <p style="margin: 24px 0;">
-        <a href="${intakeUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Fill out your intake form</a>
-      </p>
-      <p style="color: #6b7c80; font-size: 13px;">Takes about 10-15 minutes. Please complete it before your session if you can.</p>
-      <p>Warmly,<br />The Let It Out team</p>
-    </div>
-  `;
+  const text = isAr
+    ? [
+        greeting,
+        "",
+        `شكرًا لطلبك جلسة مع ${counselorName}. قبل أول جلسة، بنطلب من كل عميل يملأ استمارة تعارف قصيرة — بتساعد معالجك يفهم خلفيتك ويجهّز نفسه لشغلكم مع بعض.`,
+        "",
+        "الاستمارة دي بتوصل لمعالجك بس، وبتتحفظ في ملفك الخاص عنده. محدّش تاني في Let It Out بيشوفها، ومش بتتشارك مع أي طرف تالت — هي بينك وبين معالجك بس.",
+        "",
+        intakeUrl,
+        "",
+        "بتاخد حوالي 10-15 دقيقة. لو تقدر، املاها قبل جلستك.",
+        "",
+        "مع خالص التحية،\nفريق Let It Out",
+      ].join("\n")
+    : [
+        greeting,
+        "",
+        `Thanks for requesting a session with ${counselorName}. Before your first session, we ask every client to fill out a short intake form — it helps your therapist understand your background and prepare for your work together.`,
+        "",
+        "This form goes directly and only to your therapist, and is saved to your private profile in their client records. It is never seen by anyone else at Let It Out, and never shared with any third party — it exists solely between you and your therapist.",
+        "",
+        intakeUrl,
+        "",
+        "It takes about 10-15 minutes. Please fill it out before your session if you can.",
+        "",
+        "Warmly,\nThe Let It Out team",
+      ].join("\n");
+
+  const html = emailShell(
+    isAr
+      ? `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p>شكرًا لطلبك جلسة مع ${escapeHtml(counselorName)}. قبل أول جلسة، بنطلب من كل عميل يملأ استمارة تعارف قصيرة — بتساعد معالجك يفهم خلفيتك ويجهّز نفسه لشغلكم مع بعض.</p>
+        <p style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+          الاستمارة دي بتوصل لمعالجك بس، وبتتحفظ في ملفك الخاص عنده. <strong>محدّش تاني في Let It Out بيشوفها</strong>،
+          ومش بتتشارك مع أي طرف تالت — هي بينك وبين معالجك بس.
+        </p>
+        <p style="margin: 24px 0;">
+          <a href="${intakeUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">املأ استمارة التعارف</a>
+        </p>
+        <p style="color: #6b7c80; font-size: 13px;">بتاخد حوالي 10-15 دقيقة. لو تقدر، املاها قبل جلستك.</p>
+        <p>مع خالص التحية،<br />فريق Let It Out</p>
+      `
+      : `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p>Thanks for requesting a session with ${escapeHtml(counselorName)}. Before your first session, we ask every client to fill out a short intake form — it helps your therapist understand your background and prepare for your work together.</p>
+        <p style="background: #f4f8f9; border-radius: 12px; padding: 14px 16px; color: #345a63;">
+          This form goes directly and only to your therapist, and is saved to your private profile in their
+          client records. It is <strong>never seen by anyone else at Let It Out</strong>, and never shared with
+          any third party — it exists solely between you and your therapist.
+        </p>
+        <p style="margin: 24px 0;">
+          <a href="${intakeUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Fill out your intake form</a>
+        </p>
+        <p style="color: #6b7c80; font-size: 13px;">Takes about 10-15 minutes. Please complete it before your session if you can.</p>
+        <p>Warmly,<br />The Let It Out team</p>
+      `,
+    locale,
+  );
 
   try {
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: "Let It Out — Your intake form",
+      subject: isAr ? "Let It Out — استمارة التعارف الخاصة بيك" : "Let It Out — Your intake form",
       text,
       html,
     });
@@ -655,18 +840,29 @@ export async function sendReferralNotificationEmail({
  * the email itself (consistent with the app's pattern for counselor
  * notifications); the client reviews it in-app after logging in.
  */
+export type AssignedResourceKind = "TOOL" | "PDF" | "ASSIGNMENT" | "NOTE";
+
+const ASSIGNED_RESOURCE_KIND_LABELS: Record<AssignedResourceKind, { en: string; ar: string }> = {
+  TOOL: { en: "a tool", ar: "أداة" },
+  PDF: { en: "a PDF", ar: "ملف PDF" },
+  ASSIGNMENT: { en: "an assignment", ar: "تكليف" },
+  NOTE: { en: "a note", ar: "ملاحظة" },
+};
+
 export async function sendAssignedResourceNotificationEmail({
   to,
   toName,
   counselorName,
-  kindLabel,
+  kind,
   resourcesUrl,
+  locale = "en",
 }: {
   to: string;
   toName: string;
   counselorName: string;
-  kindLabel: string;
+  kind: AssignedResourceKind;
   resourcesUrl: string;
+  locale?: Locale;
 }) {
   const transport = getTransporter();
   if (!transport) {
@@ -674,33 +870,58 @@ export async function sendAssignedResourceNotificationEmail({
     return;
   }
 
-  const text = [
-    `Hi ${toName},`,
-    "",
-    `${counselorName} just sent you ${kindLabel} — you'll find it under "My tools" on your Resources page.`,
-    "",
-    `Take a look: ${resourcesUrl}`,
-    "",
-    "Warmly,\nThe Let It Out team",
-  ].join("\n");
+  const isAr = locale === "ar";
+  const kindLabel = ASSIGNED_RESOURCE_KIND_LABELS[kind][isAr ? "ar" : "en"];
+  const greeting = isAr ? `أهلاً ${toName}،` : `Hi ${toName},`;
 
-  const html = `
-    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
-      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
-      <p>Hi ${escapeHtml(toName)},</p>
-      <p><strong>${escapeHtml(counselorName)}</strong> just sent you ${kindLabel} — you&rsquo;ll find it under &ldquo;My tools&rdquo; on your Resources page.</p>
-      <p style="margin: 24px 0;">
-        <a href="${resourcesUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Take a look</a>
-      </p>
-      <p>Warmly,<br />The Let It Out team</p>
-    </div>
-  `;
+  const text = isAr
+    ? [
+        greeting,
+        "",
+        `${counselorName} بعتلك ${kindLabel} — هتلاقيها تحت "أدواتي" في صفحة المصادر.`,
+        "",
+        `اطّلع عليها: ${resourcesUrl}`,
+        "",
+        "مع خالص التحية،\nفريق Let It Out",
+      ].join("\n")
+    : [
+        greeting,
+        "",
+        `${counselorName} just sent you ${kindLabel} — you'll find it under "My tools" on your Resources page.`,
+        "",
+        `Take a look: ${resourcesUrl}`,
+        "",
+        "Warmly,\nThe Let It Out team",
+      ].join("\n");
+
+  const html = emailShell(
+    isAr
+      ? `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p><strong>${escapeHtml(counselorName)}</strong> بعتلك ${kindLabel} — هتلاقيها تحت &laquo;أدواتي&raquo; في صفحة المصادر.</p>
+        <p style="margin: 24px 0;">
+          <a href="${resourcesUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">اطّلع عليها</a>
+        </p>
+        <p>مع خالص التحية،<br />فريق Let It Out</p>
+      `
+      : `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p><strong>${escapeHtml(counselorName)}</strong> just sent you ${kindLabel} — you&rsquo;ll find it under &ldquo;My tools&rdquo; on your Resources page.</p>
+        <p style="margin: 24px 0;">
+          <a href="${resourcesUrl}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Take a look</a>
+        </p>
+        <p>Warmly,<br />The Let It Out team</p>
+      `,
+    locale,
+  );
 
   try {
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: `Let It Out — ${counselorName} sent you something new`,
+      subject: isAr ? `Let It Out — ${counselorName} بعتلك حاجة جديدة` : `Let It Out — ${counselorName} sent you something new`,
       text,
       html,
     });
@@ -721,6 +942,7 @@ export async function sendMeetingLinkEmail({
   counselorName,
   meetingLink,
   sessionLabel,
+  locale = "en",
 }: {
   to: string;
   name: string;
@@ -728,6 +950,7 @@ export async function sendMeetingLinkEmail({
   meetingLink: string;
   /** e.g. "Wed 26 Aug · 14:00 – 14:50" — omitted when no exact time is known. */
   sessionLabel?: string | null;
+  locale?: Locale;
 }) {
   const transport = getTransporter();
   if (!transport) {
@@ -735,36 +958,63 @@ export async function sendMeetingLinkEmail({
     return;
   }
 
-  const text = [
-    `Hi ${name},`,
-    "",
-    `${counselorName} has posted the video link for your session${sessionLabel ? ` (${sessionLabel})` : ""}:`,
-    "",
-    meetingLink,
-    "",
-    "Warmly,\nThe Let It Out team",
-  ].join("\n");
+  const isAr = locale === "ar";
+  const greeting = isAr ? `أهلاً ${name}،` : `Hi ${name},`;
 
-  const html = `
-    <div style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6;">
-      <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
-      <p>Hi ${escapeHtml(name)},</p>
-      <p><strong>${escapeHtml(counselorName)}</strong> has posted the video link for your session${
-        sessionLabel ? ` — <strong>${escapeHtml(sessionLabel)}</strong>` : ""
-      }.</p>
-      <p style="margin: 24px 0;">
-        <a href="${meetingLink}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Join your session</a>
-      </p>
-      <p style="color: #6b7c80; font-size: 13px;">${escapeHtml(meetingLink)}</p>
-      <p>Warmly,<br />The Let It Out team</p>
-    </div>
-  `;
+  const text = isAr
+    ? [
+        greeting,
+        "",
+        `${counselorName} نزّل رابط الفيديو لجلستك${sessionLabel ? ` (${sessionLabel})` : ""}:`,
+        "",
+        meetingLink,
+        "",
+        "مع خالص التحية،\nفريق Let It Out",
+      ].join("\n")
+    : [
+        greeting,
+        "",
+        `${counselorName} has posted the video link for your session${sessionLabel ? ` (${sessionLabel})` : ""}:`,
+        "",
+        meetingLink,
+        "",
+        "Warmly,\nThe Let It Out team",
+      ].join("\n");
+
+  const html = emailShell(
+    isAr
+      ? `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p><strong>${escapeHtml(counselorName)}</strong> نزّل رابط الفيديو لجلستك${
+          sessionLabel ? ` — <strong>${escapeHtml(sessionLabel)}</strong>` : ""
+        }.</p>
+        <p style="margin: 24px 0;">
+          <a href="${meetingLink}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">ادخل جلستك</a>
+        </p>
+        <p style="color: #6b7c80; font-size: 13px;">${escapeHtml(meetingLink)}</p>
+        <p>مع خالص التحية،<br />فريق Let It Out</p>
+      `
+      : `
+        <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
+        <p>${escapeHtml(greeting)}</p>
+        <p><strong>${escapeHtml(counselorName)}</strong> has posted the video link for your session${
+          sessionLabel ? ` — <strong>${escapeHtml(sessionLabel)}</strong>` : ""
+        }.</p>
+        <p style="margin: 24px 0;">
+          <a href="${meetingLink}" style="background-color: #1e5b73; color: #ffffff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600; display: inline-block;">Join your session</a>
+        </p>
+        <p style="color: #6b7c80; font-size: 13px;">${escapeHtml(meetingLink)}</p>
+        <p>Warmly,<br />The Let It Out team</p>
+      `,
+    locale,
+  );
 
   try {
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: `Let It Out — Your session link from ${counselorName}`,
+      subject: isAr ? `Let It Out — رابط جلستك من ${counselorName}` : `Let It Out — Your session link from ${counselorName}`,
       text,
       html,
     });

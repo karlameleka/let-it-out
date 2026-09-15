@@ -2,7 +2,10 @@ import "server-only";
 import { prisma } from "@/lib/db";
 
 export const SESSION_MINUTES = 50;
-const DAYS_AHEAD = 14;
+// Covers the farthest-out one-off date window a therapist can open (see
+// MAX_DATE_DAYS_AHEAD in therapist-availability-actions.ts) so a slot
+// opened for the last day of that range still gets sliced out below.
+const DAYS_AHEAD = 31;
 
 export type AvailableSlot = { date: string; time: string };
 
@@ -11,15 +14,16 @@ function pad(n: number) {
 }
 
 /**
- * Slices a counselor's recurring weekly windows (CounselorAvailability)
- * into concrete 50-minute slots for the next two weeks, greedily packed
- * from each window's start time, excluding times already taken by a
- * non-cancelled BookingRequest or a SessionBooking. Returns [] for a
- * counselor with no windows set up yet — callers fall back to a free-text
- * request/day-only picker in that case. A counselor only ever uses one of
- * BookingRequest or SessionBooking depending on which flow applies to
- * them, but checking both is cheap and keeps this correct regardless of
- * how a counselor's config has changed over time.
+ * Slices a counselor's availability windows (CounselorAvailability) —
+ * recurring weekly windows (dayOfWeek set) and one-off single-date windows
+ * (date set) alike — into concrete 50-minute slots for the next month,
+ * greedily packed from each window's start time, excluding times already
+ * taken by a non-cancelled BookingRequest or a SessionBooking. Returns []
+ * for a counselor with no windows set up yet — callers fall back to a
+ * free-text request/day-only picker in that case. A counselor only ever
+ * uses one of BookingRequest or SessionBooking depending on which flow
+ * applies to them, but checking both is cheap and keeps this correct
+ * regardless of how a counselor's config has changed over time.
  *
  * Like the rest of this app, dates/times are plain Cairo-local values with
  * no timezone conversion (see todayISO() in therapist-data.ts) — "now" is
@@ -52,7 +56,8 @@ export async function getAvailableSlots(counselorId: string): Promise<AvailableS
     const dateStr = day.toISOString().slice(0, 10);
     const dayOfWeek = day.getUTCDay();
 
-    for (const w of windows.filter((w) => w.dayOfWeek === dayOfWeek)) {
+    const dayWindows = windows.filter((w) => w.date === dateStr || (w.date === null && w.dayOfWeek === dayOfWeek));
+    for (const w of dayWindows) {
       const [startH, startM] = w.startTime.split(":").map(Number);
       const [endH, endM] = w.endTime.split(":").map(Number);
       const windowEnd = endH * 60 + endM;

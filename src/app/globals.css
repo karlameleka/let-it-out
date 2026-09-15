@@ -149,6 +149,19 @@ select:focus-visible,
   animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* Instagram-Stories-style progress segment fill — duration is set inline
+   per instance (see TestimonialCarousel), since it varies with how long
+   each quote takes to read. */
+@keyframes story-fill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.animate-story-fill {
+  animation-name: story-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
 @keyframes wiggle {
   0%, 100% { transform: rotate(-6deg); }
   50% { transform: rotate(6deg); }

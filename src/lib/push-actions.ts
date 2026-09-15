@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/locale";
 
 const subscribeSchema = z.object({
   endpoint: z.string().url(),
@@ -25,19 +26,25 @@ export async function subscribeToPush(input: PushSubscriptionInput): Promise<{ e
   if (!user) return { error: "Please log in to enable reminders." };
 
   const { endpoint, keys } = parsed.data;
+  const locale = await getLocale();
 
   await prisma.pushSubscription.upsert({
     where: { endpoint },
-    update: { userId: user.userId, p256dh: keys.p256dh, auth: keys.auth },
-    create: { userId: user.userId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+    update: { userId: user.userId, p256dh: keys.p256dh, auth: keys.auth, locale },
+    create: { userId: user.userId, endpoint, p256dh: keys.p256dh, auth: keys.auth, locale },
   });
 
   return { success: true };
 }
 
-/** Removes a subscription — e.g. when the user turns reminders off. */
+/** Removes a subscription — e.g. when the user turns reminders off. Scoped
+ * to the logged-in user's own subscriptions, so a guessed/observed endpoint
+ * can't be used to unsubscribe someone else. */
 export async function unsubscribeFromPush(endpoint: string): Promise<{ success: boolean }> {
-  await prisma.pushSubscription.deleteMany({ where: { endpoint } });
+  const user = await requireUser().catch(() => null);
+  if (!user) return { success: false };
+
+  await prisma.pushSubscription.deleteMany({ where: { endpoint, userId: user.userId } });
   return { success: true };
 }
 

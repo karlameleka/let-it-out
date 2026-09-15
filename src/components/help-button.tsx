@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, LifeBuoy, MessageCircle, Phone, HelpCircle } from "lucide-react";
-import { QuestionMarkIcon } from "@/components/lio-icons";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=201288200533";
@@ -96,10 +95,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
         {open ? (
           <X className="h-6 w-6" strokeWidth={2} />
         ) : (
-          <>
-            <LifeBuoy className="h-6 w-6 sm:hidden" strokeWidth={2} />
-            <QuestionMarkIcon className="hidden h-6 w-6 sm:block" />
-          </>
+          <LifeBuoy className="h-6 w-6" strokeWidth={2} />
         )}
       </button>
     </div>

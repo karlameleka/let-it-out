@@ -5,17 +5,22 @@ import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission } from "@/lib/anti-spam";
 
-const workshopInquirySchema = z.object({
-  organizationName: z.string().trim().min(1, "Please enter your organization or community name."),
-  contactName: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  workshopTopic: z.string().trim().min(1, "Please choose a topic."),
-  groupSize: z.string().trim().optional(),
-  preferredDates: z.string().trim().optional(),
-  message: z.string().trim().optional(),
-});
+function buildWorkshopInquirySchema(v: Dictionary["validation"], w: Dictionary["workshopForm"]) {
+  return z.object({
+    organizationName: z.string().trim().min(1, w.orgNameRequired).max(200),
+    contactName: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    phone: z.string().trim().min(5, v.phoneInvalid).max(30),
+    workshopTopic: z.string().trim().min(1, w.topicRequired).max(200),
+    groupSize: z.string().trim().max(50).optional(),
+    preferredDates: z.string().trim().max(300).optional(),
+    message: z.string().trim().max(5000).optional(),
+  });
+}
 
 export type WorkshopFormState = { error?: string; success?: boolean } | undefined;
 
@@ -23,7 +28,13 @@ export async function submitWorkshopInquiry(
   _prevState: WorkshopFormState,
   formData: FormData,
 ): Promise<WorkshopFormState> {
-  const parsed = workshopInquirySchema.safeParse({
+  const blocked = await screenSubmission(formData, "workshop-inquiry");
+  if (blocked) return blocked;
+
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildWorkshopInquirySchema(dict.validation, dict.workshopForm).safeParse({
     organizationName: formData.get("organizationName"),
     contactName: formData.get("contactName"),
     email: formData.get("email"),
@@ -35,7 +46,7 @@ export async function submitWorkshopInquiry(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const inquiry = await prisma.workshopInquiry.create({ data: parsed.data });
@@ -89,8 +100,12 @@ export async function submitWorkshopInquiry(
   await sendCustomerConfirmation({
     to: inquiry.email,
     name: inquiry.contactName,
-    subject: "We've received your workshop request",
-    intro: `Thank you for your interest in a "${inquiry.workshopTopic}" workshop for ${inquiry.organizationName}. Our team will follow up with you shortly to design a session together.`,
+    locale,
+    subject: locale === "ar" ? "استلمنا طلب الورشة" : "We've received your workshop request",
+    intro:
+      locale === "ar"
+        ? `شكرًا لاهتمامك بورشة "${inquiry.workshopTopic}" لـ ${inquiry.organizationName}. فريقنا هيتواصل معاك قريب لتصميم الجلسة مع بعض.`
+        : `Thank you for your interest in a "${inquiry.workshopTopic}" workshop for ${inquiry.organizationName}. Our team will follow up with you shortly to design a session together.`,
   });
 
   return { success: true };

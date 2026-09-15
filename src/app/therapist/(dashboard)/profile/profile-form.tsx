@@ -45,7 +45,7 @@ export default function TherapistProfileForm({
     try {
       setPhoto(await compressImage(file, { maxDimension: 480, quality: 0.8 }));
     } catch {
-      setPhotoError("Couldn't process that photo — try a different one.");
+      setPhotoError("Couldn't process that photo, try a different one.");
     } finally {
       setPhotoProcessing(false);
     }
@@ -111,7 +111,7 @@ export default function TherapistProfileForm({
         <label htmlFor="email" className={labelClass}>Notification email</label>
         <input id="email" name="email" type="email" defaultValue={email} required className={fieldClass} />
         <p className="mt-1.5 text-xs text-ink/50">
-          Where new booking requests and session confirmations are sent — also your portal login email.
+          Where new booking requests and session confirmations are sent, also your portal login email.
         </p>
       </div>
 

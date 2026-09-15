@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import { submitContactMessage } from "@/lib/contact-actions";
 import { Button } from "@/components/ui";
+import HoneypotField from "@/components/honeypot-field";
+import TurnstileWidget from "@/components/turnstile-widget";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function ContactForm({ dict }: { dict: Dictionary }) {
@@ -21,6 +23,7 @@ export default function ContactForm({ dict }: { dict: Dictionary }) {
 
   return (
     <form action={formAction} className="space-y-4">
+      <HoneypotField />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={f.yourName} name="name" />
         <Field label={f.email} name="email" type="email" />
@@ -38,6 +41,7 @@ export default function ContactForm({ dict }: { dict: Dictionary }) {
           className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
         />
       </div>
+      <TurnstileWidget />
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending}>
         {pending ? f.sending : f.send}

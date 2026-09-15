@@ -11,6 +11,7 @@ const TABS = [
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/counselors", label: "Counselors" },
+  { href: "/admin/counseling-filters", label: "Counseling filters" },
   { href: "/admin/promo-codes", label: "Promo codes" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/events", label: "Events" },
@@ -21,6 +22,8 @@ const TABS = [
   { href: "/admin/support", label: "Live chat" },
   { href: "/admin/articles", label: "Articles" },
   { href: "/admin/intake-form", label: "Intake form" },
+  { href: "/admin/reflection-sheet", label: "Reflection sheet" },
+  { href: "/admin/resources", label: "Resources" },
   { href: "/admin/settings", label: "Site settings" },
   { href: "/account", label: "My account" },
 ];

@@ -12,7 +12,8 @@ import { isSmsOtpEnabled } from "@/lib/sms";
 export const metadata: Metadata = { title: "Sign Up" };
 
 export default async function SignupPage() {
-  const dict = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
   const t = dict.auth;
   const googleEnabled = isGoogleSignInEnabled();
   const smsOtpEnabled = isSmsOtpEnabled();
@@ -39,7 +40,7 @@ export default async function SignupPage() {
         <div className="flex justify-center px-4 pb-10 sm:px-6 sm:pb-16">
           <Container className="mx-auto max-w-sm px-0">
             <div className="mt-6 md:mt-8">
-              <SignupForm dict={dict} googleEnabled={googleEnabled} smsOtpEnabled={smsOtpEnabled} />
+              <SignupForm dict={dict} locale={locale} googleEnabled={googleEnabled} smsOtpEnabled={smsOtpEnabled} />
             </div>
             <p className="mt-6 text-sm text-ink/60">
               {t.alreadyHaveAccount}{" "}

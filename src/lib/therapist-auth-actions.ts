@@ -12,6 +12,7 @@ import {
 } from "@/lib/therapist-session";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
+import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -92,6 +93,15 @@ export async function forgotCounselorPasswordAction(
   const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  // Same per-IP throttle as the client-facing forgot-password flow — the
+  // per-account cooldown below doesn't stop one IP cycling through many
+  // different emails.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("therapist-forgot-password", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { success: true };
   }
 
   const counselor = await prisma.counselor.findFirst({ where: { email: parsed.data.email } });

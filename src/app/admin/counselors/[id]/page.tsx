@@ -6,6 +6,8 @@ import { formatEGP } from "@/lib/format";
 import {
   updateCounselorDetails,
   updateCounselorProfileFromAdmin,
+  updateCounselorFormsPermission,
+  updateCounselorFilterAssignments,
   deleteCounselorClient,
   sendTherapistPortalSetupLink,
   sendTherapistLoginLink,
@@ -31,14 +33,19 @@ export default async function AdminCounselorDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const counselor = await prisma.counselor.findUnique({
-    where: { id },
-    include: {
-      sessionBookings: { orderBy: { createdAt: "desc" } },
-      bookingRequests: { orderBy: { createdAt: "desc" } },
-    },
-  });
+  const [counselor, filters] = await Promise.all([
+    prisma.counselor.findUnique({
+      where: { id },
+      include: {
+        sessionBookings: { orderBy: { createdAt: "desc" } },
+        bookingRequests: { orderBy: { createdAt: "desc" } },
+        filters: { select: { filterId: true } },
+      },
+    }),
+    prisma.counselorFilter.findMany({ orderBy: { sortOrder: "asc" } }),
+  ]);
   if (!counselor) notFound();
+  const assignedFilterIds = new Set(counselor.filters.map((f) => f.filterId));
 
   const sessionCounts = countByStatus(counselor.sessionBookings);
   const requestCounts = countByStatus(counselor.bookingRequests);
@@ -149,6 +156,48 @@ export default async function AdminCounselorDetailPage({
       </div>
 
       <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display font-semibold text-brand-900">Counseling filters</h2>
+          <Link href="/admin/counseling-filters" className="text-xs font-medium text-brand-600 underline">
+            Add or remove filters
+          </Link>
+        </div>
+        <p className="mt-1 text-sm text-ink/60">
+          Which filter chips on /counseling this counselor matches. Manage the list of available filters from
+          the link above.
+        </p>
+        {filters.length === 0 ? (
+          <p className="mt-4 text-sm text-ink/50">
+            No filters defined yet, <Link href="/admin/counseling-filters" className="font-medium text-brand-600 underline">add one</Link>.
+          </p>
+        ) : (
+          <form action={updateCounselorFilterAssignments} className="mt-4">
+            <input type="hidden" name="counselorId" value={counselor.id} />
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {filters.map((f) => (
+                <label key={f.id} className="flex items-center gap-2 text-sm font-medium text-ink/80">
+                  <input
+                    type="checkbox"
+                    name="filterIds"
+                    value={f.id}
+                    defaultChecked={assignedFilterIds.has(f.id)}
+                    className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+                  />
+                  {f.label}
+                </label>
+              ))}
+            </div>
+            <button
+              type="submit"
+              className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Save
+            </button>
+          </form>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
         <h2 className="font-display font-semibold text-brand-900">Therapist portal access</h2>
         <p className="mt-1 text-sm text-ink/60">
           Lets {counselor.name.split(" ")[0]} log in at /therapist to manage their own clients, calendar,
@@ -184,7 +233,7 @@ export default async function AdminCounselorDetailPage({
               <input type="hidden" name="counselorId" value={counselor.id} />
               <button
                 type="submit"
-                title="One-click login, valid 30 minutes — doesn't change their password"
+                title="One-click login, valid 30 minutes, doesn't change their password"
                 className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
               >
                 Send login link
@@ -203,6 +252,36 @@ export default async function AdminCounselorDetailPage({
             </form>
           )}
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <h2 className="font-display font-semibold text-brand-900">Permissions</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Extra access beyond {counselor.name.split(" ")[0]}&rsquo;s own clients and profile.
+        </p>
+        <form action={updateCounselorFormsPermission} className="mt-4">
+          <input type="hidden" name="counselorId" value={counselor.id} />
+          <label className="flex items-center gap-2 text-sm font-medium text-ink/80">
+            <input
+              type="checkbox"
+              name="canEditFormsConfig"
+              defaultChecked={counselor.canEditFormsConfig}
+              className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            Can edit the sitewide intake form &amp; reflection sheet
+          </label>
+          <p className="mt-1 text-xs text-ink/50">
+            Adds &ldquo;Intake form&rdquo; and &ldquo;Reflection sheet&rdquo; tabs to their therapist portal. These
+            are shared, sitewide question sets used for every counselor&rsquo;s clients, not a per-counselor copy,
+            changes they save apply everywhere, same as when an admin edits them here.
+          </p>
+          <button
+            type="submit"
+            className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            Save
+          </button>
+        </form>
       </div>
 
       <div className="rounded-2xl border border-brand-100 bg-white p-5">

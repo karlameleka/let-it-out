@@ -19,6 +19,9 @@ import { sendSms, isSmsOtpEnabled } from "@/lib/sms";
 import { createLead } from "@/lib/leads";
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
+import { getLocale, type Locale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -29,25 +32,27 @@ const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const OTP_RESEND_COOLDOWN_MS = 45 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
 
-const signupSchema = z.object({
-  name: z.string().trim().min(2, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-  birthYear: z.string().trim().min(1, "Please select your birth year."),
-  gender: z.string().trim().min(1, "Please select your gender."),
-  country: z.string().trim().min(1, "Please select your country."),
-  referralSource: z.string().trim().min(1, "Please tell us how you heard about us."),
-  serviceInterests: z
-    .array(z.string())
-    .min(1, "Please select at least one service you're interested in."),
-  otpChannel: z.enum(["EMAIL", "PHONE"]),
-});
+function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+  return z.object({
+    name: z.string().trim().min(2, v.nameRequired),
+    email: z.string().trim().email(v.emailInvalid),
+    phone: z.string().trim().min(5, v.phoneInvalid),
+    password: z.string().min(8, v.passwordMin8),
+    birthYear: z.string().trim().min(1, a.birthYearRequired),
+    gender: z.string().trim().min(1, a.genderRequired),
+    country: z.string().trim().min(1, a.countryRequired),
+    referralSource: z.string().trim().min(1, a.referralSourceRequired),
+    serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
+    otpChannel: z.enum(["EMAIL", "PHONE"]),
+  });
+}
 
-const loginSchema = z.object({
-  identifier: z.string().trim().min(1, "Please enter your email or phone number."),
-  password: z.string().min(1, "Please enter your password."),
-});
+function buildLoginSchema(a: Dictionary["auth"]) {
+  return z.object({
+    identifier: z.string().trim().min(1, a.identifierRequired),
+    password: z.string().min(1, a.passwordRequired),
+  });
+}
 
 export type AuthFormState = { error?: string } | undefined;
 
@@ -73,11 +78,18 @@ function maskPhone(phone: string): string {
 async function sendOtpCode(
   channel: "EMAIL" | "PHONE",
   { email, phone, name, code }: { email: string; phone: string; name: string; code: string },
+  locale: Locale,
 ): Promise<boolean> {
   if (channel === "EMAIL") {
-    return sendOtpEmail({ to: email, name, code });
+    return sendOtpEmail({ to: email, name, code, locale });
   }
-  return sendSms({ to: phone, body: `Your Let It Out verification code is ${code}. It expires in 10 minutes.` });
+  return sendSms({
+    to: phone,
+    body:
+      locale === "ar"
+        ? `كود التحقق الخاص بك في Let It Out هو ${code}. صالح لمدة 10 دقائق.`
+        : `Your Let It Out verification code is ${code}. It expires in 10 minutes.`,
+  });
 }
 
 export type SignupFormState =
@@ -92,7 +104,11 @@ export async function requestSignupOtp(
   _prevState: SignupFormState,
   formData: FormData,
 ): Promise<SignupFormState> {
-  const parsed = signupSchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildSignupSchema(dict.validation, a).safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
     phone: formData.get("phone"),
@@ -106,23 +122,29 @@ export async function requestSignupOtp(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const { name, email, phone, password, birthYear, gender, country, referralSource, serviceInterests, otpChannel } =
     parsed.data;
 
   if (otpChannel === "PHONE" && !isSmsOtpEnabled()) {
-    return { error: "SMS verification isn't available right now — please use email instead." };
+    return { error: a.smsNotAvailable };
+  }
+
+  // Every OTP request sends a real email or SMS (SMS costs money per
+  // message) — without this, requestSignupOtp is an open OTP-bombing
+  // primitive against any email/phone, not just the caller's own.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-otp", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { error: a.couldNotSendCode };
   }
 
   const existingUser = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
   if (existingUser) {
     return {
-      error:
-        existingUser.email === email
-          ? "An account with this email already exists."
-          : "An account with this phone number already exists.",
+      error: existingUser.email === email ? a.accountEmailExists : a.accountPhoneExists,
     };
   }
 
@@ -150,10 +172,10 @@ export async function requestSignupOtp(
     },
   });
 
-  const sent = await sendOtpCode(otpChannel, { email, phone, name, code });
+  const sent = await sendOtpCode(otpChannel, { email, phone, name, code }, locale);
   if (!sent) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return { error: "We couldn't send your verification code. Please try again." };
+    return { error: a.couldNotSendCode };
   }
 
   return {
@@ -163,10 +185,12 @@ export async function requestSignupOtp(
   };
 }
 
-const otpVerifySchema = z.object({
-  pendingSignupId: z.string().min(1),
-  code: z.string().trim().min(1, "Please enter the verification code."),
-});
+function buildOtpVerifySchema(a: Dictionary["auth"]) {
+  return z.object({
+    pendingSignupId: z.string().min(1),
+    code: z.string().trim().min(1, a.codeRequired),
+  });
+}
 
 export type OtpVerifyState = { error?: string } | undefined;
 
@@ -176,31 +200,35 @@ export async function verifySignupOtp(
   _prevState: OtpVerifyState,
   formData: FormData,
 ): Promise<OtpVerifyState> {
-  const parsed = otpVerifySchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildOtpVerifySchema(a).safeParse({
     pendingSignupId: formData.get("pendingSignupId"),
     code: formData.get("code"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const { pendingSignupId, code } = parsed.data;
   const pending = await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } });
   if (!pending) {
-    return { error: "This signup session has expired. Please start over." };
+    return { error: a.signupExpired };
   }
   if (pending.otpExpiresAt < new Date()) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return { error: "This code has expired. Please start over to get a new one." };
+    return { error: a.codeExpired };
   }
   if (pending.attempts >= MAX_OTP_ATTEMPTS) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return { error: "Too many incorrect attempts. Please start over." };
+    return { error: a.tooManyOtpAttempts };
   }
 
   if (hashOtpCode(code) !== pending.otpCodeHash) {
     await prisma.pendingSignup.update({ where: { id: pending.id }, data: { attempts: { increment: 1 } } });
-    return { error: "That code isn't right. Please try again." };
+    return { error: a.codeIncorrect };
   }
 
   // Re-check uniqueness in case the email/phone got claimed by someone else
@@ -211,10 +239,7 @@ export async function verifySignupOtp(
   if (existingUser) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
     return {
-      error:
-        existingUser.email === pending.email
-          ? "An account with this email already exists."
-          : "An account with this phone number already exists.",
+      error: existingUser.email === pending.email ? a.accountEmailExists : a.accountPhoneExists,
     };
   }
 
@@ -229,6 +254,7 @@ export async function verifySignupOtp(
       country: pending.country,
       referralSource: pending.referralSource,
       serviceInterests: pending.serviceInterests,
+      locale,
     },
   });
 
@@ -252,7 +278,7 @@ export async function verifySignupOtp(
   });
 
   const baseUrl = await getBaseUrl();
-  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
+  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy`, locale });
 
   await createSession({
     userId: user.id,
@@ -271,27 +297,39 @@ export async function resendSignupOtp(
   _prevState: OtpResendState,
   formData: FormData,
 ): Promise<OtpResendState> {
+  const locale = await getLocale();
+  const a = getDictionary(locale).auth;
+
   const pendingSignupId = String(formData.get("pendingSignupId") || "");
   const pending = pendingSignupId
     ? await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } })
     : null;
   if (!pending) {
-    return { error: "This signup session has expired. Please start over." };
+    return { error: a.signupExpired };
   }
 
   if (Date.now() - pending.otpSentAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
-    return { error: "Please wait a moment before requesting another code." };
+    return { error: a.resendCooldown };
+  }
+
+  // Same reasoning as requestSignupOtp: this sends a real email/SMS, and the
+  // per-record cooldown above only throttles resends against one specific
+  // pending signup — an IP could still cycle through many different pending
+  // signups without it.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-otp-resend", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { error: a.couldNotResendCode };
   }
 
   const code = generateOtpCode();
-  const sent = await sendOtpCode(pending.otpChannel, {
-    email: pending.email,
-    phone: pending.phone,
-    name: pending.name,
-    code,
-  });
+  const sent = await sendOtpCode(
+    pending.otpChannel,
+    { email: pending.email, phone: pending.phone, name: pending.name, code },
+    locale,
+  );
   if (!sent) {
-    return { error: "We couldn't resend your verification code. Please try again." };
+    return { error: a.couldNotResendCode };
   }
 
   await prisma.pendingSignup.update({
@@ -306,28 +344,32 @@ export async function loginAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const parsed = loginSchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildLoginSchema(a).safeParse({
     identifier: formData.get("identifier"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const { identifier, password } = parsed.data;
 
   const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { phone: identifier }] } });
   if (!user) {
-    return { error: "Incorrect email/phone or password." };
+    return { error: a.incorrectLogin };
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    return { error: "Too many failed attempts. Please try again in a few minutes." };
+    return { error: a.tooManyFailedAttempts };
   }
 
   if (!user.passwordHash) {
-    return { error: "This account signed up with Google. Please continue with Google below." };
+    return { error: a.googleOnlyAccount };
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
@@ -340,7 +382,7 @@ export async function loginAction(
         lockedUntil: attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
       },
     });
-    return { error: "Incorrect email/phone or password." };
+    return { error: a.incorrectLogin };
   }
 
   if (user.failedLoginAttempts > 0 || user.lockedUntil) {
@@ -371,16 +413,18 @@ export async function logoutAction() {
   redirect("/");
 }
 
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().optional(),
-    newPassword: z.string().min(8, "New password must be at least 8 characters."),
-    confirmPassword: z.string().min(1, "Please confirm your new password."),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "New passwords don't match.",
-    path: ["confirmPassword"],
-  });
+function buildChangePasswordSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+  return z
+    .object({
+      currentPassword: z.string().optional(),
+      newPassword: z.string().min(8, a.newPasswordMin8),
+      confirmPassword: z.string().min(1, a.confirmPasswordRequired),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: a.passwordsDontMatch,
+      path: ["confirmPassword"],
+    });
+}
 
 export type ChangePasswordFormState = { error?: string; success?: boolean } | undefined;
 
@@ -388,30 +432,34 @@ export async function changePasswordAction(
   _prevState: ChangePasswordFormState,
   formData: FormData,
 ): Promise<ChangePasswordFormState> {
-  const session = await requireUser().catch(() => null);
-  if (!session) return { error: "Please log in to change your password." };
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
 
-  const parsed = changePasswordSchema.safeParse({
+  const session = await requireUser().catch(() => null);
+  if (!session) return { error: a.pleaseLogInToChangePassword };
+
+  const parsed = buildChangePasswordSchema(dict.validation, a).safeParse({
     currentPassword: formData.get("currentPassword"),
     newPassword: formData.get("newPassword"),
     confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) return { error: "Account not found." };
+  if (!user) return { error: a.accountNotFound };
 
   // Accounts created via Google sign-in have no password yet — this becomes
   // a "set a password" flow instead of "change password" for them.
   if (user.passwordHash) {
     if (!parsed.data.currentPassword) {
-      return { error: "Please enter your current password." };
+      return { error: a.currentPasswordRequired };
     }
     const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
-    if (!valid) return { error: "Current password is incorrect." };
+    if (!valid) return { error: a.currentPasswordIncorrect };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, BCRYPT_COST);
@@ -430,25 +478,29 @@ export async function deleteAccountAction(
   _prevState: DeleteAccountFormState,
   formData: FormData,
 ): Promise<DeleteAccountFormState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
   const session = await requireUser().catch(() => null);
-  if (!session) return { error: "Please log in again." };
+  if (!session) return { error: a.pleaseLogInAgain };
 
   const parsed = deleteAccountSchema.safeParse({ password: formData.get("password") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) return { error: "Account not found." };
+  if (!user) return { error: a.accountNotFound };
 
   // Accounts created via Google sign-in have no password to confirm with —
   // the session cookie is already the authorization for this request.
   if (user.passwordHash) {
     if (!parsed.data.password) {
-      return { error: "Please enter your password." };
+      return { error: a.passwordRequired };
     }
     const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
-    if (!valid) return { error: "Incorrect password." };
+    if (!valid) return { error: a.incorrectPassword };
   }
 
   await deleteUserAccountCompletely(user.id, "self");
@@ -460,9 +512,11 @@ export async function deleteAccountAction(
   return { success: true };
 }
 
-const forgotPasswordSchema = z.object({
-  email: z.string().trim().email("Please enter a valid email."),
-});
+function buildForgotPasswordSchema(v: Dictionary["validation"]) {
+  return z.object({
+    email: z.string().trim().email(v.emailInvalid),
+  });
+}
 
 export type ForgotPasswordFormState = { error?: string; success?: boolean } | undefined;
 
@@ -470,9 +524,22 @@ export async function forgotPasswordAction(
   _prevState: ForgotPasswordFormState,
   formData: FormData,
 ): Promise<ForgotPasswordFormState> {
-  const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildForgotPasswordSchema(dict.validation).safeParse({ email: formData.get("email") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+
+  // Per-IP throttle, on top of the per-account cooldown below — that cooldown
+  // alone doesn't stop one IP from cycling through many different emails.
+  // Rate-limited the same way regardless of whether the email exists, so
+  // this can't be used to infer an account's existence either.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("forgot-password", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { success: true };
   }
 
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
@@ -500,22 +567,24 @@ export async function forgotPasswordAction(
 
     const baseUrl = await getBaseUrl();
     const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
-    await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+    await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl, locale });
   }
 
   return { success: true };
 }
 
-const resetPasswordSchema = z
-  .object({
-    token: z.string().min(1, "This reset link is invalid."),
-    newPassword: z.string().min(8, "New password must be at least 8 characters."),
-    confirmPassword: z.string().min(1, "Please confirm your new password."),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "New passwords don't match.",
-    path: ["confirmPassword"],
-  });
+function buildResetPasswordSchema(a: Dictionary["auth"]) {
+  return z
+    .object({
+      token: z.string().min(1, a.resetLinkInvalid),
+      newPassword: z.string().min(8, a.newPasswordMin8),
+      confirmPassword: z.string().min(1, a.confirmPasswordRequired),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: a.passwordsDontMatch,
+      path: ["confirmPassword"],
+    });
+}
 
 export type ResetPasswordFormState = { error?: string; success?: boolean } | undefined;
 
@@ -523,21 +592,25 @@ export async function resetPasswordAction(
   _prevState: ResetPasswordFormState,
   formData: FormData,
 ): Promise<ResetPasswordFormState> {
-  const parsed = resetPasswordSchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildResetPasswordSchema(a).safeParse({
     token: formData.get("token"),
     newPassword: formData.get("newPassword"),
     confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const resetTokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
   const user = await prisma.user.findUnique({ where: { resetTokenHash } });
 
   if (!user || !user.resetTokenExpiresAt || user.resetTokenExpiresAt < new Date()) {
-    return { error: "This reset link is invalid or has expired. Please request a new one." };
+    return { error: a.resetLinkInvalidOrExpired };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, BCRYPT_COST);
@@ -549,9 +622,11 @@ export async function resetPasswordAction(
   return { success: true };
 }
 
-const verifyTwoFactorSchema = z.object({
-  code: z.string().trim().min(6, "Please enter your 6-digit code or a backup code."),
-});
+function buildVerifyTwoFactorSchema(a: Dictionary["auth"]) {
+  return z.object({
+    code: z.string().trim().min(6, a.twoFactorCodeRequired),
+  });
+}
 
 export type VerifyTwoFactorFormState = { error?: string } | undefined;
 
@@ -560,24 +635,28 @@ export async function verifyTwoFactorAction(
   _prevState: VerifyTwoFactorFormState,
   formData: FormData,
 ): Promise<VerifyTwoFactorFormState> {
-  const parsed = verifyTwoFactorSchema.safeParse({ code: formData.get("code") });
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildVerifyTwoFactorSchema(a).safeParse({ code: formData.get("code") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const userId = await getPendingTwoFactorUserId();
   if (!userId) {
-    return { error: "Your login session expired. Please log in again." };
+    return { error: a.loginSessionExpired };
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || !user.totpEnabled || !user.totpSecret) {
     await clearPendingTwoFactorSession();
-    return { error: "Your login session expired. Please log in again." };
+    return { error: a.loginSessionExpired };
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    return { error: "Too many failed attempts. Please try again in a few minutes." };
+    return { error: a.tooManyFailedAttempts };
   }
 
   const submitted = parsed.data.code.trim();
@@ -594,7 +673,7 @@ export async function verifyTwoFactorAction(
         lockedUntil: attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
       },
     });
-    return { error: "That code didn't work. Please try again." };
+    return { error: a.twoFactorCodeIncorrect };
   }
 
   await prisma.user.update({

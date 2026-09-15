@@ -19,6 +19,7 @@ async function main() {
       active: true,
       priceEGP: 1000,
       photoUrl: "/counselors/verna-awad.jpg",
+      canEditFormsConfig: true,
     },
     {
       slug: "karla-meleka",
@@ -31,6 +32,31 @@ async function main() {
       active: true,
       priceEGP: 800,
       photoUrl: "/counselors/karla-meleka.jpg",
+      canEditFormsConfig: true,
+    },
+    {
+      slug: "hana-khaled",
+      name: "Hana Khaled",
+      credentials: "Clinical Psychologist & Assistant Lecturer, MSc Clinical Psychology (British University in Egypt)",
+      bio: "Hana Khaled Aman is a Clinical Psychologist and Assistant Lecturer with a Master of Science in Clinical Psychology from the British University in Egypt in collaboration with London South Bank University. She has received certified training in Cognitive Behavioral Therapy for depression, social anxiety, post-traumatic stress disorder (PTSD), obsessive-compulsive disorder (OCD), personality disorders, as well as ethical practice in therapy. Hana has trained and worked in several clinical settings, including Abou El Azayem Psychiatric Hospital, the Drug and Addiction Fund, and a university counseling center. Hana has five years of teaching experience at the BUE. She has worked extensively with children, adolescents, and young adults, supporting them with a range of concerns including anxiety, depression, health anxiety, insomnia and sleep disorders, and eating disorders. In her practice, she focuses on drawing from diverse therapeutic modalities to develop personalized treatment plans and interventions that are aligned with each client's presentation and goals.",
+      specialties: ["Anxiety", "Depression", "CBT", "Sleep & Insomnia", "Eating Disorders"],
+      languages: ["Arabic", "English"],
+      sortOrder: 3,
+      active: true,
+      priceEGP: 1000,
+      photoUrl: "/counselors/hana-khaled.jpg",
+    },
+    {
+      slug: "ahmed-shehab",
+      name: "Ahmed Shehab",
+      credentials: "Psychiatrist",
+      bio: "Dr. Ahmed Shehab is a psychiatrist with a broad clinical practice spanning general and adult psychiatry, child and adolescent psychiatry, addiction psychiatry, and consultation-liaison psychiatry. In general and adult psychiatry, he works with depression, anxiety, bipolar disorder, schizophrenia, suicide prevention, personality disorders, stress-related disorders, PTSD, burnout, and family counseling. In child and adolescent psychiatry, he supports young clients and their families with ADHD, ASD, ODD, learning and intellectual disabilities, personality and conduct concerns, and parenting skills. His addiction psychiatry practice covers substance use disorders, gambling and gaming addiction, and dual-diagnosis presentations, alongside sleep psychiatry for insomnia and parasomnias. His psychotherapy practice draws on CBT, ACT, DBT, and parenting and family therapy.",
+      specialties: ["General & Adult Psychiatry", "Child & Adolescent Psychiatry", "Addiction Psychiatry", "CBT", "DBT"],
+      languages: ["Arabic", "English"],
+      sortOrder: 4,
+      active: true,
+      email: "A.shehabmo@gmail.com",
+      photoUrl: "/counselors/ahmed-shehab.jpg",
     },
     {
       slug: "lora-samuel",
@@ -49,6 +75,23 @@ async function main() {
       where: { slug: c.slug },
       update: c,
       create: c,
+    });
+  }
+
+  // --- Counseling filters (admin-manageable, /admin/counseling-filters) ---
+  // Fixed id matches the one used by the counselor_filters migration's data
+  // fix, so local seeding and the production migration agree on the same row.
+  const prescribesMedicationFilter = await prisma.counselorFilter.upsert({
+    where: { id: "cf-prescribes-medication" },
+    update: { label: "Prescribes medication", sortOrder: 0 },
+    create: { id: "cf-prescribes-medication", label: "Prescribes medication", sortOrder: 0 },
+  });
+  const ahmedShehab = await prisma.counselor.findUnique({ where: { slug: "ahmed-shehab" } });
+  if (ahmedShehab) {
+    await prisma.counselorFilterAssignment.upsert({
+      where: { counselorId_filterId: { counselorId: ahmedShehab.id, filterId: prescribesMedicationFilter.id } },
+      update: {},
+      create: { counselorId: ahmedShehab.id, filterId: prescribesMedicationFilter.id },
     });
   }
 

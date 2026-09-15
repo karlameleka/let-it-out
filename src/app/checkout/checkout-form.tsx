@@ -11,6 +11,10 @@ import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 import { EGYPT_SHIPPING_FEE_EGP } from "@/lib/shipping";
 import PriceDisplay from "@/components/price-display";
 import PaymentSelector from "@/components/PaymentSelector";
+import HoneypotField from "@/components/honeypot-field";
+import TurnstileWidget from "@/components/turnstile-widget";
+import { HONEYPOT_FIELD } from "@/lib/anti-spam-shared";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -19,7 +23,15 @@ const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 type PaymentMethod = "CASH_ON_DELIVERY" | "PAYMOB";
 type Account = { name: string; email: string; phone: string | null; country: string | null };
 
-export default function CheckoutForm({ account }: { account: Account | null }) {
+export default function CheckoutForm({
+  account,
+  dict,
+  paymentDict,
+}: {
+  account: Account | null;
+  dict: Dictionary["checkout"];
+  paymentDict: Dictionary["paymentSelector"];
+}) {
   const { items, subtotalEGP, clear } = useCart();
   const router = useRouter();
   const isOffline = useOffline();
@@ -29,7 +41,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
   const [country, setCountry] = useState(account?.country ?? "");
   const [useAccount, setUseAccount] = useState(!!account);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH_ON_DELIVERY");
-  const [paymobOrderId, setPaymobOrderId] = useState<string | null>(null);
+  const [paymobOrder, setPaymobOrder] = useState<{ id: string; accessToken: string } | null>(null);
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState<{ code: string; discountEGP: number; label: string } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -68,8 +80,8 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
   if (items.length === 0) {
     return (
       <Container className="pt-8 pb-14 text-center sm:pt-14 sm:pb-20">
-        <h1 className="font-display text-2xl font-semibold text-brand-900">Your cart is empty</h1>
-        <ButtonLink href="/shop" className="mt-6">Shop journals</ButtonLink>
+        <h1 className="font-display text-2xl font-semibold text-brand-900">{dict.emptyCart}</h1>
+        <ButtonLink href="/shop" className="mt-6">{dict.shopJournals}</ButtonLink>
       </Container>
     );
   }
@@ -88,6 +100,8 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
       governorate: String(formData.get("governorate") || ""),
       paymentMethod: method,
       promoCode: promoApplied?.code,
+      honeypot: String(formData.get(HONEYPOT_FIELD) || ""),
+      turnstileToken: String(formData.get("cf-turnstile-response") || ""),
     };
   }
 
@@ -102,7 +116,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
     // button would otherwise spin forever with no explanation. Fail fast
     // with a clear message instead.
     if (isOffline) {
-      setError("You're offline — reconnect to place your order.");
+      setError(dict.offlineOrder);
       return;
     }
 
@@ -117,17 +131,17 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
     }
 
     clear();
-    router.push(`/orders/${result.orderId}`);
+    router.push(`/orders/${result.orderId}?token=${result.accessToken}`);
   }
 
-  async function handleCreatePaymobOrder(): Promise<string | null> {
+  async function handleCreatePaymobOrder(): Promise<{ id: string; accessToken: string } | null> {
     // Reuse the order from an earlier attempt on this page (e.g. after a
     // gateway hiccup) instead of creating a duplicate pending order.
-    if (paymobOrderId) return paymobOrderId;
+    if (paymobOrder) return paymobOrder;
 
     setError(null);
     if (isOffline) {
-      setError("You're offline — reconnect to pay online.");
+      setError(dict.offlinePay);
       return null;
     }
     const input = buildOrderInput("PAYMOB");
@@ -142,16 +156,18 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
     // Don't clear the cart yet — only once we're actually about to redirect
     // to Paymob (see onRedirect below). If the gateway call fails, the
     // order already exists but the cart and this page should stay intact.
-    setPaymobOrderId(result.orderId);
-    return result.orderId;
+    const order = { id: result.orderId, accessToken: result.accessToken };
+    setPaymobOrder(order);
+    return order;
   }
 
   return (
     <Container className="pt-6 pb-10 sm:pt-14 sm:pb-20">
-      <h1 className="font-display text-3xl font-medium text-brand-900">Checkout</h1>
+      <h1 className="font-display text-3xl font-medium text-brand-900">{dict.title}</h1>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-3">
         <form ref={formRef} onSubmit={handleCodSubmit} className="space-y-6 lg:col-span-2">
+          <HoneypotField />
           <div className="space-y-4">
             {account && (
               <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-2.5 text-sm">
@@ -159,11 +175,11 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                   <span className="text-ink/70">
                     {useAccount ? (
                       <>
-                        Ordering as <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
+                        {dict.orderingAs} <span className="font-medium text-ink/90">{account.name}</span> · {account.email}
                         {account.phone ? ` · ${account.phone}` : ""}
                       </>
                     ) : (
-                      "Entering details manually"
+                      dict.enteringManually
                     )}
                   </span>
                   <button
@@ -171,7 +187,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                     onClick={() => setUseAccount((v) => !v)}
                     className="shrink-0 text-xs font-medium text-brand-600 link-grow"
                   >
-                    {useAccount ? "Not you?" : "Use my details"}
+                    {useAccount ? dict.notYou : dict.useMyDetails}
                   </button>
                 </div>
                 {useAccount && (
@@ -186,30 +202,30 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
             {(!account || !useAccount) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className={labelClass} htmlFor="guestName">Full name</label>
+                  <label className={labelClass} htmlFor="guestName">{dict.fullName}</label>
                   <input id="guestName" name="guestName" required className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass} htmlFor="guestEmail">Email</label>
+                  <label className={labelClass} htmlFor="guestEmail">{dict.email}</label>
                   <input id="guestEmail" name="guestEmail" type="email" required className={inputClass} />
                 </div>
               </div>
             )}
             {(!account || !useAccount || !account.phone) && (
               <div>
-                <label className={labelClass} htmlFor="guestPhone">Phone</label>
+                <label className={labelClass} htmlFor="guestPhone">{dict.phone}</label>
                 <input id="guestPhone" name="guestPhone" type="tel" required className={inputClass} />
               </div>
             )}
             {needsShipping && (
               <>
                 <div>
-                  <label className={labelClass} htmlFor="shippingAddress">Shipping address</label>
+                  <label className={labelClass} htmlFor="shippingAddress">{dict.shippingAddress}</label>
                   <textarea id="shippingAddress" name="shippingAddress" rows={3} required className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass} htmlFor="googleMapsLink">
-                    Google Maps link <span className="font-normal text-ink/40">(optional)</span>
+                    {dict.googleMapsLinkOptional} <span className="font-normal text-ink/40">({dict.optional})</span>
                   </label>
                   <input
                     id="googleMapsLink"
@@ -221,7 +237,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className={labelClass} htmlFor="country">Country</label>
+                    <label className={labelClass} htmlFor="country">{dict.country}</label>
                     <select
                       id="country"
                       name="country"
@@ -230,7 +246,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                       onChange={(e) => setCountry(e.target.value)}
                       className={inputClass}
                     >
-                      <option value="" disabled>Select your country</option>
+                      <option value="" disabled>{dict.selectCountry}</option>
                       {COUNTRIES.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -238,9 +254,9 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                   </div>
                   {isEgypt && (
                     <div>
-                      <label className={labelClass} htmlFor="governorate">Governorate</label>
+                      <label className={labelClass} htmlFor="governorate">{dict.governorate}</label>
                       <select id="governorate" name="governorate" required defaultValue="" className={inputClass}>
-                        <option value="" disabled>Select your governorate</option>
+                        <option value="" disabled>{dict.selectGovernorate}</option>
                         {EGYPT_GOVERNORATES.map((g) => (
                           <option key={g} value={g}>{g}</option>
                         ))}
@@ -254,17 +270,17 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
 
           {needsShipping && (
             <div className="rounded-xl border-2 border-brand-100 bg-brand-50 px-4 py-3 text-sm text-ink/70">
-              <span className="font-semibold text-brand-800">Shipping —</span>{" "}
+              <span className="font-semibold text-brand-800">{dict.shippingLabel}</span>{" "}
               {isEgypt
-                ? `flat ${formatEGP(EGYPT_SHIPPING_FEE_EGP)} anywhere in Egypt.`
+                ? dict.shippingFlatEgypt.replace("{fee}", formatEGP(EGYPT_SHIPPING_FEE_EGP))
                 : shippingCalculatedOnDelivery
-                  ? "calculated upon delivery outside Egypt."
-                  : "select your country to see the fee."}
+                  ? dict.shippingOutsideEgypt
+                  : dict.shippingSelectCountry}
             </div>
           )}
 
           <div>
-            <p className={labelClass}>Payment method</p>
+            <p className={labelClass}>{dict.paymentMethod}</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <label
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-colors ${
@@ -279,8 +295,8 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                   onChange={() => setPaymentMethod("CASH_ON_DELIVERY")}
                 />
                 <span>
-                  <span className="block text-sm font-semibold text-brand-800">Cash on Delivery</span>
-                  <span className="mt-0.5 block text-xs text-ink/60">Pay in cash on arrival.</span>
+                  <span className="block text-sm font-semibold text-brand-800">{dict.cashOnDelivery}</span>
+                  <span className="mt-0.5 block text-xs text-ink/60">{dict.cashOnDeliveryDesc}</span>
                 </span>
               </label>
               <label
@@ -296,26 +312,27 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                   onChange={() => setPaymentMethod("PAYMOB")}
                 />
                 <span>
-                  <span className="block text-sm font-semibold text-brand-800">Card / Mobile Wallet</span>
-                  <span className="mt-0.5 block text-xs text-ink/60">Pay online — cards and Apple Pay.</span>
+                  <span className="block text-sm font-semibold text-brand-800">{dict.cardWallet}</span>
+                  <span className="mt-0.5 block text-xs text-ink/60">{dict.cardWalletDesc}</span>
                 </span>
               </label>
             </div>
           </div>
 
+          <TurnstileWidget />
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {paymentMethod === "CASH_ON_DELIVERY" ? (
             <Button type="submit" disabled={pending || isOffline} className="w-full">
-              {isOffline ? "Offline — reconnect to order" : pending ? "Placing order…" : "Place order"}
+              {isOffline ? dict.offlineReconnect : pending ? dict.placingOrder : dict.placeOrder}
             </Button>
           ) : (
-            <PaymentSelector amountEGP={totalEGP} getOrderId={handleCreatePaymobOrder} onRedirect={clear} />
+            <PaymentSelector amountEGP={totalEGP} getOrderId={handleCreatePaymobOrder} onRedirect={clear} dict={paymentDict} />
           )}
         </form>
 
         <div className="rounded-2xl border-2 border-brand-100 bg-white p-6 h-fit">
-          <h2 className="font-display font-semibold text-brand-900">Order summary</h2>
+          <h2 className="font-display font-semibold text-brand-900">{dict.orderSummary}</h2>
           <ul className="mt-4 space-y-3">
             {items.map((item) => (
               <li key={item.productVariantId} className="flex justify-between text-sm">
@@ -330,14 +347,14 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
             {promoApplied ? (
               <div className="flex items-center justify-between rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-sm">
                 <span className="font-medium text-brand-800">
-                  &ldquo;{promoApplied.code}&rdquo; applied — {promoApplied.label}
+                  &ldquo;{promoApplied.code}&rdquo; {dict.promoApplied} {promoApplied.label}
                 </span>
                 <button
                   type="button"
                   onClick={removePromoCode}
                   className="text-xs font-medium text-ink/50 hover:text-ink/70 active:text-ink/70"
                 >
-                  Remove
+                  {dict.remove}
                 </button>
               </div>
             ) : (
@@ -347,7 +364,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                     type="text"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value)}
-                    placeholder="Promo code"
+                    placeholder={dict.promoCodePlaceholder}
                     className="w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm uppercase tracking-wide outline-none focus:border-brand-500"
                   />
                   <button
@@ -356,7 +373,7 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
                     disabled={promoChecking || !promoInput.trim()}
                     className="shrink-0 rounded-lg border-[1.5px] border-brand-200 px-3 py-2 text-sm font-medium text-brand-700 transition-colors disabled:opacity-50 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
                   >
-                    {promoChecking ? "Checking…" : "Apply"}
+                    {promoChecking ? dict.checking : dict.apply}
                   </button>
                 </div>
                 {promoError && <p className="mt-1.5 text-xs text-red-600">{promoError}</p>}
@@ -366,29 +383,29 @@ export default function CheckoutForm({ account }: { account: Account | null }) {
 
           <div className="mt-4 space-y-2 border-t border-brand-100 pt-4 text-sm">
             <div className="flex justify-between text-ink/70">
-              <span>Subtotal</span>
+              <span>{dict.subtotal}</span>
               <span>{formatEGP(subtotalEGP)}</span>
             </div>
             {discountEGP > 0 && (
               <div className="flex justify-between text-brand-700">
-                <span>Discount</span>
+                <span>{dict.discount}</span>
                 <span>-{formatEGP(discountEGP)}</span>
               </div>
             )}
             {needsShipping && (
               <div className="flex justify-between text-ink/70">
-                <span>Shipping</span>
+                <span>{dict.shipping}</span>
                 <span>
                   {isEgypt
                     ? formatEGP(shippingFeeEGP)
                     : shippingCalculatedOnDelivery
-                      ? "On delivery"
-                      : "Select a country"}
+                      ? dict.onDelivery
+                      : dict.selectACountry}
                 </span>
               </div>
             )}
             <div className="flex justify-between border-t border-brand-100 pt-2 font-semibold">
-              <span>Total</span>
+              <span>{dict.total}</span>
               <span><PriceDisplay egpAmount={totalEGP} /></span>
             </div>
           </div>

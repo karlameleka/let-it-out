@@ -38,6 +38,22 @@ function parseOptionalMeetingLink(raw: string): { ok: true; value: string | null
   }
 }
 
+/** One-click shortcut for the common case of a paid SessionBooking that
+ * was actually paid outside the automatic Paymob flow (e.g. a manual bank
+ * transfer or cash arrangement confirmed by phone) — sets it straight to
+ * CONFIRMED without opening the full edit form. Same effect as picking
+ * "CONFIRMED" from that form's status dropdown and saving. */
+export async function markSessionBookingPaid(formData: FormData) {
+  await requireAdmin();
+  const bookingId = String(formData.get("bookingId") ?? "");
+  if (!bookingId) return;
+
+  await prisma.sessionBooking.update({ where: { id: bookingId }, data: { status: "CONFIRMED" } });
+
+  revalidatePath("/admin/bookings");
+  revalidatePath("/upcoming");
+}
+
 export type SessionBookingEditFormState = { error?: string; success?: boolean } | undefined;
 
 /** Full edit for a paid SessionBooking — everything but the amount actually
@@ -65,7 +81,7 @@ export async function updateSessionBooking(
   }
 
   const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
-  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid — include https://" };
+  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid, include https://" };
 
   await prisma.sessionBooking.update({
     where: { id: bookingId },
@@ -114,7 +130,7 @@ export async function updateBookingRequestFull(
   }
 
   const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
-  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid — include https://" };
+  if (!meetingLink.ok) return { error: "That meeting link doesn't look valid, include https://" };
 
   await prisma.bookingRequest.update({
     where: { id: bookingId },
@@ -191,10 +207,33 @@ export async function deleteContactMessage(formData: FormData) {
   revalidatePath("/admin/messages");
 }
 
+/** Fast, blunt "a spam bot just hit us again" cleanup from the dashboard —
+ * deletes every contact message from the last N hours (see RECENT_WINDOWS
+ * in the admin page), regardless of whether it's spam. For anything needing
+ * a precise time window or a look at the data first,
+ * scripts/cleanup-lead-spam.mjs is the safer tool. */
+export async function deleteRecentContactMessages(formData: FormData) {
+  await requireAdmin();
+  const hours = Number(formData.get("hours")) || 48;
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+  await prisma.contactMessage.deleteMany({ where: { createdAt: { gte: cutoff } } });
+  revalidatePath("/admin/messages");
+}
+
 export async function deleteLead(formData: FormData) {
   await requireAdmin();
   const leadId = String(formData.get("leadId"));
   await prisma.lead.delete({ where: { id: leadId } });
+  revalidatePath("/admin/crm");
+}
+
+/** Same "spam wave just hit" cleanup as deleteRecentContactMessages, for
+ * the CRM's Lead table. */
+export async function deleteRecentLeads(formData: FormData) {
+  await requireAdmin();
+  const hours = Number(formData.get("hours")) || 48;
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+  await prisma.lead.deleteMany({ where: { createdAt: { gte: cutoff } } });
   revalidatePath("/admin/crm");
 }
 
@@ -292,6 +331,42 @@ export async function updateProductPlacement(formData: FormData) {
   revalidatePath("/");
 }
 
+// Real hard delete — unlike archiving (the "Visible" checkbox), this
+// removes the product row outright. Only safe to run when no order has
+// ever included it: OrderItem.productId/productVariantId are required
+// fields, so deleting a product with order history would either violate
+// those foreign keys or, if cascaded, silently erase real purchase
+// records. The admin UI only ever renders this action for a product with
+// zero orders; this re-check is defense in depth, not the primary gate.
+export async function deleteProduct(formData: FormData) {
+  await requireAdmin();
+  const productId = String(formData.get("productId"));
+
+  const orderItemCount = await prisma.orderItem.count({ where: { productId } });
+  if (orderItemCount > 0) return;
+
+  // PromoCodeProduct cascades on delete at the DB level already — only
+  // ProductVariant (no order history if we got this far) needs clearing
+  // by hand first.
+  await prisma.$transaction([
+    prisma.productVariant.deleteMany({ where: { productId } }),
+    prisma.product.delete({ where: { id: productId } }),
+  ]);
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  revalidatePath("/");
+}
+
+export async function updateProductArabicContent(formData: FormData) {
+  await requireAdmin();
+  const productId = String(formData.get("productId"));
+  const titleAr = String(formData.get("titleAr") ?? "").trim() || null;
+  const descriptionAr = String(formData.get("descriptionAr") ?? "").trim() || null;
+  await prisma.product.update({ where: { id: productId }, data: { titleAr, descriptionAr } });
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+}
+
 export async function updateCounselorPlacement(formData: FormData) {
   await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
@@ -325,6 +400,61 @@ export async function updateCounselorDetails(formData: FormData) {
   revalidatePath("/counseling");
   revalidatePath("/counseling/[slug]", "page");
   revalidatePath("/");
+}
+
+/** Full CRUD for the filter chips shown on /counseling (see
+ * CounselorFilter in schema.prisma) — lets an admin add or remove filters
+ * without a code change. Per-counselor assignment is a separate action
+ * (updateCounselorFilterAssignments), set from /admin/counselors/[id]. */
+export async function createCounselingFilter(formData: FormData) {
+  await requireAdmin();
+  const label = String(formData.get("label") ?? "").trim();
+  const labelAr = String(formData.get("labelAr") ?? "").trim() || null;
+  if (!label) return;
+  const maxSort = await prisma.counselorFilter.aggregate({ _max: { sortOrder: true } });
+  await prisma.counselorFilter.create({
+    data: { label, labelAr, sortOrder: (maxSort._max.sortOrder ?? -1) + 1 },
+  });
+  revalidatePath("/admin/counseling-filters");
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
+}
+
+export async function deleteCounselingFilter(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  await prisma.counselorFilter.delete({ where: { id } });
+  revalidatePath("/admin/counseling-filters");
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
+}
+
+/** Replaces the full set of filters assigned to one counselor with
+ * whichever checkboxes were submitted — simpler and less error-prone than
+ * diffing add/remove, and this form only ever represents the complete set. */
+export async function updateCounselorFilterAssignments(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const filterIds = formData.getAll("filterIds").map(String);
+  await prisma.$transaction([
+    prisma.counselorFilterAssignment.deleteMany({ where: { counselorId } }),
+    prisma.counselorFilterAssignment.createMany({
+      data: filterIds.map((filterId) => ({ counselorId, filterId })),
+    }),
+  ]);
+  revalidatePath("/admin/counselors/[id]", "page");
+  revalidatePath("/counseling");
+}
+
+/** Grants/revokes a counselor's access to edit the shared, sitewide intake
+ * form and reflection sheet question sets from their own /therapist
+ * portal — see forms-config-auth.ts. */
+export async function updateCounselorFormsPermission(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+  const canEditFormsConfig = formData.get("canEditFormsConfig") === "on";
+  await prisma.counselor.update({ where: { id: counselorId }, data: { canEditFormsConfig } });
+  revalidatePath("/admin/counselors/[id]", "page");
 }
 
 export async function updateCounselorProfileFromAdmin(formData: FormData) {
@@ -439,6 +569,44 @@ export async function revokeTherapistPortalAccess(formData: FormData) {
   revalidatePath("/admin/counselors/[id]", "page");
 }
 
+// Real hard delete — unlike archiving (the "Visible" checkbox), this
+// removes the counselor row outright and immediately cuts off their
+// /therapist portal access (see the existence check in getCurrentCounselor,
+// therapist-session.ts). Only safe to run when the counselor has no real
+// booking/session/referral history, since SessionBooking.counselorId and
+// BookingRequest.counselorId are required fields — deleting a counselor
+// with history would either violate those foreign keys or, if we cascaded,
+// silently erase real accounting/clinical records. The admin UI only ever
+// renders this action for a counselor with zero of that history; this
+// re-check is defense in depth, not the primary gate.
+export async function deleteCounselor(formData: FormData) {
+  await requireAdmin();
+  const counselorId = String(formData.get("counselorId"));
+
+  const [sessionBookings, bookingRequests, intakeSubmissions, clientNotes, assignedResources, referralsSent, referralsReceived] =
+    await Promise.all([
+      prisma.sessionBooking.count({ where: { counselorId } }),
+      prisma.bookingRequest.count({ where: { counselorId } }),
+      prisma.intakeSubmission.count({ where: { counselorId } }),
+      prisma.clientNote.count({ where: { counselorId } }),
+      prisma.assignedResource.count({ where: { counselorId } }),
+      prisma.referral.count({ where: { fromCounselorId: counselorId } }),
+      prisma.referral.count({ where: { toCounselorId: counselorId } }),
+    ]);
+  const hasHistory =
+    sessionBookings + bookingRequests + intakeSubmissions + clientNotes + assignedResources + referralsSent + referralsReceived > 0;
+  if (hasHistory) return;
+
+  // CounselorAvailability and PromoCodeCounselor cascade on delete at the
+  // DB level already — only ToolkitItem (a counselor's own personal
+  // toolkit config, not client data) needs clearing by hand first.
+  await prisma.$transaction([
+    prisma.toolkitItem.deleteMany({ where: { counselorId } }),
+    prisma.counselor.delete({ where: { id: counselorId } }),
+  ]);
+  revalidatePath("/admin/counselors");
+}
+
 export type SendPushFormState = { error?: string; success?: boolean; sent?: number; total?: number } | undefined;
 
 /** Manual push blast to every subscribed browser — the ad hoc counterpart
@@ -452,6 +620,8 @@ export async function sendManualPushNotification(
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
+  const titleAr = String(formData.get("titleAr") ?? "").trim();
+  const bodyAr = String(formData.get("bodyAr") ?? "").trim();
   const urlRaw = String(formData.get("url") ?? "").trim();
 
   if (!title) return { error: "Please add a title." };
@@ -467,6 +637,12 @@ export async function sendManualPushNotification(
     return { error: "Push notifications aren't configured on this deployment yet." };
   }
 
-  const result = await sendPushToAllSubscribers({ title, body, url });
+  // The admin-typed headline is the notification's own title — the app
+  // name is already shown by the OS/browser as the notification's source,
+  // so repeating "Let It Out" as the title here would just duplicate it.
+  const result = await sendPushToAllSubscribers({
+    en: { title, body, url },
+    ar: { title: titleAr || title, body: bodyAr || body, url },
+  });
   return { success: true, sent: result.sent, total: result.total };
 }

@@ -71,7 +71,7 @@ export default async function AboutPage() {
   return (
     <>
       {/* Mobile only: the "our story" teaser leads the About page instead of
-          appearing on the homepage — see story-teaser.tsx and the desktop
+          appearing on the homepage, see story-teaser.tsx and the desktop
           instance of this component on page.tsx. */}
       <StoryTeaser
         className="sm:hidden"

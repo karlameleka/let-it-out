@@ -67,6 +67,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
               <li>
                 <a
                   href={CONTACT_PHONE_HREF}
+                  dir="ltr"
                   className="inline-flex items-center gap-1.5 hover:text-white active:text-white"
                 >
                   <Phone className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />

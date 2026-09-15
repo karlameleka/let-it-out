@@ -1,6 +1,7 @@
 "use client";
 
 import { MOODS } from "@/lib/moods";
+import type { Locale } from "@/lib/i18n/locale";
 
 // Device-only journal storage. Entries never leave the browser: content and
 // any attached photo are encrypted with AES-256-GCM using a key that is
@@ -30,7 +31,7 @@ export type JournalStats = { total: number; streak: number; totalWords: number }
 
 export type JournalFeedData = { entries: JournalFeedEntry[]; stats: JournalStats };
 
-export type JournalEntryDetail = JournalFeedEntry;
+export type JournalEntryDetail = JournalFeedEntry & { updatedAt: string };
 
 export type JournalExportEntry = JournalFeedEntry & { updatedAt: string };
 
@@ -191,7 +192,7 @@ export async function getEntryDetail(userId: string, id: string): Promise<Journa
   const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
   if (!stored) return null;
   const key = await getKey(db);
-  return decryptEntry(key, stored);
+  return { ...(await decryptEntry(key, stored)), updatedAt: stored.updatedAt };
 }
 
 export async function createEntry(
@@ -212,6 +213,26 @@ export async function createEntry(
     prompt: input.prompt,
   };
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+}
+
+/** Edits an existing entry's content/moods/photo in place — the original
+ * prompt and createdAt stay fixed, only updatedAt moves. */
+export async function updateEntry(
+  userId: string,
+  id: string,
+  input: { content: string; moods: string[]; photoUrl: string | null },
+): Promise<{ success: boolean }> {
+  const db = await openDb(userId);
+  const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
+  if (!stored) return { success: false };
+
+  const key = await getKey(db);
+  stored.encContent = await encryptString(key, input.content);
+  stored.encPhoto = input.photoUrl ? await encryptString(key, input.photoUrl) : null;
+  stored.mood = input.moods;
+  stored.updatedAt = new Date().toISOString();
+  await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+  return { success: true };
 }
 
 export async function toggleBookmark(userId: string, id: string): Promise<{ success: boolean; bookmarked?: boolean }> {
@@ -298,7 +319,7 @@ export async function migrateFromServer(
 
 const HEATMAP_WEEKS = 12;
 
-export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
+export async function getMoodPatterns(userId: string, locale: Locale = "en"): Promise<MoodPatterns> {
   const db = await openDb(userId);
   const stored = await getAllStored(db);
 
@@ -324,7 +345,7 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
 
   const frequency = MOODS.map((m) => ({
     id: m.id,
-    label: m.label,
+    label: locale === "ar" ? m.labelAr : m.label,
     color: m.color,
     count: counts.get(m.id) ?? 0,
     percent: totalWithMood > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalWithMood) * 100) : 0,

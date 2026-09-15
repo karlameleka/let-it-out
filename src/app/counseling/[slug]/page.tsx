@@ -40,6 +40,12 @@ export default async function CounselorPage({
   const account = session ? { name: session.name, email: session.email, phone: session.phone } : null;
   const slots = await getAvailableSlots(counselor.id);
 
+  const displayName = locale === "ar" && counselor.nameAr ? counselor.nameAr : counselor.name;
+  const displayCredentials = locale === "ar" && counselor.credentialsAr ? counselor.credentialsAr : counselor.credentials;
+  const displaySpecialties = locale === "ar" && counselor.specialtiesAr.length > 0 ? counselor.specialtiesAr : counselor.specialties;
+  const displayLanguages = locale === "ar" && counselor.languagesAr.length > 0 ? counselor.languagesAr : counselor.languages;
+  const displayBio = locale === "ar" && counselor.bioAr ? counselor.bioAr : counselor.bio;
+
   return (
     <section className="pt-6 pb-10 sm:pt-14 sm:pb-20">
       <Container className="grid gap-12 md:grid-cols-5">
@@ -49,20 +55,20 @@ export default async function CounselorPage({
             {counselor.photoUrl ? (
               <Image
                 src={counselor.photoUrl}
-                alt={counselor.name}
+                alt={displayName}
                 width={64}
                 height={64}
                 className="h-16 w-16 shrink-0 rounded-full border-2 border-brand-200 object-cover"
               />
             ) : (
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-xl font-semibold text-brand-700">
-                {counselor.name.split(" ").map((n) => n[0]).join("")}
+                {displayName.split(" ").map((n) => n[0]).join("")}
               </div>
             )}
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-display text-3xl font-medium text-brand-900 sm:text-4xl">
-                  {counselor.name}
+                  {displayName}
                 </h1>
                 {counselor.availabilityStatus !== "AVAILABLE" && (
                   <span
@@ -78,7 +84,7 @@ export default async function CounselorPage({
                   </span>
                 )}
               </div>
-              <p className="text-sm font-medium text-brand-600">{counselor.credentials}</p>
+              <p className="text-sm font-medium text-brand-600">{displayCredentials}</p>
             </div>
           </div>
 
@@ -86,9 +92,9 @@ export default async function CounselorPage({
             <span className="rounded-full border border-brand-200 px-2.5 py-1 text-xs font-medium text-brand-700">
               {dict.counseling.sessionLengthBadge}
             </span>
-            {counselor.specialties.map((s) => (
+            {displaySpecialties.map((s, i) => (
               <span
-                key={s}
+                key={counselor.specialties[i] ?? s}
                 className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700"
               >
                 {s}
@@ -96,15 +102,15 @@ export default async function CounselorPage({
             ))}
           </div>
 
-          {counselor.languages.length > 0 && (
+          {displayLanguages.length > 0 && (
             <p className="mt-3 text-sm text-ink/60">
               <span className="font-medium text-ink/70">{dict.counseling.speaks}:</span>{" "}
-              {counselor.languages.join(", ")}
+              {displayLanguages.join(locale === "ar" ? "، " : ", ")}
             </p>
           )}
 
           <p className="mt-6 whitespace-pre-line text-ink/80 leading-relaxed">
-            {counselor.bio}
+            {displayBio}
           </p>
         </div>
 
@@ -140,7 +146,7 @@ export default async function CounselorPage({
                 <div className="mt-4">
                   <SessionBookingFlow
                     counselorId={counselor.id}
-                    counselorName={counselor.name}
+                    counselorName={displayName}
                     priceEGP={counselor.priceEGP}
                     dict={dict}
                     locale={locale}

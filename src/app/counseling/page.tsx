@@ -24,10 +24,55 @@ export default async function CounselingPage() {
   const t = applyOverrides(baseDict.counseling, "counseling", overrides, locale);
   const dict = { ...baseDict, counseling: t };
 
-  const counselors = await prisma.counselor.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-  });
+  // A narrow `select` (rather than fetching every column) matters here more
+  // than usual: this page hands the whole row to a "use client" component
+  // as props, which get serialized into the page's RSC payload — the full
+  // row would otherwise ship passwordHash/resetTokenHash/loginTokenHash
+  // (therapist portal login credentials) to every visitor's browser.
+  const [counselorRows, filters] = await Promise.all([
+    prisma.counselor.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        credentials: true,
+        specialties: true,
+        languages: true,
+        nameAr: true,
+        credentialsAr: true,
+        specialtiesAr: true,
+        languagesAr: true,
+        photoUrl: true,
+        availabilityStatus: true,
+        filters: { select: { filterId: true } },
+      },
+    }),
+    prisma.counselorFilter.findMany({
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, label: true, labelAr: true },
+    }),
+  ]);
+
+  // Arabic display fields fall back to English whenever untranslated; the
+  // English specialties/languages arrays stay untouched (unrenamed) below
+  // since counselorMatchesSearch matches against the canonical English tags.
+  const counselors = counselorRows.map((c) => ({
+    id: c.id,
+    slug: c.slug,
+    name: c.name,
+    credentials: c.credentials,
+    specialties: c.specialties,
+    languages: c.languages,
+    photoUrl: c.photoUrl,
+    availabilityStatus: c.availabilityStatus,
+    filterIds: c.filters.map((f) => f.filterId),
+    displayName: locale === "ar" && c.nameAr ? c.nameAr : c.name,
+    displayCredentials: locale === "ar" && c.credentialsAr ? c.credentialsAr : c.credentials,
+    displaySpecialties: locale === "ar" && c.specialtiesAr.length > 0 ? c.specialtiesAr : c.specialties,
+    displayLanguages: locale === "ar" && c.languagesAr.length > 0 ? c.languagesAr : c.languages,
+  }));
 
   const COUNSELING_FAQ = [
     { question: t.faq1Q, answer: t.faq1A },
@@ -62,7 +107,7 @@ export default async function CounselingPage() {
               description={t.chooseDescription}
             />
             <div className="mt-8">
-              <CounselorFinder counselors={counselors} dict={dict} />
+              <CounselorFinder counselors={counselors} filters={filters} dict={dict} locale={locale} />
             </div>
           </Container>
         </Reveal>

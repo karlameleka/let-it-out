@@ -4,8 +4,18 @@ import { useActionState, useState } from "react";
 import { UserRound, Compass } from "lucide-react";
 import { requestSignupOtp, verifySignupOtp, resendSignupOtp } from "@/lib/auth-actions";
 import { Button, Eyebrow } from "@/components/ui";
-import { BIRTH_YEARS, GENDERS, COUNTRIES, REFERRAL_SOURCES, SERVICE_INTERESTS } from "@/lib/content/geo";
+import {
+  BIRTH_YEARS,
+  GENDERS,
+  GENDERS_AR,
+  COUNTRIES,
+  REFERRAL_SOURCES,
+  REFERRAL_SOURCES_AR,
+  SERVICE_INTERESTS,
+  SERVICE_INTERESTS_AR,
+} from "@/lib/content/geo";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 import PrivacyBadge from "@/components/privacy-badge";
 import GoogleAuthButton from "@/components/google-auth-button";
 
@@ -96,10 +106,12 @@ function OtpStep({
 
 export default function SignupForm({
   dict,
+  locale,
   googleEnabled = false,
   smsOtpEnabled = false,
 }: {
   dict: Dictionary;
+  locale: Locale;
   googleEnabled?: boolean;
   smsOtpEnabled?: boolean;
 }) {
@@ -110,6 +122,7 @@ export default function SignupForm({
   const [otpChannel, setOtpChannel] = useState<"EMAIL" | "PHONE">("EMAIL");
   const t = dict.auth;
   const f = dict.forms;
+  const isAr = locale === "ar";
 
   function toggleInterest(interest: string) {
     setInterests((prev) =>
@@ -251,7 +264,7 @@ export default function SignupForm({
               {t.gender}
             </p>
             <div className="flex flex-wrap gap-2">
-              {GENDERS.map((g) => (
+              {GENDERS.map((g, i) => (
                 <Pill
                   key={g}
                   type="radio"
@@ -260,7 +273,7 @@ export default function SignupForm({
                   checked={gender === g}
                   onChange={() => setGender(g)}
                 >
-                  {g}
+                  {isAr ? GENDERS_AR[i] : g}
                 </Pill>
               ))}
             </div>
@@ -272,7 +285,7 @@ export default function SignupForm({
               {t.referralSource}
             </p>
             <div className="flex flex-wrap gap-2">
-              {REFERRAL_SOURCES.map((r) => (
+              {REFERRAL_SOURCES.map((r, i) => (
                 <Pill
                   key={r}
                   type="radio"
@@ -281,7 +294,7 @@ export default function SignupForm({
                   checked={referralSource === r}
                   onChange={() => setReferralSource(r)}
                 >
-                  {r}
+                  {isAr ? REFERRAL_SOURCES_AR[i] : r}
                 </Pill>
               ))}
             </div>
@@ -290,7 +303,7 @@ export default function SignupForm({
           <div className="mt-4">
             <p className="mb-1.5 text-xs font-medium text-ink/60">{t.serviceInterests}</p>
             <div className="flex flex-wrap gap-2">
-              {SERVICE_INTERESTS.map((s) => (
+              {SERVICE_INTERESTS.map((s, i) => (
                 <Pill
                   key={s}
                   type="checkbox"
@@ -299,7 +312,7 @@ export default function SignupForm({
                   checked={interests.includes(s)}
                   onChange={() => toggleInterest(s)}
                 >
-                  {s}
+                  {isAr ? SERVICE_INTERESTS_AR[i] : s}
                 </Pill>
               ))}
             </div>

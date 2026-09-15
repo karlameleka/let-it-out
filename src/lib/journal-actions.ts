@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
+import { getLocale } from "@/lib/i18n/locale";
 
 /** Fetches a fresh, likely-different prompt for the "shuffle" button. */
 export async function shufflePrompt(currentPromptId?: string) {
@@ -14,7 +15,14 @@ export async function shufflePrompt(currentPromptId?: string) {
   if (prompt?.id === currentPromptId) {
     prompt = await getNextPrompt(user.userId);
   }
-  return prompt;
+  if (!prompt) return null;
+
+  const locale = await getLocale();
+  return {
+    id: prompt.id,
+    category: locale === "ar" && prompt.categoryAr ? prompt.categoryAr : prompt.category,
+    text: locale === "ar" && prompt.textAr ? prompt.textAr : prompt.text,
+  };
 }
 
 export type JournalExportEntry = {
@@ -62,11 +70,31 @@ export async function exportJournalEntries(): Promise<JournalExportData | null> 
   };
 }
 
-export async function updateJournalLockSetting(enabled: boolean): Promise<{ success: boolean }> {
-  const user = await requireUser().catch(() => null);
-  if (!user) return { success: false };
+/**
+ * Turning the lock ON never needs confirmation — it can only make the
+ * journal harder to get into. Turning it OFF removes that protection, so
+ * (mirroring deleteAccountAction's same distinction) it requires the
+ * account password first, except for a Google-only account with no
+ * password to confirm with, where the session cookie already is the
+ * authorization.
+ */
+export async function updateJournalLockSetting(
+  enabled: boolean,
+  password?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await requireUser().catch(() => null);
+  if (!session) return { success: false, error: "Please log in again." };
 
-  await prisma.user.update({ where: { id: user.userId }, data: { journalLockEnabled: enabled } });
+  if (!enabled) {
+    const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { passwordHash: true } });
+    if (user?.passwordHash) {
+      if (!password) return { success: false, error: "Enter your password to turn this off." };
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) return { success: false, error: "Incorrect password." };
+    }
+  }
+
+  await prisma.user.update({ where: { id: session.userId }, data: { journalLockEnabled: enabled } });
   return { success: true };
 }
 
@@ -78,7 +106,7 @@ export async function verifyJournalLock(password: string): Promise<{ success: bo
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return { success: false, error: "Account not found." };
   if (!user.passwordHash) {
-    return { success: false, error: "This account has no password set — set one from Account settings first." };
+    return { success: false, error: "This account has no password set, set one from Account settings first." };
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);

@@ -2,19 +2,26 @@
 
 import { useState } from "react";
 import { CORE_EMOTIONS, getSecondaryEmotions, type CoreEmotionId } from "@/lib/moods";
+import type { Locale } from "@/lib/i18n/locale";
 
 /** The same core → secondary emotion picker used in the journal app's entry
  * composer — pick a core feeling to reveal its more specific secondary
  * feelings, multi-select throughout. Shared so every mood check-in in the
- * app (journaling, therapist session notes) looks and behaves identically. */
+ * app (journaling, therapist session notes) looks and behaves identically.
+ * `locale` defaults to "en" so the internal therapist dashboard (which
+ * doesn't thread the site locale) always renders in English. */
 export default function MoodPicker({
   moods,
   onChange,
   label = "How are you feeling?",
+  hint = "pick as many as apply",
+  locale = "en",
 }: {
   moods: string[];
   onChange: (moods: string[]) => void;
   label?: string;
+  hint?: string;
+  locale?: Locale;
 }) {
   const [expandedCore, setExpandedCore] = useState<CoreEmotionId | null>(null);
 
@@ -30,7 +37,7 @@ export default function MoodPicker({
   return (
     <div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-        {label} <span className="font-normal normal-case text-ink/35">pick as many as apply</span>
+        {label} <span className="font-normal normal-case text-ink/35">{hint}</span>
       </p>
       <div className="flex flex-wrap gap-2">
         {CORE_EMOTIONS.map((core) => {
@@ -50,7 +57,7 @@ export default function MoodPicker({
               }`}
             >
               <span className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ backgroundColor: core.color }} />
-              {core.label}
+              {locale === "ar" ? core.labelAr : core.label}
             </button>
           );
         })}
@@ -69,7 +76,7 @@ export default function MoodPicker({
                   : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300 active:border-brand-300"
               }`}
             >
-              {m.label}
+              {locale === "ar" ? m.labelAr : m.label}
             </button>
           ))}
         </div>

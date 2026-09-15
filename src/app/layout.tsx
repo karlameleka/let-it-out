@@ -12,6 +12,7 @@ import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
 import AppBadgeSync from "@/components/app-badge-sync";
 import PushAutoPrompt from "@/components/push-auto-prompt";
+import ReferralActivationWatcher from "@/components/referral-activation-watcher";
 import AnalyticsTracker from "@/components/analytics-tracker";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
@@ -81,7 +82,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       dir={dirForLocale(locale)}
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-ink pb-20 md:pb-0">
+      <body className="min-h-full flex flex-col bg-white text-ink pb-24 lg:pb-0">
         <InitialSplash />
         <OfflineBanner message={dict.offline.bannerMessage} />
         <CurrencyProvider>
@@ -104,6 +105,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <BottomTabBar dict={dict.nav} />
                 <AppBadgeSync />
                 <PushAutoPrompt loggedIn={Boolean(user)} />
+                <ReferralActivationWatcher />
                 {user && <AnalyticsTracker />}
               </UpcomingProvider>
             </UnreadToolsProvider>

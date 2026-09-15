@@ -137,7 +137,7 @@ export default async function TherapistClientProfilePage({
                 <h2 className="font-display font-semibold text-brand-900">{client.name.split(" ")[0]}&rsquo;s session book</h2>
               </div>
               <p className="mt-1 text-sm text-ink/60">
-                One page per session — private to you, never visible to the client or anyone else at Let It Out.
+                One page per session, private to you, never visible to the client or anyone else at Let It Out.
                 {client.notes.length > 0 && ` ${client.notes.length} session${client.notes.length === 1 ? "" : "s"} logged.`}
               </p>
               <div className="mt-4">

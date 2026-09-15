@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { updateLeadStatus, deleteLead } from "@/lib/admin-actions";
+import { updateLeadStatus, deleteLead, deleteRecentLeads } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import AdminPagination from "@/components/admin-pagination";
+import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
+
+const RECENT_WINDOWS = [
+  { hours: 48, label: "48h" },
+  { hours: 24 * 7, label: "week" },
+];
 
 const TYPE_FILTERS = [
   { value: "ALL", label: "All" },
@@ -31,23 +38,55 @@ function statusLabel(status: string) {
 export default async function AdminCrmPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ type?: string; page?: string }>;
 }) {
-  const { type } = await searchParams;
+  const { type, page: pageParam } = await searchParams;
   const activeType = type && type !== "ALL" ? type : "ALL";
+  const page = parseAdminPage(pageParam);
 
-  const leads = await prisma.lead.findMany({
-    where: activeType !== "ALL" ? { type: activeType as never } : undefined,
-    orderBy: { createdAt: "desc" },
-  });
+  const where = activeType !== "ALL" ? { type: activeType as never } : undefined;
+  const now = new Date();
+  const [leads, totalCount, ...recentCounts] = await Promise.all([
+    prisma.lead.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
+    }),
+    prisma.lead.count({ where }),
+    ...RECENT_WINDOWS.map((w) =>
+      prisma.lead.count({ where: { createdAt: { gte: new Date(now.getTime() - w.hours * 60 * 60 * 1000) } } }),
+    ),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_PAGE_SIZE));
 
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-sm text-ink/60">
-          {leads.length} {leads.length === 1 ? "lead" : "leads"} — every real workshop inquiry,
-          counseling request, journal order, and contact message lands here automatically.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="text-sm text-ink/60">
+            {totalCount} {totalCount === 1 ? "lead" : "leads"}, every real workshop inquiry,
+            counseling request, journal order, and contact message lands here automatically.
+            {totalPages > 1 && ` Showing page ${page} of ${totalPages}.`}
+          </p>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {RECENT_WINDOWS.map((w, i) => {
+              const count = recentCounts[i];
+              if (count === 0) return null;
+              return (
+                <form key={w.label} action={deleteRecentLeads}>
+                  <input type="hidden" name="hours" value={w.hours} />
+                  <ConfirmSubmitButton
+                    confirmMessage={`Delete all ${count} lead(s) received in the last ${w.label}? This deletes every type, including any real leads from that window, check the list below first if you're not sure. This can't be undone.`}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                  >
+                    Delete last {w.label} ({count})
+                  </ConfirmSubmitButton>
+                </form>
+              );
+            })}
+          </div>
+        </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {TYPE_FILTERS.map((t) => (
             <Link
@@ -149,6 +188,13 @@ export default async function AdminCrmPage({
           );
         })
       )}
+
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        basePath="/admin/crm"
+        extraParams={activeType !== "ALL" ? { type: activeType } : {}}
+      />
     </div>
   );
 }

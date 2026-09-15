@@ -1,17 +1,33 @@
 import { prisma } from "@/lib/db";
 import { deleteWorkshopSignup } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import AdminPagination from "@/components/admin-pagination";
+import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 
-export default async function AdminWorkshopSignupsPage() {
-  const signups = await prisma.workshopInterestSignup.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+export default async function AdminWorkshopSignupsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const page = parseAdminPage(pageParam);
+
+  const [signups, totalCount] = await Promise.all([
+    prisma.workshopInterestSignup.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
+    }),
+    prisma.workshopInterestSignup.count(),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_PAGE_SIZE));
 
   return (
     <div>
       <p className="mb-4 text-sm text-ink/60">
-        {signups.length} {signups.length === 1 ? "person" : "people"} asked to
+        {totalCount} {totalCount === 1 ? "person" : "people"} asked to
         be notified about the next workshop.
+        {totalPages > 1 && ` Showing page ${page} of ${totalPages}.`}
       </p>
       {signups.length === 0 ? (
         <p className="text-sm text-ink/60">No signups yet.</p>
@@ -49,6 +65,7 @@ export default async function AdminWorkshopSignupsPage() {
           </table>
         </div>
       )}
+      <AdminPagination page={page} totalPages={totalPages} basePath="/admin/workshop-signups" />
     </div>
   );
 }
