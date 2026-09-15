@@ -10,11 +10,12 @@ import AssessmentQuiz from "@/components/assessment-quiz";
 import OpenInAppBanner from "@/components/open-in-app-banner";
 
 /**
- * Shared body for every /qr/<slug> assessment page — these exist only to
- * be reached by scanning a QR code printed in a physical guided journal
- * (see assessments.ts), so they're deliberately not linked anywhere else
- * on the site (no nav, no sitemap, robots.txt disallows /qr, and this
- * folder's `_shared` prefix keeps this file itself out of the route tree).
+ * Shared body for every /qr/<token> assessment page (see qr-tokens.ts for
+ * the token → assessment mapping) — these exist only to be reached by
+ * scanning a QR code printed in a physical guided journal (see
+ * assessments.ts), so they're deliberately not linked anywhere else on the
+ * site (no nav, no sitemap, robots.txt disallows /qr, and this folder's
+ * `_shared` prefix keeps this file itself out of the route tree).
  * Login-gated because results save to the visitor's own journal — there's
  * no anonymous/guest path here, unlike most of the site's public forms.
  */
