@@ -14,6 +14,7 @@ import AppBadgeSync from "@/components/app-badge-sync";
 import PushAutoPrompt from "@/components/push-auto-prompt";
 import ReferralActivationWatcher from "@/components/referral-activation-watcher";
 import AnalyticsTracker from "@/components/analytics-tracker";
+import OnboardingRoot from "@/components/onboarding/onboarding-root";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { UnreadToolsProvider } from "@/lib/unread-tools-context";
@@ -23,6 +24,7 @@ import { getLocale, dirForLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
+import { getOnboardingState } from "@/lib/onboarding";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -75,6 +77,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
   const baseDict = getDictionary(locale);
   const dict = { ...baseDict, nav: applyOverrides(baseDict.nav, "nav", textOverrides, locale) };
+  const onboardingState = user && user.role === "USER" ? await getOnboardingState(user.userId) : null;
 
   return (
     <html
@@ -107,6 +110,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <PushAutoPrompt loggedIn={Boolean(user)} />
                 <ReferralActivationWatcher />
                 {user && <AnalyticsTracker />}
+                {user && onboardingState && (
+                  <OnboardingRoot
+                    firstName={user.name.split(" ")[0]}
+                    state={onboardingState}
+                    dict={dict.onboarding}
+                  />
+                )}
               </UpcomingProvider>
             </UnreadToolsProvider>
           </CartProvider>

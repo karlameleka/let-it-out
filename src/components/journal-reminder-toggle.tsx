@@ -132,6 +132,7 @@ export default function JournalReminderToggle({ dict }: { dict: Dictionary["acco
     <div>
       <button
         type="button"
+        data-onboarding="reminders-toggle"
         onClick={status === "on" ? disable : enable}
         disabled={busy}
         className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${

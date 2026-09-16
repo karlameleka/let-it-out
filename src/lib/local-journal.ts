@@ -2,6 +2,7 @@
 
 import { MOODS } from "@/lib/moods";
 import type { Locale } from "@/lib/i18n/locale";
+import { markOnboardingJournalStepDone } from "@/lib/onboarding";
 
 // Device-only journal storage. Entries never leave the browser: content and
 // any attached photo are encrypted with AES-256-GCM using a key that is
@@ -213,6 +214,11 @@ export async function createEntry(
     prompt: input.prompt,
   };
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+  // Entry content itself never leaves the browser, but the fact that a
+  // first entry now exists is exactly what the onboarding checklist's
+  // "write your first journal entry" step needs to know — see
+  // src/lib/onboarding.ts. Fire-and-forget, no-ops after the first entry.
+  markOnboardingJournalStepDone().catch(() => {});
 }
 
 /** Edits an existing entry's content/moods/photo in place — the original

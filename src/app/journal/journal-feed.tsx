@@ -137,7 +137,7 @@ export default function JournalFeed({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <ButtonLink href="/journal/new">
+              <ButtonLink href="/journal/new" data-onboarding="journal-new-entry">
                 <PlusCircle className="h-4 w-4" strokeWidth={2} />
                 {dict.newEntry}
               </ButtonLink>
@@ -203,7 +203,7 @@ export default function JournalFeed({
               {entries.length === 0 ? dict.emptyNoEntries : dict.emptyNoMatches}
             </p>
             {entries.length === 0 && (
-              <ButtonLink href="/journal/new" className="mt-6">
+              <ButtonLink href="/journal/new" className="mt-6" data-onboarding="journal-new-entry">
                 {dict.writeFirstEntry}
               </ButtonLink>
             )}

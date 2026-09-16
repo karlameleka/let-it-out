@@ -5,9 +5,11 @@ import { Ribbon, Swash, DoodleField } from "@/components/decor";
 import { FaqList } from "@/components/faq";
 import { Reveal } from "@/components/reveal";
 import CounselorFinder from "./counselor-finder";
+import MarkCounselingExplored from "./mark-explored";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
+import { getCurrentUser } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Counseling",
@@ -16,9 +18,10 @@ export const metadata: Metadata = {
 };
 
 export default async function CounselingPage() {
-  const [locale, overrides] = await Promise.all([
+  const [locale, overrides, user] = await Promise.all([
     getLocale(),
     getSiteTextOverrides(),
+    getCurrentUser(),
   ]);
   const baseDict = getDictionary(locale);
   const t = applyOverrides(baseDict.counseling, "counseling", overrides, locale);
@@ -106,9 +109,10 @@ export default async function CounselingPage() {
               title={t.chooseTitle}
               description={t.chooseDescription}
             />
-            <div className="mt-8">
+            <div className="mt-8" data-onboarding="counseling-list">
               <CounselorFinder counselors={counselors} filters={filters} dict={dict} locale={locale} />
             </div>
+            {user && <MarkCounselingExplored />}
           </Container>
         </Reveal>
       </section>

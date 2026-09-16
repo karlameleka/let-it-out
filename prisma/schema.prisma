@@ -79,6 +79,19 @@ model User {
   // Off by default, matching Apple Journal — opt-in from account settings.
   journalLockEnabled Boolean @default(false)
 
+  // First-time onboarding (welcome modal + setup checklist), see
+  // src/lib/onboarding.ts. Nullable "seen/done" timestamps rather than
+  // booleans so a debug/support query can tell not just whether but when.
+  // Backfilled to non-null for every pre-existing account in this
+  // feature's migration so only genuinely new signups see the welcome
+  // modal — the two step-completion columns are deliberately left null
+  // for existing accounts, since showing an honestly-partial checklist to
+  // a returning user is fine, unlike re-showing the welcome modal.
+  onboardingWelcomeSeenAt        DateTime?
+  onboardingChecklistDismissedAt DateTime?
+  onboardingJournalDoneAt        DateTime?
+  onboardingCounselingDoneAt     DateTime?
+
   // Site language preference, captured at signup and kept in sync on every
   // setLocale() call (see src/lib/i18n/actions.ts) — the same pattern as
   // PushSubscription.locale. Needed so staff-triggered emails (a counselor
