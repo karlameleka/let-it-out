@@ -2,33 +2,69 @@
 
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { OnboardingState } from "@/lib/onboarding";
+import { markOnboardingWelcomeSeen, dismissOnboardingChecklist } from "@/lib/onboarding";
 import { OnboardingTourProvider } from "@/lib/onboarding-tour-context";
 import OnboardingWelcomeModal from "./onboarding-welcome-modal";
 import OnboardingChecklist from "./onboarding-checklist";
 import OnboardingSpotlight from "./onboarding-spotlight";
+import OnboardingGuestFlow from "./onboarding-guest-flow";
 
-/** Composes the three onboarding pieces (welcome modal, checklist widget,
- * guided tooltip) under one shared tour context — mounted once, sitewide,
- * only for logged-in users (see layout.tsx). */
+/**
+ * Single mount point for the whole onboarding system (welcome modal,
+ * checklist, guided tooltips), rendered sitewide from layout.tsx
+ * regardless of login state — see that file for the ADMIN-role
+ * exclusion. A visitor gets exactly one of the two flows below, sharing
+ * one tour context and one spotlight renderer so a guest who signs up
+ * mid-tour hands off cleanly to the account flow on their next page load.
+ */
 export default function OnboardingRoot({
+  loggedIn,
   firstName,
-  state,
+  accountState,
   dict,
 }: {
+  loggedIn: boolean;
   firstName: string;
-  state: OnboardingState;
+  accountState: OnboardingState | null;
   dict: Dictionary["onboarding"];
 }) {
-  const steps = [
-    { id: "reminders" as const, label: dict.stepRemindersLabel, done: state.steps.reminders },
-    { id: "journal" as const, label: dict.stepJournalLabel, done: state.steps.journal },
-    { id: "counseling" as const, label: dict.stepCounselingLabel, done: state.steps.counseling },
-  ];
-
   return (
     <OnboardingTourProvider>
-      <OnboardingWelcomeModal firstName={firstName} shouldShow={!state.welcomeSeen} dict={dict} />
-      <OnboardingChecklist steps={steps} dismissed={state.checklistDismissed} dict={dict} />
+      {loggedIn && accountState ? (
+        <>
+          <OnboardingWelcomeModal
+            headline={dict.welcomeHeadline.replace("{name}", firstName)}
+            body={dict.welcomeBody}
+            shouldShow={!accountState.welcomeSeen}
+            onShown={() => {
+              markOnboardingWelcomeSeen().catch(() => {
+                // Best-effort — worst case this shows again next login,
+                // which is harmless, unlike blocking the modal on a
+                // network round trip.
+              });
+            }}
+            dict={dict}
+          />
+          <OnboardingChecklist
+            title={dict.checklistTitle}
+            steps={[
+              { id: "reminders", label: dict.stepRemindersLabel, done: accountState.steps.reminders },
+              { id: "journal", label: dict.stepJournalLabel, done: accountState.steps.journal },
+              { id: "counseling", label: dict.stepCounselingLabel, done: accountState.steps.counseling },
+            ]}
+            dismissed={accountState.checklistDismissed}
+            onDismiss={() => {
+              dismissOnboardingChecklist().catch(() => {
+                // Best-effort — worst case this reappears next load,
+                // which is harmless and recoverable by dismissing again.
+              });
+            }}
+            dict={dict}
+          />
+        </>
+      ) : (
+        <OnboardingGuestFlow dict={dict} />
+      )}
       <OnboardingSpotlight dict={dict} />
     </OnboardingTourProvider>
   );

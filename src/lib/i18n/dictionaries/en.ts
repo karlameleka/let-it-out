@@ -86,6 +86,16 @@ const en = {
     tooltipCounselingTitle: "Meet our psychologists",
     tooltipCounselingBody: "Browse profiles and book a session whenever you're ready.",
     tooltipGotIt: "Got it",
+    guestWelcomeHeadline: "Welcome to Let It Out",
+    guestWelcomeBody:
+      "A private space to journal, learn practical coping tools, and connect with a licensed psychologist, all in one place. Take a quick look around before you dive in.",
+    guestChecklistTitle: "Take a look around",
+    stepSignupLabel: "Create your free account",
+    stepShopLabel: "Browse our guided journals",
+    tooltipSignupTitle: "Create your account",
+    tooltipSignupBody: "Takes less than a minute, and unlocks your own private, encrypted journal.",
+    tooltipShopTitle: "Guided journals",
+    tooltipShopBody: "Structured prompts and exercises you can work through at your own pace, on paper or in the app.",
   },
   privacyBadge: {
     default: "Your information is kept private and confidential.",

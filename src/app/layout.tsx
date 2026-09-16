@@ -110,10 +110,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <PushAutoPrompt loggedIn={Boolean(user)} />
                 <ReferralActivationWatcher />
                 {user && <AnalyticsTracker />}
-                {user && onboardingState && (
+                {(!user || user.role === "USER") && (
                   <OnboardingRoot
-                    firstName={user.name.split(" ")[0]}
-                    state={onboardingState}
+                    loggedIn={Boolean(user)}
+                    firstName={user?.name.split(" ")[0] ?? ""}
+                    accountState={onboardingState}
                     dict={dict.onboarding}
                   />
                 )}

@@ -3,12 +3,22 @@
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
-export type OnboardingStepId = "reminders" | "journal" | "counseling";
+/** "reminders"/"journal"/"counseling" are account steps (DB-backed
+ * completion, see getOnboardingState). "signup"/"shop" are guest-only
+ * steps shown before someone has an account at all — their completion
+ * lives entirely in localStorage (see onboarding-guest-state.ts), since
+ * there's no account yet to persist against. */
+export type OnboardingStepId = "reminders" | "journal" | "counseling" | "signup" | "shop";
+
+/** The 3 account-only step ids `getOnboardingState`/`OnboardingState.steps`
+ * actually track — narrower than `OnboardingStepId` so this type doesn't
+ * need updating every time a guest-only step is added. */
+export type AccountOnboardingStepId = "reminders" | "journal" | "counseling";
 
 export type OnboardingState = {
   welcomeSeen: boolean;
   checklistDismissed: boolean;
-  steps: Record<OnboardingStepId, boolean>;
+  steps: Record<AccountOnboardingStepId, boolean>;
 };
 
 /** Reads the logged-in user's onboarding progress for the welcome modal and

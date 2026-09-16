@@ -15,4 +15,7 @@ export const ONBOARDING_STEPS: OnboardingStepMeta[] = [
   { id: "reminders", href: "/account", selector: '[data-onboarding="reminders-toggle"]' },
   { id: "journal", href: "/journal", selector: '[data-onboarding="journal-new-entry"]' },
   { id: "counseling", href: "/counseling", selector: '[data-onboarding="counseling-list"]' },
+  // Guest-only steps (shown before signup, see onboarding-guest-flow.tsx).
+  { id: "signup", href: "/signup", selector: '[data-onboarding="signup-heading"]' },
+  { id: "shop", href: "/shop", selector: '[data-onboarding="shop-journals"]' },
 ];

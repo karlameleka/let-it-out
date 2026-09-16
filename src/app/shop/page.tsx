@@ -61,7 +61,7 @@ export default async function ShopPage() {
         <Reveal>
           <Container>
           <SectionHeading eyebrow={t.ourJournalsEyebrow} title={t.ourJournalsTitle} />
-          <div className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
+          <div data-onboarding="shop-journals" className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
             {products.map((rawProduct) => {
               const p = localizeProduct(rawProduct, locale);
               const price = Math.min(...p.variants.map((v) => v.priceEGP));

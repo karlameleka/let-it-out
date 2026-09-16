@@ -14,6 +14,8 @@ const TOOLTIP_COPY: Record<
   reminders: { titleKey: "tooltipRemindersTitle", bodyKey: "tooltipRemindersBody" },
   journal: { titleKey: "tooltipJournalTitle", bodyKey: "tooltipJournalBody" },
   counseling: { titleKey: "tooltipCounselingTitle", bodyKey: "tooltipCounselingBody" },
+  signup: { titleKey: "tooltipSignupTitle", bodyKey: "tooltipSignupBody" },
+  shop: { titleKey: "tooltipShopTitle", bodyKey: "tooltipShopBody" },
 };
 
 type Placement = { top: number; left: number; width: number; height: number; above: boolean };

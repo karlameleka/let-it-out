@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { CheckCircle2, Circle, ListChecks, X } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { OnboardingStepId } from "@/lib/onboarding";
-import { dismissOnboardingChecklist } from "@/lib/onboarding";
 import { ONBOARDING_STEPS } from "@/lib/onboarding-steps";
 import { useOnboardingTour } from "@/lib/onboarding-tour-context";
 import { hapticTap } from "@/lib/haptics";
@@ -16,18 +15,27 @@ type StepItem = { id: OnboardingStepId; label: string; done: boolean };
  * Persistent, dismissible "get started" widget — a floating pill (bottom
  * corner, opposite HelpButton) that expands into a 3-item checklist.
  * Clicking a step navigates to where it's done and arms that step's
- * guided tooltip (see OnboardingSpotlight); the "reminders" step's
- * checkmark comes from a real push subscription existing, not a stored
- * flag, so it's correct even for someone who enabled reminders before
- * ever seeing this widget.
+ * guided tooltip (see OnboardingSpotlight). Shared between the logged-in
+ * flow (onboarding-root.tsx, DB-backed completion) and the guest flow
+ * (onboarding-guest-flow.tsx, localStorage-backed) via the `onDismiss`/
+ * `onStepClick` callbacks rather than hardcoding either persistence
+ * mechanism here.
  */
 export default function OnboardingChecklist({
+  title,
   steps,
   dismissed,
+  onDismiss,
+  onStepClick,
   dict,
 }: {
+  title: string;
   steps: StepItem[];
   dismissed: boolean;
+  onDismiss: () => void;
+  /** Called in addition to the built-in navigate + arm-tooltip behavior —
+   * e.g. so the guest flow can optimistically mark a step done locally. */
+  onStepClick?: (id: OnboardingStepId) => void;
   dict: Dictionary["onboarding"];
 }) {
   const [hidden, setHidden] = useState(dismissed);
@@ -47,6 +55,7 @@ export default function OnboardingChecklist({
     hapticTap();
     const meta = ONBOARDING_STEPS.find((s) => s.id === step.id);
     if (!meta) return;
+    onStepClick?.(step.id);
     startStep(step.id);
     router.push(meta.href);
   }
@@ -54,10 +63,7 @@ export default function OnboardingChecklist({
   function dismiss() {
     hapticTap();
     setHidden(true);
-    dismissOnboardingChecklist().catch(() => {
-      // Best-effort — worst case this reappears next load, which is
-      // harmless and recoverable by dismissing again.
-    });
+    onDismiss();
   }
 
   return (
@@ -66,7 +72,7 @@ export default function OnboardingChecklist({
         <div className="animate-pop-in absolute bottom-[calc(100%+0.75rem)] start-0 w-72 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-xl">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-display font-semibold text-brand-900">{dict.checklistTitle}</p>
+              <p className="font-display font-semibold text-brand-900">{title}</p>
               <p className="mt-0.5 text-xs text-ink/50">
                 {allDone
                   ? dict.checklistAllDone
@@ -115,7 +121,7 @@ export default function OnboardingChecklist({
         className="flex items-center gap-2 rounded-full border-2 border-brand-100 bg-white py-2.5 pe-4 ps-3 text-sm font-semibold text-brand-700 shadow-lg transition-colors hover:border-brand-300"
       >
         <ListChecks className="h-5 w-5" strokeWidth={2} />
-        {dict.checklistTitle}
+        {title}
         <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-700">
           {doneCount}/{steps.length}
         </span>

@@ -88,6 +88,16 @@ const ar: Dictionary = {
     tooltipCounselingTitle: "تعرّف على أخصائيينا النفسيين",
     tooltipCounselingBody: "تصفح البروفايلات واحجز جلسة وقت ما تكون جاهز.",
     tooltipGotIt: "تمام",
+    guestWelcomeHeadline: "أهلاً بيك في Let It Out",
+    guestWelcomeBody:
+      "مساحة خاصة عشان تكتب يومياتك، تتعلم أدوات عملية تساعدك تتأقلم، وتتواصل مع أخصائي نفسي مرخّص، كل ده في مكان واحد. اتفرج شوية قبل ما تبدأ.",
+    guestChecklistTitle: "اتفرج على التطبيق",
+    stepSignupLabel: "اعمل حسابك المجاني",
+    stepShopLabel: "تصفح اليوميات الموجهة بتاعتنا",
+    tooltipSignupTitle: "اعمل حسابك",
+    tooltipSignupBody: "بياخد أقل من دقيقة، وبيفتحلك يومياتك الخاصة والمشفّرة.",
+    tooltipShopTitle: "اليوميات الموجهة",
+    tooltipShopBody: "تمارين وأسئلة موجهة تقدر تشتغل عليها بالسرعة اللي تريحك، ورقية أو في التطبيق.",
   },
   privacyBadge: {
     default: "معلوماتك تُحفظ بسرية تامة وخصوصية كاملة.",

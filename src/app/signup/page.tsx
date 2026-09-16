@@ -33,7 +33,7 @@ export default async function SignupPage() {
         <div className="bg-brand-50 px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 md:bg-transparent md:px-0 md:pt-14 md:pb-0">
           <Container className="mx-auto max-w-sm px-0">
             <Ribbon className="md:hidden">{dict.nav.signUp}</Ribbon>
-            <h1 className="mt-3 font-display text-3xl font-medium text-brand-900 md:mt-0">{t.signupTitle}</h1>
+            <h1 data-onboarding="signup-heading" className="mt-3 font-display text-3xl font-medium text-brand-900 md:mt-0">{t.signupTitle}</h1>
             <p className="mt-2 text-sm text-ink/60">{t.signupSubtitle}</p>
           </Container>
         </div>

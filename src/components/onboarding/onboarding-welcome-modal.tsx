@@ -3,39 +3,46 @@
 import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
-import { markOnboardingWelcomeSeen } from "@/lib/onboarding";
 import { useOnboardingTour } from "@/lib/onboarding-tour-context";
 import { Button } from "@/components/ui";
 
 /**
- * Center-screen welcome modal shown exactly once per account, the first
- * time a page renders for a logged-in user whose onboardingWelcomeSeenAt
- * is still null server-side. `shouldShow` reflects that server read, so a
- * returning user (or one who already saw it earlier this session, thanks
- * to the persisted DB column) never gets it again — see
- * markOnboardingWelcomeSeen() in src/lib/onboarding.ts.
+ * Center-screen welcome modal shown exactly once, the first time a page
+ * renders with `shouldShow` true. Shared between the logged-in flow
+ * (gated on the account's onboardingWelcomeSeenAt column, greeting by
+ * name) and the guest flow (gated on a localStorage flag, generic
+ * copy) — see onboarding-root.tsx and onboarding-guest-flow.tsx for
+ * which one computes `shouldShow` and what `onShown` does.
  */
 export default function OnboardingWelcomeModal({
-  firstName,
+  headline,
+  body,
   shouldShow,
+  onShown,
   dict,
 }: {
-  firstName: string;
+  headline: string;
+  body: string;
   shouldShow: boolean;
+  /** Called once, the moment the modal actually renders — persists
+   * "seen" so it never shows again (DB write for accounts, localStorage
+   * for guests). */
+  onShown: () => void;
   dict: Dictionary["onboarding"];
 }) {
   const [open, setOpen] = useState(false);
   const { setChecklistOpen } = useOnboardingTour();
-  const markedSeen = useRef(false);
+  const shown = useRef(false);
 
   useEffect(() => {
-    if (!shouldShow || markedSeen.current) return;
-    markedSeen.current = true;
+    if (!shouldShow || shown.current) return;
+    shown.current = true;
     setOpen(true);
-    markOnboardingWelcomeSeen().catch(() => {
-      // Best-effort — worst case this shows again next login, which is
-      // harmless, unlike blocking the modal on a network round trip.
-    });
+    onShown();
+    // onShown is a fresh closure each render in practice, but it's only
+    // ever meant to fire once per mount (guarded by the ref above), so
+    // it's deliberately excluded from the dependency array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldShow]);
 
   if (!open) return null;
@@ -66,11 +73,11 @@ export default function OnboardingWelcomeModal({
             <Sparkles className="h-5 w-5" strokeWidth={2} />
           </span>
           <h2 id="onboarding-welcome-heading" className="mt-3 font-display text-xl font-semibold">
-            {dict.welcomeHeadline.replace("{name}", firstName)}
+            {headline}
           </h2>
         </div>
         <div className="px-6 py-6">
-          <p className="text-sm leading-relaxed text-ink/70">{dict.welcomeBody}</p>
+          <p className="text-sm leading-relaxed text-ink/70">{body}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button type="button" onClick={startTour}>
               {dict.startTour}
