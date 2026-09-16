@@ -35,13 +35,13 @@ export default function LoginForm({
 
       <form action={formAction} className="space-y-4">
         <div>
-          <label htmlFor="identifier" className="mb-1 block text-sm font-medium text-ink/80">
-            {t.emailOrPhone}
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-ink/80">
+            {dict.forms.email}
           </label>
           <input
-            id="identifier"
-            name="identifier"
-            type="text"
+            id="email"
+            name="email"
+            type="email"
             autoComplete="username"
             required
             className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"

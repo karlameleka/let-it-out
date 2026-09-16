@@ -48,12 +48,10 @@ function Pill({
 
 function OtpStep({
   pendingSignupId,
-  channel,
   destination,
   dict,
 }: {
   pendingSignupId: string;
-  channel: "EMAIL" | "PHONE";
   destination: string;
   dict: Dictionary;
 }) {
@@ -64,8 +62,7 @@ function OtpStep({
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4 text-sm text-ink/70">
-        {channel === "EMAIL" ? t.otpSentEmail : t.otpSentPhone}{" "}
-        <span className="font-medium text-ink/90">{destination}</span>
+        {t.otpSentEmail} <span className="font-medium text-ink/90">{destination}</span>
       </div>
       <form action={verifyAction} className="space-y-4">
         <input type="hidden" name="pendingSignupId" value={pendingSignupId} />
@@ -108,18 +105,15 @@ export default function SignupForm({
   dict,
   locale,
   googleEnabled = false,
-  smsOtpEnabled = false,
 }: {
   dict: Dictionary;
   locale: Locale;
   googleEnabled?: boolean;
-  smsOtpEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(requestSignupOtp, undefined);
   const [interests, setInterests] = useState<string[]>([]);
   const [gender, setGender] = useState("");
   const [referralSource, setReferralSource] = useState("");
-  const [otpChannel, setOtpChannel] = useState<"EMAIL" | "PHONE">("EMAIL");
   const t = dict.auth;
   const f = dict.forms;
   const isAr = locale === "ar";
@@ -131,14 +125,7 @@ export default function SignupForm({
   }
 
   if (state && "pendingSignupId" in state) {
-    return (
-      <OtpStep
-        pendingSignupId={state.pendingSignupId}
-        channel={state.channel}
-        destination={state.destination}
-        dict={dict}
-      />
-    );
+    return <OtpStep pendingSignupId={state.pendingSignupId} destination={state.destination} dict={dict} />;
   }
 
   return (
@@ -180,18 +167,6 @@ export default function SignupForm({
           />
         </div>
         <div>
-          <label htmlFor="phone" className="mb-1 block text-sm font-medium text-ink/80">
-            {f.phone}
-          </label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            required
-            className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
-          />
-        </div>
-        <div>
           <label htmlFor="password" className="mb-1 block text-sm font-medium text-ink/80">
             {t.password}
           </label>
@@ -205,34 +180,6 @@ export default function SignupForm({
           />
           <p className="mt-1 text-xs text-ink/50">{t.passwordHint}</p>
         </div>
-
-        {smsOtpEnabled ? (
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-ink/60">{t.otpChannelLabel}</p>
-            <div className="flex gap-2">
-              <Pill
-                type="radio"
-                name="otpChannel"
-                value="EMAIL"
-                checked={otpChannel === "EMAIL"}
-                onChange={() => setOtpChannel("EMAIL")}
-              >
-                {t.otpChannelEmail}
-              </Pill>
-              <Pill
-                type="radio"
-                name="otpChannel"
-                value="PHONE"
-                checked={otpChannel === "PHONE"}
-                onChange={() => setOtpChannel("PHONE")}
-              >
-                {t.otpChannelPhone}
-              </Pill>
-            </div>
-          </div>
-        ) : (
-          <input type="hidden" name="otpChannel" value="EMAIL" />
-        )}
 
         <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
           <Eyebrow>{t.aboutYouLabel}</Eyebrow>

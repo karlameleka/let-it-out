@@ -15,9 +15,11 @@ enum Role {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  // Nullable: accounts created via Google sign-in don't collect a phone
-  // number. Required for accounts created through the email/password
-  // signup form, where it also doubles as an alternate login identifier.
+  // No longer collected at signup (email/password and Google sign-in are
+  // the only two paths now, neither asks for a phone number) — kept only
+  // so accounts created before this change keep working and still prefill
+  // checkout/booking forms with the number they already gave us. Never a
+  // login identifier.
   phone        String?  @unique
   // Nullable: accounts created via Google sign-in have no password.
   passwordHash String?
@@ -113,22 +115,15 @@ model User {
   referralsGiven UserReferral[]
 }
 
-enum OtpChannel {
-  EMAIL
-  PHONE
-}
-
 // A signup that hasn't finished OTP verification yet. Holds everything
 // needed to create the real User once the code is confirmed, so nothing is
-// written to the User table (and no email/phone is "claimed") until the
-// person actually proves they own the address/number. Replaced (not
-// updated) on every new attempt for the same email/phone — see
-// requestSignupOtp in auth-actions.ts.
+// written to the User table (and no email is "claimed") until the person
+// actually proves they own the address. Replaced (not updated) on every
+// new attempt for the same email — see requestSignupOtp in auth-actions.ts.
 model PendingSignup {
   id               String     @id @default(cuid())
   name             String
   email            String     @unique
-  phone            String     @unique
   passwordHash     String
   birthYear        Int
   gender           String
@@ -136,7 +131,6 @@ model PendingSignup {
   referralSource   String
   serviceInterests String[]
 
-  otpChannel    OtpChannel
   otpCodeHash   String
   otpExpiresAt  DateTime
   otpSentAt     DateTime @default(now())

@@ -15,11 +15,10 @@ import {
 } from "@/lib/session";
 import { verifyTotpCode, decryptTotpSecret, hashBackupCode } from "@/lib/totp";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendOtpEmail } from "@/lib/email";
-import { sendSms, isSmsOtpEnabled } from "@/lib/sms";
 import { createLead } from "@/lib/leads";
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
-import { getLocale, type Locale } from "@/lib/i18n/locale";
+import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 
@@ -36,20 +35,18 @@ function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
   return z.object({
     name: z.string().trim().min(2, v.nameRequired),
     email: z.string().trim().email(v.emailInvalid),
-    phone: z.string().trim().min(5, v.phoneInvalid),
     password: z.string().min(8, v.passwordMin8),
     birthYear: z.string().trim().min(1, a.birthYearRequired),
     gender: z.string().trim().min(1, a.genderRequired),
     country: z.string().trim().min(1, a.countryRequired),
     referralSource: z.string().trim().min(1, a.referralSourceRequired),
     serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
-    otpChannel: z.enum(["EMAIL", "PHONE"]),
   });
 }
 
-function buildLoginSchema(a: Dictionary["auth"]) {
+function buildLoginSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
   return z.object({
-    identifier: z.string().trim().min(1, a.identifierRequired),
+    email: z.string().trim().email(v.emailInvalid),
     password: z.string().min(1, a.passwordRequired),
   });
 }
@@ -70,31 +67,9 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 1)}${"*".repeat(Math.max(local.length - 1, 1))}@${domain}`;
 }
 
-function maskPhone(phone: string): string {
-  const last4 = phone.slice(-4);
-  return `${"•".repeat(Math.max(phone.length - 4, 0))}${last4}`;
-}
-
-async function sendOtpCode(
-  channel: "EMAIL" | "PHONE",
-  { email, phone, name, code }: { email: string; phone: string; name: string; code: string },
-  locale: Locale,
-): Promise<boolean> {
-  if (channel === "EMAIL") {
-    return sendOtpEmail({ to: email, name, code, locale });
-  }
-  return sendSms({
-    to: phone,
-    body:
-      locale === "ar"
-        ? `كود التحقق الخاص بك في Let It Out هو ${code}. صالح لمدة 10 دقائق.`
-        : `Your Let It Out verification code is ${code}. It expires in 10 minutes.`,
-  });
-}
-
 export type SignupFormState =
   | { error: string }
-  | { pendingSignupId: string; channel: "EMAIL" | "PHONE"; destination: string }
+  | { pendingSignupId: string; destination: string }
   | undefined;
 
 /** Step 1 of signup: validates the form, stashes it as a PendingSignup (no
@@ -111,78 +86,63 @@ export async function requestSignupOtp(
   const parsed = buildSignupSchema(dict.validation, a).safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
-    phone: formData.get("phone"),
     password: formData.get("password"),
     birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
     country: formData.get("country"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
-    otpChannel: formData.get("otpChannel") || "EMAIL",
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
-  const { name, email, phone, password, birthYear, gender, country, referralSource, serviceInterests, otpChannel } =
-    parsed.data;
+  const { name, email, password, birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
 
-  if (otpChannel === "PHONE" && !isSmsOtpEnabled()) {
-    return { error: a.smsNotAvailable };
-  }
-
-  // Every OTP request sends a real email or SMS (SMS costs money per
-  // message) — without this, requestSignupOtp is an open OTP-bombing
-  // primitive against any email/phone, not just the caller's own.
+  // Every OTP request sends a real email — without this, requestSignupOtp
+  // is an open OTP-bombing primitive against any address, not just the
+  // caller's own.
   const ip = await getClientIp();
   const rateLimitOk = await checkRateLimit("signup-otp", ip, { windowMs: 10 * 60 * 1000, max: 5 });
   if (!rateLimitOk) {
     return { error: a.couldNotSendCode };
   }
 
-  const existingUser = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
+  const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    return {
-      error: existingUser.email === email ? a.accountEmailExists : a.accountPhoneExists,
-    };
+    return { error: a.accountEmailExists };
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
   const code = generateOtpCode();
 
   // Replace, don't update — any previous unfinished attempt for this
-  // email/phone is superseded by this one.
-  await prisma.pendingSignup.deleteMany({ where: { OR: [{ email }, { phone }] } });
+  // email is superseded by this one.
+  await prisma.pendingSignup.deleteMany({ where: { email } });
 
   const pending = await prisma.pendingSignup.create({
     data: {
       name,
       email,
-      phone,
       passwordHash,
       birthYear: Number(birthYear),
       gender,
       country,
       referralSource,
       serviceInterests,
-      otpChannel,
       otpCodeHash: hashOtpCode(code),
       otpExpiresAt: new Date(Date.now() + OTP_TTL_MS),
     },
   });
 
-  const sent = await sendOtpCode(otpChannel, { email, phone, name, code }, locale);
+  const sent = await sendOtpEmail({ to: email, name, code, locale });
   if (!sent) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
     return { error: a.couldNotSendCode };
   }
 
-  return {
-    pendingSignupId: pending.id,
-    channel: otpChannel,
-    destination: otpChannel === "EMAIL" ? maskEmail(email) : maskPhone(phone),
-  };
+  return { pendingSignupId: pending.id, destination: maskEmail(email) };
 }
 
 function buildOtpVerifySchema(a: Dictionary["auth"]) {
@@ -231,23 +191,18 @@ export async function verifySignupOtp(
     return { error: a.codeIncorrect };
   }
 
-  // Re-check uniqueness in case the email/phone got claimed by someone else
-  // while this signup sat unverified.
-  const existingUser = await prisma.user.findFirst({
-    where: { OR: [{ email: pending.email }, { phone: pending.phone }] },
-  });
+  // Re-check uniqueness in case the email got claimed by someone else while
+  // this signup sat unverified.
+  const existingUser = await prisma.user.findUnique({ where: { email: pending.email } });
   if (existingUser) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return {
-      error: existingUser.email === pending.email ? a.accountEmailExists : a.accountPhoneExists,
-    };
+    return { error: a.accountEmailExists };
   }
 
   const user = await prisma.user.create({
     data: {
       name: pending.name,
       email: pending.email,
-      phone: pending.phone,
       passwordHash: pending.passwordHash,
       birthYear: pending.birthYear,
       gender: pending.gender,
@@ -312,7 +267,7 @@ export async function resendSignupOtp(
     return { error: a.resendCooldown };
   }
 
-  // Same reasoning as requestSignupOtp: this sends a real email/SMS, and the
+  // Same reasoning as requestSignupOtp: this sends a real email, and the
   // per-record cooldown above only throttles resends against one specific
   // pending signup — an IP could still cycle through many different pending
   // signups without it.
@@ -323,11 +278,7 @@ export async function resendSignupOtp(
   }
 
   const code = generateOtpCode();
-  const sent = await sendOtpCode(
-    pending.otpChannel,
-    { email: pending.email, phone: pending.phone, name: pending.name, code },
-    locale,
-  );
+  const sent = await sendOtpEmail({ to: pending.email, name: pending.name, code, locale });
   if (!sent) {
     return { error: a.couldNotResendCode };
   }
@@ -348,8 +299,8 @@ export async function loginAction(
   const dict = getDictionary(locale);
   const a = dict.auth;
 
-  const parsed = buildLoginSchema(a).safeParse({
-    identifier: formData.get("identifier"),
+  const parsed = buildLoginSchema(dict.validation, a).safeParse({
+    email: formData.get("email"),
     password: formData.get("password"),
   });
 
@@ -357,9 +308,9 @@ export async function loginAction(
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
-  const { identifier, password } = parsed.data;
+  const { email, password } = parsed.data;
 
-  const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { phone: identifier }] } });
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
     return { error: a.incorrectLogin };
   }
