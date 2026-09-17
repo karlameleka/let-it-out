@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Info, HeartHandshake, Users, ShoppingBag, Newspaper, Settings, LogOut, LogIn, UserPlus, ChevronRight } from "lucide-react";
+import { UserCircle, Info, HeartHandshake, Users, ShoppingBag, Newspaper, Settings, LogOut, LogIn, UserPlus, ChevronRight } from "lucide-react";
 import { Container, Eyebrow } from "@/components/ui";
 import { getCurrentUser } from "@/lib/session";
 import { logoutAction } from "@/lib/auth-actions";
@@ -49,6 +49,7 @@ export default async function MenuPage() {
   const t = dict.nav;
 
   const NAV_LINKS = [
+    ...(user ? [{ href: "/profile", label: t.myProfile, icon: UserCircle }] : []),
     { href: "/about", label: t.about, icon: Info },
     { href: "/counseling", label: t.counseling, icon: HeartHandshake },
     { href: "/workshops", label: t.workshops, icon: Users },

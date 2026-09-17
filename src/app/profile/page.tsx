@@ -1,0 +1,81 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { getUpcomingPageData, getPastItems } from "@/lib/upcoming-items";
+import { getArticles, localizeArticle } from "@/lib/content/articles";
+import { formatSlotTime } from "@/lib/format-slot";
+import { Container, Eyebrow, ButtonLink } from "@/components/ui";
+import ProfileClient from "./profile-client";
+
+export const metadata: Metadata = { title: "My Profile" };
+
+export default async function ProfilePage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = dict.profile;
+
+  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles] = await Promise.all([
+    getUpcomingPageData(user.email, user.userId, locale),
+    getPastItems(user.email, user.userId, locale),
+    getArticles(),
+  ]);
+  const articles = rawArticles.map((a) => localizeArticle(a, locale));
+
+  const nextSession = upcomingSessions.find((s) => s.status !== "CANCELLED") ?? null;
+  const lastPastSession = pastSessions[0] ?? null;
+
+  const dateFormatter = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+
+  function formatSessionDateTime(date: string, time?: string | null) {
+    const base = dateFormatter.format(new Date(`${date}T00:00:00`));
+    return time ? `${base} · ${formatSlotTime(time, locale)}` : base;
+  }
+
+  return (
+    <Container className="max-w-2xl pt-6 pb-10 sm:pt-14 sm:pb-20">
+      <Eyebrow>{t.title}</Eyebrow>
+      <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">{t.title}</h1>
+      <p className="mt-2 text-sm text-ink/60">{t.subtitle}</p>
+
+      <ProfileClient userId={user.userId} locale={locale} articles={articles} dict={t} />
+
+      <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-brand-900">{t.sessionsTitle}</h2>
+        <div className="mt-4 space-y-3">
+          <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{t.nextUpcoming}</p>
+            {nextSession ? (
+              <p className="mt-1 text-sm text-ink/80">
+                {nextSession.counselorName} · {formatSessionDateTime(nextSession.date, nextSession.time)}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-ink/50">{t.noUpcoming}</p>
+            )}
+          </div>
+          <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{t.mostRecent}</p>
+            {lastPastSession ? (
+              <p className="mt-1 text-sm text-ink/80">
+                {lastPastSession.counselorName} · {formatSessionDateTime(lastPastSession.date, lastPastSession.time)}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-ink/50">{t.noPast}</p>
+            )}
+          </div>
+        </div>
+        <ButtonLink href="/upcoming" variant="outline" className="mt-4 w-full">
+          {t.viewAllSessions}
+        </ButtonLink>
+      </div>
+    </Container>
+  );
+}
