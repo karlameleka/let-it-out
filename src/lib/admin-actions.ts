@@ -215,10 +215,41 @@ export async function deleteOrder(formData: FormData) {
 }
 
 export async function deleteBookingRequest(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const bookingId = String(formData.get("bookingId"));
-  await prisma.bookingRequest.delete({ where: { id: bookingId } });
+  const deleted = await prisma.bookingRequest.delete({ where: { id: bookingId } });
+  await logAudit({
+    actor: admin,
+    action: "booking_request.deleted",
+    summary: `Deleted booking request from ${deleted.name}`,
+    targetType: "BookingRequest",
+    targetId: bookingId,
+    severity: "WARNING",
+  });
   revalidatePath("/admin/bookings");
+}
+
+// SessionBooking has no FK pointing at it (ReflectionPrompt.sourceId is a
+// plain string, kept for traceability only — see its model comment), so
+// this is a safe, direct delete with nothing else to clean up first,
+// unlike deleteOrder/deleteProduct/deleteCounselor above which have real
+// child rows or history checks to consider. Deletes a *paid* session, so
+// this is audited at WARNING like every other admin delete of a real
+// financial record.
+export async function deleteSessionBooking(formData: FormData) {
+  const admin = await requireAdmin();
+  const bookingId = String(formData.get("bookingId"));
+  const deleted = await prisma.sessionBooking.delete({ where: { id: bookingId } });
+  await logAudit({
+    actor: admin,
+    action: "session_booking.deleted",
+    summary: `Deleted session booking for ${deleted.name} (${deleted.priceEGP - deleted.discountEGP} EGP, ${deleted.status})`,
+    targetType: "SessionBooking",
+    targetId: bookingId,
+    severity: "WARNING",
+  });
+  revalidatePath("/admin/bookings");
+  revalidatePath("/upcoming");
 }
 
 export async function deleteWorkshopInquiry(formData: FormData) {

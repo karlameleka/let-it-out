@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { deleteBookingRequest, markSessionBookingPaid } from "@/lib/admin-actions";
+import { deleteBookingRequest, deleteSessionBooking, markSessionBookingPaid } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import SessionBookingEditForm from "./session-booking-edit-form";
 import BookingRequestEditForm from "./booking-request-edit-form";
@@ -87,6 +87,15 @@ export default async function AdminBookingsPage({
                     }}
                     counselors={counselors}
                   />
+                  <form action={deleteSessionBooking}>
+                    <input type="hidden" name="bookingId" value={b.id} />
+                    <ConfirmSubmitButton
+                      confirmMessage={`Delete this paid session booking for ${b.name} permanently? This removes the record of a real ${b.priceEGP - b.discountEGP} EGP payment and can't be undone.`}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </ConfirmSubmitButton>
+                  </form>
                 </div>
               </div>
             </div>
