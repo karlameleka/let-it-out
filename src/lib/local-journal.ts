@@ -47,6 +47,17 @@ export type MoodPatterns = {
   heatmap: { date: string; moods: string[] }[];
 };
 
+export type MoodCalendarDay = { date: string; day: number; moods: string[] };
+
+export type MoodCalendarMonth = {
+  year: number;
+  month: number; // 0-11
+  leadingBlanks: number;
+  days: MoodCalendarDay[];
+  frequency: { id: string; label: string; color: string; count: number; percent: number }[];
+  totalEntries: number;
+};
+
 type StoredEntry = {
   id: string;
   encContent: { iv: string; data: string };
@@ -372,4 +383,63 @@ export async function getMoodPatterns(userId: string, locale: Locale = "en"): Pr
   }
 
   return { frequency, topMood, totalWithMood, heatmap };
+}
+
+/** One calendar month's worth of moods — for the calendar view on the
+ * patterns page, navigable by month rather than a fixed rolling window.
+ * `leadingBlanks` is how many empty cells the grid needs before day 1
+ * (0 = the month starts on a Sunday). */
+export async function getMoodCalendarMonth(
+  userId: string,
+  year: number,
+  month: number,
+  locale: Locale = "en",
+): Promise<MoodCalendarMonth> {
+  const db = await openDb(userId);
+  const stored = await getAllStored(db);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingBlanks = new Date(year, month, 1).getDay();
+
+  const moodsByDate = new Map<string, string[]>();
+  const counts = new Map<string, number>();
+  for (const e of stored) {
+    const key = e.createdAt.slice(0, 10);
+    const [y, m] = key.split("-").map(Number);
+    if (y !== year || m !== month + 1) continue;
+    const moods = normalizeMoods(e.mood);
+    if (moods.length === 0) continue;
+    const existing = moodsByDate.get(key);
+    if (existing) existing.push(...moods);
+    else moodsByDate.set(key, [...moods]);
+    for (const mood of moods) counts.set(mood, (counts.get(mood) ?? 0) + 1);
+  }
+  const totalEntries = [...counts.values()].reduce((a, b) => a + b, 0);
+
+  const frequency = MOODS.map((m) => ({
+    id: m.id,
+    label: locale === "ar" ? m.labelAr : m.label,
+    color: m.color,
+    count: counts.get(m.id) ?? 0,
+    percent: totalEntries > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalEntries) * 100) : 0,
+  }))
+    .filter((m) => m.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const days: MoodCalendarDay[] = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    days.push({ date: key, day: d, moods: moodsByDate.get(key) ?? [] });
+  }
+
+  return { year, month, leadingBlanks, days, frequency, totalEntries };
+}
+
+/** Whether this account has ever logged a mood, anywhere in its history —
+ * used to tell "nothing logged this month, try another one" apart from
+ * "no mood data at all yet" on the calendar view. */
+export async function hasAnyMoodEntries(userId: string): Promise<boolean> {
+  const db = await openDb(userId);
+  const stored = await getAllStored(db);
+  return stored.some((e) => normalizeMoods(e.mood).length > 0);
 }
