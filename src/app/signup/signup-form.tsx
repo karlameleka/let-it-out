@@ -26,7 +26,7 @@ import AppleAuthButton from "@/components/apple-auth-button";
 // honor padding-inline-start on native <select> text, so the icon and
 // the option text overlapped. Native form controls stay unstyled.
 const selectClasses =
-  "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-brand-500";
+  "w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-500";
 
 function Pill({
   checked,
@@ -35,10 +35,10 @@ function Pill({
 }: { checked: boolean; children: React.ReactNode } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label
-      className={`cursor-pointer rounded-full border px-3.5 py-2 text-xs font-medium transition-all duration-300 ease-out ${
+      className={`cursor-pointer rounded-full border px-4 py-2.5 text-sm font-medium transition-all duration-300 ease-out ${
         checked
           ? "border-brand-600 bg-white text-brand-800 shadow-sm shadow-brand-900/10"
-          : "border-brand-200 bg-white/60 text-ink/60 hover:border-brand-400 hover:shadow-[0_0_0_4px_rgba(30,91,115,0.08)]"
+          : "border-brand-200 bg-white/70 text-ink/65 hover:border-brand-400 hover:shadow-[0_0_0_4px_rgba(30,91,115,0.08)]"
       }`}
     >
       <input {...props} checked={checked} className="sr-only" />
@@ -187,10 +187,10 @@ export default function SignupForm({
           <p className="mt-1 text-xs text-ink/50">{t.passwordHint}</p>
         </div>
 
-        <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
+        <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-5 sm:p-6">
           <Eyebrow>{t.aboutYouLabel}</Eyebrow>
 
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="birthYear" className="sr-only">{t.birthYear}</label>
               <select id="birthYear" name="birthYear" defaultValue="" required className={selectClasses}>
@@ -211,63 +211,65 @@ export default function SignupForm({
             </div>
           </div>
 
-          <div className="mt-4">
-            <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-ink/60">
-              <UserRound className="h-3.5 w-3.5 text-brand-400" strokeWidth={2} />
-              {t.gender}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {GENDERS.map((g, i) => (
-                <Pill
-                  key={g}
-                  type="radio"
-                  name="gender"
-                  value={g}
-                  checked={gender === g}
-                  onChange={() => setGender(g)}
-                >
-                  {isAr ? GENDERS_AR[i] : g}
-                </Pill>
-              ))}
+          <div className="mt-6 space-y-6">
+            <div>
+              <p className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-ink/75">
+                <UserRound className="h-4 w-4 text-brand-500" strokeWidth={2} />
+                {t.gender}
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                {GENDERS.map((g, i) => (
+                  <Pill
+                    key={g}
+                    type="radio"
+                    name="gender"
+                    value={g}
+                    checked={gender === g}
+                    onChange={() => setGender(g)}
+                  >
+                    {isAr ? GENDERS_AR[i] : g}
+                  </Pill>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-ink/60">
-              <Compass className="h-3.5 w-3.5 text-brand-400" strokeWidth={2} />
-              {t.referralSource}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {REFERRAL_SOURCES.map((r, i) => (
-                <Pill
-                  key={r}
-                  type="radio"
-                  name="referralSource"
-                  value={r}
-                  checked={referralSource === r}
-                  onChange={() => setReferralSource(r)}
-                >
-                  {isAr ? REFERRAL_SOURCES_AR[i] : r}
-                </Pill>
-              ))}
+            <div>
+              <p className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-ink/75">
+                <Compass className="h-4 w-4 text-brand-500" strokeWidth={2} />
+                {t.referralSource}
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                {REFERRAL_SOURCES.map((r, i) => (
+                  <Pill
+                    key={r}
+                    type="radio"
+                    name="referralSource"
+                    value={r}
+                    checked={referralSource === r}
+                    onChange={() => setReferralSource(r)}
+                  >
+                    {isAr ? REFERRAL_SOURCES_AR[i] : r}
+                  </Pill>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4">
-            <p className="mb-1.5 text-xs font-medium text-ink/60">{t.serviceInterests}</p>
-            <div className="flex flex-wrap gap-2">
-              {SERVICE_INTERESTS.map((s, i) => (
-                <Pill
-                  key={s}
-                  type="checkbox"
-                  name="serviceInterests"
-                  value={s}
-                  checked={interests.includes(s)}
-                  onChange={() => toggleInterest(s)}
-                >
-                  {isAr ? SERVICE_INTERESTS_AR[i] : s}
-                </Pill>
-              ))}
+            <div>
+              <p className="mb-2.5 text-sm font-semibold text-ink/75">{t.serviceInterests}</p>
+              <div className="flex flex-wrap gap-2.5">
+                {SERVICE_INTERESTS.map((s, i) => (
+                  <Pill
+                    key={s}
+                    type="checkbox"
+                    name="serviceInterests"
+                    value={s}
+                    checked={interests.includes(s)}
+                    onChange={() => toggleInterest(s)}
+                  >
+                    {isAr ? SERVICE_INTERESTS_AR[i] : s}
+                  </Pill>
+                ))}
+              </div>
             </div>
           </div>
         </div>
