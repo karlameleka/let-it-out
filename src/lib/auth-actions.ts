@@ -320,7 +320,7 @@ export async function loginAction(
   }
 
   if (!user.passwordHash) {
-    return { error: a.googleOnlyAccount };
+    return { error: user.appleId ? a.appleOnlyAccount : a.googleOnlyAccount };
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
@@ -403,8 +403,8 @@ export async function changePasswordAction(
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return { error: a.accountNotFound };
 
-  // Accounts created via Google sign-in have no password yet — this becomes
-  // a "set a password" flow instead of "change password" for them.
+  // Accounts created via Google/Apple sign-in have no password yet — this
+  // becomes a "set a password" flow instead of "change password" for them.
   if (user.passwordHash) {
     if (!parsed.data.currentPassword) {
       return { error: a.currentPasswordRequired };
@@ -444,8 +444,8 @@ export async function deleteAccountAction(
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return { error: a.accountNotFound };
 
-  // Accounts created via Google sign-in have no password to confirm with —
-  // the session cookie is already the authorization for this request.
+  // Accounts created via Google/Apple sign-in have no password to confirm
+  // with — the session cookie is already the authorization for this request.
   if (user.passwordHash) {
     if (!parsed.data.password) {
       return { error: a.passwordRequired };

@@ -7,6 +7,7 @@ import SignupForm from "./signup-form";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { isGoogleSignInEnabled } from "@/lib/google-auth";
+import { isAppleSignInEnabled } from "@/lib/apple-auth";
 
 export const metadata: Metadata = { title: "Sign Up" };
 
@@ -15,6 +16,7 @@ export default async function SignupPage() {
   const dict = getDictionary(locale);
   const t = dict.auth;
   const googleEnabled = isGoogleSignInEnabled();
+  const appleEnabled = isAppleSignInEnabled();
 
   return (
     <section className="grid md:min-h-[calc(100vh-73px)] md:grid-cols-2">
@@ -38,7 +40,7 @@ export default async function SignupPage() {
         <div className="flex justify-center px-4 pb-10 sm:px-6 sm:pb-16">
           <Container className="mx-auto max-w-sm px-0">
             <div className="mt-6 md:mt-8">
-              <SignupForm dict={dict} locale={locale} googleEnabled={googleEnabled} />
+              <SignupForm dict={dict} locale={locale} googleEnabled={googleEnabled} appleEnabled={appleEnabled} />
             </div>
             <p className="mt-6 text-sm text-ink/60">
               {t.alreadyHaveAccount}{" "}

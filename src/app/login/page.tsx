@@ -7,13 +7,17 @@ import LoginForm from "./login-form";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { isGoogleSignInEnabled } from "@/lib/google-auth";
+import { isAppleSignInEnabled } from "@/lib/apple-auth";
 
 export const metadata: Metadata = { title: "Log In" };
 
-const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
   google_not_configured: "Google sign-in isn't set up yet. Please log in with your email and password.",
   google_auth_failed: "Google sign-in failed. Please try again.",
   google_email_unverified: "Your Google email isn't verified. Please verify it with Google first.",
+  apple_not_configured: "Apple sign-in isn't set up yet. Please log in with your email and password.",
+  apple_auth_failed: "Apple sign-in failed. Please try again.",
+  apple_email_unverified: "Your Apple email isn't verified. Please verify it with Apple first.",
 };
 
 export default async function LoginPage({
@@ -25,7 +29,8 @@ export default async function LoginPage({
   const { error } = await searchParams;
   const t = dict.auth;
   const googleEnabled = isGoogleSignInEnabled();
-  const errorMessage = error ? GOOGLE_ERROR_MESSAGES[error] : undefined;
+  const appleEnabled = isAppleSignInEnabled();
+  const errorMessage = error ? AUTH_ERROR_MESSAGES[error] : undefined;
 
   return (
     <section className="grid md:min-h-[calc(100vh-73px)] md:grid-cols-2">
@@ -49,7 +54,7 @@ export default async function LoginPage({
         <div className="flex justify-center px-4 pb-10 sm:px-6 sm:pb-16">
           <Container className="mx-auto max-w-sm px-0">
             <div className="mt-6 md:mt-8">
-              <LoginForm dict={dict} googleEnabled={googleEnabled} error={errorMessage} />
+              <LoginForm dict={dict} googleEnabled={googleEnabled} appleEnabled={appleEnabled} error={errorMessage} />
             </div>
             <p className="mt-6 text-sm text-ink/60">
               {t.noAccount}{" "}

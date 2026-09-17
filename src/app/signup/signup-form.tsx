@@ -18,6 +18,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 import PrivacyBadge from "@/components/privacy-badge";
 import GoogleAuthButton from "@/components/google-auth-button";
+import AppleAuthButton from "@/components/apple-auth-button";
 
 // Plain, unstyled native <select> — matching the sitewide convention used
 // everywhere else (checkout, etc.). A leading icon + custom padding was
@@ -105,10 +106,12 @@ export default function SignupForm({
   dict,
   locale,
   googleEnabled = false,
+  appleEnabled = false,
 }: {
   dict: Dictionary;
   locale: Locale;
   googleEnabled?: boolean;
+  appleEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(requestSignupOtp, undefined);
   const [interests, setInterests] = useState<string[]>([]);
@@ -130,9 +133,12 @@ export default function SignupForm({
 
   return (
     <div className="space-y-4">
-      {googleEnabled && (
+      {(googleEnabled || appleEnabled) && (
         <>
-          <GoogleAuthButton label={t.continueWithGoogle} />
+          <div className="space-y-2.5">
+            {appleEnabled && <AppleAuthButton label={t.continueWithApple} />}
+            {googleEnabled && <GoogleAuthButton label={t.continueWithGoogle} />}
+          </div>
           <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-ink/40">
             <span className="h-px flex-1 bg-brand-100" />
             {t.orDivider}

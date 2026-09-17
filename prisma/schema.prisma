@@ -32,6 +32,10 @@ model User {
   // repeat sign-ins without depending on email.
   googleId String? @unique
 
+  // Same idea as googleId, for "Sign in with Apple" — Apple's stable
+  // per-user, per-Services-ID identifier (the id_token's "sub" claim).
+  appleId String? @unique
+
   // Short human-readable identifier shown on the admin client list (e.g.
   // over phone/email support) — never the raw internal id. Assigned by a
   // DB sequence via generate_account_code(); see the account_code
