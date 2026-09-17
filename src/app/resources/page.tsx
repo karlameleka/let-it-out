@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, Brain, Wind } from "lucide-react";
 import { Container, SectionHeading } from "@/components/ui";
-import { Ribbon, Swash } from "@/components/decor";
+import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import { JournalIcon } from "@/components/lio-icons";
 import ArticleFilter from "./article-filter";
 import { Reveal } from "@/components/reveal";
@@ -175,25 +175,22 @@ export default async function ResourcesPage() {
 
   return (
     <>
-      <section
-        className="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 pt-6 pb-10 text-white sm:pt-14 sm:pb-16"
-        style={{ clipPath: "polygon(0 0, 100% 0, 100% 94%, 0 100%)" }}
-      >
-        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-10 left-10 h-40 w-40 rounded-full bg-white/10" />
-        <Container className="relative">
-          <Ribbon tone="dark">{t.ribbon}</Ribbon>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-white sm:text-5xl">
+      <section className="bg-brand-50 pt-6 pb-4 sm:pt-14 sm:pb-20">
+        <Container>
+          <Ribbon>{t.ribbon}</Ribbon>
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
             {t.heroTitlePrefix}{" "}
-            <span className="mark-swash italic text-brand-200">
+            <span className="mark-swash italic text-brand-700">
               {t.heroTitleHighlight}
               <Swash />
             </span>
             .
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-brand-50/85">{t.heroDescription}</p>
+          <p className="mt-5 max-w-2xl text-lg text-ink/70">{t.heroDescription}</p>
         </Container>
       </section>
+
+      <WaveDivider fill="fill-white" />
 
       {myToolsSection}
 
