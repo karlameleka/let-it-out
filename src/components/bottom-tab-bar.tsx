@@ -35,14 +35,25 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
             key={href}
             href={href}
             onClick={hapticTap}
-            className={`flex flex-1 flex-col items-center gap-1 pb-1 pt-2.5 text-[11.5px] font-bold transition-colors ${
+            className={`flex flex-1 flex-col items-center gap-1 pb-1 pt-2.5 text-[11.5px] font-bold transition-colors duration-300 ${
               active ? "text-brand-700" : "text-ink/40"
             }`}
           >
-            <span className="relative">
+            {/* Rises out of the bar into a filled circle on activation —
+                same "pop up" treatment for every tab, active or not, just
+                animated between the two states via the transform/size
+                transition below (no JS animation needed: clicking a tab
+                navigates, which flips `active`, which transitions). */}
+            <span
+              className={`relative flex items-center justify-center rounded-full transition-all duration-300 ease-out ${
+                active
+                  ? "-translate-y-3.5 h-14 w-14 bg-brand-700 text-white shadow-lg shadow-brand-900/30"
+                  : "translate-y-0 h-9 w-9 bg-transparent text-current"
+              }`}
+            >
               <Icon className="h-7 w-7" strokeWidth={active ? 2.5 : 1.9} />
               {badge > 0 && (
-                <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-700 px-1 text-[10px] font-semibold leading-none text-white">
+                <span className="absolute -right-1 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-700 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
                   {badge}
                 </span>
               )}
