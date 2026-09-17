@@ -1,29 +1,107 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Sparkles, Bell, HeartHandshake, type LucideIcon } from "lucide-react";
-import { JournalIcon } from "@/components/lio-icons";
+import Image from "next/image";
+import { ArrowLeft, ArrowRight, Sparkles, PlusCircle, Bell, BadgeCheck } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { hapticTap } from "@/lib/haptics";
 
 type SlideId = "welcome" | "journal" | "reminders" | "counseling";
 
-const FEATURE_ICONS: Partial<Record<SlideId, LucideIcon>> = {
-  welcome: Sparkles,
-  reminders: Bell,
-  counseling: HeartHandshake,
-};
-
-function SlideIllustration({ id }: { id: SlideId }) {
-  const Icon = FEATURE_ICONS[id];
+/** Phone-frame shell for the journal/reminders/counseling slides — a
+ * smaller sibling of install-preview.tsx's PhoneFrame, sized to fit the
+ * carousel's diagonal hero band instead of a wide two-column page. */
+function MiniPhone({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-sm sm:h-32 sm:w-32">
-      {id === "journal" ? (
-        <JournalIcon className="h-14 w-14 text-white sm:h-16 sm:w-16" />
-      ) : Icon ? (
-        <Icon className="h-14 w-14 text-white sm:h-16 sm:w-16" strokeWidth={1.6} />
-      ) : null}
+    <div className="w-[92px] rounded-[16px] bg-white/15 p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-sm sm:w-[102px]">
+      <div className="relative h-[152px] overflow-hidden rounded-[11px] bg-white sm:h-[168px]">
+        <div className="absolute left-1/2 top-0 h-2 w-8 -translate-x-1/2 rounded-b-md bg-brand-900/80" />
+        {children}
+      </div>
     </div>
+  );
+}
+
+function JournalPreviewScreen({ dict }: { dict: Dictionary["install"] }) {
+  return (
+    <>
+      <div className="bg-brand-50 px-2 pb-1.5 pt-3.5">
+        <p className="text-[5.5px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewSelfExploration}</p>
+        <p className="mt-0.5 font-display text-[8px] font-medium text-brand-900">{dict.previewWelcomeBack}</p>
+        <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-700 px-1.5 py-0.5 text-[5.5px] font-semibold text-white">
+          <PlusCircle className="h-1.5 w-1.5" strokeWidth={2} />
+          {dict.previewNewEntry}
+        </div>
+      </div>
+      <div className="px-2 py-1.5">
+        <div className="rounded-md border border-brand-100 bg-white p-1.5">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500" />
+          <p className="mt-1 line-clamp-2 text-[6.5px] leading-tight text-ink/70">{dict.previewEntry1}</p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function RemindersPreviewScreen({ dict }: { dict: Dictionary["onboarding"] }) {
+  return (
+    <div className="bg-brand-50 px-2 pb-2 pt-3.5">
+      <p className="text-[5.5px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewRemindersEyebrow}</p>
+      <p className="mt-0.5 font-display text-[8px] font-medium text-brand-900">{dict.previewRemindersHeading}</p>
+      <div className="mt-2 flex items-center justify-between rounded-md border border-brand-100 bg-white p-1.5">
+        <span className="flex items-center gap-1">
+          <Bell className="h-2 w-2 text-brand-700" strokeWidth={2} />
+          <span className="text-[6px] font-medium text-ink/80">{dict.previewRemindersLabel}</span>
+        </span>
+        <span className="relative h-2 w-4 shrink-0 rounded-full bg-brand-700">
+          <span className="absolute right-0.5 top-0.5 h-1 w-1 rounded-full bg-white" />
+        </span>
+      </div>
+      <p className="mt-1 text-[5.5px] font-medium text-ink/40">{dict.previewRemindersTime}</p>
+    </div>
+  );
+}
+
+function CounselingPreviewScreen({ dict }: { dict: Dictionary["onboarding"] }) {
+  return (
+    <div className="bg-brand-50 px-2 pb-2 pt-3.5">
+      <p className="text-[5.5px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewCounselingEyebrow}</p>
+      <p className="mt-0.5 font-display text-[8px] font-medium text-brand-900">{dict.previewCounselingHeading}</p>
+      <div className="mt-2 rounded-md border border-brand-100 bg-white p-1.5">
+        <div className="flex items-center gap-1">
+          <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full">
+            <Image src="/counselors/verna-awad.jpg" alt="" fill sizes="20px" className="object-cover" />
+          </div>
+          <div className="min-w-0">
+            <p className="flex items-center gap-0.5 truncate text-[6px] font-semibold text-brand-900">
+              Verna Awad
+              <BadgeCheck className="h-1.5 w-1.5 shrink-0 text-brand-500" strokeWidth={2} />
+            </p>
+            <p className="truncate text-[5.5px] text-ink/50">{dict.previewCounselingCredentials}</p>
+          </div>
+        </div>
+        <div className="mt-1 rounded-full bg-brand-700 px-1.5 py-0.5 text-center text-[5.5px] font-semibold text-white">
+          {dict.previewCounselingCta}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SlideIllustration({ id, dict, installDict }: { id: SlideId; dict: Dictionary["onboarding"]; installDict: Dictionary["install"] }) {
+  if (id === "welcome") {
+    return (
+      <div className="relative flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-sm sm:h-32 sm:w-32">
+        <Sparkles className="h-14 w-14 text-white sm:h-16 sm:w-16" strokeWidth={1.6} />
+      </div>
+    );
+  }
+  return (
+    <MiniPhone>
+      {id === "journal" && <JournalPreviewScreen dict={installDict} />}
+      {id === "reminders" && <RemindersPreviewScreen dict={dict} />}
+      {id === "counseling" && <CounselingPreviewScreen dict={dict} />}
+    </MiniPhone>
   );
 }
 
@@ -41,11 +119,13 @@ export default function OnboardingCarousel({
   shouldShow,
   onShown,
   dict,
+  installDict,
 }: {
   firstName: string;
   shouldShow: boolean;
   onShown: () => void;
   dict: Dictionary["onboarding"];
+  installDict: Dictionary["install"];
 }) {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
@@ -119,7 +199,7 @@ export default function OnboardingCarousel({
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
         <div className="absolute -bottom-6 left-8 h-24 w-24 rounded-full bg-white/10" />
         <div className="flex h-full items-center justify-center pb-6">
-          <SlideIllustration id={slide.id} />
+          <SlideIllustration id={slide.id} dict={dict} installDict={installDict} />
         </div>
       </div>
 

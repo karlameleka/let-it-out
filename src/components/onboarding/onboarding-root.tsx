@@ -23,11 +23,13 @@ export default function OnboardingRoot({
   firstName,
   accountState,
   dict,
+  installDict,
 }: {
   loggedIn: boolean;
   firstName: string;
   accountState: OnboardingState | null;
   dict: Dictionary["onboarding"];
+  installDict: Dictionary["install"];
 }) {
   return (
     <OnboardingTourProvider>
@@ -43,6 +45,7 @@ export default function OnboardingRoot({
             });
           }}
           dict={dict}
+          installDict={installDict}
         />
       ) : (
         <OnboardingGuestFlow dict={dict} />

@@ -118,6 +118,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                     firstName={user?.name.split(" ")[0] ?? ""}
                     accountState={onboardingState}
                     dict={dict.onboarding}
+                    installDict={dict.install}
                   />
                 )}
               </UpcomingProvider>
