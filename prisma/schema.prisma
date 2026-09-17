@@ -694,6 +694,11 @@ model Product {
   promoCodes PromoCodeProduct[]
 }
 
+// EBOOK is intentionally kept even though nothing creates or sells that
+// format anymore (see the 20260917190000_remove_ebook_purchase_option
+// migration) — Postgres can't drop an enum value without recreating the
+// type, which fails if any row still references it, so it's left defined
+// but unused rather than risk that against data this schema can't inspect.
 enum ProductFormat {
   PHYSICAL
   EBOOK
@@ -706,10 +711,10 @@ model ProductVariant {
   format     ProductFormat
   priceEGP   Int
   sku        String        @unique
-  // Physical-stock count. Null means untracked/unlimited (e.g. the EBOOK
-  // format, which has no inventory to run out of). When set, the shop
-  // shows "Only N left" under a low-stock threshold and blocks purchase
-  // at 0.
+  // Physical-stock count. Null means untracked/unlimited. (Historically also
+  // used for the now-removed EBOOK format, which had no inventory to run
+  // out of.) When set, the shop shows "Only N left" under a low-stock
+  // threshold and blocks purchase at 0.
   stockCount Int?
 
   orderItems OrderItem[]

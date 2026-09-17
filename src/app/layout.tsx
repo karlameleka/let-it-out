@@ -8,6 +8,7 @@ import EntryGates from "@/components/entry-gates";
 import { SerwistProvider } from "@serwist/turbopack/react";
 import OfflineBanner from "@/components/offline-banner";
 import InitialSplash from "@/components/initial-splash";
+import NativeAppInit from "@/components/native-app-init";
 import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
 import AppBadgeSync from "@/components/app-badge-sync";
@@ -86,6 +87,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white text-ink pb-24 lg:pb-0">
+        <NativeAppInit />
         <InitialSplash />
         <OfflineBanner message={dict.offline.bannerMessage} />
         <CurrencyProvider>

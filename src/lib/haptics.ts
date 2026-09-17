@@ -1,14 +1,23 @@
 "use client";
 
+import { Capacitor } from "@capacitor/core";
+import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
+
 /**
- * Best-effort haptic tap via the Vibration API. Silently no-ops where
- * unsupported (notably iOS Safari, which doesn't implement navigator.vibrate
- * at all as of this writing — there's no web API for the Taptic Engine) or
- * where the user has motion/vibration disabled at the OS level. Durations
- * are short and deliberately restrained (10–20ms) to read as a tap, not a
- * buzz.
+ * Haptic tap/success/warning feedback. Inside the native iOS app (see
+ * capacitor.config.ts), this calls the real Taptic Engine via
+ * @capacitor/haptics — iOS Safari/PWA has no web API for it at all (there's
+ * no navigator.vibrate implementation on iOS), so the Vibration API fallback
+ * below only ever does anything on Android/desktop web. Capacitor.
+ * isNativePlatform() is false and side-effect-free in a plain browser, so
+ * these are safe to call from anywhere without a platform check at the
+ * call site.
  */
 export function hapticTap() {
+  if (Capacitor.isNativePlatform()) {
+    Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+    return;
+  }
   try {
     navigator.vibrate?.(10);
   } catch {
@@ -17,6 +26,10 @@ export function hapticTap() {
 }
 
 export function hapticSuccess() {
+  if (Capacitor.isNativePlatform()) {
+    Haptics.notification({ type: NotificationType.Success }).catch(() => {});
+    return;
+  }
   try {
     navigator.vibrate?.([10, 40, 15]);
   } catch {
@@ -25,6 +38,10 @@ export function hapticSuccess() {
 }
 
 export function hapticWarning() {
+  if (Capacitor.isNativePlatform()) {
+    Haptics.notification({ type: NotificationType.Warning }).catch(() => {});
+    return;
+  }
   try {
     navigator.vibrate?.(25);
   } catch {

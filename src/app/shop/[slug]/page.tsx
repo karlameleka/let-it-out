@@ -72,7 +72,10 @@ export default async function ProductPage({
               dict={t}
               variants={product.variants.map((v) => ({
                 id: v.id,
-                format: v.format,
+                // The query above already filters to format: "PHYSICAL" —
+                // Prisma's types don't narrow on a `where` filter, so this
+                // just states what the query guarantees at runtime.
+                format: v.format as "PHYSICAL",
                 priceEGP: v.priceEGP,
                 stockCount: v.stockCount,
               }))}

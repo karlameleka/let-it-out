@@ -9,7 +9,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 
 type Variant = {
   id: string;
-  format: "PHYSICAL" | "EBOOK";
+  format: "PHYSICAL";
   priceEGP: number;
   stockCount: number | null;
 };

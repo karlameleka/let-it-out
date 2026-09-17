@@ -41,6 +41,17 @@ node-compile-cache/
 # vercel
 .vercel
 
+# iOS (Capacitor) — the ios/ project itself is committed (it's the native
+# app shell), but these are per-machine Xcode artifacts that regenerate
+# automatically and would otherwise cause needless merge conflicts.
+ios/App/Pods/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+ios/App/DerivedData/
+ios/.build/
+ios/App/CapApp-SPM/.build/
+
 # offline database backups (npm run db:backup) — contain real user PII,
 # never commit these
 /backups/

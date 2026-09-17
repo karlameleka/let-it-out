@@ -54,7 +54,6 @@ export default async function ShopPolicyPage() {
               <li>{t.deliveryItem3}</li>
               <li>{t.deliveryItem4}</li>
               <li>{t.deliveryItem5}</li>
-              <li>{t.deliveryItem6}</li>
             </ul>
           </Section>
 
@@ -75,9 +74,6 @@ export default async function ShopPolicyPage() {
               </li>
               <li>
                 <strong>{t.refundItem4Label}</strong> {t.refundItem4Text}
-              </li>
-              <li>
-                <strong>{t.refundItem5Label}</strong> {t.refundItem5Text}
               </li>
             </ul>
           </Section>

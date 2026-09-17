@@ -12,9 +12,9 @@ export default async function AdminProductsPage() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink/60">
-        Set a stock number for physical journals. Leave it blank for unlimited/untracked (that&apos;s the
-        default for ebooks). The shop shows &ldquo;Only N left&rdquo; at 5 or fewer, and blocks purchase at 0.
-        Uncheck &ldquo;Visible&rdquo; to archive a product without deleting it.
+        Set a stock number for physical journals. Leave it blank for unlimited/untracked. The shop shows
+        &ldquo;Only N left&rdquo; at 5 or fewer, and blocks purchase at 0. Uncheck &ldquo;Visible&rdquo; to
+        archive a product without deleting it.
       </p>
       {products.map((product) => (
         <div key={product.id} className="rounded-2xl border border-brand-100 bg-white p-5">

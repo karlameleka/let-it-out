@@ -289,15 +289,15 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   });
 
   const shippingFeeSummary = !needsShipping
-    ? "N/A (ebook only)"
+    ? "N/A"
     : shippingCalculatedOnDelivery
       ? "Calculated upon delivery (outside Egypt)"
       : formatEGP(shippingFeeEGP);
   const isAr = locale === "ar";
   const shippingFeeSummaryLocalized = !needsShipping
     ? isAr
-      ? "غير منطبق (نسخة إلكترونية فقط)"
-      : "N/A (ebook only)"
+      ? "غير منطبق"
+      : "N/A"
     : shippingCalculatedOnDelivery
       ? isAr
         ? "يُحسب عند التسليم (خارج مصر)"
@@ -320,9 +320,9 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       { label: "Shipping fee", value: shippingFeeSummary },
       { label: "Total", value: formatEGP(totalEGP) },
       { label: "Payment method", value: paymentMethodLabel },
-      { label: "Country", value: needsShipping ? (country ?? "Not provided") : "N/A (ebook only)" },
+      { label: "Country", value: needsShipping ? (country ?? "Not provided") : "N/A" },
       { label: "Governorate", value: needsShipping && country === "Egypt" ? (governorate ?? "Not provided") : "N/A" },
-      { label: "Shipping address", value: needsShipping ? (shippingAddress ?? "Not provided") : "N/A (ebook only)" },
+      { label: "Shipping address", value: needsShipping ? (shippingAddress ?? "Not provided") : "N/A" },
       { label: "Google Maps link", value: needsShipping ? (googleMapsLink ?? "Not provided") : "N/A" },
     ],
   });
