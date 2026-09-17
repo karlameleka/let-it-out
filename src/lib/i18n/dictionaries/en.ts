@@ -297,6 +297,9 @@ const en = {
     promoFullyRedeemed: "That code has already been fully redeemed.",
     promoMinOrder: "This code needs a minimum session price of {amount}.",
     promoNotApplicable: "This code doesn't apply to this therapist.",
+    payWithInstapay: "Pay with InstaPay instead",
+    instapayNote:
+      "You'll be taken to InstaPay to pay manually. Keep your payment screenshot handy, we'll confirm your booking once we receive it.",
   },
   bookingForm: {
     receivedTitle: "Request received",
@@ -1506,6 +1509,21 @@ const en = {
       "Live chat isn't available right now. I've flagged this for our team and they'll follow up by email, sorry for the trouble.",
     somethingWrongReply: "Something went wrong on our end. I've flagged this for our team to follow up by email.",
     tellMeMoreFallback: "Could you tell me a bit more about what's happening?",
+  },
+  emailPreferences: {
+    pageTitle: "Email preferences",
+    invalidLinkTitle: "This link isn't valid",
+    invalidLinkBody: "It may be outdated or incomplete. Contact us if you need help.",
+    intro: "Manage what {email} receives from Let It Out.",
+    optOutLabel: "Turn off optional resource notifications",
+    optOutHint:
+      "When your counselor sends you a worksheet or link, you'll still see it in your account — just without an email.",
+    essentialNote:
+      "Account security emails (verification codes, password resets), order and booking confirmations, and session details always send — they're tied to something you're actively doing, not something you can opt out of.",
+    saveButton: "Save preferences",
+    saving: "Saving…",
+    saved: "Saved.",
+    genericError: "Something went wrong, please try again.",
   },
 };
 

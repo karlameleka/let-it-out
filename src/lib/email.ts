@@ -1,13 +1,24 @@
 import "server-only";
 import nodemailer from "nodemailer";
 import type { Locale } from "@/lib/i18n/locale";
+import { getBaseUrl } from "@/lib/base-url";
+import { emailPreferencesUrl, hasOptedOutOfNotifications } from "@/lib/email-preferences";
 
 /** Wraps an email's HTML body so it reads right-to-left when the recipient's
  * site language is Arabic — every customer-facing template below is built
- * with this, English-only staff/therapist emails are not. */
-function emailShell(bodyHtml: string, locale: Locale) {
+ * with this, English-only staff/therapist emails are not. Also appends a
+ * subtle "manage email preferences" footer line with a signed, no-login-
+ * required link for that recipient — see email-preferences.ts. */
+async function emailShell(bodyHtml: string, locale: Locale, recipientEmail: string) {
   const isAr = locale === "ar";
-  return `<div dir="${isAr ? "rtl" : "ltr"}" style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6; text-align: ${isAr ? "right" : "left"};">${bodyHtml}</div>`;
+  const baseUrl = await getBaseUrl();
+  const prefsUrl = emailPreferencesUrl(recipientEmail, baseUrl);
+  const footer = `
+    <p style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e9ea; font-size: 11px; color: #9aa8ad;">
+      <a href="${prefsUrl}" style="color: #9aa8ad;">${isAr ? "إدارة تفضيلات الإيميل" : "Manage email preferences"}</a>
+    </p>
+  `;
+  return `<div dir="${isAr ? "rtl" : "ltr"}" style="font-family: sans-serif; font-size: 14px; color: #123543; line-height: 1.6; text-align: ${isAr ? "right" : "left"};">${bodyHtml}${footer}</div>`;
 }
 
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "letitoutsupport@gmail.com";
@@ -134,7 +145,7 @@ export async function sendCustomerConfirmation({
     closingText,
   ].join("\n");
 
-  const html = emailShell(
+  const html = await emailShell(
     `
       <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
       <p>${escapeHtml(greeting)}</p>
@@ -157,6 +168,7 @@ export async function sendCustomerConfirmation({
       <p style="white-space: pre-line;">${escapeHtml(closingText)}</p>
     `,
     locale,
+    to,
   );
 
   try {
@@ -221,7 +233,7 @@ export async function sendWelcomeEmail({
       "مع خالص التحية،\nفريق Let It Out",
     ].join("\n");
 
-    const html = emailShell(
+    const html = await emailShell(
       `
         <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
         <p>أهلاً ${escapeHtml(name)}،</p>
@@ -260,6 +272,7 @@ export async function sendWelcomeEmail({
         <p>مع خالص التحية،<br />فريق Let It Out</p>
       `,
       locale,
+      to,
     );
 
     try {
@@ -299,7 +312,7 @@ export async function sendWelcomeEmail({
     "Warmly,\nThe Let It Out team",
   ].join("\n");
 
-  const html = emailShell(
+  const html = await emailShell(
     `
       <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
       <p>Hi ${escapeHtml(name)},</p>
@@ -338,6 +351,7 @@ export async function sendWelcomeEmail({
       <p>Warmly,<br />The Let It Out team</p>
     `,
     locale,
+    to,
   );
 
   try {
@@ -394,7 +408,7 @@ export async function sendOtpEmail({
         "This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.",
       ].join("\n");
 
-  const html = emailShell(
+  const html = await emailShell(
     isAr
       ? `
         <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
@@ -411,6 +425,7 @@ export async function sendOtpEmail({
         <p style="color: #6b7c80; font-size: 13px;">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email.</p>
       `,
     locale,
+    to,
   );
 
   try {
@@ -477,7 +492,7 @@ export async function sendPasswordResetEmail({
         "Warmly,\nThe Let It Out team",
       ].join("\n");
 
-  const html = emailShell(
+  const html = await emailShell(
     isAr
       ? `
         <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
@@ -500,6 +515,7 @@ export async function sendPasswordResetEmail({
         <p>Warmly,<br />The Let It Out team</p>
       `,
     locale,
+    to,
   );
 
   try {
@@ -629,7 +645,7 @@ export async function sendIntakeFormRequestEmail({
         "Warmly,\nThe Let It Out team",
       ].join("\n");
 
-  const html = emailShell(
+  const html = await emailShell(
     isAr
       ? `
         <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
@@ -661,6 +677,7 @@ export async function sendIntakeFormRequestEmail({
         <p>Warmly,<br />The Let It Out team</p>
       `,
     locale,
+    to,
   );
 
   try {
@@ -870,6 +887,14 @@ export async function sendAssignedResourceNotificationEmail({
     return;
   }
 
+  // The one genuinely optional email this app sends — see the
+  // EmailPreference model comment. Every other sender here is tied to
+  // something the recipient just did or an upcoming appointment and
+  // always sends regardless of this flag.
+  if (await hasOptedOutOfNotifications(to)) {
+    return;
+  }
+
   const isAr = locale === "ar";
   const kindLabel = ASSIGNED_RESOURCE_KIND_LABELS[kind][isAr ? "ar" : "en"];
   const greeting = isAr ? `أهلاً ${toName}،` : `Hi ${toName},`;
@@ -894,7 +919,7 @@ export async function sendAssignedResourceNotificationEmail({
         "Warmly,\nThe Let It Out team",
       ].join("\n");
 
-  const html = emailShell(
+  const html = await emailShell(
     isAr
       ? `
         <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
@@ -915,6 +940,7 @@ export async function sendAssignedResourceNotificationEmail({
         <p>Warmly,<br />The Let It Out team</p>
       `,
     locale,
+    to,
   );
 
   try {
@@ -981,7 +1007,7 @@ export async function sendMeetingLinkEmail({
         "Warmly,\nThe Let It Out team",
       ].join("\n");
 
-  const html = emailShell(
+  const html = await emailShell(
     isAr
       ? `
         <p style="font-family: Georgia, serif; font-size: 20px; color: #1e5b73; font-weight: 700; margin-bottom: 20px;">Let It Out</p>
@@ -1008,6 +1034,7 @@ export async function sendMeetingLinkEmail({
         <p>Warmly,<br />The Let It Out team</p>
       `,
     locale,
+    to,
   );
 
   try {

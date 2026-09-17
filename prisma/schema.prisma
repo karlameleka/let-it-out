@@ -1290,3 +1290,20 @@ model TrashedItem {
   @@index([deletedAt])
   @@index([modelName, originalId])
 }
+
+// One row per email address that has ever visited the "manage email
+// preferences" page (linked from the footer of every customer-facing
+// email, see emailShell in src/lib/email.ts) and changed something — a
+// missing row means "no preference set", i.e. receive everything. Keyed
+// by the raw lowercased email, not User.id, so it works the same way for
+// a guest who only ever submitted a contact form as for a full account
+// holder. notificationsOptOut only gates the one genuinely optional email
+// this app sends (a counselor assigning a resource) — every other email
+// (OTP, password reset, order/booking confirmations, meeting links,
+// intake requests) is essential to something the recipient asked for and
+// always sends regardless of this flag; the preferences page says so.
+model EmailPreference {
+  email               String   @id
+  notificationsOptOut Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+}
