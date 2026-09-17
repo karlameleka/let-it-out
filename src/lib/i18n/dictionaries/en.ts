@@ -105,7 +105,6 @@ const en = {
     carouselRemindersBody: "Turn on gentle daily reminders to pause and reflect, right from your account settings.",
     carouselCounselingHeadline: "Real Counselors, Real Support",
     carouselCounselingBody: "Browse licensed psychologists and book a session directly in the app, whenever you're ready.",
-    carouselSkip: "Skip",
     carouselNext: "Next",
     carouselBack: "Back",
     carouselGetStarted: "Get Started",

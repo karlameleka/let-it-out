@@ -75,14 +75,10 @@ export default function OnboardingCarousel({
   const isLast = index === slides.length - 1;
   const slide = slides[index];
 
-  function close() {
-    setOpen(false);
-  }
-
   function goNext() {
     hapticTap();
     if (isLast) {
-      close();
+      setOpen(false);
       return;
     }
     setIndex((i) => Math.min(slides.length - 1, i + 1));
@@ -163,15 +159,6 @@ export default function OnboardingCarousel({
               <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
           )}
-          {!isLast && (
-            <button
-              type="button"
-              onClick={close}
-              className="flex-1 rounded-2xl border-[1.5px] border-brand-200 px-5 py-4 text-center text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50 active:bg-brand-50"
-            >
-              {dict.carouselSkip}
-            </button>
-          )}
           <button
             type="button"
             onClick={goNext}
@@ -179,7 +166,7 @@ export default function OnboardingCarousel({
             className={
               isLast
                 ? "flex-1 rounded-2xl bg-brand-700 px-5 py-4 text-center text-sm font-semibold text-white shadow-sm shadow-brand-900/20 transition-all duration-300 hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:bg-brand-600 active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)]"
-                : "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-700 text-white shadow-sm shadow-brand-900/20 transition-all duration-300 hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:bg-brand-600"
+                : "ml-auto flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-700 text-white shadow-sm shadow-brand-900/20 transition-all duration-300 hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:bg-brand-600"
             }
           >
             {isLast ? dict.carouselGetStarted : <ArrowRight className="h-5 w-5" strokeWidth={2.5} />}

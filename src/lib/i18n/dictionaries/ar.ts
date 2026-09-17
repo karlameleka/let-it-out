@@ -106,7 +106,6 @@ const ar: Dictionary = {
     carouselRemindersBody: "شغّل التذكيرات اليومية اللطيفة عشان توقف تفكر وتتأمل، من إعدادات حسابك.",
     carouselCounselingHeadline: "معالجين حقيقيين، دعم حقيقي",
     carouselCounselingBody: "تصفح أخصائيين نفسيين مرخّصين واحجز جلسة من داخل التطبيق، وقت ما تكون جاهز.",
-    carouselSkip: "تخطي",
     carouselNext: "التالي",
     carouselBack: "رجوع",
     carouselGetStarted: "ابدأ الآن",
