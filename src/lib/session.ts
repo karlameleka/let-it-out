@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
@@ -44,7 +45,14 @@ export async function destroySession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function getCurrentUser(): Promise<SessionPayload | null> {
+// Memoized per-request (React cache(), same pattern as getSiteSettings/
+// getSiteTextOverrides) — this is the single funnel almost every
+// page/layout/component reads the session through, so without this every
+// one of those call sites was doing its own redundant prisma.user.findUnique
+// round-trip for the exact same user on the exact same request (e.g. root
+// layout.tsx and the page it renders each calling this once, on top of any
+// nested components that also check auth).
+export const getCurrentUser = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -71,7 +79,7 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   }
 
   return { ...session, role: current.role };
-}
+});
 
 export async function requireUser(): Promise<SessionPayload> {
   const user = await getCurrentUser();

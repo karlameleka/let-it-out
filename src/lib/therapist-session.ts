@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { getSessionSecretKey } from "@/lib/session-edge";
@@ -45,7 +46,11 @@ export async function destroyTherapistSession() {
   cookieStore.delete(THERAPIST_SESSION_COOKIE);
 }
 
-export async function getCurrentCounselor(): Promise<TherapistSessionPayload | null> {
+// Memoized per-request (React cache()) — the dashboard layout and every
+// /therapist page below it each call this once per request, which without
+// caching meant a redundant prisma.counselor.findUnique round-trip per
+// call for the exact same counselor on the exact same request.
+export const getCurrentCounselor = cache(async (): Promise<TherapistSessionPayload | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(THERAPIST_SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -73,7 +78,7 @@ export async function getCurrentCounselor(): Promise<TherapistSessionPayload | n
   }
 
   return session;
-}
+});
 
 export async function requireCounselor(): Promise<TherapistSessionPayload> {
   const counselor = await getCurrentCounselor();
