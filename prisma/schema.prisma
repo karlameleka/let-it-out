@@ -1130,7 +1130,7 @@ model ReflectionSheetConfig {
 // stored here or anywhere server-side — see src/lib/local-reflection.ts.
 model ReflectionPrompt {
   id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
   // Which booking triggered this — "session" (SessionBooking) or
   // "request" (BookingRequest) — kept for debugging/traceability only.
