@@ -28,6 +28,7 @@ const TABS = [
   { href: "/admin/reflection-sheet", label: "Reflection sheet" },
   { href: "/admin/resources", label: "Resources" },
   { href: "/admin/audit-log", label: "Audit Log" },
+  { href: "/admin/recently-deleted", label: "Recently Deleted" },
   { href: "/admin/settings", label: "Site settings" },
   { href: "/account", label: "My account" },
 ];

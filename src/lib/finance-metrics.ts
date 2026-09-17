@@ -122,6 +122,37 @@ export async function getRevenueByProduct(range: DateRange, limit = 10): Promise
     .slice(0, limit);
 }
 
+export type RevenueResetPreview = {
+  shopOrderCount: number;
+  confirmedSessionCount: number;
+  totalRevenueEGP: number;
+};
+
+/** All-time (deliberately NOT range-scoped) counts backing the Finance
+ * page's "clear revenue" danger-zone confirmation — the reset itself
+ * deletes every paid order/confirmed session ever, regardless of
+ * whatever date range the admin currently has picked, so a range-scoped
+ * preview next to it would be actively misleading. */
+export async function getRevenueResetPreview(): Promise<RevenueResetPreview> {
+  const [orders, sessions] = await Promise.all([
+    prisma.order.aggregate({
+      where: { status: { in: PAID_ORDER_STATUSES } },
+      _sum: { totalEGP: true },
+      _count: { _all: true },
+    }),
+    prisma.sessionBooking.findMany({
+      where: { status: "CONFIRMED" },
+      select: { priceEGP: true, discountEGP: true },
+    }),
+  ]);
+  const sessionsRevenueEGP = sessions.reduce((sum, s) => sum + (s.priceEGP - s.discountEGP), 0);
+  return {
+    shopOrderCount: orders._count._all,
+    confirmedSessionCount: sessions.length,
+    totalRevenueEGP: (orders._sum.totalEGP ?? 0) + sessionsRevenueEGP,
+  };
+}
+
 export type CounselorRevenue = { name: string; revenueEGP: number; sessionCount: number };
 
 /** Confirmed session revenue by counselor — who the bookings are actually

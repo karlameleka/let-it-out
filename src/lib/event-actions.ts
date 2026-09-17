@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { sendPushToAllSubscribers } from "@/lib/web-push";
+import { captureRow, trashedItemCreateArgs } from "@/lib/trash";
 
 export async function createEvent(formData: FormData) {
   await requireAdmin();
@@ -76,11 +77,28 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function deleteEvent(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  await prisma.event.delete({ where: { id } }).catch(() => null);
+  const existing = await prisma.event.findUnique({ where: { id }, select: { title: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("Event", id);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "Event",
+        originalId: id,
+        summary: `Event "${existing.title}"`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    // EventRSVP cascades at the DB level — already captured as a child above.
+    prisma.event.delete({ where: { id } }),
+  ]).catch(() => null);
 
   revalidatePath("/admin/events");
   revalidatePath("/", "layout");

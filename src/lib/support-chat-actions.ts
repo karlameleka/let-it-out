@@ -9,6 +9,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit } from "@/lib/anti-spam";
+import { captureRow, serializeRow, trashedItemCreateArgs } from "@/lib/trash";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -177,17 +178,50 @@ export async function reopenSupportChat(formData: FormData) {
  * first), so a conversation still needing a reply can't be discarded by
  * accident. */
 export async function deleteSupportChat(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const chatId = String(formData.get("chatId") ?? "");
-  const chat = await prisma.supportChat.findUnique({ where: { id: chatId }, select: { status: true } });
+  const chat = await prisma.supportChat.findUnique({ where: { id: chatId }, include: { user: { select: { email: true } } } });
   if (chat?.status !== "RESOLVED") return;
-  await prisma.supportChat.delete({ where: { id: chatId } });
+  const snapshot = await captureRow("SupportChat", chatId);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "SupportChat",
+        originalId: chatId,
+        summary: `Support chat with ${chat.user.email}`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    prisma.supportChat.delete({ where: { id: chatId } }),
+  ]);
   revalidatePath("/admin/support");
 }
 
 /** Bulk cleanup — clears every resolved chat's transcript at once. */
 export async function deleteAllResolvedSupportChats() {
-  await requireAdmin();
-  await prisma.supportChat.deleteMany({ where: { status: "RESOLVED" } });
+  const admin = await requireAdmin();
+  const chats = await prisma.supportChat.findMany({
+    where: { status: "RESOLVED" },
+    include: { user: { select: { email: true } } },
+  });
+
+  await prisma.$transaction([
+    ...chats.map((c) => {
+      const { user, ...chatRow } = c;
+      return prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "SupportChat",
+          originalId: c.id,
+          summary: `Support chat with ${user.email}`,
+          data: serializeRow(chatRow),
+          actor: admin,
+        }),
+      });
+    }),
+    prisma.supportChat.deleteMany({ where: { id: { in: chats.map((c) => c.id) } } }),
+  ]);
   revalidatePath("/admin/support");
 }

@@ -118,6 +118,7 @@ model User {
   pageViews      PageView[]
   referralsGiven UserReferral[]
   auditLogs      AuditLog[]
+  trashedItems   TrashedItem[]
 }
 
 // A signup that hasn't finished OTP verification yet. Holds everything
@@ -1250,4 +1251,42 @@ model AuditLog {
   @@index([createdAt])
   @@index([actorId])
   @@index([action])
+}
+
+// A 24-hour undo buffer for admin deletes — see src/lib/trash.ts. Every
+// admin delete this app supports (see RESTORE_HANDLERS there) writes one
+// row here *before* the real delete, holding a full JSON snapshot of the
+// row (and, for models with real children like Order/OrderItem, those
+// children too) — not a soft-delete flag on the original table, so no
+// query anywhere else in the app needs to remember to filter these out.
+// A cron (api/cron/trash-purge, see vercel.json) hard-deletes rows once
+// `deletedAt` is more than 24h old; restoring recreates the original
+// row(s) with their original id via RESTORE_HANDLERS and removes this
+// row. deletedById deliberately uses SetNull, same reasoning as
+// AuditLog.actorId — deletedByEmail is snapshotted so the row still reads
+// sensibly once the admin's own account is gone.
+model TrashedItem {
+  id             String   @id @default(cuid())
+  // The original Prisma model name (e.g. "Order", "Product") — looked up
+  // against RESTORE_HANDLERS to know how to recreate the row(s).
+  modelName      String
+  // The original row's id, kept even after data is JSON — used to restore
+  // with the same id (so anything that referenced it, e.g. a
+  // NotificationRead itemId, still resolves) and shown in the UI.
+  originalId     String
+  // Short human-readable line for the Recently Deleted list (e.g. "Order
+  // #A1B2C3D4 · 450 EGP"), generated once at write time — same convention
+  // as AuditLog.summary.
+  summary        String
+  // The full row (Date fields as ISO strings) — and, for models with
+  // real children, `{ ...row, _children: [...] }` — enough for the
+  // matching RESTORE_HANDLERS entry to recreate it exactly.
+  data           Json
+  deletedBy      User?    @relation(fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedByEmail String?
+  deletedAt      DateTime @default(now())
+
+  @@index([deletedAt])
+  @@index([modelName, originalId])
 }

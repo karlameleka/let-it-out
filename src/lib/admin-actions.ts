@@ -10,6 +10,8 @@ import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 import { sendPushToAllSubscribers } from "@/lib/web-push";
 import { logAudit } from "@/lib/audit-log";
+import { OrderStatus } from "@/generated/prisma/enums";
+import { captureRow, serializeRow, trashedItemCreateArgs } from "@/lib/trash";
 
 const PORTAL_SETUP_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const LOGIN_LINK_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -199,14 +201,21 @@ export async function updateLeadStatus(formData: FormData) {
 export async function deleteOrder(formData: FormData) {
   const admin = await requireAdmin();
   const orderId = String(formData.get("orderId"));
+  const summary = `Order #${orderId.slice(-8).toUpperCase()}`;
+  const snapshot = await captureRow("Order", orderId);
+  if (!snapshot) return;
+
   await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({ modelName: "Order", originalId: orderId, summary, data: snapshot, actor: admin }),
+    }),
     prisma.orderItem.deleteMany({ where: { orderId } }),
     prisma.order.delete({ where: { id: orderId } }),
   ]);
   await logAudit({
     actor: admin,
     action: "order.deleted",
-    summary: `Deleted order #${orderId.slice(-8).toUpperCase()}`,
+    summary: `Deleted ${summary}`,
     targetType: "Order",
     targetId: orderId,
     severity: "WARNING",
@@ -217,11 +226,22 @@ export async function deleteOrder(formData: FormData) {
 export async function deleteBookingRequest(formData: FormData) {
   const admin = await requireAdmin();
   const bookingId = String(formData.get("bookingId"));
-  const deleted = await prisma.bookingRequest.delete({ where: { id: bookingId } });
+  const existing = await prisma.bookingRequest.findUnique({ where: { id: bookingId }, select: { name: true } });
+  if (!existing) return;
+  const summary = `Booking request from ${existing.name}`;
+  const snapshot = await captureRow("BookingRequest", bookingId);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({ modelName: "BookingRequest", originalId: bookingId, summary, data: snapshot, actor: admin }),
+    }),
+    prisma.bookingRequest.delete({ where: { id: bookingId } }),
+  ]);
   await logAudit({
     actor: admin,
     action: "booking_request.deleted",
-    summary: `Deleted booking request from ${deleted.name}`,
+    summary: `Deleted ${summary}`,
     targetType: "BookingRequest",
     targetId: bookingId,
     severity: "WARNING",
@@ -239,11 +259,25 @@ export async function deleteBookingRequest(formData: FormData) {
 export async function deleteSessionBooking(formData: FormData) {
   const admin = await requireAdmin();
   const bookingId = String(formData.get("bookingId"));
-  const deleted = await prisma.sessionBooking.delete({ where: { id: bookingId } });
+  const existing = await prisma.sessionBooking.findUnique({
+    where: { id: bookingId },
+    select: { name: true, priceEGP: true, discountEGP: true, status: true },
+  });
+  if (!existing) return;
+  const summary = `Session booking for ${existing.name} (${existing.priceEGP - existing.discountEGP} EGP, ${existing.status})`;
+  const snapshot = await captureRow("SessionBooking", bookingId);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({ modelName: "SessionBooking", originalId: bookingId, summary, data: snapshot, actor: admin }),
+    }),
+    prisma.sessionBooking.delete({ where: { id: bookingId } }),
+  ]);
   await logAudit({
     actor: admin,
     action: "session_booking.deleted",
-    summary: `Deleted session booking for ${deleted.name} (${deleted.priceEGP - deleted.discountEGP} EGP, ${deleted.status})`,
+    summary: `Deleted ${summary}`,
     targetType: "SessionBooking",
     targetId: bookingId,
     severity: "WARNING",
@@ -253,23 +287,71 @@ export async function deleteSessionBooking(formData: FormData) {
 }
 
 export async function deleteWorkshopInquiry(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const inquiryId = String(formData.get("inquiryId"));
-  await prisma.workshopInquiry.delete({ where: { id: inquiryId } });
+  const existing = await prisma.workshopInquiry.findUnique({ where: { id: inquiryId }, select: { organizationName: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("WorkshopInquiry", inquiryId);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "WorkshopInquiry",
+        originalId: inquiryId,
+        summary: `Workshop inquiry from ${existing.organizationName}`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    prisma.workshopInquiry.delete({ where: { id: inquiryId } }),
+  ]);
   revalidatePath("/admin/workshops");
 }
 
 export async function deleteWorkshopSignup(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id"));
-  await prisma.workshopInterestSignup.delete({ where: { id } });
+  const existing = await prisma.workshopInterestSignup.findUnique({ where: { id }, select: { email: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("WorkshopInterestSignup", id);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "WorkshopInterestSignup",
+        originalId: id,
+        summary: `Workshop notify signup: ${existing.email}`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    prisma.workshopInterestSignup.delete({ where: { id } }),
+  ]);
   revalidatePath("/admin/workshop-signups");
 }
 
 export async function deleteContactMessage(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id"));
-  await prisma.contactMessage.delete({ where: { id } });
+  const existing = await prisma.contactMessage.findUnique({ where: { id }, select: { name: true, email: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("ContactMessage", id);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "ContactMessage",
+        originalId: id,
+        summary: `Contact message from ${existing.name} <${existing.email}>`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    prisma.contactMessage.delete({ where: { id } }),
+  ]);
   revalidatePath("/admin/messages");
 }
 
@@ -282,21 +364,46 @@ export async function deleteRecentContactMessages(formData: FormData) {
   const admin = await requireAdmin();
   const hours = Number(formData.get("hours")) || 48;
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  const { count } = await prisma.contactMessage.deleteMany({ where: { createdAt: { gte: cutoff } } });
+  const rows = await prisma.contactMessage.findMany({ where: { createdAt: { gte: cutoff } } });
+
+  await prisma.$transaction([
+    ...rows.map((r) =>
+      prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "ContactMessage",
+          originalId: r.id,
+          summary: `Contact message from ${r.name} <${r.email}>`,
+          data: serializeRow(r),
+          actor: admin,
+        }),
+      }),
+    ),
+    prisma.contactMessage.deleteMany({ where: { id: { in: rows.map((r) => r.id) } } }),
+  ]);
   await logAudit({
     actor: admin,
     action: "contact_messages.bulk_deleted",
-    summary: `Deleted ${count} contact message${count === 1 ? "" : "s"} from the last ${hours}h (spam cleanup)`,
-    metadata: { count, hours },
+    summary: `Deleted ${rows.length} contact message${rows.length === 1 ? "" : "s"} from the last ${hours}h (spam cleanup)`,
+    metadata: { count: rows.length, hours },
     severity: "WARNING",
   });
   revalidatePath("/admin/messages");
 }
 
 export async function deleteLead(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const leadId = String(formData.get("leadId"));
-  await prisma.lead.delete({ where: { id: leadId } });
+  const existing = await prisma.lead.findUnique({ where: { id: leadId }, select: { name: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("Lead", leadId);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({ modelName: "Lead", originalId: leadId, summary: `Lead: ${existing.name}`, data: snapshot, actor: admin }),
+    }),
+    prisma.lead.delete({ where: { id: leadId } }),
+  ]);
   revalidatePath("/admin/crm");
 }
 
@@ -306,7 +413,23 @@ export async function deleteRecentLeads(formData: FormData) {
   const admin = await requireAdmin();
   const hours = Number(formData.get("hours")) || 48;
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  const { count } = await prisma.lead.deleteMany({ where: { createdAt: { gte: cutoff } } });
+  const rows = await prisma.lead.findMany({ where: { createdAt: { gte: cutoff } } });
+
+  await prisma.$transaction([
+    ...rows.map((r) =>
+      prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "Lead",
+          originalId: r.id,
+          summary: `Lead: ${r.name}`,
+          data: serializeRow(r),
+          actor: admin,
+        }),
+      }),
+    ),
+    prisma.lead.deleteMany({ where: { id: { in: rows.map((r) => r.id) } } }),
+  ]);
+  const count = rows.length;
   await logAudit({
     actor: admin,
     action: "leads.bulk_deleted",
@@ -322,13 +445,52 @@ export async function deleteRecentLeads(formData: FormData) {
 // not a single row — so "deleting a client" means clearing all of their
 // booking history with this specific counselor.
 export async function deleteCounselorClient(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
   const email = String(formData.get("email"));
+  const [bookingRequests, sessionBookings] = await Promise.all([
+    prisma.bookingRequest.findMany({ where: { counselorId, email } }),
+    prisma.sessionBooking.findMany({ where: { counselorId, email } }),
+  ]);
+
   await prisma.$transaction([
+    ...bookingRequests.map((r) =>
+      prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "BookingRequest",
+          originalId: r.id,
+          summary: `Booking request from ${r.name}`,
+          data: serializeRow(r),
+          actor: admin,
+        }),
+      }),
+    ),
+    ...sessionBookings.map((r) =>
+      prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "SessionBooking",
+          originalId: r.id,
+          summary: `Session booking for ${r.name} (${r.priceEGP - r.discountEGP} EGP, ${r.status})`,
+          data: serializeRow(r),
+          actor: admin,
+        }),
+      }),
+    ),
     prisma.bookingRequest.deleteMany({ where: { counselorId, email } }),
     prisma.sessionBooking.deleteMany({ where: { counselorId, email } }),
   ]);
+  const total = bookingRequests.length + sessionBookings.length;
+  if (total > 0) {
+    await logAudit({
+      actor: admin,
+      action: "counselor_client.deleted",
+      summary: `Deleted ${total} booking record${total === 1 ? "" : "s"} for ${email} with this counselor`,
+      targetType: "Counselor",
+      targetId: counselorId,
+      metadata: { email, bookingRequests: bookingRequests.length, sessionBookings: sessionBookings.length },
+      severity: "WARNING",
+    });
+  }
   revalidatePath("/admin/counselors/[id]", "page");
 }
 
@@ -436,11 +598,29 @@ export async function togglePromoCodeActive(formData: FormData) {
 export async function deletePromoCode(formData: FormData) {
   const admin = await requireAdmin();
   const id = String(formData.get("id"));
-  const deleted = await prisma.promoCode.delete({ where: { id } });
+  const existing = await prisma.promoCode.findUnique({ where: { id }, select: { code: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("PromoCode", id);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "PromoCode",
+        originalId: id,
+        summary: `Promo code ${existing.code}`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    // PromoCodeProduct/PromoCodeCounselor cascade at the DB level — already
+    // captured as children above, nothing else to clean up by hand here.
+    prisma.promoCode.delete({ where: { id } }),
+  ]);
   await logAudit({
     actor: admin,
     action: "promo_code.deleted",
-    summary: `Deleted promo code ${deleted.code}`,
+    summary: `Deleted promo code ${existing.code}`,
     targetType: "PromoCode",
     targetId: id,
     severity: "WARNING",
@@ -486,18 +666,30 @@ export async function deleteProduct(formData: FormData) {
   if (orderItemCount > 0) return;
 
   const product = await prisma.product.findUnique({ where: { id: productId }, select: { title: true } });
+  if (!product) return;
+  const snapshot = await captureRow("Product", productId);
+  if (!snapshot) return;
 
   // PromoCodeProduct cascades on delete at the DB level already — only
   // ProductVariant (no order history if we got this far) needs clearing
   // by hand first.
   await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "Product",
+        originalId: productId,
+        summary: `Product "${product.title}"`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
     prisma.productVariant.deleteMany({ where: { productId } }),
     prisma.product.delete({ where: { id: productId } }),
   ]);
   await logAudit({
     actor: admin,
     action: "product.deleted",
-    summary: product ? `Deleted product "${product.title}"` : "Deleted a product",
+    summary: `Deleted product "${product.title}"`,
     targetType: "Product",
     targetId: productId,
     severity: "WARNING",
@@ -571,9 +763,27 @@ export async function createCounselingFilter(formData: FormData) {
 }
 
 export async function deleteCounselingFilter(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id"));
-  await prisma.counselorFilter.delete({ where: { id } });
+  const existing = await prisma.counselorFilter.findUnique({ where: { id }, select: { label: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("CounselorFilter", id);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "CounselorFilter",
+        originalId: id,
+        summary: `Counseling filter "${existing.label}"`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    // CounselorFilterAssignment cascades at the DB level — already
+    // captured as a child above.
+    prisma.counselorFilter.delete({ where: { id } }),
+  ]);
   revalidatePath("/admin/counseling-filters");
   revalidatePath("/admin/counselors/[id]", "page");
   revalidatePath("/counseling");
@@ -756,11 +966,26 @@ export async function deleteCounselor(formData: FormData) {
   if (hasHistory) return;
 
   const counselor = await prisma.counselor.findUnique({ where: { id: counselorId }, select: { name: true } });
+  if (!counselor) return;
+  const snapshot = await captureRow("Counselor", counselorId);
+  if (!snapshot) return;
 
-  // CounselorAvailability and PromoCodeCounselor cascade on delete at the
-  // DB level already — only ToolkitItem (a counselor's own personal
-  // toolkit config, not client data) needs clearing by hand first.
+  // CounselorAvailability, PromoCodeCounselor, and CounselorFilterAssignment
+  // cascade on delete at the DB level already (not restored — a counselor
+  // deleted with zero history never had availability/promo/filter setup
+  // worth re-checking after restore) — only ToolkitItem (a counselor's own
+  // personal toolkit config, not client data) needs clearing by hand, and
+  // it's captured as a trash child above.
   await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "Counselor",
+        originalId: counselorId,
+        summary: `Counselor ${counselor.name}`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
     prisma.toolkitItem.deleteMany({ where: { counselorId } }),
     prisma.counselor.delete({ where: { id: counselorId } }),
   ]);
@@ -842,4 +1067,75 @@ export async function resetPageViewTracking() {
   });
   revalidatePath("/admin/analytics");
   revalidatePath("/admin");
+}
+
+const PAID_ORDER_STATUSES: OrderStatus[] = [OrderStatus.CONFIRMED, OrderStatus.SHIPPED, OrderStatus.COMPLETED];
+
+/**
+ * Permanently deletes every *paid* order (CONFIRMED/SHIPPED/COMPLETED) and
+ * every *confirmed* session booking — a full, one-time wipe of real
+ * revenue history, explicitly requested and confirmed destructive by the
+ * user. Deliberately NOT scoped to whatever date range the Finance page's
+ * picker happens to have selected (that only filters what's displayed —
+ * this clears everything). Pending/unconfirmed/cancelled orders and
+ * bookings are left untouched, since they were never counted as revenue.
+ * Removes real payment records (customers lose their order confirmation
+ * pages), so this is the most destructive admin action in the app,
+ * logged at WARNING with the exact counts/total deleted.
+ */
+export async function resetRevenue() {
+  const admin = await requireAdmin();
+
+  const [orders, sessions] = await Promise.all([
+    prisma.order.findMany({ where: { status: { in: PAID_ORDER_STATUSES } }, include: { items: true } }),
+    prisma.sessionBooking.findMany({ where: { status: "CONFIRMED" } }),
+  ]);
+  const orderIds = orders.map((o) => o.id);
+  const sessionIds = sessions.map((s) => s.id);
+  const totalRevenueEGP =
+    orders.reduce((sum, o) => sum + o.totalEGP, 0) +
+    sessions.reduce((sum, s) => sum + (s.priceEGP - s.discountEGP), 0);
+
+  await prisma.$transaction([
+    ...orders.map((o) => {
+      const { items, ...orderRow } = o;
+      return prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "Order",
+          originalId: o.id,
+          summary: `Order #${o.id.slice(-8).toUpperCase()}`,
+          data: serializeRow({ ...orderRow, _children: { items } }),
+          actor: admin,
+        }),
+      });
+    }),
+    ...sessions.map((s) =>
+      prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "SessionBooking",
+          originalId: s.id,
+          summary: `Session booking for ${s.name} (${s.priceEGP - s.discountEGP} EGP, ${s.status})`,
+          data: serializeRow(s),
+          actor: admin,
+        }),
+      }),
+    ),
+    prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } }),
+    prisma.order.deleteMany({ where: { id: { in: orderIds } } }),
+    prisma.sessionBooking.deleteMany({ where: { id: { in: sessionIds } } }),
+  ]);
+
+  await logAudit({
+    actor: admin,
+    action: "revenue.reset",
+    summary: `Cleared all revenue: deleted ${orderIds.length} paid order${orderIds.length === 1 ? "" : "s"} and ${sessionIds.length} confirmed session${sessionIds.length === 1 ? "" : "s"} (${totalRevenueEGP} EGP total)`,
+    metadata: { orderCount: orderIds.length, sessionCount: sessionIds.length, totalRevenueEGP },
+    severity: "WARNING",
+  });
+
+  revalidatePath("/admin/finance");
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/bookings");
+  revalidatePath("/upcoming");
 }

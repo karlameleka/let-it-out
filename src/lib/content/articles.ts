@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { captureRow, trashedItemCreateArgs } from "@/lib/trash";
 
 export type ArticleSection = {
   heading: string;
@@ -197,11 +198,25 @@ export async function updateArticle(formData: FormData) {
 
 export async function deleteArticle(formData: FormData) {
   "use server";
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id"));
   const existing = await prisma.article.findUnique({ where: { id } });
   if (!existing) return;
-  await prisma.article.delete({ where: { id } });
+  const snapshot = await captureRow("Article", id);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "Article",
+        originalId: id,
+        summary: `Article "${existing.title}"`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    prisma.article.delete({ where: { id } }),
+  ]);
   revalidatePath("/resources");
   revalidatePath("/admin/articles");
 }

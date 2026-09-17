@@ -1,14 +1,17 @@
 import { Suspense } from "react";
 import DateRangePicker from "@/components/date-range-picker";
 import ExportButtons from "@/components/export-buttons";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import { resolveDateRange, priorPeriod } from "@/lib/date-range";
 import { percentChange } from "@/lib/date-range";
 import { formatEGP } from "@/lib/format";
+import { resetRevenue } from "@/lib/admin-actions";
 import {
   getFinanceSummary,
   getRevenueByPaymentMethod,
   getRevenueByProduct,
   getRevenueByCounselor,
+  getRevenueResetPreview,
 } from "@/lib/finance-metrics";
 
 function StatCard({ label, value, sublabel }: { label: string; value: string; sublabel?: string }) {
@@ -69,12 +72,13 @@ export default async function AdminFinancePage({
   const range = resolveDateRange(sp);
   const prev = priorPeriod(range);
 
-  const [summary, prevSummary, byPaymentMethod, byProduct, byCounselor] = await Promise.all([
+  const [summary, prevSummary, byPaymentMethod, byProduct, byCounselor, resetPreview] = await Promise.all([
     getFinanceSummary(range),
     getFinanceSummary(prev),
     getRevenueByPaymentMethod(range),
     getRevenueByProduct(range),
     getRevenueByCounselor(range),
+    getRevenueResetPreview(),
   ]);
 
   const revenueChange = percentChange(summary.totalRevenueEGP, prevSummary.totalRevenueEGP);
@@ -162,6 +166,27 @@ export default async function AdminFinancePage({
           emptyLabel="No confirmed sessions in this range."
         />
       </Panel>
+
+      <div className="rounded-2xl border border-red-200 bg-red-50/40 p-5">
+        <h2 className="font-display font-semibold text-red-900">Danger zone</h2>
+        <p className="mt-1 text-sm text-red-800/80">
+          Permanently deletes every paid order and confirmed session booking, all-time (not just the range
+          selected above) — right now that&rsquo;s {resetPreview.shopOrderCount} order
+          {resetPreview.shopOrderCount === 1 ? "" : "s"} and {resetPreview.confirmedSessionCount} session
+          {resetPreview.confirmedSessionCount === 1 ? "" : "s"}, totalling {formatEGP(resetPreview.totalRevenueEGP)}.
+          This removes real payment records — customers lose their order confirmation pages. Deleted rows are
+          recoverable from Admin &rarr; Recently Deleted for 24 hours, then purged for good. Pending, unconfirmed,
+          and cancelled orders/bookings are left untouched.
+        </p>
+        <form action={resetRevenue} className="mt-3">
+          <ConfirmSubmitButton
+            confirmMessage={`Permanently delete all ${resetPreview.shopOrderCount} paid orders and ${resetPreview.confirmedSessionCount} confirmed sessions (${formatEGP(resetPreview.totalRevenueEGP)} total)? Recoverable from Recently Deleted for 24h, then gone for good.`}
+            className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+          >
+            Clear all revenue
+          </ConfirmSubmitButton>
+        </form>
+      </div>
     </div>
   );
 }
