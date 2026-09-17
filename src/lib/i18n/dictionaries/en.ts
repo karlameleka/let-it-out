@@ -918,6 +918,11 @@ const en = {
     remindersIosInstallSuffix: "to enable reminders.",
     remindersCouldNotCheck: "Couldn't check your notification status.",
     remindersEnableError: "Something went wrong enabling reminders.",
+    remindersDisableInstructions:
+      "Notifications can only be turned off from your browser or phone's settings — open your device's notification settings and turn them off for Let It Out.",
+    remindersDisableInstructionsIos:
+      "Open your iPhone's Settings app, then go to Notifications → Let It Out and turn off Allow Notifications.",
+    remindersDisableInstructionsClose: "Got it",
   },
   upcoming: {
     heading: "Upcoming",

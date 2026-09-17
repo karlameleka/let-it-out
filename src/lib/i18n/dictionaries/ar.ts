@@ -905,6 +905,11 @@ const ar: Dictionary = {
     remindersIosInstallSuffix: "عشان تفعّل التذكيرات.",
     remindersCouldNotCheck: "معرفناش نتحقق من حالة الإشعارات.",
     remindersEnableError: "حصل خطأ أثناء تفعيل التذكيرات.",
+    remindersDisableInstructions:
+      "الإشعارات بس بتتقفل من إعدادات المتصفح أو التليفون بتاعك — افتح إعدادات الإشعارات في جهازك واقفلها لـ Let It Out.",
+    remindersDisableInstructionsIos:
+      "افتح تطبيق الإعدادات في الآيفون، بعدين روح لـ Notifications ← Let It Out واقفل Allow Notifications.",
+    remindersDisableInstructionsClose: "تمام",
   },
   upcoming: {
     heading: "القادم",
