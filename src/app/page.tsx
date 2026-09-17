@@ -3,7 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/db";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
-import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
+import { Ribbon, WaveDivider, Swash } from "@/components/decor";
 import StoryTeaser from "@/components/story-teaser";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
@@ -38,21 +38,25 @@ export default async function HomePage({
       <InstallOverlay initialOpen={install === "true"} dict={dict.install} />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-brand-50">
-        <DoodleField />
-        <Container className="relative pt-8 pb-14 sm:pt-20 sm:pb-28">
+      <section
+        className="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 text-white"
+        style={{ clipPath: "polygon(0 0, 100% 0, 100% 94%, 0 100%)" }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-10 left-10 h-48 w-48 rounded-full bg-white/10" />
+        <Container className="relative pt-8 pb-16 sm:pt-20 sm:pb-32">
           <div className="max-w-2xl">
-            <Ribbon>{t.heroRibbon}</Ribbon>
-            <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl" style={{ animationDelay: "0.08s" }}>
+            <Ribbon tone="dark">{t.heroRibbon}</Ribbon>
+            <h1 className="animate-rise mt-6 max-w-xl font-display text-4xl font-medium leading-[1.1] text-white sm:text-5xl" style={{ animationDelay: "0.08s" }}>
               {t.heroTitlePrefix}
-              <span className="mark-swash italic text-brand-700">{t.heroTitleHighlight}<Swash /></span>
+              <span className="mark-swash italic text-brand-200">{t.heroTitleHighlight}<Swash /></span>
               {t.heroTitleSuffix}
             </h1>
-            <p className="animate-rise mt-6 max-w-lg text-lg text-ink/70" style={{ animationDelay: "0.18s" }}>
+            <p className="animate-rise mt-6 max-w-lg text-lg text-brand-50/85" style={{ animationDelay: "0.18s" }}>
               {t.heroDescription}
             </p>
             <div className="animate-rise mt-9 flex flex-wrap items-center gap-x-8 gap-y-4" style={{ animationDelay: "0.28s" }}>
-              <ButtonLink href="/services" variant="primary">
+              <ButtonLink href="/services" variant="bright">
                 {t.heroCtaServices}
               </ButtonLink>
             </div>
@@ -60,18 +64,18 @@ export default async function HomePage({
 
           {!settings.hideJournalTaglineButton && (
             <div
-              className="animate-rise mt-16 grid gap-8 border-t border-brand-200 pt-10 sm:grid-cols-[1fr_auto] sm:items-center"
+              className="animate-rise mt-16 grid gap-8 border-t border-white/20 pt-10 sm:grid-cols-[1fr_auto] sm:items-center"
               style={{ animationDelay: "0.4s" }}
             >
               <div className="max-w-md">
-                <p className="font-display text-lg italic leading-snug text-brand-900">{t.heroPromptQuote}</p>
-                <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
+                <p className="font-display text-lg italic leading-snug text-white">{t.heroPromptQuote}</p>
+                <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-200">
                   {t.heroPromptLabel}
                 </p>
               </div>
               <Link
                 href="/journal"
-                className="group flex items-center gap-4 rounded-lg bg-brand-700 px-6 py-5 text-white transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:bg-brand-600 active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] sm:max-w-xs"
+                className="group flex items-center gap-4 rounded-lg border border-white/20 bg-white/10 px-6 py-5 text-white backdrop-blur-sm transition-all duration-300 ease-out hover:bg-white/15 active:bg-white/15 sm:max-w-xs"
               >
                 <Logo variant="icon-white" height={40} className="shrink-0" />
                 <p className="font-display text-base italic leading-snug">{t.heroCardQuote}</p>
@@ -80,8 +84,6 @@ export default async function HomePage({
           )}
         </Container>
       </section>
-
-      <WaveDivider fill="fill-white" />
 
       {/* Daily journaling, free */}
       <section className="pb-12 pt-2 sm:pb-14">

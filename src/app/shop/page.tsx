@@ -4,7 +4,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/db";
 import { Container, SectionHeading } from "@/components/ui";
 import { PRODUCT_PHOTOS } from "@/components/product-cover";
-import { Ribbon, Swash, WaveDivider } from "@/components/decor";
+import { Ribbon, Swash } from "@/components/decor";
 import PriceDisplay from "@/components/price-display";
 import { FaqList } from "@/components/faq";
 import { Reveal } from "@/components/reveal";
@@ -38,24 +38,27 @@ export default async function ShopPage() {
 
   return (
     <>
-      <section className="bg-brand-50 pt-6 pb-4 sm:pt-14 sm:pb-8">
-        <Container>
-          <Ribbon>{t.ribbon}</Ribbon>
-          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
+      <section
+        className="relative overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 pt-6 pb-10 text-white sm:pt-14 sm:pb-16"
+        style={{ clipPath: "polygon(0 0, 100% 0, 100% 94%, 0 100%)" }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-10 left-10 h-40 w-40 rounded-full bg-white/10" />
+        <Container className="relative">
+          <Ribbon tone="dark">{t.ribbon}</Ribbon>
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-white sm:text-5xl">
             {t.titlePrefix}
-            <span className="mark-swash italic text-brand-700">
+            <span className="mark-swash italic text-brand-200">
               {t.titleHighlight}<Swash />
             </span>
             {t.titleSuffix}
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-ink/70">{t.description}</p>
+          <p className="mt-5 max-w-2xl text-lg text-brand-50/85">{t.description}</p>
           <p className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-4 py-1.5 text-sm font-medium text-brand-700">
             {t.soldBadge}
           </p>
         </Container>
       </section>
-
-      <WaveDivider fill="fill-white" />
 
       <section className="pb-16 pt-2 sm:pb-20">
         <Reveal>
