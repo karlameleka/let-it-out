@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOffline } from "next/offline";
 import { createSessionBooking, checkCounselingPromoCode } from "@/lib/session-booking-actions";
-import { formatEGP } from "@/lib/format";
 import PaymentSelector from "@/components/PaymentSelector";
+import PriceDisplay from "@/components/price-display";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 import { formatSlotTime } from "@/lib/format-slot";
@@ -148,7 +148,7 @@ export default function SessionBookingFlow({
     return (
       <div>
         <p className="text-sm text-ink/70">
-          {t.almostThere} <strong>{formatEGP(finalPriceEGP)}</strong> {t.almostThereSuffix} {counselorName}.
+          {t.almostThere} <strong><PriceDisplay egpAmount={finalPriceEGP} /></strong> {t.almostThereSuffix} {counselorName}.
         </p>
         {finalDate && (
           <p className="mt-2 rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-800">
@@ -193,8 +193,8 @@ export default function SessionBookingFlow({
         {promoApplied ? (
           <div className="flex items-center justify-between gap-2">
             <span>
-              {t.sessionPrice}: <s className="text-brand-800/50">{formatEGP(priceEGP)}</s>{" "}
-              {formatEGP(priceEGP - promoApplied.discountEGP)} &middot; &ldquo;{promoApplied.code}&rdquo; {promoApplied.label}
+              {t.sessionPrice}: <s className="text-brand-800/50"><PriceDisplay egpAmount={priceEGP} /></s>{" "}
+              <PriceDisplay egpAmount={priceEGP - promoApplied.discountEGP} /> &middot; &ldquo;{promoApplied.code}&rdquo; {promoApplied.label}
             </span>
             <button
               type="button"
@@ -206,7 +206,7 @@ export default function SessionBookingFlow({
           </div>
         ) : (
           <span>
-            {t.sessionPrice}: {formatEGP(priceEGP)}
+            {t.sessionPrice}: <PriceDisplay egpAmount={priceEGP} />
           </span>
         )}
       </div>

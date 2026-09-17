@@ -14,6 +14,7 @@ import {
   cancelSocialSignup,
 } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
+import { useCurrency } from "@/lib/currency-context";
 import {
   BIRTH_YEARS,
   MONTHS,
@@ -333,6 +334,7 @@ export default function SignupForm({
   const [gender, setGender] = useState("");
   const [customGender, setCustomGender] = useState("");
   const [country, setCountry] = useState("");
+  const { setCountry: setCurrencyCountry } = useCurrency();
   const [phoneCountryCode, setPhoneCountryCode] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [referralSource, setReferralSource] = useState("");
@@ -375,6 +377,7 @@ export default function SignupForm({
   // number, since it's a separate field from here on.
   function handleCountryChange(value: string) {
     setCountry(value);
+    setCurrencyCountry(value);
     const matchingCode = COUNTRY_CALLING_CODES[value];
     if (matchingCode) setPhoneCountryCode(matchingCode);
   }

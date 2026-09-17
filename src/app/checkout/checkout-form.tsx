@@ -10,6 +10,7 @@ import { formatEGP } from "@/lib/format";
 import { COUNTRIES, EGYPT_GOVERNORATES } from "@/lib/content/geo";
 import { EGYPT_SHIPPING_FEE_EGP } from "@/lib/shipping";
 import PriceDisplay from "@/components/price-display";
+import { useCurrency } from "@/lib/currency-context";
 import PaymentSelector from "@/components/PaymentSelector";
 import HoneypotField from "@/components/honeypot-field";
 import TurnstileWidget from "@/components/turnstile-widget";
@@ -33,6 +34,7 @@ export default function CheckoutForm({
   paymentDict: Dictionary["paymentSelector"];
 }) {
   const { items, subtotalEGP, clear } = useCart();
+  const { formatConverted } = useCurrency();
   const router = useRouter();
   const isOffline = useOffline();
   const formRef = useRef<HTMLFormElement>(null);
@@ -273,7 +275,10 @@ export default function CheckoutForm({
             <div className="rounded-xl border-2 border-brand-100 bg-brand-50 px-4 py-3 text-sm text-ink/70">
               <span className="font-semibold text-brand-800">{dict.shippingLabel}</span>{" "}
               {isEgypt
-                ? dict.shippingFlatEgypt.replace("{fee}", formatEGP(EGYPT_SHIPPING_FEE_EGP))
+                ? dict.shippingFlatEgypt.replace(
+                    "{fee}",
+                    formatConverted(EGYPT_SHIPPING_FEE_EGP) ?? formatEGP(EGYPT_SHIPPING_FEE_EGP),
+                  )
                 : shippingCalculatedOnDelivery
                   ? dict.shippingOutsideEgypt
                   : dict.shippingSelectCountry}
@@ -346,7 +351,9 @@ export default function CheckoutForm({
                 <span className="text-ink/70">
                   {item.title} × {item.quantity}
                 </span>
-                <span className="font-medium">{formatEGP(item.priceEGP * item.quantity)}</span>
+                <span className="font-medium">
+                  <PriceDisplay egpAmount={item.priceEGP * item.quantity} />
+                </span>
               </li>
             ))}
           </ul>
@@ -391,12 +398,12 @@ export default function CheckoutForm({
           <div className="mt-4 space-y-2 border-t border-brand-100 pt-4 text-sm">
             <div className="flex justify-between text-ink/70">
               <span>{dict.subtotal}</span>
-              <span>{formatEGP(subtotalEGP)}</span>
+              <span><PriceDisplay egpAmount={subtotalEGP} /></span>
             </div>
             {discountEGP > 0 && (
               <div className="flex justify-between text-brand-700">
                 <span>{dict.discount}</span>
-                <span>-{formatEGP(discountEGP)}</span>
+                <span>-<PriceDisplay egpAmount={discountEGP} /></span>
               </div>
             )}
             {needsShipping && (
@@ -404,7 +411,7 @@ export default function CheckoutForm({
                 <span>{dict.shipping}</span>
                 <span>
                   {isEgypt
-                    ? formatEGP(shippingFeeEGP)
+                    ? <PriceDisplay egpAmount={shippingFeeEGP} />
                     : shippingCalculatedOnDelivery
                       ? dict.onDelivery
                       : dict.selectACountry}

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { Container, ButtonLink, Button } from "@/components/ui";
-import { formatEGP } from "@/lib/format";
 import PriceDisplay from "@/components/price-display";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
@@ -66,7 +65,7 @@ export default function CartContent({ dict }: { dict: Dictionary["cart"] }) {
                 </div>
 
                 <p className="w-20 shrink-0 text-right font-medium text-ink/80">
-                  {formatEGP(item.priceEGP * item.quantity)}
+                  <PriceDisplay egpAmount={item.priceEGP * item.quantity} />
                 </p>
 
                 <button

@@ -6,7 +6,7 @@ import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
 import StoryTeaser from "@/components/story-teaser";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
-import { formatEGP } from "@/lib/format";
+import PriceDisplay from "@/components/price-display";
 import InstallOverlay from "@/components/install-overlay";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
@@ -182,7 +182,7 @@ export default async function HomePage({
                         {p.title}
                       </h3>
                       <p className="mt-1 text-sm text-ink/60">
-                        {formatEGP(price)}
+                        <PriceDisplay egpAmount={price} />
                       </p>
                       <p className="mt-2 text-sm font-medium text-brand-600 link-grow w-fit">
                         {t.shopNow} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
