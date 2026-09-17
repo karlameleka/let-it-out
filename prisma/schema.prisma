@@ -15,11 +15,11 @@ enum Role {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  // No longer collected at signup (email/password and Google sign-in are
-  // the only two paths now, neither asks for a phone number) — kept only
-  // so accounts created before this change keep working and still prefill
-  // checkout/booking forms with the number they already gave us. Never a
-  // login identifier.
+  // Collected on the signup wizard's country page (calling code + number,
+  // stored together as one E.164-ish string, e.g. "+201001234567") — used
+  // to prefill checkout/booking forms with the number they already gave
+  // us. Nullable only for accounts created before this was required
+  // again. Never a login identifier.
   phone        String?  @unique
   // Nullable: accounts created via Google sign-in have no password.
   passwordHash String?

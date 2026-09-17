@@ -50,7 +50,15 @@ export default async function CounselorPage({
     <section className="pt-6 pb-10 sm:pt-14 sm:pb-20">
       <Container className="grid gap-12 md:grid-cols-5">
         <div className="md:col-span-3">
-          <Eyebrow>{dict.nav.counseling}</Eyebrow>
+          <Link
+            href="/counseling"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow"
+          >
+            <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToCounseling}
+          </Link>
+          <div className="mt-4">
+            <Eyebrow>{dict.nav.counseling}</Eyebrow>
+          </div>
           <div className="mt-4 flex items-center gap-4">
             {counselor.photoUrl ? (
               <Image

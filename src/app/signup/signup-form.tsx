@@ -24,6 +24,8 @@ import {
   GENDER_CUSTOM,
   GENDER_CUSTOM_AR,
   COUNTRIES,
+  COUNTRY_CALLING_CODES,
+  PHONE_COUNTRY_CODES,
   REFERRAL_SOURCES,
   REFERRAL_SOURCES_AR,
   SERVICE_INTERESTS,
@@ -331,6 +333,8 @@ export default function SignupForm({
   const [gender, setGender] = useState("");
   const [customGender, setCustomGender] = useState("");
   const [country, setCountry] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [referralSource, setReferralSource] = useState("");
   const [serviceInterests, setServiceInterests] = useState<string[]>([]);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
@@ -364,6 +368,15 @@ export default function SignupForm({
     setBirthYear(value);
     const max = daysInMonth(birthMonth ? Number(birthMonth) : null, value ? Number(value) : null);
     if (birthDay && Number(birthDay) > max) setBirthDay("");
+  }
+
+  // Suggests the matching calling code as soon as a country is picked —
+  // still freely changeable afterward for e.g. an expat keeping their old
+  // number, since it's a separate field from here on.
+  function handleCountryChange(value: string) {
+    setCountry(value);
+    const matchingCode = COUNTRY_CALLING_CODES[value];
+    if (matchingCode) setPhoneCountryCode(matchingCode);
   }
 
   function currentIdentitySnapshot() {
@@ -410,6 +423,8 @@ export default function SignupForm({
         return null;
       case "country":
         if (!country.trim()) return t.countryRequired;
+        if (!phoneCountryCode || !phoneNumber.trim()) return t.phoneRequired;
+        if (phoneNumber.replace(/\D/g, "").length < 6) return t.phoneInvalid;
         return null;
       case "referral":
         if (!referralSource) return t.referralSourceRequired;
@@ -789,8 +804,37 @@ export default function SignupForm({
               placeholder={t.searchCountryPlaceholder}
               noResultsText={t.noCountryResults}
               value={country}
-              onChange={setCountry}
+              onChange={handleCountryChange}
             />
+          </div>
+
+          <div>
+            <label htmlFor="phoneNumber" className={labelClasses}>
+              {f.phone}
+            </label>
+            <div className="grid grid-cols-[8.5rem_1fr] gap-2">
+              <div>
+                <label htmlFor="phoneCountryCode" className="sr-only">{t.callingCode}</label>
+                <SelectField id="phoneCountryCode" name="phoneCountryCode" value={phoneCountryCode} onChange={setPhoneCountryCode}>
+                  <option value="" disabled>{t.callingCode}</option>
+                  {PHONE_COUNTRY_CODES.map((p) => (
+                    <option key={`${p.country}-${p.code}`} value={p.code}>
+                      {p.code} {p.country}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+              <input
+                id="phoneNumber"
+                name="phoneNumber"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className={fieldClasses}
+              />
+            </div>
           </div>
         </div>
 

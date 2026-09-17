@@ -30,6 +30,11 @@ export default function NewEntryClient({
       moodPickerDict={moodPickerDict}
       locale={locale}
       onSaved={() => {
+        // The onboarding checklist's "journal" step lives in the root
+        // layout, which router.push alone won't re-fetch — without this,
+        // it keeps showing unchecked until some unrelated navigation
+        // happens to force a refresh.
+        router.refresh();
         setTimeout(() => router.push("/journal"), 900);
       }}
     />

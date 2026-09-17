@@ -258,6 +258,7 @@ const ar: Dictionary = {
     faq4A: "فقط تواصل معنا بأقرب وقت ممكن، عبر البريد الإلكتروني أو صفحة التواصل، وسنساعدك في إيجاد موعد جديد.",
   },
   counselorProfile: {
+    backToCounseling: "رجوع للاستشارات",
     bookHeading: "احجز جلسة",
     bookDescription: "اختر يومك المفضل وادفع أدناه، وسنؤكد معك موعدك الدقيق بعد ذلك.",
     bookDescriptionWithSlots: "اختر موعد جلستك وادفع أدناه، وستحصل على رابط الفيديو فورًا.",
@@ -314,6 +315,7 @@ const ar: Dictionary = {
     timeRequired: "من فضلك اختار وقت مفضل.",
   },
   sessionStatus: {
+    backToCounseling: "رجوع للاستشارات",
     sessionWith: "جلسة مع",
     titleConfirmed: "تم استلام الدفع، سنؤكد موعدك",
     titlePending: "أكمل عملية الدفع",
@@ -580,6 +582,7 @@ const ar: Dictionary = {
     gender: "الجنس",
     country: "الدولة",
     searchCountryPlaceholder: "دور على الدولة…",
+    callingCode: "الكود",
     noCountryResults: "مفيش دولة بالاسم ده.",
     referralSource: "كيف سمعت عنا؟",
     serviceInterests: "ايه اكتر خدمة مهتم بيها؟",
@@ -628,6 +631,9 @@ const ar: Dictionary = {
     passwordUpdatedText: "تم تحديث كلمة المرور.",
     genderRequired: "من فضلك اختار النوع.",
     countryRequired: "من فضلك اختار دولتك.",
+    phoneRequired: "من فضلك اكتب رقم تليفونك.",
+    phoneInvalid: "من فضلك اكتب رقم تليفون صحيح.",
+    phoneAlreadyExists: "فيه حساب بالفعل بنفس رقم التليفون ده.",
     referralSourceRequired: "من فضلك قولنا عرفتنا منين.",
     serviceInterestsRequired: "من فضلك اختار خدمة واحدة على الأقل مهتم بيها.",
     accountEmailExists: "فيه حساب بالفعل بنفس البريد الإلكتروني ده.",

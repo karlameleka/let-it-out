@@ -96,9 +96,17 @@ export default function EntryForm({
       setMoods([]);
       setPhoto(null);
       setPhotoError(null);
-      onSaved?.();
     }
   }
+
+  // onSaved (e.g. router.refresh()/router.push()) is a side effect on a
+  // different component (the router), which React disallows calling
+  // synchronously during this component's render — it has to run in an
+  // effect instead, kept separate from the render-time state resets above.
+  useEffect(() => {
+    if (state?.success) onSaved?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   function requestPhotoAccess() {
     if (window.localStorage.getItem(PHOTO_PERMISSION_KEY) === "1") {

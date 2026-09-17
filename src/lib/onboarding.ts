@@ -82,23 +82,29 @@ export async function dismissOnboardingChecklist(): Promise<void> {
 /** Marks the "write your first journal entry" step done. Journal entries
  * never reach the server at all (see local-journal.ts), so this is called
  * directly from createEntry() the moment one is saved rather than derived
- * from a query. */
-export async function markOnboardingJournalStepDone(): Promise<void> {
+ * from a query. Returns whether this call was the one that actually
+ * flipped it (vs. an already-done no-op), so the caller knows whether the
+ * onboarding checklist — which lives in the root layout and won't notice
+ * on its own — needs a router.refresh() to pick up the change. */
+export async function markOnboardingJournalStepDone(): Promise<boolean> {
   const user = await requireUser().catch(() => null);
-  if (!user) return;
-  await prisma.user.updateMany({
+  if (!user) return false;
+  const result = await prisma.user.updateMany({
     where: { id: user.userId, onboardingJournalDoneAt: null },
     data: { onboardingJournalDoneAt: new Date() },
   });
+  return result.count > 0;
 }
 
 /** Marks the "explore counseling" step done, fired once from the
- * counseling page itself. */
-export async function markOnboardingCounselingStepDone(): Promise<void> {
+ * counseling page itself. See markOnboardingJournalStepDone for what the
+ * return value is for. */
+export async function markOnboardingCounselingStepDone(): Promise<boolean> {
   const user = await requireUser().catch(() => null);
-  if (!user) return;
-  await prisma.user.updateMany({
+  if (!user) return false;
+  const result = await prisma.user.updateMany({
     where: { id: user.userId, onboardingCounselingDoneAt: null },
     data: { onboardingCounselingDoneAt: new Date() },
   });
+  return result.count > 0;
 }

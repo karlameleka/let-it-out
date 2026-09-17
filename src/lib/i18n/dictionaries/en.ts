@@ -262,6 +262,7 @@ const en = {
       "Just reach out as early as you can, by email or through the contact page, and we'll help you find a new time.",
   },
   counselorProfile: {
+    backToCounseling: "Back to counseling",
     bookHeading: "Book a session",
     bookDescription:
       "Pick a preferred day and pay below, we'll confirm your exact session time with you afterward.",
@@ -320,6 +321,7 @@ const en = {
     timeRequired: "Please choose a preferred time.",
   },
   sessionStatus: {
+    backToCounseling: "Back to counseling",
     sessionWith: "Session with",
     titleConfirmed: "Payment received, we'll confirm your time",
     titlePending: "Complete your payment",
@@ -589,6 +591,7 @@ const en = {
     gender: "Gender",
     country: "Country",
     searchCountryPlaceholder: "Search country…",
+    callingCode: "Code",
     noCountryResults: "No matching countries.",
     referralSource: "How did you hear about us?",
     serviceInterests: "Interested in",
@@ -637,6 +640,9 @@ const en = {
     passwordUpdatedText: "Your password has been updated.",
     genderRequired: "Please select your gender.",
     countryRequired: "Please select your country.",
+    phoneRequired: "Please enter your phone number.",
+    phoneInvalid: "Please enter a valid phone number.",
+    phoneAlreadyExists: "An account with this phone number already exists.",
     referralSourceRequired: "Please tell us how you heard about us.",
     serviceInterestsRequired: "Please select at least one service you're interested in.",
     accountEmailExists: "An account with this email already exists.",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bell, BellOff, BellRing, Share } from "lucide-react";
 import { unsubscribeFromPush } from "@/lib/push-actions";
@@ -11,6 +12,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 type Status = "checking" | "unsupported" | "off" | "on" | "denied";
 
 export default function JournalReminderToggle({ dict }: { dict: Dictionary["account"] }) {
+  const router = useRouter();
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +73,12 @@ export default function JournalReminderToggle({ dict }: { dict: Dictionary["acco
         return;
       }
       setStatus("on");
+      // The onboarding checklist's "reminders" step is computed server-side
+      // (from whether a push subscription row exists) and lives in the
+      // root layout, which this page alone won't re-fetch on its own —
+      // without this it keeps showing unchecked until some unrelated
+      // navigation happens to force a refresh.
+      router.refresh();
     } catch (err) {
       // Surfaced on-screen (not just console) since this most often runs on
       // a phone with no attached debugger — the failure needs to be visible

@@ -23,7 +23,7 @@ import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
-import { GENDER_CUSTOM } from "@/lib/content/geo";
+import { GENDER_CUSTOM, COUNTRY_CALLING_CODES } from "@/lib/content/geo";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -78,6 +78,23 @@ function resolveGender(
   return { gender: trimmed };
 }
 
+const CALLING_CODES = new Set(Object.values(COUNTRY_CALLING_CODES));
+
+/** Combines the country page's calling-code select and phone number field
+ * into one E.164-ish string ("+201001234567") for storage — validates the
+ * code is one this app actually offers and the number is a plausible
+ * length once non-digits are stripped. */
+function resolvePhone(
+  a: Dictionary["auth"],
+  phoneCountryCode: string,
+  phoneNumber: string,
+): { phone: string } | { error: string } {
+  if (!CALLING_CODES.has(phoneCountryCode)) return { error: a.phoneInvalid };
+  const digits = phoneNumber.replace(/\D/g, "");
+  if (digits.length < 6 || digits.length > 14) return { error: a.phoneInvalid };
+  return { phone: `${phoneCountryCode}${digits}` };
+}
+
 function buildEmailVerificationSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
   return z.object({
     firstName: z.string().trim().min(1, v.firstNameRequired),
@@ -103,6 +120,8 @@ function buildCompleteSignupSchema(v: Dictionary["validation"], a: Dictionary["a
         .regex(/[^A-Za-z0-9]/, a.passwordNeedsSpecialChar),
       confirmPassword: z.string(),
       country: z.string().trim().min(1, a.countryRequired),
+      phoneCountryCode: z.string().trim().min(1, a.phoneRequired),
+      phoneNumber: z.string().trim().min(1, a.phoneRequired),
       referralSource: z.string().trim().min(1, a.referralSourceRequired),
       serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
       agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
@@ -325,6 +344,8 @@ export async function completeSignup(
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
     country: formData.get("country"),
+    phoneCountryCode: formData.get("phoneCountryCode"),
+    phoneNumber: formData.get("phoneNumber"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
     agreedToPolicy: formData.get("agreedToPolicy"),
@@ -333,7 +354,14 @@ export async function completeSignup(
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
-  const { pendingSignupId, password, country, referralSource, serviceInterests } = parsed.data;
+  const { pendingSignupId, password, country, phoneCountryCode, phoneNumber, referralSource, serviceInterests } =
+    parsed.data;
+
+  const phoneResult = resolvePhone(a, phoneCountryCode, phoneNumber);
+  if ("error" in phoneResult) {
+    return { error: phoneResult.error };
+  }
+  const { phone } = phoneResult;
 
   const pending = await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } });
   if (!pending || !pending.emailVerifiedAt) {
@@ -351,6 +379,10 @@ export async function completeSignup(
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
     return { error: a.accountEmailExists };
   }
+  const existingPhone = await prisma.user.findUnique({ where: { phone } });
+  if (existingPhone) {
+    return { error: a.phoneAlreadyExists };
+  }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
 
@@ -362,6 +394,7 @@ export async function completeSignup(
       birthDate: pending.birthDate,
       gender: pending.gender,
       country,
+      phone,
       referralSource,
       serviceInterests,
       locale,
@@ -409,6 +442,8 @@ function buildSocialSignupSchema(a: Dictionary["auth"]) {
     gender: z.string().trim().min(1, a.genderRequired),
     customGender: z.string().trim().nullable(),
     country: z.string().trim().min(1, a.countryRequired),
+    phoneCountryCode: z.string().trim().min(1, a.phoneRequired),
+    phoneNumber: z.string().trim().min(1, a.phoneRequired),
     referralSource: z.string().trim().min(1, a.referralSourceRequired),
     serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
     agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
@@ -444,6 +479,8 @@ export async function completeSocialSignup(
     gender: formData.get("gender"),
     customGender: formData.get("customGender"),
     country: formData.get("country"),
+    phoneCountryCode: formData.get("phoneCountryCode"),
+    phoneNumber: formData.get("phoneNumber"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
     agreedToPolicy: formData.get("agreedToPolicy"),
@@ -458,6 +495,8 @@ export async function completeSocialSignup(
     gender: genderChoice,
     customGender,
     country,
+    phoneCountryCode,
+    phoneNumber,
     referralSource,
     serviceInterests,
   } = parsed.data;
@@ -470,8 +509,13 @@ export async function completeSocialSignup(
   if ("error" in genderResult) {
     return { error: genderResult.error };
   }
+  const phoneResult = resolvePhone(a, phoneCountryCode, phoneNumber);
+  if ("error" in phoneResult) {
+    return { error: phoneResult.error };
+  }
   const { birthDate } = birthDateResult;
   const { gender } = genderResult;
+  const { phone } = phoneResult;
 
   // Re-check in case the email got claimed, or this provider identity got
   // linked some other way, while this sat unfinished.
@@ -487,6 +531,10 @@ export async function completeSocialSignup(
     await clearPendingSocialSignup();
     return { error: a.accountEmailExists };
   }
+  const existingPhone = await prisma.user.findUnique({ where: { phone } });
+  if (existingPhone) {
+    return { error: a.phoneAlreadyExists };
+  }
 
   const user = await prisma.user.create({
     data: {
@@ -497,6 +545,7 @@ export async function completeSocialSignup(
       birthDate,
       gender,
       country,
+      phone,
       referralSource,
       serviceInterests,
       locale,
@@ -517,6 +566,7 @@ export async function completeSocialSignup(
     name: user.name,
     type: "ACCOUNT_SIGNUP",
     email: user.email,
+    phone: user.phone ?? undefined,
     source: "Website",
     notes: `Signed up via ${pending.provider === "google" ? "Google" : "Apple"}.\n${demographicNotes}`,
   });

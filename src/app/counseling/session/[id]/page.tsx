@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Container } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
@@ -38,7 +39,13 @@ export default async function SessionBookingPage({
   return (
     <Container className="py-16 sm:py-20">
       <div className="mx-auto max-w-2xl">
-        <p className="text-sm font-medium text-brand-600">
+        <Link
+          href="/counseling"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow"
+        >
+          <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToCounseling}
+        </Link>
+        <p className="mt-4 text-sm font-medium text-brand-600">
           {t.sessionWith} {booking.counselor.name}
         </p>
         <h1 className="mt-1 font-display text-3xl font-medium text-brand-900">

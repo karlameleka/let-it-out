@@ -50,6 +50,7 @@ export default function OnboardingSpotlight({ dict }: { dict: Dictionary["onboar
 
     let attempts = 0;
     let cancelled = false;
+    let scrolled = false;
     let intervalId: ReturnType<typeof setInterval> | null = null;
 
     function measure() {
@@ -58,6 +59,14 @@ export default function OnboardingSpotlight({ dict }: { dict: Dictionary["onboar
       const rect = el.getBoundingClientRect();
       const above = rect.bottom + 140 > window.innerHeight && rect.top > 140;
       setPlacement({ top: rect.top, left: rect.left, width: rect.width, height: rect.height, above });
+      // Some highlighted elements (e.g. the whole counselor list) are
+      // taller than the viewport and can start off-screen entirely —
+      // scroll to their top once so the ring and its tooltip actually
+      // land somewhere visible instead of rendering out of reach.
+      if (!scrolled && (rect.top < 0 || rect.top > window.innerHeight)) {
+        scrolled = true;
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
       return true;
     }
 
@@ -98,6 +107,31 @@ export default function OnboardingSpotlight({ dict }: { dict: Dictionary["onboar
 
   const copy = TOOLTIP_COPY[activeStep];
   const padding = 6;
+  // Rough height of the tooltip bubble (title + body + button + padding) —
+  // exact content varies, but this is enough to keep it from being pushed
+  // off the top/bottom edge of the viewport by a very tall or very short
+  // highlighted target.
+  const TOOLTIP_HEIGHT_ESTIMATE = 160;
+
+  // The "above" case used to position via `top` + `translateY(-100%)`, but
+  // the animate-pop-in keyframes also animate `transform` (ending at
+  // `translateY(0) scale(1)`), which clobbers that inline transform for the
+  // whole animation — the bubble silently rendered below its target instead
+  // of above it, regardless of viewport size. Positioning "above" via
+  // `bottom` instead avoids the animation ever touching layout at all.
+  const style: { left: number; top?: number; bottom?: number } = {
+    left: Math.min(Math.max(placement.left, 16), window.innerWidth - 272),
+  };
+  if (placement.above) {
+    const idealBottom = window.innerHeight - (placement.top - padding - 12);
+    style.bottom = Math.min(
+      Math.max(idealBottom, TOOLTIP_HEIGHT_ESTIMATE + 16),
+      window.innerHeight - 16,
+    );
+  } else {
+    const idealTop = placement.top + placement.height + padding + 12;
+    style.top = Math.min(Math.max(idealTop, 16), window.innerHeight - TOOLTIP_HEIGHT_ESTIMATE - 16);
+  }
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[55]">
@@ -113,13 +147,7 @@ export default function OnboardingSpotlight({ dict }: { dict: Dictionary["onboar
       />
       <div
         className="animate-pop-in pointer-events-auto absolute w-64 rounded-2xl border-2 border-brand-100 bg-white p-4 shadow-2xl"
-        style={{
-          left: Math.min(Math.max(placement.left, 16), window.innerWidth - 272),
-          top: placement.above
-            ? Math.max(placement.top - padding - 12, 16)
-            : placement.top + placement.height + padding + 12,
-          transform: placement.above ? "translateY(-100%)" : undefined,
-        }}
+        style={style}
       >
         <p className="font-display text-sm font-semibold text-brand-900">{dict[copy.titleKey]}</p>
         <p className="mt-1 text-xs leading-relaxed text-ink/65">{dict[copy.bodyKey]}</p>
