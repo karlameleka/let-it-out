@@ -124,16 +124,19 @@ model User {
 // written to the User table (and no email is "claimed") until the person
 // actually proves they own the address. Replaced (not updated) on every
 // new attempt for the same email — see requestSignupOtp in auth-actions.ts.
+// Only holds what's known once the signup wizard's email page is verified
+// (name/email/birthday/gender) — password, country, referral source, and
+// interests are collected on later pages and go straight from that final
+// form submission into the real User row in completeSignup, never through
+// here. See requestEmailVerification / verifyEmailVerification / completeSignup
+// in auth-actions.ts.
 model PendingSignup {
-  id               String     @id @default(cuid())
-  name             String
-  email            String     @unique
-  passwordHash     String
-  birthDate        DateTime   @db.Date
-  gender           String
-  country          String
-  referralSource   String
-  serviceInterests String[]
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  birthDate       DateTime  @db.Date
+  gender          String
+  emailVerifiedAt DateTime?
 
   otpCodeHash   String
   otpExpiresAt  DateTime

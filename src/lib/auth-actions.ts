@@ -33,6 +33,7 @@ const BCRYPT_COST = 12;
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const OTP_RESEND_COOLDOWN_MS = 45 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
+const PENDING_SIGNUP_MAX_AGE_MS = 30 * 60 * 1000; // time to finish the rest of the wizard after verifying email
 
 /** Combines the signup wizard's separate Month/Day/Year fields into a real
  * date, the same way Google's own birthday picker works — including
@@ -77,12 +78,23 @@ function resolveGender(
   return { gender: trimmed };
 }
 
-function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+function buildEmailVerificationSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+  return z.object({
+    firstName: z.string().trim().min(1, v.firstNameRequired),
+    lastName: z.string().trim().min(1, v.lastNameRequired),
+    email: z.string().trim().email(v.emailInvalid),
+    birthMonth: z.string().trim().min(1, a.birthDateRequired),
+    birthDay: z.string().trim().min(1, a.birthDateRequired),
+    birthYear: z.string().trim().min(1, a.birthDateRequired),
+    gender: z.string().trim().min(1, a.genderRequired),
+    customGender: z.string().trim().nullable(),
+  });
+}
+
+function buildCompleteSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
   return z
     .object({
-      firstName: z.string().trim().min(1, v.firstNameRequired),
-      lastName: z.string().trim().min(1, v.lastNameRequired),
-      email: z.string().trim().email(v.emailInvalid),
+      pendingSignupId: z.string().min(1),
       password: z
         .string()
         .min(8, v.passwordMin8)
@@ -90,11 +102,6 @@ function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
         .regex(/[0-9]/, a.passwordNeedsNumber)
         .regex(/[^A-Za-z0-9]/, a.passwordNeedsSpecialChar),
       confirmPassword: z.string(),
-      birthMonth: z.string().trim().min(1, a.birthDateRequired),
-      birthDay: z.string().trim().min(1, a.birthDateRequired),
-      birthYear: z.string().trim().min(1, a.birthDateRequired),
-      gender: z.string().trim().min(1, a.genderRequired),
-      customGender: z.string().trim().nullable(),
       country: z.string().trim().min(1, a.countryRequired),
       referralSource: z.string().trim().min(1, a.referralSourceRequired),
       serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
@@ -129,10 +136,11 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 1)}${"*".repeat(Math.max(local.length - 1, 1))}@${domain}`;
 }
 
-/** Lets the signup wizard's email page stop the person immediately if the
- * address is already taken, instead of waiting until the very last page to
- * find out. requestSignupOtp still re-checks this itself — this is purely
- * an earlier, friendlier warning, not the source of truth. */
+/** A quick, no-email-sent check the email page runs before requesting a
+ * verification code, so a taken address gets a fast "already exists"
+ * message instead of waiting on an OTP request that would fail for the
+ * same reason. requestEmailVerification re-checks this itself regardless —
+ * this is purely an earlier, friendlier warning, not the source of truth. */
 export async function checkSignupEmailAvailable(email: string): Promise<{ error?: string }> {
   const locale = await getLocale();
   const dict = getDictionary(locale);
@@ -154,57 +162,42 @@ export async function checkSignupEmailAvailable(email: string): Promise<{ error?
   return existingUser ? { error: dict.auth.accountEmailExists } : {};
 }
 
-export type SignupFormState =
+export type EmailVerificationState =
   | { error: string }
   | { pendingSignupId: string; destination: string }
   | undefined;
 
-/** Step 1 of signup: validates the form, stashes it as a PendingSignup (no
- * User row yet — the email/phone aren't "claimed" until verified), and
- * sends a 6-digit code to the chosen channel. */
-export async function requestSignupOtp(
-  _prevState: SignupFormState,
+/** First step of signup now: as soon as the wizard's email page checks out
+ * (valid, available), send a 6-digit code to prove the person owns it —
+ * before they spend time on password/country/referral/interests, not
+ * after. No User row yet; this PendingSignup only holds what's known at
+ * this point (name/email/birthday/gender). See verifyEmailVerification and
+ * completeSignup for the rest. */
+export async function requestEmailVerification(
+  _prevState: EmailVerificationState,
   formData: FormData,
-): Promise<SignupFormState> {
+): Promise<EmailVerificationState> {
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const a = dict.auth;
 
-  const parsed = buildSignupSchema(dict.validation, a).safeParse({
+  const parsed = buildEmailVerificationSchema(dict.validation, a).safeParse({
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     email: formData.get("email"),
-    password: formData.get("password"),
-    confirmPassword: formData.get("confirmPassword"),
     birthMonth: formData.get("birthMonth"),
     birthDay: formData.get("birthDay"),
     birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
     customGender: formData.get("customGender"),
-    country: formData.get("country"),
-    referralSource: formData.get("referralSource"),
-    serviceInterests: formData.getAll("serviceInterests"),
-    agreedToPolicy: formData.get("agreedToPolicy"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
-  const {
-    firstName,
-    lastName,
-    email,
-    password,
-    birthMonth,
-    birthDay,
-    birthYear,
-    gender: genderChoice,
-    customGender,
-    country,
-    referralSource,
-    serviceInterests,
-  } = parsed.data;
+  const { firstName, lastName, email, birthMonth, birthDay, birthYear, gender: genderChoice, customGender } =
+    parsed.data;
   const name = `${firstName} ${lastName}`.trim();
 
   const birthDateResult = parseBirthDate(a, birthMonth, birthDay, birthYear);
@@ -218,7 +211,7 @@ export async function requestSignupOtp(
   const { birthDate } = birthDateResult;
   const { gender } = genderResult;
 
-  // Every OTP request sends a real email — without this, requestSignupOtp
+  // Every OTP request sends a real email — without this, requestEmailVerification
   // is an open OTP-bombing primitive against any address, not just the
   // caller's own.
   const ip = await getClientIp();
@@ -232,7 +225,6 @@ export async function requestSignupOtp(
     return { error: a.accountEmailExists };
   }
 
-  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
   const code = generateOtpCode();
 
   // Replace, don't update — any previous unfinished attempt for this
@@ -243,12 +235,8 @@ export async function requestSignupOtp(
     data: {
       name,
       email,
-      passwordHash,
       birthDate,
       gender,
-      country,
-      referralSource,
-      serviceInterests,
       otpCodeHash: hashOtpCode(code),
       otpExpiresAt: new Date(Date.now() + OTP_TTL_MS),
     },
@@ -263,26 +251,28 @@ export async function requestSignupOtp(
   return { pendingSignupId: pending.id, destination: maskEmail(email) };
 }
 
-function buildOtpVerifySchema(a: Dictionary["auth"]) {
+function buildOtpCodeSchema(a: Dictionary["auth"]) {
   return z.object({
     pendingSignupId: z.string().min(1),
     code: z.string().trim().min(1, a.codeRequired),
   });
 }
 
-export type OtpVerifyState = { error?: string } | undefined;
+export type VerifyEmailState = { error?: string } | { verified: true } | undefined;
 
-/** Step 2 of signup: checks the code against the PendingSignup, and only on
- * success creates the real User (and its welcome email, CRM lead, session). */
-export async function verifySignupOtp(
-  _prevState: OtpVerifyState,
+/** Checks the code against the PendingSignup from requestEmailVerification
+ * and, on success, marks it email-verified. It does NOT create the User —
+ * password/country/referral/interests haven't been collected yet, that's
+ * completeSignup's job once the rest of the wizard is filled in. */
+export async function verifyEmailVerification(
+  _prevState: VerifyEmailState,
   formData: FormData,
-): Promise<OtpVerifyState> {
+): Promise<VerifyEmailState> {
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const a = dict.auth;
 
-  const parsed = buildOtpVerifySchema(a).safeParse({
+  const parsed = buildOtpCodeSchema(a).safeParse({
     pendingSignupId: formData.get("pendingSignupId"),
     code: formData.get("code"),
   });
@@ -309,24 +299,71 @@ export async function verifySignupOtp(
     return { error: a.codeIncorrect };
   }
 
+  await prisma.pendingSignup.update({ where: { id: pending.id }, data: { emailVerifiedAt: new Date() } });
+
+  return { verified: true };
+}
+
+export type SignupFormState = { error: string } | undefined;
+
+/** Final step: the email was already verified back in
+ * requestEmailVerification / verifyEmailVerification — this just fills in
+ * the rest (password, country, referral source, interests) and creates the
+ * real User. pendingSignupId is the only thing trusted about identity
+ * here; name/email/birthday/gender come from that already-verified row,
+ * never from anything the client resubmits. */
+export async function completeSignup(
+  _prevState: SignupFormState,
+  formData: FormData,
+): Promise<SignupFormState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildCompleteSignupSchema(dict.validation, a).safeParse({
+    pendingSignupId: formData.get("pendingSignupId"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+    country: formData.get("country"),
+    referralSource: formData.get("referralSource"),
+    serviceInterests: formData.getAll("serviceInterests"),
+    agreedToPolicy: formData.get("agreedToPolicy"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+
+  const { pendingSignupId, password, country, referralSource, serviceInterests } = parsed.data;
+
+  const pending = await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } });
+  if (!pending || !pending.emailVerifiedAt) {
+    return { error: a.signupExpired };
+  }
+  if (Date.now() - pending.createdAt.getTime() > PENDING_SIGNUP_MAX_AGE_MS) {
+    await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+    return { error: a.signupExpired };
+  }
+
   // Re-check uniqueness in case the email got claimed by someone else while
-  // this signup sat unverified.
+  // this signup sat verified-but-unfinished.
   const existingUser = await prisma.user.findUnique({ where: { email: pending.email } });
   if (existingUser) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
     return { error: a.accountEmailExists };
   }
 
+  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+
   const user = await prisma.user.create({
     data: {
       name: pending.name,
       email: pending.email,
-      passwordHash: pending.passwordHash,
+      passwordHash,
       birthDate: pending.birthDate,
       gender: pending.gender,
-      country: pending.country,
-      referralSource: pending.referralSource,
-      serviceInterests: pending.serviceInterests,
+      country,
+      referralSource,
+      serviceInterests,
       locale,
     },
   });
@@ -336,9 +373,9 @@ export async function verifySignupOtp(
   const demographicNotes = [
     `Birth date: ${pending.birthDate.toISOString().slice(0, 10)}`,
     `Gender: ${pending.gender}`,
-    `Country: ${pending.country}`,
-    `Heard about us via: ${pending.referralSource}`,
-    `Interested in: ${pending.serviceInterests.join(", ")}`,
+    `Country: ${country}`,
+    `Heard about us via: ${referralSource}`,
+    `Interested in: ${serviceInterests.join(", ")}`,
   ].join("\n");
 
   await createLead({
@@ -509,7 +546,7 @@ export async function cancelSocialSignup(): Promise<never> {
 
 export type OtpResendState = { error?: string; success?: boolean } | undefined;
 
-export async function resendSignupOtp(
+export async function resendEmailVerificationOtp(
   _prevState: OtpResendState,
   formData: FormData,
 ): Promise<OtpResendState> {
@@ -528,7 +565,7 @@ export async function resendSignupOtp(
     return { error: a.resendCooldown };
   }
 
-  // Same reasoning as requestSignupOtp: this sends a real email, and the
+  // Same reasoning as requestEmailVerification: this sends a real email, and the
   // per-record cooldown above only throttles resends against one specific
   // pending signup — an IP could still cycle through many different pending
   // signups without it.

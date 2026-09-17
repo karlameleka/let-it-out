@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, Circle } from "lucide-react";
 import {
-  requestSignupOtp,
-  verifySignupOtp,
-  resendSignupOtp,
+  requestEmailVerification,
+  verifyEmailVerification,
+  resendEmailVerificationOtp,
+  completeSignup,
   completeSocialSignup,
   checkSignupEmailAvailable,
   cancelSocialSignup,
@@ -282,61 +284,6 @@ function MultiSelectDropdown({
   );
 }
 
-function OtpStep({
-  pendingSignupId,
-  destination,
-  dict,
-}: {
-  pendingSignupId: string;
-  destination: string;
-  dict: Dictionary;
-}) {
-  const [verifyState, verifyAction, verifying] = useActionState(verifySignupOtp, undefined);
-  const [resendState, resendAction, resending] = useActionState(resendSignupOtp, undefined);
-  const t = dict.auth;
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4 text-sm text-ink/70">
-        {t.otpSentEmail} <span className="font-medium text-ink/90">{destination}</span>
-      </div>
-      <form action={verifyAction} className="space-y-4">
-        <input type="hidden" name="pendingSignupId" value={pendingSignupId} />
-        <div>
-          <label htmlFor="code" className="sr-only">{t.otpCodeLabel}</label>
-          <input
-            id="code"
-            name="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            required
-            placeholder="••••••"
-            className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-brand-500"
-          />
-        </div>
-        {verifyState?.error && <p className="text-sm text-red-600">{verifyState.error}</p>}
-        <Button type="submit" disabled={verifying} className="w-full">
-          {verifying ? t.verifying : t.verifyAndCreateAccount}
-        </Button>
-      </form>
-      <form action={resendAction}>
-        <input type="hidden" name="pendingSignupId" value={pendingSignupId} />
-        <button
-          type="submit"
-          disabled={resending}
-          className="text-sm font-medium text-brand-600 link-grow disabled:opacity-50"
-        >
-          {resending ? t.resending : t.resendCode}
-        </button>
-        {resendState?.error && <p className="mt-1.5 text-xs text-red-600">{resendState.error}</p>}
-        {resendState?.success && <p className="mt-1.5 text-xs text-brand-700">{t.codeResent}</p>}
-      </form>
-    </div>
-  );
-}
-
 type StepId = "name" | "birthday" | "email" | "password" | "country" | "referral" | "interests" | "agree";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -354,7 +301,8 @@ export default function SignupForm({
   appleEnabled?: boolean;
   pendingSocial?: { email: string; name: string } | null;
 }) {
-  const [otpState, requestOtpAction, requestingOtp] = useActionState(requestSignupOtp, undefined);
+  const router = useRouter();
+  const [completeState, completeAction, completingSignup] = useActionState(completeSignup, undefined);
   const [socialState, socialAction, completingSocial] = useActionState(completeSocialSignup, undefined);
   const t = dict.auth;
   const f = dict.forms;
@@ -389,6 +337,22 @@ export default function SignupForm({
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [cancelingSocial, setCancelingSocial] = useState(false);
 
+  // Email verification now happens right after the email page, not at the
+  // very end — pendingSignupId identifies the PendingSignup row created by
+  // requestEmailVerification once the code is confirmed, and is what
+  // completeSignup finishes the account from. verifiedSnapshot captures
+  // every field that row was created from (name/email/birthday/gender), so
+  // going back and changing any of them is detected and forces re-verification.
+  const [pendingSignupId, setPendingSignupId] = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verifiedSnapshot, setVerifiedSnapshot] = useState<string | null>(null);
+  const [awaitingCode, setAwaitingCode] = useState(false);
+  const [otpDestination, setOtpDestination] = useState("");
+  const [code, setCode] = useState("");
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [resendingCode, setResendingCode] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+
   // Keeps the Day dropdown honest when Month/Year change out from under a
   // previously valid choice (e.g. picking Feb after selecting the 31st).
   function handleBirthMonthChange(value: string) {
@@ -402,13 +366,13 @@ export default function SignupForm({
     if (birthDay && Number(birthDay) > max) setBirthDay("");
   }
 
-  if (!pendingSocial && otpState && "pendingSignupId" in otpState) {
-    return <OtpStep pendingSignupId={otpState.pendingSignupId} destination={otpState.destination} dict={dict} />;
+  function currentIdentitySnapshot() {
+    return JSON.stringify({ firstName, lastName, email, birthMonth, birthDay, birthYear, gender, customGender });
   }
 
-  const formAction = pendingSocial ? socialAction : requestOtpAction;
-  const pending = pendingSocial ? completingSocial : requestingOtp;
-  const submitError = pendingSocial ? socialState?.error : otpState && "error" in otpState ? otpState.error : undefined;
+  const formAction = pendingSocial ? socialAction : completeAction;
+  const pending = pendingSocial ? completingSocial : completingSignup;
+  const submitError = pendingSocial ? socialState?.error : completeState?.error;
 
   function validateStep(id: StepId): string | null {
     switch (id) {
@@ -466,27 +430,116 @@ export default function SignupForm({
     }
 
     if (steps[step] === "email") {
+      // Already verified this exact name/email/birthday/gender combination
+      // — nothing changed since, so just continue without sending another
+      // code.
+      if (emailVerified && verifiedSnapshot === currentIdentitySnapshot()) {
+        setStepError(null);
+        setStep((s) => s + 1);
+        return;
+      }
+
       setCheckingEmail(true);
-      const result = await checkSignupEmailAvailable(email);
+      const availability = await checkSignupEmailAvailable(email);
+      if (availability.error) {
+        setCheckingEmail(false);
+        setStepError(availability.error);
+        return;
+      }
+
+      const fd = new FormData();
+      fd.set("firstName", firstName);
+      fd.set("lastName", lastName);
+      fd.set("email", email);
+      fd.set("birthMonth", birthMonth);
+      fd.set("birthDay", birthDay);
+      fd.set("birthYear", birthYear);
+      fd.set("gender", gender);
+      fd.set("customGender", customGender);
+      const result = await requestEmailVerification(undefined, fd);
       setCheckingEmail(false);
-      if (result.error) {
+
+      if (result && "error" in result) {
         setStepError(result.error);
         return;
       }
+      if (result && "pendingSignupId" in result) {
+        setPendingSignupId(result.pendingSignupId);
+        setOtpDestination(result.destination);
+        setCode("");
+        setResendMessage(null);
+        setAwaitingCode(true);
+        setStepError(null);
+      }
+      return;
     }
 
     setStepError(null);
     setStep((s) => s + 1);
   }
 
+  async function handleVerifyCode() {
+    if (!pendingSignupId) return;
+    setVerifyingCode(true);
+    const fd = new FormData();
+    fd.set("pendingSignupId", pendingSignupId);
+    fd.set("code", code);
+    const result = await verifyEmailVerification(undefined, fd);
+    setVerifyingCode(false);
+
+    if (result && "error" in result) {
+      setStepError(result.error ?? v.invalidInput);
+      return;
+    }
+
+    setEmailVerified(true);
+    setVerifiedSnapshot(currentIdentitySnapshot());
+    setAwaitingCode(false);
+    setStepError(null);
+    setStep((s) => s + 1);
+  }
+
+  async function handleResendCode() {
+    if (!pendingSignupId) return;
+    setResendingCode(true);
+    const fd = new FormData();
+    fd.set("pendingSignupId", pendingSignupId);
+    const result = await resendEmailVerificationOtp(undefined, fd);
+    setResendingCode(false);
+
+    if (result && "error" in result) {
+      setResendMessage(null);
+      setStepError(result.error ?? v.invalidInput);
+    } else {
+      setStepError(null);
+      setResendMessage(t.codeResent);
+    }
+  }
+
   async function goBack() {
-    // On a Google/Apple signup's first page there's no earlier step to
-    // return to — "Back" here means leaving the social signup entirely
-    // (e.g. wrong account, or wanting email/password instead), so it
-    // cancels the pending identity and returns to a normal /signup.
-    if (step === 0 && pendingSocial) {
-      setCancelingSocial(true);
-      await cancelSocialSignup();
+    // Mid-verification on the email page: "Back" means fixing the email
+    // rather than leaving it, so it returns to the plain input instead of
+    // moving to the previous wizard step.
+    if (steps[step] === "email" && awaitingCode) {
+      setAwaitingCode(false);
+      setStepError(null);
+      return;
+    }
+
+    if (step === 0) {
+      // On a Google/Apple signup's first page there's no earlier step to
+      // return to — "Back" here means leaving the social signup entirely
+      // (e.g. wrong account, or wanting email/password instead), so it
+      // cancels the pending identity and returns to a normal /signup.
+      if (pendingSocial) {
+        setCancelingSocial(true);
+        await cancelSocialSignup();
+        return;
+      }
+      // Same idea for a normal signup's first page: nothing has been
+      // submitted yet, so "Back" just leaves the page the way the browser
+      // back button would.
+      router.back();
       return;
     }
     setStepError(null);
@@ -540,6 +593,7 @@ export default function SignupForm({
         }}
         className="space-y-4"
       >
+        {!pendingSocial && <input type="hidden" name="pendingSignupId" value={pendingSignupId ?? ""} />}
         {!pendingSocial && (
           <div hidden={stepId !== "name"} className="space-y-4">
             <h2 className="font-display text-xl font-medium text-brand-900">{t.nameStepHeading}</h2>
@@ -640,19 +694,50 @@ export default function SignupForm({
           <>
             <div hidden={stepId !== "email"} className="space-y-4">
               <h2 className="font-display text-xl font-medium text-brand-900">{t.emailStepHeading}</h2>
-              <div>
-                <label htmlFor="email" className={labelClasses}>
-                  {f.email}
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={fieldClasses}
-                />
-              </div>
+              {awaitingCode ? (
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-4 text-sm text-ink/70">
+                    {t.otpSentEmail} <span className="font-medium text-ink/90">{otpDestination}</span>
+                  </div>
+                  <div>
+                    <label htmlFor="emailOtpCode" className="sr-only">{t.otpCodeLabel}</label>
+                    <input
+                      id="emailOtpCode"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="••••••"
+                      className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-brand-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={resendingCode}
+                    className="text-sm font-medium text-brand-600 link-grow disabled:opacity-50"
+                  >
+                    {resendingCode ? t.resending : t.resendCode}
+                  </button>
+                  {resendMessage && <p className="text-xs text-brand-700">{resendMessage}</p>}
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="email" className={labelClasses}>
+                    {f.email}
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={fieldClasses}
+                  />
+                </div>
+              )}
             </div>
 
             <div hidden={stepId !== "password"} className="space-y-4">
@@ -769,21 +854,17 @@ export default function SignupForm({
         {(stepError || submitError) && <p className="text-sm text-red-600">{stepError || submitError}</p>}
 
         <div className="flex items-center gap-3">
-          {(step > 0 || pendingSocial) && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={goBack}
-              disabled={cancelingSocial}
-              className="gap-1.5"
-            >
-              <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-              {step === 0 && pendingSocial ? t.cancel : t.back}
-            </Button>
-          )}
+          <Button type="button" variant="outline" onClick={goBack} disabled={cancelingSocial} className="gap-1.5">
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+            {step === 0 && pendingSocial ? t.cancel : t.back}
+          </Button>
           {isLastStep ? (
             <Button type="submit" disabled={pending} className="flex-1">
               {pending ? t.creatingAccount : t.createAccount}
+            </Button>
+          ) : stepId === "email" && awaitingCode ? (
+            <Button type="button" onClick={handleVerifyCode} disabled={verifyingCode} className="flex-1">
+              {verifyingCode ? t.verifying : t.verify}
             </Button>
           ) : (
             <Button type="button" onClick={goNext} disabled={checkingEmail} className="flex-1">
