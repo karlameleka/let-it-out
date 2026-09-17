@@ -997,6 +997,8 @@ const en = {
     favoritesTitle: "Favorite articles",
     favoritesEmpty: "You haven't starred any articles yet.",
     favoritesCta: "Browse resources",
+    medicationsTitle: "Medications",
+    prescribedBy: "Prescribed by {name}",
     sessionsTitle: "Counseling sessions",
     nextUpcoming: "Next upcoming",
     noUpcoming: "No upcoming sessions.",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, Download, X } from "lucide-react";
+import { BookOpen, Download, Pill, X } from "lucide-react";
+import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import {
   getClientProfile,
@@ -8,7 +9,7 @@ import {
   getAssignedResourcesForClient,
   type IntakeAnswerEntry,
 } from "@/lib/therapist-data";
-import { removeAssignedResource } from "@/lib/therapist-actions";
+import { removeAssignedResource, discontinueMedication } from "@/lib/therapist-actions";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
 import ClientNoteForm from "./note-form";
@@ -16,7 +17,9 @@ import ClientNoteItem from "./note-item";
 import ReferClientForm from "./refer-form";
 import AssignResourceForm from "./assign-resource-form";
 import MeetingLinkForm from "./meeting-link-form";
+import MedicationForm from "./medication-form";
 import PdfOpenButton from "@/components/pdf-open-button";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 export default async function TherapistClientProfilePage({
   params,
@@ -27,12 +30,14 @@ export default async function TherapistClientProfilePage({
   const { email: encodedEmail } = await params;
   const email = decodeURIComponent(encodedEmail);
 
-  const [client, colleagues, assignedResources] = await Promise.all([
+  const [client, colleagues, assignedResources, counselor] = await Promise.all([
     getClientProfile(session.counselorId, email),
     getOtherActiveCounselors(session.counselorId),
     getAssignedResourcesForClient(session.counselorId, email),
+    prisma.counselor.findUnique({ where: { id: session.counselorId }, select: { canPrescribeMedication: true } }),
   ]);
   if (!client) notFound();
+  const canPrescribe = counselor?.canPrescribeMedication ?? false;
 
   const currentNextSteps = client.notes.find((n) => n.nextSteps)?.nextSteps ?? null;
   const latestIntake = client.intakeSubmissions[0];
@@ -152,6 +157,58 @@ export default async function TherapistClientProfilePage({
               )}
             </div>
           </div>
+
+          {(canPrescribe || client.medications.length > 0) && (
+            <div>
+              <div className="flex items-center gap-2">
+                <Pill className="h-4 w-4 text-brand-600" strokeWidth={2} />
+                <h2 className="font-display font-semibold text-brand-900">Medications</h2>
+              </div>
+              <p className="mt-1 text-sm text-ink/60">
+                Visible to every counselor treating {client.name.split(" ")[0]}, and to {client.name.split(" ")[0]} themselves on their profile.
+              </p>
+              {client.medications.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {client.medications.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`rounded-2xl border p-4 ${m.active ? "border-brand-100 bg-white" : "border-brand-50 bg-brand-50/40"}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-medium ${m.active ? "text-brand-900" : "text-ink/50 line-through"}`}>
+                            {m.name}
+                            {m.dosage && <span className="font-normal text-ink/60"> · {m.dosage}</span>}
+                          </p>
+                          {m.instructions && <p className="mt-1 text-sm text-ink/60">{m.instructions}</p>}
+                          <p className="mt-1 text-xs text-ink/40">
+                            {m.active ? "Active" : "Discontinued"} · added by {m.counselor.name}
+                          </p>
+                        </div>
+                        {m.active && m.counselorId === session.counselorId && (
+                          <form action={discontinueMedication}>
+                            <input type="hidden" name="medicationId" value={m.id} />
+                            <input type="hidden" name="clientEmail" value={client.email} />
+                            <ConfirmSubmitButton
+                              confirmMessage={`Mark ${m.name} as discontinued?`}
+                              className="shrink-0 rounded-lg p-1.5 text-ink/40 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <X className="h-4 w-4" strokeWidth={2} />
+                            </ConfirmSubmitButton>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {canPrescribe && (
+                <div className="mt-3">
+                  <MedicationForm clientEmail={client.email} clientName={client.name} />
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <AssignResourceForm clientEmail={client.email} clientName={client.name} />

@@ -275,6 +275,22 @@ export default async function AdminCounselorDetailPage({
             are shared, sitewide question sets used for every counselor&rsquo;s clients, not a per-counselor copy,
             changes they save apply everywhere, same as when an admin edits them here.
           </p>
+
+          <label className="mt-4 flex items-center gap-2 text-sm font-medium text-ink/80">
+            <input
+              type="checkbox"
+              name="canPrescribeMedication"
+              defaultChecked={counselor.canPrescribeMedication}
+              className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            Can add medications for clients
+          </label>
+          <p className="mt-1 text-xs text-ink/50">
+            Adds a &ldquo;Medications&rdquo; section to every client&rsquo;s profile in their therapist portal,
+            where they can add or discontinue a medication. Reserve this for psychiatrists — every counselor
+            treating a shared client can see the list either way, but only counselors with this on can change it.
+          </p>
+
           <button
             type="submit"
             className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"

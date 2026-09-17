@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/db";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getUpcomingPageData, getPastItems } from "@/lib/upcoming-items";
@@ -19,10 +20,15 @@ export default async function ProfilePage() {
   const dict = getDictionary(locale);
   const t = dict.profile;
 
-  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles] = await Promise.all([
+  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications] = await Promise.all([
     getUpcomingPageData(user.email, user.userId, locale),
     getPastItems(user.email, user.userId, locale),
     getArticles(),
+    prisma.medication.findMany({
+      where: { clientEmail: user.email, active: true },
+      include: { counselor: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
   const articles = rawArticles.map((a) => localizeArticle(a, locale));
 
@@ -47,6 +53,26 @@ export default async function ProfilePage() {
       <p className="mt-2 text-sm text-ink/60">{t.subtitle}</p>
 
       <ProfileClient userId={user.userId} locale={locale} articles={articles} dict={t} />
+
+      {medications.length > 0 && (
+        <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+          <h2 className="font-display font-semibold text-brand-900">{t.medicationsTitle}</h2>
+          <div className="mt-3 space-y-2">
+            {medications.map((m) => (
+              <div key={m.id} className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+                <p className="text-sm font-medium text-brand-900">
+                  {m.name}
+                  {m.dosage && <span className="font-normal text-ink/60"> · {m.dosage}</span>}
+                </p>
+                {m.instructions && <p className="mt-1 text-sm text-ink/70">{m.instructions}</p>}
+                <p className="mt-1 text-xs text-ink/40">
+                  {t.prescribedBy.replace("{name}", m.counselor.name)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{t.sessionsTitle}</h2>

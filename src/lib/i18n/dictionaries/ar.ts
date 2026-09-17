@@ -983,6 +983,8 @@ const ar: Dictionary = {
     favoritesTitle: "المقالات المفضلة",
     favoritesEmpty: "لسه معلمتش أي مقال كمفضل.",
     favoritesCta: "تصفح الموارد",
+    medicationsTitle: "الأدوية",
+    prescribedBy: "وصفها {name}",
     sessionsTitle: "جلسات الاستشارة",
     nextUpcoming: "الجلسة الجاية",
     noUpcoming: "مفيش جلسات قادمة.",

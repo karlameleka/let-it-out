@@ -185,6 +185,12 @@ model Counselor {
   // see those tabs.
   canEditFormsConfig Boolean @default(false)
 
+  // Admin-granted permission letting this counselor add/discontinue
+  // medications for their clients from their own /therapist portal (see
+  // Medication below) — reserved for psychiatrists, since prescribing is
+  // outside most counselors' clinical scope. Off by default.
+  canPrescribeMedication Boolean @default(false)
+
   // Self-service therapist portal login (/therapist). Null passwordHash
   // means portal access hasn't been set up yet for this counselor — an
   // admin sends a setup link from /admin/counselors/[id], which uses the
@@ -224,6 +230,7 @@ model Counselor {
   promoCodes          PromoCodeCounselor[]
   intakeSubmissions   IntakeSubmission[]
   clientNotes         ClientNote[]
+  medications         Medication[]
   toolkitItems        ToolkitItem[]
   referralsSent       Referral[]              @relation("ReferralsSent")
   referralsReceived   Referral[]              @relation("ReferralsReceived")
@@ -392,6 +399,32 @@ model ClientNote {
   updatedAt   DateTime  @updatedAt
 
   @@index([counselorId, clientEmail])
+}
+
+// A medication a psychiatrist has prescribed for a client, added from their
+// own /therapist portal (gated by Counselor.canPrescribeMedication — see
+// addMedication in therapist-actions.ts, which re-checks that flag server
+// side rather than trusting the UI). Visible to the client themselves on
+// their My Profile page (matched by email, the same client-identification
+// pattern ClientNote uses), and to every counselor treating them, not just
+// the one who added it, since a client may see more than one therapist.
+model Medication {
+  id           String    @id @default(cuid())
+  counselor    Counselor @relation(fields: [counselorId], references: [id])
+  counselorId  String
+  clientEmail  String
+  clientName   String
+  name         String
+  dosage       String?
+  instructions String?   @db.Text
+  // Discontinued rather than deleted, so the client's history isn't
+  // silently erased if a psychiatrist takes them off something.
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([counselorId, clientEmail])
+  @@index([clientEmail])
 }
 
 enum ToolkitItemKind {

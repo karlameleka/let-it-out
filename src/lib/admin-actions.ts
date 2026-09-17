@@ -813,7 +813,8 @@ export async function updateCounselorFormsPermission(formData: FormData) {
   await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
   const canEditFormsConfig = formData.get("canEditFormsConfig") === "on";
-  await prisma.counselor.update({ where: { id: counselorId }, data: { canEditFormsConfig } });
+  const canPrescribeMedication = formData.get("canPrescribeMedication") === "on";
+  await prisma.counselor.update({ where: { id: counselorId }, data: { canEditFormsConfig, canPrescribeMedication } });
   revalidatePath("/admin/counselors/[id]", "page");
 }
 

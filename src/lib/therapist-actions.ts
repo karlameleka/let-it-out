@@ -688,3 +688,62 @@ export async function removeAssignedResource(formData: FormData) {
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
 }
+
+export type MedicationFormState = { error?: string; success?: boolean } | undefined;
+
+export async function addMedication(
+  _prevState: MedicationFormState,
+  formData: FormData,
+): Promise<MedicationFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  // Re-checked here, not just hidden in the UI — canPrescribeMedication is
+  // an admin-granted permission, so a counselor without it must not be able
+  // to add one by posting directly to this action.
+  const counselor = await prisma.counselor.findUnique({
+    where: { id: session.counselorId },
+    select: { canPrescribeMedication: true },
+  });
+  if (!counselor?.canPrescribeMedication) return { error: "You don't have permission to add medications." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const dosage = String(formData.get("dosage") ?? "").trim();
+  const instructions = String(formData.get("instructions") ?? "").trim();
+
+  if (!clientEmail || !clientName) return { error: "Missing client." };
+  if (!name) return { error: "Please enter a medication name." };
+
+  await prisma.medication.create({
+    data: {
+      counselorId: session.counselorId,
+      clientEmail,
+      clientName,
+      name,
+      dosage: dosage || null,
+      instructions: instructions || null,
+    },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  return { success: true };
+}
+
+/** Marks a medication as discontinued rather than deleting it, so the
+ * client's history stays intact. */
+export async function discontinueMedication(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const medicationId = String(formData.get("medicationId") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+
+  await prisma.medication.updateMany({
+    where: { id: medicationId, counselorId: session.counselorId },
+    data: { active: false },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+}
