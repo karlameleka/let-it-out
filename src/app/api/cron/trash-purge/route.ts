@@ -4,9 +4,10 @@ import { logAudit } from "@/lib/audit-log";
 
 /**
  * Hard-deletes every TrashedItem past its 24h undo window (see
- * src/lib/trash.ts) — runs hourly (see vercel.json) so nothing sits
- * restorable much past the 24h it promises. Same fail-closed auth as the
- * other crons in this app.
+ * src/lib/trash.ts) — runs once daily (see vercel.json; Vercel's Hobby
+ * plan rejects the whole deployment if a cron runs more than once a day),
+ * so an item may stay restorable a few hours past the 24h it promises.
+ * Same fail-closed auth as the other crons in this app.
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
