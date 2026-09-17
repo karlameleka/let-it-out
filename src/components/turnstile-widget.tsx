@@ -64,6 +64,32 @@ export default function TurnstileWidget({
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const resolvedRef = useRef(false);
+
+  function resolveReady() {
+    if (resolvedRef.current) return;
+    resolvedRef.current = true;
+    onReady?.();
+  }
+  function resolveError() {
+    if (resolvedRef.current) return;
+    resolvedRef.current = true;
+    onError?.();
+  }
+
+  useEffect(() => {
+    if (!siteKey) return;
+    // Fail open no matter *why* the widget never resolves — a blocked or
+    // silently-hanging request to Cloudflare's challenge domain (some
+    // ISPs/firewalls drop it rather than erroring, so neither the script's
+    // onError nor any Turnstile callback ever fires) would otherwise leave
+    // scriptLoaded stuck false and the submit button permanently stuck on
+    // "Verifying…" forever, which is worse than the race condition this
+    // component exists to fix.
+    const timeout = setTimeout(resolveError, 6000);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteKey]);
 
   useEffect(() => {
     if (!siteKey || !scriptLoaded || !containerRef.current || !window.turnstile) return;
@@ -74,10 +100,10 @@ export default function TurnstileWidget({
       sitekey: siteKey,
       theme,
       size: "flexible",
-      callback: () => onReady?.(),
-      "error-callback": () => onError?.(),
-      "expired-callback": () => onError?.(),
-      "timeout-callback": () => onError?.(),
+      callback: () => resolveReady(),
+      "error-callback": () => resolveError(),
+      "expired-callback": () => resolveError(),
+      "timeout-callback": () => resolveError(),
     });
 
     return () => {
@@ -98,7 +124,7 @@ export default function TurnstileWidget({
         src="https://challenges.cloudflare.com/turnstile/v0/api.js"
         strategy="afterInteractive"
         onLoad={() => setScriptLoaded(true)}
-        onError={() => onError?.()}
+        onError={() => resolveError()}
       />
       <div ref={containerRef} />
     </>
