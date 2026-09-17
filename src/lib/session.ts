@@ -12,6 +12,16 @@ const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 const PENDING_2FA_COOKIE = "lio_2fa_pending";
 const PENDING_2FA_MAX_AGE_SECONDS = 5 * 60; // 5 minutes to enter the code
 
+const PENDING_SOCIAL_SIGNUP_COOKIE = "lio_social_signup_pending";
+const PENDING_SOCIAL_SIGNUP_MAX_AGE_SECONDS = 10 * 60; // 10 minutes to finish the form
+
+export type PendingSocialSignup = {
+  provider: "google" | "apple";
+  providerId: string;
+  email: string;
+  name: string;
+};
+
 export async function createSession(payload: SessionPayload) {
   const token = await new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
@@ -119,4 +129,55 @@ export async function getPendingTwoFactorUserId(): Promise<string | null> {
 export async function clearPendingTwoFactorSession() {
   const cookieStore = await cookies();
   cookieStore.delete(PENDING_2FA_COOKIE);
+}
+
+/**
+ * Google/Apple have already verified this person's identity by the time
+ * their OAuth callback runs, but a brand-new signup still needs to answer
+ * the same demographic questions as an email signup — so instead of
+ * creating the User immediately, the callback stashes the verified
+ * identity here (short-lived, purpose-scoped, httpOnly — the client never
+ * sees or can tamper with it) and sends them to /signup to finish the
+ * rest of the form on the same page. completeSocialSignup() reads it back
+ * to know which identity to attach once they submit.
+ */
+export async function createPendingSocialSignup(data: PendingSocialSignup) {
+  const token = await new SignJWT({ ...data, purpose: "social_signup_pending" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(`${PENDING_SOCIAL_SIGNUP_MAX_AGE_SECONDS}s`)
+    .sign(getSecretKey());
+
+  const cookieStore = await cookies();
+  cookieStore.set(PENDING_SOCIAL_SIGNUP_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: PENDING_SOCIAL_SIGNUP_MAX_AGE_SECONDS,
+  });
+}
+
+export async function getPendingSocialSignup(): Promise<PendingSocialSignup | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(PENDING_SOCIAL_SIGNUP_COOKIE)?.value;
+  if (!token) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, getSecretKey());
+    if (payload.purpose !== "social_signup_pending") return null;
+    return {
+      provider: payload.provider as "google" | "apple",
+      providerId: payload.providerId as string,
+      email: payload.email as string,
+      name: payload.name as string,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPendingSocialSignup() {
+  const cookieStore = await cookies();
+  cookieStore.delete(PENDING_SOCIAL_SIGNUP_COOKIE);
 }

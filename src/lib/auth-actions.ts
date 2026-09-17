@@ -12,6 +12,8 @@ import {
   createPendingTwoFactorSession,
   getPendingTwoFactorUserId,
   clearPendingTwoFactorSession,
+  getPendingSocialSignup,
+  clearPendingSocialSignup,
 } from "@/lib/session";
 import { verifyTotpCode, decryptTotpSecret, hashBackupCode } from "@/lib/totp";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendOtpEmail } from "@/lib/email";
@@ -256,6 +258,112 @@ export async function verifySignupOtp(
   });
 
   redirect("/");
+}
+
+function buildSocialSignupSchema(a: Dictionary["auth"]) {
+  return z.object({
+    birthYear: z.string().trim().min(1, a.birthYearRequired),
+    gender: z.string().trim().min(1, a.genderRequired),
+    country: z.string().trim().min(1, a.countryRequired),
+    referralSource: z.string().trim().min(1, a.referralSourceRequired),
+    serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
+  });
+}
+
+export type CompleteSocialSignupState = { error?: string } | undefined;
+
+/** Finishes a Google/Apple signup once the person answers the same
+ * demographic questions an email signup does. The identity itself was
+ * already verified by the provider back in its OAuth callback — that's
+ * why this reads it from the pending-social cookie (see
+ * createPendingSocialSignup in session.ts) rather than trusting anything
+ * the client submits directly; nothing about who's signing up comes from
+ * this form. */
+export async function completeSocialSignup(
+  _prevState: CompleteSocialSignupState,
+  formData: FormData,
+): Promise<CompleteSocialSignupState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const pending = await getPendingSocialSignup();
+  if (!pending) {
+    return { error: a.signupExpired };
+  }
+
+  const parsed = buildSocialSignupSchema(a).safeParse({
+    birthYear: formData.get("birthYear"),
+    gender: formData.get("gender"),
+    country: formData.get("country"),
+    referralSource: formData.get("referralSource"),
+    serviceInterests: formData.getAll("serviceInterests"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+  const { birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
+
+  // Re-check in case the email got claimed, or this provider identity got
+  // linked some other way, while this sat unfinished.
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: pending.email },
+        pending.provider === "google" ? { googleId: pending.providerId } : { appleId: pending.providerId },
+      ],
+    },
+  });
+  if (existingUser) {
+    await clearPendingSocialSignup();
+    return { error: a.accountEmailExists };
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      name: pending.name,
+      email: pending.email,
+      googleId: pending.provider === "google" ? pending.providerId : undefined,
+      appleId: pending.provider === "apple" ? pending.providerId : undefined,
+      birthYear: Number(birthYear),
+      gender,
+      country,
+      referralSource,
+      serviceInterests,
+      locale,
+    },
+  });
+
+  await clearPendingSocialSignup();
+
+  const demographicNotes = [
+    `Birth year: ${birthYear}`,
+    `Gender: ${gender}`,
+    `Country: ${country}`,
+    `Heard about us via: ${referralSource}`,
+    `Interested in: ${serviceInterests.join(", ")}`,
+  ].join("\n");
+
+  await createLead({
+    name: user.name,
+    type: "ACCOUNT_SIGNUP",
+    email: user.email,
+    source: "Website",
+    notes: `Signed up via ${pending.provider === "google" ? "Google" : "Apple"}.\n${demographicNotes}`,
+  });
+
+  const baseUrl = await getBaseUrl();
+  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy`, locale });
+
+  await createSession({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    phone: user.phone,
+    role: user.role,
+  });
+
+  redirect(user.role === "ADMIN" ? "/admin" : "/");
 }
 
 export type OtpResendState = { error?: string; success?: boolean } | undefined;
