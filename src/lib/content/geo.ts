@@ -96,8 +96,14 @@ export const COUNTRIES = [
   "Other",
 ];
 
-/** Signup demographics — required, collected once at signup. */
-export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"];
+/**
+ * Signup demographics — required, collected once at signup. Mirrors
+ * Google's own gender dropdown: these three plus a "Custom" option that
+ * reveals a free-text field (see GENDER_CUSTOM below) rather than being a
+ * storable value itself — whatever the person types becomes the stored
+ * gender in that case.
+ */
+export const GENDERS = ["Male", "Female", "Rather not say"];
 
 /**
  * Arabic display labels, index-aligned with GENDERS. The submitted form
@@ -105,7 +111,54 @@ export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"];
  * surfaced in the English-only admin dashboard / CRM) — only the label
  * shown to Arabic-locale signups changes.
  */
-export const GENDERS_AR = ["أنثى", "ذكر", "غير ثنائي", "أفضل عدم القول"];
+export const GENDERS_AR = ["ذكر", "أنثى", "تفضل عدم القول"];
+
+/** Sentinel dropdown value that reveals the free-text "Custom" gender field. */
+export const GENDER_CUSTOM = "Custom";
+export const GENDER_CUSTOM_AR = "مخصص";
+
+export const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+export const MONTHS_AR = [
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
+
+/**
+ * Number of days in a given birthday month, so the Day dropdown only offers
+ * valid choices (leap years included). Falls back to a 31-day month when
+ * nothing is picked yet, and to a leap year (so Feb 29 stays available)
+ * until a year is chosen — matching how Google's own birthday picker
+ * behaves before both fields are set.
+ */
+export function daysInMonth(month: number | null, year: number | null): number {
+  if (!month) return 31;
+  const y = year && year > 0 ? year : 2000;
+  return new Date(y, month, 0).getDate();
+}
 
 export const REFERRAL_SOURCES = [
   "Social media",

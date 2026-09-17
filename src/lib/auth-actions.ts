@@ -23,6 +23,7 @@ import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
+import { GENDER_CUSTOM } from "@/lib/content/geo";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -33,10 +34,54 @@ const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const OTP_RESEND_COOLDOWN_MS = 45 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
 
+/** Combines the signup wizard's separate Month/Day/Year fields into a real
+ * date, the same way Google's own birthday picker works — including
+ * rejecting combinations that don't exist (e.g. Feb 30) and enforcing the
+ * same minimum age the old birth-year-only dropdown used to. */
+function parseBirthDate(
+  a: Dictionary["auth"],
+  birthMonth: string,
+  birthDay: string,
+  birthYear: string,
+): { birthDate: Date } | { error: string } {
+  const month = Number(birthMonth);
+  const day = Number(birthDay);
+  const year = Number(birthYear);
+  if (!month || !day || !year) return { error: a.birthDateRequired };
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return { error: a.birthDateInvalid };
+  }
+
+  const today = new Date();
+  const hadBirthdayThisYear =
+    today.getUTCMonth() > month - 1 || (today.getUTCMonth() === month - 1 && today.getUTCDate() >= day);
+  const age = today.getUTCFullYear() - year - (hadBirthdayThisYear ? 0 : 1);
+  if (age < 13) return { error: a.birthDateTooYoung };
+
+  return { birthDate: date };
+}
+
+/** Google's gender dropdown has a "Custom" option that reveals a free-text
+ * field instead of being a value on its own — this resolves the pair down
+ * to the string that actually gets stored. */
+function resolveGender(
+  a: Dictionary["auth"],
+  gender: string,
+  customGender: string | null,
+): { gender: string } | { error: string } {
+  if (gender !== GENDER_CUSTOM) return { gender };
+  const trimmed = customGender?.trim();
+  if (!trimmed) return { error: a.customGenderRequired };
+  return { gender: trimmed };
+}
+
 function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
   return z
     .object({
-      name: z.string().trim().min(2, v.nameRequired),
+      firstName: z.string().trim().min(1, v.firstNameRequired),
+      lastName: z.string().trim().min(1, v.lastNameRequired),
       email: z.string().trim().email(v.emailInvalid),
       password: z
         .string()
@@ -45,8 +90,11 @@ function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
         .regex(/[0-9]/, a.passwordNeedsNumber)
         .regex(/[^A-Za-z0-9]/, a.passwordNeedsSpecialChar),
       confirmPassword: z.string(),
-      birthYear: z.string().trim().min(1, a.birthYearRequired),
+      birthMonth: z.string().trim().min(1, a.birthDateRequired),
+      birthDay: z.string().trim().min(1, a.birthDateRequired),
+      birthYear: z.string().trim().min(1, a.birthDateRequired),
       gender: z.string().trim().min(1, a.genderRequired),
+      customGender: z.string().trim().nullable(),
       country: z.string().trim().min(1, a.countryRequired),
       referralSource: z.string().trim().min(1, a.referralSourceRequired),
       serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
@@ -98,12 +146,16 @@ export async function requestSignupOtp(
   const a = dict.auth;
 
   const parsed = buildSignupSchema(dict.validation, a).safeParse({
-    name: formData.get("name"),
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
     email: formData.get("email"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
+    birthMonth: formData.get("birthMonth"),
+    birthDay: formData.get("birthDay"),
     birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
+    customGender: formData.get("customGender"),
     country: formData.get("country"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
@@ -114,7 +166,32 @@ export async function requestSignupOtp(
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
-  const { name, email, password, birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    birthMonth,
+    birthDay,
+    birthYear,
+    gender: genderChoice,
+    customGender,
+    country,
+    referralSource,
+    serviceInterests,
+  } = parsed.data;
+  const name = `${firstName} ${lastName}`.trim();
+
+  const birthDateResult = parseBirthDate(a, birthMonth, birthDay, birthYear);
+  if ("error" in birthDateResult) {
+    return { error: birthDateResult.error };
+  }
+  const genderResult = resolveGender(a, genderChoice, customGender);
+  if ("error" in genderResult) {
+    return { error: genderResult.error };
+  }
+  const { birthDate } = birthDateResult;
+  const { gender } = genderResult;
 
   // Every OTP request sends a real email — without this, requestSignupOtp
   // is an open OTP-bombing primitive against any address, not just the
@@ -142,7 +219,7 @@ export async function requestSignupOtp(
       name,
       email,
       passwordHash,
-      birthYear: Number(birthYear),
+      birthDate,
       gender,
       country,
       referralSource,
@@ -220,7 +297,7 @@ export async function verifySignupOtp(
       name: pending.name,
       email: pending.email,
       passwordHash: pending.passwordHash,
-      birthYear: pending.birthYear,
+      birthDate: pending.birthDate,
       gender: pending.gender,
       country: pending.country,
       referralSource: pending.referralSource,
@@ -232,7 +309,7 @@ export async function verifySignupOtp(
   await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
 
   const demographicNotes = [
-    `Birth year: ${pending.birthYear}`,
+    `Birth date: ${pending.birthDate.toISOString().slice(0, 10)}`,
     `Gender: ${pending.gender}`,
     `Country: ${pending.country}`,
     `Heard about us via: ${pending.referralSource}`,
@@ -264,8 +341,11 @@ export async function verifySignupOtp(
 
 function buildSocialSignupSchema(a: Dictionary["auth"]) {
   return z.object({
-    birthYear: z.string().trim().min(1, a.birthYearRequired),
+    birthMonth: z.string().trim().min(1, a.birthDateRequired),
+    birthDay: z.string().trim().min(1, a.birthDateRequired),
+    birthYear: z.string().trim().min(1, a.birthDateRequired),
     gender: z.string().trim().min(1, a.genderRequired),
+    customGender: z.string().trim().nullable(),
     country: z.string().trim().min(1, a.countryRequired),
     referralSource: z.string().trim().min(1, a.referralSourceRequired),
     serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
@@ -296,8 +376,11 @@ export async function completeSocialSignup(
   }
 
   const parsed = buildSocialSignupSchema(a).safeParse({
+    birthMonth: formData.get("birthMonth"),
+    birthDay: formData.get("birthDay"),
     birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
+    customGender: formData.get("customGender"),
     country: formData.get("country"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
@@ -306,7 +389,27 @@ export async function completeSocialSignup(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
-  const { birthYear, gender, country, referralSource, serviceInterests } = parsed.data;
+  const {
+    birthMonth,
+    birthDay,
+    birthYear,
+    gender: genderChoice,
+    customGender,
+    country,
+    referralSource,
+    serviceInterests,
+  } = parsed.data;
+
+  const birthDateResult = parseBirthDate(a, birthMonth, birthDay, birthYear);
+  if ("error" in birthDateResult) {
+    return { error: birthDateResult.error };
+  }
+  const genderResult = resolveGender(a, genderChoice, customGender);
+  if ("error" in genderResult) {
+    return { error: genderResult.error };
+  }
+  const { birthDate } = birthDateResult;
+  const { gender } = genderResult;
 
   // Re-check in case the email got claimed, or this provider identity got
   // linked some other way, while this sat unfinished.
@@ -329,7 +432,7 @@ export async function completeSocialSignup(
       email: pending.email,
       googleId: pending.provider === "google" ? pending.providerId : undefined,
       appleId: pending.provider === "apple" ? pending.providerId : undefined,
-      birthYear: Number(birthYear),
+      birthDate,
       gender,
       country,
       referralSource,
@@ -341,7 +444,7 @@ export async function completeSocialSignup(
   await clearPendingSocialSignup();
 
   const demographicNotes = [
-    `Birth year: ${birthYear}`,
+    `Birth date: ${birthDate.toISOString().slice(0, 10)}`,
     `Gender: ${gender}`,
     `Country: ${country}`,
     `Heard about us via: ${referralSource}`,

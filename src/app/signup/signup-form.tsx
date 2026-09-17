@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ChevronDown, Circle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, Circle } from "lucide-react";
 import { requestSignupOtp, verifySignupOtp, resendSignupOtp, completeSocialSignup } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
 import {
   BIRTH_YEARS,
+  MONTHS,
+  MONTHS_AR,
+  daysInMonth,
   GENDERS,
   GENDERS_AR,
+  GENDER_CUSTOM,
+  GENDER_CUSTOM_AR,
   COUNTRIES,
   REFERRAL_SOURCES,
   REFERRAL_SOURCES_AR,
@@ -69,14 +74,17 @@ function SearchableSelect({
   options,
   placeholder,
   noResultsText,
+  value,
+  onChange,
 }: {
   id: string;
   name: string;
   options: string[];
   placeholder: string;
   noResultsText: string;
+  value: string;
+  onChange: (value: string) => void;
 }) {
-  const [value, setValue] = useState("");
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
@@ -126,7 +134,7 @@ function SearchableSelect({
                 role="option"
                 aria-selected={o === value}
                 onClick={() => {
-                  setValue(o);
+                  onChange(o);
                   setQuery("");
                   setOpen(false);
                 }}
@@ -156,6 +164,8 @@ function MultiSelectDropdown({
   optionLabels,
   placeholder,
   selectedLabel,
+  value,
+  onChange,
 }: {
   id: string;
   name: string;
@@ -163,18 +173,19 @@ function MultiSelectDropdown({
   optionLabels: string[];
   placeholder: string;
   selectedLabel: (count: number) => string;
+  value: string[];
+  onChange: (value: string[]) => void;
 }) {
-  const [selected, setSelected] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
 
   function toggle(o: string) {
-    setSelected((prev) => (prev.includes(o) ? prev.filter((v) => v !== o) : [...prev, o]));
+    onChange(value.includes(o) ? value.filter((v) => v !== o) : [...value, o]);
   }
 
   return (
     <div ref={ref} className="relative">
-      {selected.map((v) => (
+      {value.map((v) => (
         <input key={v} type="hidden" name={name} value={v} />
       ))}
       <button
@@ -184,10 +195,10 @@ function MultiSelectDropdown({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className={`${fieldClasses} flex items-center justify-between gap-2 text-left ${
-          selected.length === 0 ? "text-ink/45" : "text-ink"
+          value.length === 0 ? "text-ink/45" : "text-ink"
         }`}
       >
-        <span className="truncate">{selected.length === 0 ? placeholder : selectedLabel(selected.length)}</span>
+        <span className="truncate">{value.length === 0 ? placeholder : selectedLabel(value.length)}</span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-ink/40 transition-transform ${open ? "rotate-180" : ""}`}
           strokeWidth={2}
@@ -206,7 +217,7 @@ function MultiSelectDropdown({
             >
               <input
                 type="checkbox"
-                checked={selected.includes(o)}
+                checked={value.includes(o)}
                 onChange={() => toggle(o)}
                 className="h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
               />
@@ -274,6 +285,10 @@ function OtpStep({
   );
 }
 
+type StepId = "name" | "birthday" | "email" | "password" | "country" | "referral" | "interests" | "agree";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function SignupForm({
   dict,
   locale,
@@ -289,10 +304,48 @@ export default function SignupForm({
 }) {
   const [otpState, requestOtpAction, requestingOtp] = useActionState(requestSignupOtp, undefined);
   const [socialState, socialAction, completingSocial] = useActionState(completeSocialSignup, undefined);
-  const [password, setPassword] = useState("");
   const t = dict.auth;
   const f = dict.forms;
+  const v = dict.validation;
   const isAr = locale === "ar";
+
+  // Page 1: name. Page 2: birthday + gender. Then everything else, each on
+  // its own page — mirroring Google's own account-creation flow. A Google
+  // signup already knows the name and email (verified by Google), and
+  // never sets a password, so those pages are skipped entirely.
+  const steps: StepId[] = pendingSocial
+    ? ["birthday", "country", "referral", "interests", "agree"]
+    : ["name", "birthday", "email", "password", "country", "referral", "interests", "agree"];
+
+  const [step, setStep] = useState(0);
+  const [stepError, setStepError] = useState<string | null>(null);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [gender, setGender] = useState("");
+  const [customGender, setCustomGender] = useState("");
+  const [country, setCountry] = useState("");
+  const [referralSource, setReferralSource] = useState("");
+  const [serviceInterests, setServiceInterests] = useState<string[]>([]);
+
+  // Keeps the Day dropdown honest when Month/Year change out from under a
+  // previously valid choice (e.g. picking Feb after selecting the 31st).
+  function handleBirthMonthChange(value: string) {
+    setBirthMonth(value);
+    const max = daysInMonth(value ? Number(value) : null, birthYear ? Number(birthYear) : null);
+    if (birthDay && Number(birthDay) > max) setBirthDay("");
+  }
+  function handleBirthYearChange(value: string) {
+    setBirthYear(value);
+    const max = daysInMonth(birthMonth ? Number(birthMonth) : null, value ? Number(value) : null);
+    if (birthDay && Number(birthDay) > max) setBirthDay("");
+  }
 
   if (!pendingSocial && otpState && "pendingSignupId" in otpState) {
     return <OtpStep pendingSignupId={otpState.pendingSignupId} destination={otpState.destination} dict={dict} />;
@@ -300,11 +353,85 @@ export default function SignupForm({
 
   const formAction = pendingSocial ? socialAction : requestOtpAction;
   const pending = pendingSocial ? completingSocial : requestingOtp;
-  const error = pendingSocial ? socialState?.error : otpState && "error" in otpState ? otpState.error : undefined;
+  const submitError = pendingSocial ? socialState?.error : otpState && "error" in otpState ? otpState.error : undefined;
+
+  function validateStep(id: StepId): string | null {
+    switch (id) {
+      case "name":
+        if (!firstName.trim()) return v.firstNameRequired;
+        if (!lastName.trim()) return v.lastNameRequired;
+        return null;
+      case "birthday": {
+        if (!birthMonth || !birthDay || !birthYear) return t.birthDateRequired;
+        const month = Number(birthMonth);
+        const day = Number(birthDay);
+        const year = Number(birthYear);
+        const date = new Date(year, month - 1, day);
+        if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+          return t.birthDateInvalid;
+        }
+        const today = new Date();
+        const hadBirthdayThisYear =
+          today.getMonth() > month - 1 || (today.getMonth() === month - 1 && today.getDate() >= day);
+        const age = today.getFullYear() - year - (hadBirthdayThisYear ? 0 : 1);
+        if (age < 13) return t.birthDateTooYoung;
+        if (!gender) return t.genderRequired;
+        if (gender === GENDER_CUSTOM && !customGender.trim()) return t.customGenderRequired;
+        return null;
+      }
+      case "email":
+        if (!EMAIL_RE.test(email.trim())) return v.emailInvalid;
+        return null;
+      case "password":
+        if (password.length < 8) return v.passwordMin8;
+        if (!/[A-Z]/.test(password)) return t.passwordNeedsUppercase;
+        if (!/[0-9]/.test(password)) return t.passwordNeedsNumber;
+        if (!/[^A-Za-z0-9]/.test(password)) return t.passwordNeedsSpecialChar;
+        if (password !== confirmPassword) return t.confirmPasswordMismatch;
+        return null;
+      case "country":
+        if (!country.trim()) return t.countryRequired;
+        return null;
+      case "referral":
+        if (!referralSource) return t.referralSourceRequired;
+        return null;
+      case "interests":
+        if (serviceInterests.length === 0) return t.serviceInterestsRequired;
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  function goNext() {
+    const err = validateStep(steps[step]);
+    if (err) {
+      setStepError(err);
+      return;
+    }
+    setStepError(null);
+    setStep((s) => s + 1);
+  }
+
+  function goBack() {
+    setStepError(null);
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  const stepId = steps[step];
+  const isLastStep = stepId === "agree";
 
   return (
     <div className="space-y-4">
-      {!pendingSocial && (googleEnabled || appleEnabled) && (
+      {pendingSocial && (
+        <div className="flex items-center gap-2 rounded-2xl border border-brand-100 bg-brand-50/50 p-3 text-sm text-ink/70">
+          <span className="font-medium text-ink/90">{pendingSocial.name}</span>
+          <span className="text-ink/40">·</span>
+          <span className="truncate">{pendingSocial.email}</span>
+        </div>
+      )}
+
+      {!pendingSocial && step === 0 && (googleEnabled || appleEnabled) && (
         <>
           <div className="space-y-2.5">
             {appleEnabled && <AppleAuthButton label={t.continueWithApple} />}
@@ -318,94 +445,196 @@ export default function SignupForm({
         </>
       )}
 
+      <div className="h-1 w-full overflow-hidden rounded-full bg-brand-100">
+        <div
+          className="h-full rounded-full bg-brand-600 transition-all duration-300"
+          style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+        />
+      </div>
+      <p className="text-xs font-medium text-ink/45">
+        {t.stepOf.replace("{current}", String(step + 1)).replace("{total}", String(steps.length))}
+      </p>
+
       <form action={formAction} className="space-y-4">
-        {pendingSocial ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="socialName" className={labelClasses}>
-                {f.name}
-              </label>
-              <input
-                id="socialName"
-                type="text"
-                value={pendingSocial.name}
-                disabled
-                className={`${fieldClasses} disabled:bg-brand-50 disabled:text-ink/60`}
-              />
-            </div>
-            <div>
-              <label htmlFor="socialEmail" className={labelClasses}>
-                {f.email}
-              </label>
-              <input
-                id="socialEmail"
-                type="text"
-                value={pendingSocial.email}
-                disabled
-                className={`${fieldClasses} disabled:bg-brand-50 disabled:text-ink/60`}
-              />
+        {!pendingSocial && (
+          <div hidden={stepId !== "name"} className="space-y-4">
+            <h2 className="font-display text-xl font-medium text-brand-900">{t.nameStepHeading}</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="firstName" className={labelClasses}>
+                  {f.firstName}
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={fieldClasses}
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className={labelClasses}>
+                  {f.lastName}
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={fieldClasses}
+                />
+              </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        <div hidden={stepId !== "birthday"} className="space-y-4">
+          <div>
+            <h2 className="font-display text-xl font-medium text-brand-900">{t.birthdayStepHeading}</h2>
+            <p className="mt-1 text-sm text-ink/55">{t.birthdaySubheading}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="birthMonth" className="sr-only">{t.month}</label>
+              <select
+                id="birthMonth"
+                name="birthMonth"
+                value={birthMonth}
+                onChange={(e) => handleBirthMonthChange(e.target.value)}
+                className={fieldClasses}
+              >
+                <option value="" disabled>{t.month}</option>
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={i + 1}>{isAr ? MONTHS_AR[i] : m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="birthDay" className="sr-only">{t.day}</label>
+              <select
+                id="birthDay"
+                name="birthDay"
+                value={birthDay}
+                onChange={(e) => setBirthDay(e.target.value)}
+                className={fieldClasses}
+              >
+                <option value="" disabled>{t.day}</option>
+                {Array.from(
+                  { length: daysInMonth(birthMonth ? Number(birthMonth) : null, birthYear ? Number(birthYear) : null) },
+                  (_, i) => i + 1,
+                ).map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="birthYear" className="sr-only">{t.year}</label>
+              <select
+                id="birthYear"
+                name="birthYear"
+                value={birthYear}
+                onChange={(e) => handleBirthYearChange(e.target.value)}
+                className={fieldClasses}
+              >
+                <option value="" disabled>{t.year}</option>
+                {BIRTH_YEARS.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="gender" className={labelClasses}>
+              {t.gender}
+            </label>
+            <select
+              id="gender"
+              name="gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className={fieldClasses}
+            >
+              <option value="" disabled>{t.gender}</option>
+              {GENDERS.map((g, i) => (
+                <option key={g} value={g}>{isAr ? GENDERS_AR[i] : g}</option>
+              ))}
+              <option value={GENDER_CUSTOM}>{isAr ? GENDER_CUSTOM_AR : GENDER_CUSTOM}</option>
+            </select>
+            {gender === GENDER_CUSTOM && (
+              <input
+                type="text"
+                name="customGender"
+                value={customGender}
+                onChange={(e) => setCustomGender(e.target.value)}
+                placeholder={t.customGenderPlaceholder}
+                className={`${fieldClasses} mt-2`}
+              />
+            )}
+          </div>
+        </div>
+
+        {!pendingSocial && (
           <>
-            <div>
-              <label htmlFor="name" className={labelClasses}>
-                {f.name}
-              </label>
-              <input id="name" name="name" type="text" required className={fieldClasses} />
+            <div hidden={stepId !== "email"} className="space-y-4">
+              <h2 className="font-display text-xl font-medium text-brand-900">{t.emailStepHeading}</h2>
+              <div>
+                <label htmlFor="email" className={labelClasses}>
+                  {f.email}
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={fieldClasses}
+                />
+              </div>
             </div>
-            <div>
-              <label htmlFor="email" className={labelClasses}>
-                {f.email}
-              </label>
-              <input id="email" name="email" type="email" required className={fieldClasses} />
+
+            <div hidden={stepId !== "password"} className="space-y-4">
+              <h2 className="font-display text-xl font-medium text-brand-900">{t.passwordStepHeading}</h2>
+              <div>
+                <label htmlFor="password" className={labelClasses}>
+                  {t.password}
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={fieldClasses}
+                />
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className={labelClasses}>
+                  {t.confirmPassword}
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={fieldClasses}
+                />
+              </div>
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <PasswordRequirement met={password.length >= 8} label={t.passwordReqLength} />
+                <PasswordRequirement met={/[A-Z]/.test(password)} label={t.passwordReqUppercase} />
+                <PasswordRequirement met={/[0-9]/.test(password)} label={t.passwordReqNumber} />
+                <PasswordRequirement met={/[^A-Za-z0-9]/.test(password)} label={t.passwordReqSpecial} />
+              </ul>
             </div>
-            <div>
-              <label htmlFor="password" className={labelClasses}>
-                {t.password}
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                onChange={(e) => setPassword(e.target.value)}
-                className={fieldClasses}
-              />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className={labelClasses}>
-                {t.confirmPassword}
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                minLength={8}
-                className={fieldClasses}
-              />
-            </div>
-            <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-              <PasswordRequirement met={password.length >= 8} label={t.passwordReqLength} />
-              <PasswordRequirement met={/[A-Z]/.test(password)} label={t.passwordReqUppercase} />
-              <PasswordRequirement met={/[0-9]/.test(password)} label={t.passwordReqNumber} />
-              <PasswordRequirement met={/[^A-Za-z0-9]/.test(password)} label={t.passwordReqSpecial} />
-            </ul>
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="birthYear" className="sr-only">{t.birthYear}</label>
-            <select id="birthYear" name="birthYear" defaultValue="" required className={fieldClasses}>
-              <option value="" disabled>{t.birthYear}</option>
-              {BIRTH_YEARS.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
+        <div hidden={stepId !== "country"} className="space-y-4">
+          <h2 className="font-display text-xl font-medium text-brand-900">{t.countryStepHeading}</h2>
           <div>
             <label htmlFor="country" className="sr-only">{t.country}</label>
             <SearchableSelect
@@ -414,72 +643,90 @@ export default function SignupForm({
               options={COUNTRIES}
               placeholder={t.searchCountryPlaceholder}
               noResultsText={t.noCountryResults}
+              value={country}
+              onChange={setCountry}
             />
           </div>
         </div>
 
-        <div>
-          <label htmlFor="gender" className={labelClasses}>
-            {t.gender}
-          </label>
-          <select id="gender" name="gender" defaultValue="" required className={fieldClasses}>
-            <option value="" disabled>{t.gender}</option>
-            {GENDERS.map((g, i) => (
-              <option key={g} value={g}>{isAr ? GENDERS_AR[i] : g}</option>
-            ))}
-          </select>
+        <div hidden={stepId !== "referral"} className="space-y-4">
+          <h2 className="font-display text-xl font-medium text-brand-900">{t.referralSource}</h2>
+          <div>
+            <label htmlFor="referralSource" className="sr-only">{t.referralSource}</label>
+            <select
+              id="referralSource"
+              name="referralSource"
+              value={referralSource}
+              onChange={(e) => setReferralSource(e.target.value)}
+              className={fieldClasses}
+            >
+              <option value="" disabled>{t.referralSource}</option>
+              {REFERRAL_SOURCES.map((r, i) => (
+                <option key={r} value={r}>{isAr ? REFERRAL_SOURCES_AR[i] : r}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="referralSource" className={labelClasses}>
-            {t.referralSource}
-          </label>
-          <select id="referralSource" name="referralSource" defaultValue="" required className={fieldClasses}>
-            <option value="" disabled>{t.referralSource}</option>
-            {REFERRAL_SOURCES.map((r, i) => (
-              <option key={r} value={r}>{isAr ? REFERRAL_SOURCES_AR[i] : r}</option>
-            ))}
-          </select>
+        <div hidden={stepId !== "interests"} className="space-y-4">
+          <h2 className="font-display text-xl font-medium text-brand-900">{t.serviceInterests}</h2>
+          <div>
+            <label htmlFor="serviceInterests" className="sr-only">{t.serviceInterests}</label>
+            <MultiSelectDropdown
+              id="serviceInterests"
+              name="serviceInterests"
+              options={SERVICE_INTERESTS}
+              optionLabels={isAr ? SERVICE_INTERESTS_AR : SERVICE_INTERESTS}
+              placeholder={t.selectServicesPlaceholder}
+              selectedLabel={(count) => t.servicesSelectedCount.replace("{count}", String(count))}
+              value={serviceInterests}
+              onChange={setServiceInterests}
+            />
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="serviceInterests" className={labelClasses}>
-            {t.serviceInterests}
+        <div hidden={stepId !== "agree"} className="space-y-4">
+          <h2 className="font-display text-xl font-medium text-brand-900">{t.agreeStepHeading}</h2>
+          <label className="flex items-start gap-2.5 text-sm text-ink/70">
+            <input
+              type="checkbox"
+              name="agreedToPolicy"
+              required={isLastStep}
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span>
+              {t.agreeToPolicyPrefix}{" "}
+              <Link href="/privacy" target="_blank" className="font-medium text-brand-600 link-grow">
+                {dict.footer.privacyPolicy}
+              </Link>{" "}
+              {t.agreeToPolicyAnd}{" "}
+              <Link href="/terms" target="_blank" className="font-medium text-brand-600 link-grow">
+                {dict.footer.terms}
+              </Link>
+            </span>
           </label>
-          <MultiSelectDropdown
-            id="serviceInterests"
-            name="serviceInterests"
-            options={SERVICE_INTERESTS}
-            optionLabels={isAr ? SERVICE_INTERESTS_AR : SERVICE_INTERESTS}
-            placeholder={t.selectServicesPlaceholder}
-            selectedLabel={(count) => t.servicesSelectedCount.replace("{count}", String(count))}
-          />
+          <PrivacyBadge text={dict.privacyBadge.signup} />
         </div>
 
-        <label className="flex items-start gap-2.5 text-sm text-ink/70">
-          <input
-            type="checkbox"
-            name="agreedToPolicy"
-            required
-            className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
-          />
-          <span>
-            {t.agreeToPolicyPrefix}{" "}
-            <Link href="/privacy" target="_blank" className="font-medium text-brand-600 link-grow">
-              {dict.footer.privacyPolicy}
-            </Link>{" "}
-            {t.agreeToPolicyAnd}{" "}
-            <Link href="/terms" target="_blank" className="font-medium text-brand-600 link-grow">
-              {dict.footer.terms}
-            </Link>
-          </span>
-        </label>
+        {(stepError || submitError) && <p className="text-sm text-red-600">{stepError || submitError}</p>}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <PrivacyBadge text={dict.privacyBadge.signup} />
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? t.creatingAccount : t.createAccount}
-        </Button>
+        <div className="flex items-center gap-3">
+          {step > 0 && (
+            <Button type="button" variant="outline" onClick={goBack} className="gap-1.5">
+              <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+              {t.back}
+            </Button>
+          )}
+          {isLastStep ? (
+            <Button type="submit" disabled={pending} className="flex-1">
+              {pending ? t.creatingAccount : t.createAccount}
+            </Button>
+          ) : (
+            <Button type="button" onClick={goNext} className="flex-1">
+              {t.next}
+            </Button>
+          )}
+        </div>
       </form>
     </div>
   );

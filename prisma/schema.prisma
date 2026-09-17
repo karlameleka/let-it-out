@@ -74,7 +74,7 @@ model User {
   // Demographics, required at signup (collected once, not editable later
   // from account settings). Columns stay nullable so accounts created
   // before this requirement existed don't break.
-  birthYear      Int?
+  birthDate      DateTime? @db.Date
   gender         String?
   country        String?
   referralSource String?
@@ -129,7 +129,7 @@ model PendingSignup {
   name             String
   email            String     @unique
   passwordHash     String
-  birthYear        Int
+  birthDate        DateTime   @db.Date
   gender           String
   country          String
   referralSource   String

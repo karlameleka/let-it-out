@@ -26,15 +26,24 @@ function featureForPath(path: string): string {
   return "Other";
 }
 
-function bucketAge(birthYear: number | null): string {
-  if (!birthYear) return "Not provided";
-  const age = new Date().getFullYear() - birthYear;
+function bucketAge(birthDate: Date | null): string {
+  if (!birthDate) return "Not provided";
+  const today = new Date();
+  const hadBirthdayThisYear =
+    today.getUTCMonth() > birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
+  const age = today.getUTCFullYear() - birthDate.getUTCFullYear() - (hadBirthdayThisYear ? 0 : 1);
   if (age < 18) return "Under 18";
   if (age <= 24) return "18–24";
   if (age <= 34) return "25–34";
   if (age <= 44) return "35–44";
   if (age <= 54) return "45–54";
   return "55+";
+}
+
+function bucketGender(gender: string | null): string {
+  if (!gender) return "Not provided";
+  return (GENDERS as readonly string[]).includes(gender) ? gender : "Other";
 }
 
 export type BreakdownRow = { label: string; count: number; pct: number };
@@ -62,7 +71,7 @@ export async function getUserCountStats() {
  * are share-of-users, not share-of-total-selections. */
 export async function getDemographics() {
   const users = await prisma.user.findMany({
-    select: { gender: true, birthYear: true, country: true, referralSource: true, serviceInterests: true },
+    select: { gender: true, birthDate: true, country: true, referralSource: true, serviceInterests: true },
   });
   const total = users.length;
 
@@ -73,10 +82,10 @@ export async function getDemographics() {
   const interests = new Map<string, number>();
 
   for (const u of users) {
-    const g = u.gender && (GENDERS as readonly string[]).includes(u.gender) ? u.gender : "Not provided";
+    const g = bucketGender(u.gender);
     gender.set(g, (gender.get(g) ?? 0) + 1);
 
-    const a = bucketAge(u.birthYear);
+    const a = bucketAge(u.birthDate);
     age.set(a, (age.get(a) ?? 0) + 1);
 
     const c = u.country || "Not provided";
@@ -168,7 +177,7 @@ export type TimeSpentRow = { label: string; avgMinutes: number; sessions: number
 export async function getTimeSpentByGroup() {
   const [views, users] = await Promise.all([
     prisma.pageView.findMany({ select: { userId: true, createdAt: true } }),
-    prisma.user.findMany({ select: { id: true, gender: true, birthYear: true, referralSource: true } }),
+    prisma.user.findMany({ select: { id: true, gender: true, birthDate: true, referralSource: true } }),
   ]);
 
   if (views.length === 0) {
@@ -204,8 +213,8 @@ export async function getTimeSpentByGroup() {
 
   return {
     trackedUsers: byUser.size,
-    gender: accumulate((u) => (u.gender && (GENDERS as readonly string[]).includes(u.gender) ? u.gender : "Not provided")),
-    age: accumulate((u) => bucketAge(u.birthYear)),
+    gender: accumulate((u) => bucketGender(u.gender)),
+    age: accumulate((u) => bucketAge(u.birthDate)),
     referral: accumulate((u) =>
       u.referralSource && (REFERRAL_SOURCES as readonly string[]).includes(u.referralSource) ? u.referralSource : "Not provided",
     ),
