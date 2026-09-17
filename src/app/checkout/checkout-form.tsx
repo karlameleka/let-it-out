@@ -38,6 +38,7 @@ export default function CheckoutForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const [country, setCountry] = useState(account?.country ?? "");
   const [useAccount, setUseAccount] = useState(!!account);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH_ON_DELIVERY");
@@ -319,15 +320,21 @@ export default function CheckoutForm({
             </div>
           </div>
 
-          <TurnstileWidget />
+          <TurnstileWidget onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {paymentMethod === "CASH_ON_DELIVERY" ? (
-            <Button type="submit" disabled={pending || isOffline} className="w-full">
-              {isOffline ? dict.offlineReconnect : pending ? dict.placingOrder : dict.placeOrder}
+            <Button type="submit" disabled={pending || isOffline || !turnstileReady} className="w-full">
+              {isOffline ? dict.offlineReconnect : pending ? dict.placingOrder : !turnstileReady ? dict.verifying : dict.placeOrder}
             </Button>
           ) : (
-            <PaymentSelector amountEGP={totalEGP} getOrderId={handleCreatePaymobOrder} onRedirect={clear} dict={paymentDict} />
+            <PaymentSelector
+              amountEGP={totalEGP}
+              getOrderId={handleCreatePaymobOrder}
+              onRedirect={clear}
+              disabled={!turnstileReady}
+              dict={paymentDict}
+            />
           )}
         </form>
 

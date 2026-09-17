@@ -10,6 +10,7 @@ export default function PaymentSelector({
   onRedirect,
   endpoint = "/api/checkout/paymob",
   idField = "orderId",
+  disabled = false,
   dict,
 }: {
   amountEGP: number;
@@ -31,6 +32,11 @@ export default function PaymentSelector({
   endpoint?: string;
   /** JSON body key the resolved id is sent under — defaults to "orderId". */
   idField?: string;
+  /** Holds both buttons inactive — the calling page uses this while a
+   * pending Turnstile check (see turnstile-widget.tsx) hasn't produced a
+   * token yet, so a click here can't trigger getOrderId() with an empty
+   * one. */
+  disabled?: boolean;
   dict: Dictionary["paymentSelector"];
 }) {
   const [loading, setLoading] = useState<"card" | "wallet" | null>(null);
@@ -72,7 +78,7 @@ export default function PaymentSelector({
       <button
         type="button"
         onClick={() => handlePay("card")}
-        disabled={loading !== null}
+        disabled={loading !== null || disabled}
         className="w-full rounded bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-600 active:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] disabled:opacity-60"
       >
         {loading === "card" ? dict.connecting : dict.payWithCard.replace("{amount}", formatEGP(amountEGP))}
@@ -80,7 +86,7 @@ export default function PaymentSelector({
       <button
         type="button"
         onClick={() => handlePay("wallet")}
-        disabled={loading !== null}
+        disabled={loading !== null || disabled}
         className="w-full rounded border-2 border-brand-700 px-5 py-3 text-sm font-semibold text-brand-700 transition-all duration-300 hover:bg-brand-50 active:bg-brand-50 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] disabled:opacity-60"
       >
         {loading === "wallet" ? dict.connecting : dict.payWithWallet.replace("{amount}", formatEGP(amountEGP))}

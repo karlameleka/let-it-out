@@ -31,6 +31,7 @@ export default function BookingForm({
   slots?: BookingSlot[];
 }) {
   const [state, formAction, pending] = useActionState(submitBookingRequest, undefined);
+  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const [useAccount, setUseAccount] = useState(!!account);
   const [customTime, setCustomTime] = useState(slots.length === 0);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(slots[0] ?? null);
@@ -192,11 +193,11 @@ export default function BookingForm({
         <label className={labelClass} htmlFor="message">{t.messageLabel}</label>
         <textarea id="message" name="message" rows={3} className={inputClass} />
       </div>
-      <TurnstileWidget />
+      <TurnstileWidget onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <PrivacyBadge text={dict.privacyBadge.booking} />
-      <Button type="submit" disabled={pending} className="w-full">
-        {pending ? f.sending : t.submit}
+      <Button type="submit" disabled={pending || !turnstileReady} className="w-full">
+        {pending ? f.sending : turnstileReady ? t.submit : f.verifying}
       </Button>
     </form>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { submitWorkshopInquiry } from "@/lib/workshop-actions";
 import { Button } from "@/components/ui";
 import HoneypotField from "@/components/honeypot-field";
@@ -20,6 +20,7 @@ export default function WorkshopInquiryForm({
   dict: Dictionary;
 }) {
   const [state, formAction, pending] = useActionState(submitWorkshopInquiry, undefined);
+  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const t = dict.workshopForm;
   const f = dict.forms;
 
@@ -77,10 +78,10 @@ export default function WorkshopInquiryForm({
         <label className={labelClass} htmlFor="message">{t.tellUsMore}</label>
         <textarea id="message" name="message" rows={4} className={inputClass} />
       </div>
-      <TurnstileWidget />
+      <TurnstileWidget onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-      <Button type="submit" disabled={pending} className="w-full">
-        {pending ? f.sending : t.submit}
+      <Button type="submit" disabled={pending || !turnstileReady} className="w-full">
+        {pending ? f.sending : turnstileReady ? t.submit : f.verifying}
       </Button>
     </form>
   );

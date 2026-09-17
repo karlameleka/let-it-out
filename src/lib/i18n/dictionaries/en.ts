@@ -199,6 +199,7 @@ const en = {
     message: "Message",
     send: "Send message",
     sending: "Sending…",
+    verifying: "Verifying…",
   },
   validation: {
     invalidInput: "Invalid input.",
@@ -470,6 +471,7 @@ const en = {
     offlineReconnect: "Offline, reconnect to order",
     placingOrder: "Placing order…",
     placeOrder: "Place order",
+    verifying: "Verifying…",
     orderSummary: "Order summary",
     promoApplied: "applied:",
     remove: "Remove",

@@ -10,6 +10,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 export default function ResourceNotifyBell({ dict }: { dict: Dictionary["resourceNotifyBell"] }) {
   const [expanded, setExpanded] = useState(false);
   const [state, formAction, pending] = useActionState(submitResourceNotify, undefined);
+  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   if (state?.success) {
     return (
@@ -44,14 +45,14 @@ export default function ResourceNotifyBell({ dict }: { dict: Dictionary["resourc
             />
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || !turnstileReady}
               className="shrink-0 rounded bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-500 active:bg-brand-500 hover:shadow-[0_0_0_6px_rgba(51,136,164,0.18)] active:shadow-[0_0_0_6px_rgba(51,136,164,0.18)] disabled:opacity-60"
             >
               {pending ? "…" : dict.submit}
             </button>
           </div>
           <div className="flex justify-center">
-            <TurnstileWidget />
+            <TurnstileWidget onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
           </div>
         </form>
       )}

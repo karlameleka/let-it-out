@@ -198,6 +198,7 @@ const ar: Dictionary = {
     message: "الرسالة",
     send: "إرسال الرسالة",
     sending: "جارٍ الإرسال…",
+    verifying: "جارٍ التحقق…",
   },
   validation: {
     invalidInput: "البيانات المدخلة غير صحيحة.",
@@ -461,6 +462,7 @@ const ar: Dictionary = {
     offlineReconnect: "غير متصل، أعد الاتصال للطلب",
     placingOrder: "جارٍ إتمام الطلب…",
     placeOrder: "إتمام الطلب",
+    verifying: "جارٍ التحقق…",
     orderSummary: "ملخص الطلب",
     promoApplied: "تم التفعيل:",
     remove: "إزالة",

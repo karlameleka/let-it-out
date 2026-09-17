@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { submitWorkshopInterest } from "@/lib/workshop-interest-actions";
 import { Logo } from "@/components/logo";
 import { Button, Container } from "@/components/ui";
@@ -10,6 +10,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function WorkshopNotifySection({ dict }: { dict: Dictionary["workshopNotify"] }) {
   const [state, formAction, pending] = useActionState(submitWorkshopInterest, undefined);
+  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   return (
     <section className="bg-brand-700 py-16 sm:py-20">
@@ -32,11 +33,11 @@ export default function WorkshopNotifySection({ dict }: { dict: Dictionary["work
                   placeholder={dict.emailPlaceholder}
                   className="w-full flex-1 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/50 outline-none focus:border-white/60 sm:max-w-xs"
                 />
-                <Button type="submit" variant="bright" disabled={pending} className="shrink-0">
+                <Button type="submit" variant="bright" disabled={pending || !turnstileReady} className="shrink-0">
                   {pending ? dict.submitting : dict.submit}
                 </Button>
               </div>
-              <TurnstileWidget theme="dark" />
+              <TurnstileWidget theme="dark" onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
             </form>
             {state?.error && <p className="mt-2 text-xs text-red-200">{state.error}</p>}
           </>
