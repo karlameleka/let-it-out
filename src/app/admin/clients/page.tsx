@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { deleteClientAccount } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
@@ -30,7 +31,11 @@ export default async function AdminClientsPage() {
           <tbody>
             {clients.map((c) => (
               <tr key={c.id} className="border-t border-brand-50">
-                <td className="px-5 py-3 font-medium text-ink/90">{c.name}</td>
+                <td className="px-5 py-3 font-medium text-ink/90">
+                  <Link href={`/admin/clients/${c.id}`} className="hover:text-brand-700 hover:underline">
+                    {c.name}
+                  </Link>
+                </td>
                 <td className="px-5 py-3">
                   <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700">
                     {c.accountCode}

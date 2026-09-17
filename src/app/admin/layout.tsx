@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { Container } from "@/components/ui";
+import AdminSearch from "@/components/admin-search";
 
 const TABS = [
   { href: "/admin", label: "Overview" },
@@ -36,7 +37,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="bg-brand-50 min-h-full">
       <Container className="py-10">
-        <h1 className="font-display text-2xl font-semibold text-brand-900">Admin</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="font-display text-2xl font-semibold text-brand-900">Admin</h1>
+          <AdminSearch tabs={TABS} />
+        </div>
         <nav className="mt-6 flex flex-wrap gap-2 border-b border-brand-200 pb-2">
           {TABS.map((t) => (
             <Link

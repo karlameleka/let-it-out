@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { sendPasswordResetEmail, sendTherapistLoginLinkEmail } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
@@ -262,7 +263,36 @@ export async function deleteClientAccount(formData: FormData) {
   await requireAdmin();
   const userId = String(formData.get("userId"));
   await deleteUserAccountCompletely(userId, "admin");
-  revalidatePath("/admin/clients");
+  // A redirect (not just revalidatePath) so this also works from a client's
+  // own detail page — staying there after deletion would try to re-render
+  // a client that no longer exists.
+  redirect("/admin/clients");
+}
+
+/** Powers the admin dashboard's global search box — clients only (pages are
+ * matched client-side against the static nav). Matches name/email/account
+ * code, case-insensitively, substring match. Capped well below the full
+ * client list so a broad query (e.g. a common first name) still returns
+ * fast and useful results instead of everything. */
+export async function searchAdminClients(query: string) {
+  await requireAdmin();
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  const clients = await prisma.user.findMany({
+    where: {
+      role: "USER",
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+        { accountCode: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true, name: true, email: true, accountCode: true },
+    orderBy: { name: "asc" },
+    take: 8,
+  });
+  return clients;
 }
 
 export async function createPromoCode(formData: FormData) {
