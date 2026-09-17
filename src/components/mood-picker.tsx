@@ -70,12 +70,13 @@ export default function MoodPicker({
               key={m.id}
               type="button"
               onClick={() => toggleMood(m.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
                 moods.includes(m.id)
                   ? "border-brand-600 bg-white text-brand-800 shadow-sm"
                   : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300 active:border-brand-300"
               }`}
             >
+              <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: m.color }} />
               {locale === "ar" ? m.labelAr : m.label}
             </button>
           ))}

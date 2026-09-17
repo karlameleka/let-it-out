@@ -22,50 +22,54 @@ export const CORE_EMOTIONS: { id: CoreEmotionId; label: string; labelAr: string;
 ];
 
 /** More specific feelings revealed when a core emotion is picked — a small
- * feelings-wheel, not a fixed six. */
-const SECONDARY_LABELS: Record<CoreEmotionId, { label: string; labelAr: string }[]> = {
+ * feelings-wheel, not a fixed six. Each one gets its own shade rather than
+ * inheriting its core's color outright: same hue and saturation as the
+ * parent (so the family still reads as one color story, e.g. every "happy"
+ * feeling stays teal), spread evenly in HSL lightness around the core's own
+ * shade so every individual mood is visually distinct, not just its label. */
+const SECONDARY_LABELS: Record<CoreEmotionId, { label: string; labelAr: string; color: string }[]> = {
   happy: [
-    { label: "Calm", labelAr: "هادي" },
-    { label: "Content", labelAr: "راضي" },
-    { label: "Peaceful", labelAr: "مطمئن" },
-    { label: "Amused", labelAr: "مستمتع" },
-    { label: "Brave", labelAr: "شجاع" },
-    { label: "Confident", labelAr: "واثق" },
-    { label: "Excited", labelAr: "متحمس" },
-    { label: "Grateful", labelAr: "ممتن" },
-    { label: "Hopeful", labelAr: "متفائل" },
-    { label: "Joyful", labelAr: "مسرور" },
-    { label: "Passionate", labelAr: "شغوف" },
-    { label: "Proud", labelAr: "فخور" },
-    { label: "Relieved", labelAr: "مرتاح" },
-    { label: "Satisfied", labelAr: "قانع" },
+    { label: "Calm", labelAr: "هادي", color: "#0C2027" },
+    { label: "Content", labelAr: "راضي", color: "#13343E" },
+    { label: "Peaceful", labelAr: "مطمئن", color: "#1B4756" },
+    { label: "Amused", labelAr: "مستمتع", color: "#225A6D" },
+    { label: "Brave", labelAr: "شجاع", color: "#296E84" },
+    { label: "Confident", labelAr: "واثق", color: "#3894B3" },
+    { label: "Excited", labelAr: "متحمس", color: "#44A5C5" },
+    { label: "Grateful", labelAr: "ممتن", color: "#5CB0CC" },
+    { label: "Hopeful", labelAr: "متفائل", color: "#73BCD3" },
+    { label: "Joyful", labelAr: "مسرور", color: "#8AC7DB" },
+    { label: "Passionate", labelAr: "شغوف", color: "#A2D2E2" },
+    { label: "Proud", labelAr: "فخور", color: "#B9DDE9" },
+    { label: "Relieved", labelAr: "مرتاح", color: "#D0E9F0" },
+    { label: "Satisfied", labelAr: "قانع", color: "#E8F4F8" },
   ],
   sad: [
-    { label: "Drained", labelAr: "منهك" },
-    { label: "Indifferent", labelAr: "غير مبالي" },
-    { label: "Disappointed", labelAr: "خايب أمل" },
-    { label: "Discouraged", labelAr: "فاقد الحماس" },
-    { label: "Lonely", labelAr: "وحيد" },
-    { label: "Hopeless", labelAr: "يائس" },
+    { label: "Drained", labelAr: "منهك", color: "#594D71" },
+    { label: "Indifferent", labelAr: "غير مبالي", color: "#685984" },
+    { label: "Disappointed", labelAr: "خايب أمل", color: "#766596" },
+    { label: "Discouraged", labelAr: "فاقد الحماس", color: "#9689AF" },
+    { label: "Lonely", labelAr: "وحيد", color: "#A69CBC" },
+    { label: "Hopeless", labelAr: "يائس", color: "#B7AEC8" },
   ],
   angry: [
-    { label: "Annoyed", labelAr: "منزعج" },
-    { label: "Frustrated", labelAr: "محبط" },
-    { label: "Irritated", labelAr: "عصبي" },
-    { label: "Jealous", labelAr: "غيران" },
-    { label: "Overwhelmed", labelAr: "مثقل" },
-    { label: "Stressed", labelAr: "متوتر" },
+    { label: "Annoyed", labelAr: "منزعج", color: "#0B212A" },
+    { label: "Frustrated", labelAr: "محبط", color: "#113542" },
+    { label: "Irritated", labelAr: "عصبي", color: "#18485B" },
+    { label: "Jealous", labelAr: "غيران", color: "#246E8B" },
+    { label: "Overwhelmed", labelAr: "مثقل", color: "#2B81A4" },
+    { label: "Stressed", labelAr: "متوتر", color: "#3195BC" },
   ],
   fearful: [
-    { label: "Anxious", labelAr: "قلقان" },
-    { label: "Embarrassed", labelAr: "محرج" },
-    { label: "Scared", labelAr: "مرعوب" },
-    { label: "Worried", labelAr: "مهموم" },
+    { label: "Anxious", labelAr: "قلقان", color: "#749FF1" },
+    { label: "Embarrassed", labelAr: "محرج", color: "#90B2F4" },
+    { label: "Scared", labelAr: "مرعوب", color: "#ACC5F6" },
+    { label: "Worried", labelAr: "مهموم", color: "#C7D9F9" },
   ],
-  surprised: [{ label: "Amazed", labelAr: "مندهش" }],
+  surprised: [{ label: "Amazed", labelAr: "مندهش", color: "#E2D0F0" }],
   disgusted: [
-    { label: "Guilty", labelAr: "حاسس بالذنب" },
-    { label: "Ashamed", labelAr: "خجلان" },
+    { label: "Guilty", labelAr: "حاسس بالذنب", color: "#C6D7DC" },
+    { label: "Ashamed", labelAr: "خجلان", color: "#ECF2F3" },
   ],
 };
 
@@ -74,7 +78,8 @@ function slugify(label: string): string {
 }
 
 /** Flattened list of every selectable mood — core emotions plus all their
- * secondary feelings, each carrying its parent's color. */
+ * secondary feelings, each with its own distinct shade (see
+ * SECONDARY_LABELS above). */
 export const MOODS: Mood[] = CORE_EMOTIONS.flatMap((core) => [
   { id: core.id, label: core.label, labelAr: core.labelAr, core: core.id, color: core.color },
   ...SECONDARY_LABELS[core.id].map((s) => ({
@@ -82,7 +87,7 @@ export const MOODS: Mood[] = CORE_EMOTIONS.flatMap((core) => [
     label: s.label,
     labelAr: s.labelAr,
     core: core.id,
-    color: core.color,
+    color: s.color,
   })),
 ]);
 
