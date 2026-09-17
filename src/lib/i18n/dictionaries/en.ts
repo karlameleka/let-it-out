@@ -560,7 +560,6 @@ const en = {
     continueWithGoogle: "Continue with Google",
     continueWithApple: "Continue with Apple",
     orDivider: "or",
-    aboutYouLabel: "A bit about you",
     birthYear: "Birth year",
     gender: "Gender",
     country: "Country",

@@ -551,7 +551,6 @@ const ar: Dictionary = {
     continueWithGoogle: "المتابعة باستخدام جوجل",
     continueWithApple: "المتابعة باستخدام Apple",
     orDivider: "أو",
-    aboutYouLabel: "نبذة عنك",
     birthYear: "سنة الميلاد",
     gender: "الجنس",
     country: "الدولة",
