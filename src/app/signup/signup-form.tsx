@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronDown, Circle } from "lucide-react";
 import { requestSignupOtp, verifySignupOtp, resendSignupOtp, completeSocialSignup } from "@/lib/auth-actions";
@@ -454,6 +455,25 @@ export default function SignupForm({
             selectedLabel={(count) => t.servicesSelectedCount.replace("{count}", String(count))}
           />
         </div>
+
+        <label className="flex items-start gap-2.5 text-sm text-ink/70">
+          <input
+            type="checkbox"
+            name="agreedToPolicy"
+            required
+            className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+          />
+          <span>
+            {t.agreeToPolicyPrefix}{" "}
+            <Link href="/privacy" target="_blank" className="font-medium text-brand-600 link-grow">
+              {dict.footer.privacyPolicy}
+            </Link>{" "}
+            {t.agreeToPolicyAnd}{" "}
+            <Link href="/terms" target="_blank" className="font-medium text-brand-600 link-grow">
+              {dict.footer.terms}
+            </Link>
+          </span>
+        </label>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
         <PrivacyBadge text={dict.privacyBadge.signup} />

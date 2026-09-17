@@ -50,6 +50,7 @@ function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
       country: z.string().trim().min(1, a.countryRequired),
       referralSource: z.string().trim().min(1, a.referralSourceRequired),
       serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
+      agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: a.confirmPasswordMismatch,
@@ -106,6 +107,7 @@ export async function requestSignupOtp(
     country: formData.get("country"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
+    agreedToPolicy: formData.get("agreedToPolicy"),
   });
 
   if (!parsed.success) {
@@ -267,6 +269,7 @@ function buildSocialSignupSchema(a: Dictionary["auth"]) {
     country: z.string().trim().min(1, a.countryRequired),
     referralSource: z.string().trim().min(1, a.referralSourceRequired),
     serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
+    agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
   });
 }
 
@@ -298,6 +301,7 @@ export async function completeSocialSignup(
     country: formData.get("country"),
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
+    agreedToPolicy: formData.get("agreedToPolicy"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
