@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
+import { withBotId } from "botid/next/config";
 
 const SECURITY_HEADERS = [
   // Content-Security-Policy is set per-request (with a nonce) in proxy.ts,
@@ -27,7 +28,7 @@ const SECURITY_HEADERS = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
 ];
 
-const nextConfig: NextConfig = withSerwist({
+const nextConfig: NextConfig = withBotId(withSerwist({
   poweredByHeader: false,
   // Detects connectivity loss on navigation/prefetch/Server Action requests
   // and retries automatically once the connection returns, instead of
@@ -54,6 +55,6 @@ const nextConfig: NextConfig = withSerwist({
       },
     ];
   },
-});
+}));
 
 export default nextConfig;

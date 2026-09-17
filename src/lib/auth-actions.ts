@@ -23,6 +23,7 @@ import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
+import { checkBotId } from "botid/server";
 import { GENDER_CUSTOM, COUNTRY_CALLING_CODES } from "@/lib/content/geo";
 import { logAudit } from "@/lib/audit-log";
 
@@ -239,6 +240,10 @@ export async function requestEmailVerification(
   if (!rateLimitOk) {
     return { error: a.couldNotSendCode };
   }
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return { error: a.couldNotSendCode };
+  }
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -339,6 +344,11 @@ export async function completeSignup(
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const a = dict.auth;
+
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return { error: dict.validation.invalidInput };
+  }
 
   const parsed = buildCompleteSignupSchema(dict.validation, a).safeParse({
     pendingSignupId: formData.get("pendingSignupId"),
@@ -625,6 +635,10 @@ export async function resendEmailVerificationOtp(
   if (!rateLimitOk) {
     return { error: a.couldNotResendCode };
   }
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return { error: a.couldNotResendCode };
+  }
 
   const code = generateOtpCode();
   const sent = await sendOtpEmail({ to: pending.email, name: pending.name, code, locale });
@@ -655,6 +669,11 @@ export async function loginAction(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return { error: a.incorrectLogin };
   }
 
   const { email, password } = parsed.data;
@@ -863,6 +882,14 @@ export async function forgotPasswordAction(
   if (!rateLimitOk) {
     return { success: true };
   }
+  // Silent, same as the rate-limit branch above — this form must never let
+  // its response distinguish "blocked" from "email sent" (see the
+  // always-report-success comment below), and a bot is worth blocking
+  // quietly, not tipping off.
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return { success: true };
+  }
 
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
 
@@ -928,6 +955,11 @@ export async function resetPasswordAction(
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return { error: a.resetLinkInvalidOrExpired };
+  }
+
   const resetTokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
   const user = await prisma.user.findUnique({ where: { resetTokenHash } });
 
@@ -964,6 +996,11 @@ export async function verifyTwoFactorAction(
   const parsed = buildVerifyTwoFactorSchema(a).safeParse({ code: formData.get("code") });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+
+  const { isBot } = await checkBotId();
+  if (isBot) {
+    return { error: a.loginSessionExpired };
   }
 
   const userId = await getPendingTwoFactorUserId();
