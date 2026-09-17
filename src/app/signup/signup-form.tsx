@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { CheckCircle2, Circle } from "lucide-react";
 import { requestSignupOtp, verifySignupOtp, resendSignupOtp } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
 import {
@@ -27,9 +28,22 @@ import AppleAuthButton from "@/components/apple-auth-button";
 // padding-inline-start on native <select> text, so selects stay unstyled
 // beyond this.
 const fieldClasses =
-  "w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm text-ink outline-none focus:border-brand-500";
+  "w-full rounded-xl border border-brand-200 bg-white px-4 py-3.5 text-base text-ink outline-none focus:border-brand-500";
 
 const labelClasses = "mb-1 block text-sm font-medium text-ink/80";
+
+function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
+  return (
+    <li className={`flex items-center gap-2 text-sm ${met ? "text-brand-700" : "text-ink/45"}`}>
+      {met ? (
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
+      ) : (
+        <Circle className="h-4 w-4 shrink-0 text-ink/25" strokeWidth={2} />
+      )}
+      {label}
+    </li>
+  );
+}
 
 function OtpStep({
   pendingSignupId,
@@ -98,6 +112,7 @@ export default function SignupForm({
   appleEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(requestSignupOtp, undefined);
+  const [password, setPassword] = useState("");
   const t = dict.auth;
   const f = dict.forms;
   const isAr = locale === "ar";
@@ -139,9 +154,35 @@ export default function SignupForm({
           <label htmlFor="password" className={labelClasses}>
             {t.password}
           </label>
-          <input id="password" name="password" type="password" required minLength={8} className={fieldClasses} />
-          <p className="mt-1 text-xs text-ink/50">{t.passwordHint}</p>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            onChange={(e) => setPassword(e.target.value)}
+            className={fieldClasses}
+          />
         </div>
+        <div>
+          <label htmlFor="confirmPassword" className={labelClasses}>
+            {t.confirmPassword}
+          </label>
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            required
+            minLength={8}
+            className={fieldClasses}
+          />
+        </div>
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+          <PasswordRequirement met={password.length >= 8} label={t.passwordReqLength} />
+          <PasswordRequirement met={/[A-Z]/.test(password)} label={t.passwordReqUppercase} />
+          <PasswordRequirement met={/[0-9]/.test(password)} label={t.passwordReqNumber} />
+          <PasswordRequirement met={/[^A-Za-z0-9]/.test(password)} label={t.passwordReqSpecial} />
+        </ul>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -190,14 +231,14 @@ export default function SignupForm({
 
         <div>
           <p className={labelClasses}>{t.serviceInterests}</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             {SERVICE_INTERESTS.map((s, i) => (
-              <label key={s} className="flex items-center gap-2.5 text-sm text-ink/80">
+              <label key={s} className="flex items-center gap-3 text-base text-ink/80">
                 <input
                   type="checkbox"
                   name="serviceInterests"
                   value={s}
-                  className="h-4 w-4 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+                  className="h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
                 />
                 {isAr ? SERVICE_INTERESTS_AR[i] : s}
               </label>

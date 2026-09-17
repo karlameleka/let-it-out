@@ -32,16 +32,27 @@ const OTP_RESEND_COOLDOWN_MS = 45 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
 
 function buildSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
-  return z.object({
-    name: z.string().trim().min(2, v.nameRequired),
-    email: z.string().trim().email(v.emailInvalid),
-    password: z.string().min(8, v.passwordMin8),
-    birthYear: z.string().trim().min(1, a.birthYearRequired),
-    gender: z.string().trim().min(1, a.genderRequired),
-    country: z.string().trim().min(1, a.countryRequired),
-    referralSource: z.string().trim().min(1, a.referralSourceRequired),
-    serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
-  });
+  return z
+    .object({
+      name: z.string().trim().min(2, v.nameRequired),
+      email: z.string().trim().email(v.emailInvalid),
+      password: z
+        .string()
+        .min(8, v.passwordMin8)
+        .regex(/[A-Z]/, a.passwordNeedsUppercase)
+        .regex(/[0-9]/, a.passwordNeedsNumber)
+        .regex(/[^A-Za-z0-9]/, a.passwordNeedsSpecialChar),
+      confirmPassword: z.string(),
+      birthYear: z.string().trim().min(1, a.birthYearRequired),
+      gender: z.string().trim().min(1, a.genderRequired),
+      country: z.string().trim().min(1, a.countryRequired),
+      referralSource: z.string().trim().min(1, a.referralSourceRequired),
+      serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: a.confirmPasswordMismatch,
+      path: ["confirmPassword"],
+    });
 }
 
 function buildLoginSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
@@ -87,6 +98,7 @@ export async function requestSignupOtp(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
     birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
     country: formData.get("country"),
