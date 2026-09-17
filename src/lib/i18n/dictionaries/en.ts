@@ -567,6 +567,7 @@ const en = {
     continueWithApple: "Continue with Apple",
     orDivider: "or",
     back: "Back",
+    cancel: "Cancel",
     next: "Next",
     stepOf: "Step {current} of {total}",
     nameStepHeading: "What's your name?",

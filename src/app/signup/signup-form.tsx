@@ -9,6 +9,7 @@ import {
   resendSignupOtp,
   completeSocialSignup,
   checkSignupEmailAvailable,
+  cancelSocialSignup,
 } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
 import {
@@ -38,11 +39,52 @@ import AppleAuthButton from "@/components/apple-auth-button";
 // visual systems. A leading icon + custom select padding was tried here
 // before and broke on real Safari: WebKit doesn't reliably honor
 // padding-inline-start on native <select> text, so selects stay unstyled
-// beyond this.
+// on the left. A trailing chevron is a different, well-supported technique
+// (appearance:none plus an absolutely-positioned icon, no text padding
+// involved) — see SelectField below — and is what every dropdown-style
+// field in this form uses now, native <select> or custom, so they all read
+// as the same control.
 const fieldClasses =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-3.5 text-base text-ink outline-none focus:border-brand-500";
 
 const labelClasses = "mb-1 block text-sm font-medium text-ink/80";
+
+/** A native <select> styled to match the custom SearchableSelect /
+ * MultiSelectDropdown controls exactly — same box, same trailing chevron —
+ * so every dropdown-style field in the form looks like one family. */
+function SelectField({
+  id,
+  name,
+  value,
+  onChange,
+  className = "",
+  children,
+}: {
+  id: string;
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative">
+      <select
+        id={id}
+        name={name}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${fieldClasses} appearance-none pr-10 ${className}`}
+      >
+        {children}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40"
+        strokeWidth={2}
+      />
+    </div>
+  );
+}
 
 function useClickOutside<T extends HTMLElement>(onOutside: () => void) {
   const ref = useRef<T>(null);
@@ -345,6 +387,7 @@ export default function SignupForm({
   const [serviceInterests, setServiceInterests] = useState<string[]>([]);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [cancelingSocial, setCancelingSocial] = useState(false);
 
   // Keeps the Day dropdown honest when Month/Year change out from under a
   // previously valid choice (e.g. picking Feb after selecting the 31st).
@@ -436,7 +479,16 @@ export default function SignupForm({
     setStep((s) => s + 1);
   }
 
-  function goBack() {
+  async function goBack() {
+    // On a Google/Apple signup's first page there's no earlier step to
+    // return to — "Back" here means leaving the social signup entirely
+    // (e.g. wrong account, or wanting email/password instead), so it
+    // cancels the pending identity and returns to a normal /signup.
+    if (step === 0 && pendingSocial) {
+      setCancelingSocial(true);
+      await cancelSocialSignup();
+      return;
+    }
     setStepError(null);
     setStep((s) => Math.max(0, s - 1));
   }
@@ -530,28 +582,16 @@ export default function SignupForm({
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label htmlFor="birthMonth" className="sr-only">{t.month}</label>
-              <select
-                id="birthMonth"
-                name="birthMonth"
-                value={birthMonth}
-                onChange={(e) => handleBirthMonthChange(e.target.value)}
-                className={fieldClasses}
-              >
+              <SelectField id="birthMonth" name="birthMonth" value={birthMonth} onChange={handleBirthMonthChange}>
                 <option value="" disabled>{t.month}</option>
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i + 1}>{isAr ? MONTHS_AR[i] : m}</option>
                 ))}
-              </select>
+              </SelectField>
             </div>
             <div>
               <label htmlFor="birthDay" className="sr-only">{t.day}</label>
-              <select
-                id="birthDay"
-                name="birthDay"
-                value={birthDay}
-                onChange={(e) => setBirthDay(e.target.value)}
-                className={fieldClasses}
-              >
+              <SelectField id="birthDay" name="birthDay" value={birthDay} onChange={setBirthDay}>
                 <option value="" disabled>{t.day}</option>
                 {Array.from(
                   { length: daysInMonth(birthMonth ? Number(birthMonth) : null, birthYear ? Number(birthYear) : null) },
@@ -559,22 +599,16 @@ export default function SignupForm({
                 ).map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
-              </select>
+              </SelectField>
             </div>
             <div>
               <label htmlFor="birthYear" className="sr-only">{t.year}</label>
-              <select
-                id="birthYear"
-                name="birthYear"
-                value={birthYear}
-                onChange={(e) => handleBirthYearChange(e.target.value)}
-                className={fieldClasses}
-              >
+              <SelectField id="birthYear" name="birthYear" value={birthYear} onChange={handleBirthYearChange}>
                 <option value="" disabled>{t.year}</option>
                 {BIRTH_YEARS.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
-              </select>
+              </SelectField>
             </div>
           </div>
 
@@ -582,19 +616,13 @@ export default function SignupForm({
             <label htmlFor="gender" className={labelClasses}>
               {t.gender}
             </label>
-            <select
-              id="gender"
-              name="gender"
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              className={fieldClasses}
-            >
+            <SelectField id="gender" name="gender" value={gender} onChange={setGender}>
               <option value="" disabled>{t.gender}</option>
               {GENDERS.map((g, i) => (
                 <option key={g} value={g}>{isAr ? GENDERS_AR[i] : g}</option>
               ))}
               <option value={GENDER_CUSTOM}>{isAr ? GENDER_CUSTOM_AR : GENDER_CUSTOM}</option>
-            </select>
+            </SelectField>
             {gender === GENDER_CUSTOM && (
               <input
                 type="text"
@@ -685,18 +713,12 @@ export default function SignupForm({
           <h2 className="font-display text-xl font-medium text-brand-900">{t.referralSource}</h2>
           <div>
             <label htmlFor="referralSource" className="sr-only">{t.referralSource}</label>
-            <select
-              id="referralSource"
-              name="referralSource"
-              value={referralSource}
-              onChange={(e) => setReferralSource(e.target.value)}
-              className={fieldClasses}
-            >
+            <SelectField id="referralSource" name="referralSource" value={referralSource} onChange={setReferralSource}>
               <option value="" disabled>{t.referralSource}</option>
               {REFERRAL_SOURCES.map((r, i) => (
                 <option key={r} value={r}>{isAr ? REFERRAL_SOURCES_AR[i] : r}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
         </div>
 
@@ -747,10 +769,16 @@ export default function SignupForm({
         {(stepError || submitError) && <p className="text-sm text-red-600">{stepError || submitError}</p>}
 
         <div className="flex items-center gap-3">
-          {step > 0 && (
-            <Button type="button" variant="outline" onClick={goBack} className="gap-1.5">
+          {(step > 0 || pendingSocial) && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={goBack}
+              disabled={cancelingSocial}
+              className="gap-1.5"
+            >
               <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-              {t.back}
+              {step === 0 && pendingSocial ? t.cancel : t.back}
             </Button>
           )}
           {isLastStep ? (

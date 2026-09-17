@@ -498,6 +498,15 @@ export async function completeSocialSignup(
   redirect(user.role === "ADMIN" ? "/admin" : "/");
 }
 
+/** Lets someone back out of a Google/Apple signup that's mid-wizard — e.g.
+ * they picked the wrong account, or want to sign up with email/password
+ * instead. Clears the pending identity cookie without creating anything,
+ * so /signup renders its normal (non-social) form again. */
+export async function cancelSocialSignup(): Promise<never> {
+  await clearPendingSocialSignup();
+  redirect("/signup");
+}
+
 export type OtpResendState = { error?: string; success?: boolean } | undefined;
 
 export async function resendSignupOtp(

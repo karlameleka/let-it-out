@@ -558,6 +558,7 @@ const ar: Dictionary = {
     continueWithApple: "المتابعة باستخدام Apple",
     orDivider: "أو",
     back: "رجوع",
+    cancel: "إلغاء",
     next: "التالي",
     stepOf: "خطوة {current} من {total}",
     nameStepHeading: "ما اسمك؟",
