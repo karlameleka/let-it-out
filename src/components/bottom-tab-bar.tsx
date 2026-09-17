@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, HeartHandshake, Newspaper, ShoppingBag } from "lucide-react";
+import { Home, HeartHandshake, Newspaper, ShoppingBag, Menu } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useUnreadTools } from "@/lib/unread-tools-context";
 import { hapticTap } from "@/lib/haptics";
@@ -20,6 +20,7 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
     { href: "/services", label: dict.ourServices, icon: HeartHandshake, matches: ["/services", "/counseling", "/workshops"], badge: 0 },
     { href: "/resources", label: dict.resources, icon: Newspaper, matches: ["/resources"], badge: unreadToolsCount },
     { href: "/shop", label: dict.shop, icon: ShoppingBag, matches: ["/shop"], badge: 0 },
+    { href: "/menu", label: dict.menu, icon: Menu, matches: ["/menu"], badge: 0 },
   ];
 
   return (

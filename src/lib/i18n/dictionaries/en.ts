@@ -13,7 +13,7 @@ const en = {
     logIn: "Log in",
     signUp: "Sign up",
     bookASession: "Book a session",
-    toggleMenu: "Toggle menu",
+    menu: "Menu",
   },
   languageSwitcher: {
     label: "Language",

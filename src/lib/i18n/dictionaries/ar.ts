@@ -15,7 +15,7 @@ const ar: Dictionary = {
     logIn: "تسجيل الدخول",
     signUp: "إنشاء حساب",
     bookASession: "احجز جلسة",
-    toggleMenu: "فتح القائمة",
+    menu: "القائمة",
   },
   languageSwitcher: {
     label: "اللغة",
