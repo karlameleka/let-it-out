@@ -31,7 +31,6 @@
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.3",
     "bcryptjs": "^3.0.3",
-    "botid": "^1.5.11",
     "exceljs": "^4.4.0",
     "jose": "^6.2.8",
     "lucide-react": "^1.31.0",

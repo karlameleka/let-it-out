@@ -1,6 +1,5 @@
 import "server-only";
 import { headers } from "next/headers";
-import { checkBotId } from "botid/server";
 import { prisma } from "@/lib/db";
 import { HONEYPOT_FIELD } from "@/lib/anti-spam-shared";
 
@@ -89,24 +88,7 @@ async function verifyTurnstile(token: string | null, ip: string): Promise<boolea
  * Returns null when the submission should proceed normally. Returns a
  * FormState-shaped object to return as-is otherwise: a honeypot hit
  * pretends success (never tips off the bot that it was caught), while a
- * BotID, rate-limit, or Turnstile failure surfaces a real, human-readable
- * error. The page hosting the form must be listed in
- * instrumentation-client.ts's initBotId `protect` array, or checkBotId()
- * has no challenge to verify and every caller looks like a bot.
- *
- * KNOWN RISK — verify on a real Vercel preview deployment before trusting
- * this in production: BotID's client (node_modules/botid/dist/client/core)
- * loads its challenge script with a plain <script> tag and *throws* inside
- * the window.fetch/XMLHttpRequest it patches if that script fails to load,
- * rather than failing open — so if the challenge script can't load for any
- * reason, every protected form (including checkout) hangs on "submitting"
- * instead of erroring or succeeding. Confirmed by reproducing it locally
- * (next dev can't serve BotID's rewrite target the way Vercel's edge
- * does), and there's a matching, not-clearly-resolved upstream report of
- * this exact interaction with a custom middleware/proxy.ts:
- * https://github.com/vercel/next.js/issues/86033. Test every protected
- * form — especially checkout and login — on an actual Vercel preview
- * before this reaches production traffic.
+ * rate-limit or Turnstile failure surfaces a real, human-readable error.
  */
 export async function screenSubmission(
   formData: FormData,
@@ -114,11 +96,6 @@ export async function screenSubmission(
 ): Promise<{ error?: string; success?: boolean } | null> {
   if (String(formData.get(HONEYPOT_FIELD) ?? "").trim() !== "") {
     return { success: true };
-  }
-
-  const { isBot } = await checkBotId();
-  if (isBot) {
-    return { error: "We couldn't verify this request came from a browser. Please refresh the page and try again." };
   }
 
   const ip = await getClientIp();

@@ -13,7 +13,6 @@ import {
 import { sendPasswordResetEmail } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
-import { checkBotId } from "botid/server";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -39,12 +38,6 @@ export async function loginCounselorAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-
-  const { isBot } = await checkBotId();
-  if (isBot) {
-    return { error: "Incorrect email or password." };
-  }
-
   const { email, password } = parsed.data;
 
   const counselor = await prisma.counselor.findFirst({ where: { email } });
@@ -110,13 +103,6 @@ export async function forgotCounselorPasswordAction(
   if (!rateLimitOk) {
     return { success: true };
   }
-  // Silent, same reasoning as the rate-limit branch above and the
-  // client-facing forgotPasswordAction — never let the response distinguish
-  // "blocked" from "email sent".
-  const { isBot } = await checkBotId();
-  if (isBot) {
-    return { success: true };
-  }
 
   const counselor = await prisma.counselor.findFirst({ where: { email: parsed.data.email } });
 
@@ -172,11 +158,6 @@ export async function resetCounselorPasswordAction(
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
-  }
-
-  const { isBot } = await checkBotId();
-  if (isBot) {
-    return { error: "This reset link is invalid or has expired. Please request a new one." };
   }
 
   const resetTokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
