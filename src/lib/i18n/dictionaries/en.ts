@@ -573,6 +573,7 @@ const en = {
     birthdayStepHeading: "Basic information",
     birthdaySubheading: "This won't be part of your public profile.",
     emailStepHeading: "What's your email?",
+    checkingEmail: "Checking…",
     passwordStepHeading: "Create a password",
     countryStepHeading: "Where are you located?",
     agreeStepHeading: "Finish creating your account",

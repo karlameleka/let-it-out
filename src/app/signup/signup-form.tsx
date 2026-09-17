@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, Circle } from "lucide-react";
-import { requestSignupOtp, verifySignupOtp, resendSignupOtp, completeSocialSignup } from "@/lib/auth-actions";
+import {
+  requestSignupOtp,
+  verifySignupOtp,
+  resendSignupOtp,
+  completeSocialSignup,
+  checkSignupEmailAvailable,
+} from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
 import {
   BIRTH_YEARS,
@@ -118,7 +124,11 @@ function SearchableSelect({
         onKeyDown={(e) => {
           if (e.key === "Escape") setOpen(false);
         }}
-        className={fieldClasses}
+        className={`${fieldClasses} pr-10`}
+      />
+      <ChevronDown
+        className={`pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40 transition-transform ${open ? "rotate-180" : ""}`}
+        strokeWidth={2}
       />
       {open && (
         <ul
@@ -333,6 +343,8 @@ export default function SignupForm({
   const [country, setCountry] = useState("");
   const [referralSource, setReferralSource] = useState("");
   const [serviceInterests, setServiceInterests] = useState<string[]>([]);
+  const [agreedToPolicy, setAgreedToPolicy] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   // Keeps the Day dropdown honest when Month/Year change out from under a
   // previously valid choice (e.g. picking Feb after selecting the 31st).
@@ -403,12 +415,23 @@ export default function SignupForm({
     }
   }
 
-  function goNext() {
+  async function goNext() {
     const err = validateStep(steps[step]);
     if (err) {
       setStepError(err);
       return;
     }
+
+    if (steps[step] === "email") {
+      setCheckingEmail(true);
+      const result = await checkSignupEmailAvailable(email);
+      setCheckingEmail(false);
+      if (result.error) {
+        setStepError(result.error);
+        return;
+      }
+    }
+
     setStepError(null);
     setStep((s) => s + 1);
   }
@@ -455,7 +478,16 @@ export default function SignupForm({
         {t.stepOf.replace("{current}", String(step + 1)).replace("{total}", String(steps.length))}
       </p>
 
-      <form action={formAction} className="space-y-4">
+      <form
+        action={formAction}
+        onSubmit={(e) => {
+          if (!agreedToPolicy) {
+            e.preventDefault();
+            setStepError(t.agreeToPolicyRequired);
+          }
+        }}
+        className="space-y-4"
+      >
         {!pendingSocial && (
           <div hidden={stepId !== "name"} className="space-y-4">
             <h2 className="font-display text-xl font-medium text-brand-900">{t.nameStepHeading}</h2>
@@ -691,7 +723,11 @@ export default function SignupForm({
             <input
               type="checkbox"
               name="agreedToPolicy"
-              required={isLastStep}
+              checked={agreedToPolicy}
+              onChange={(e) => {
+                setAgreedToPolicy(e.target.checked);
+                if (e.target.checked) setStepError(null);
+              }}
               className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
             />
             <span>
@@ -722,8 +758,8 @@ export default function SignupForm({
               {pending ? t.creatingAccount : t.createAccount}
             </Button>
           ) : (
-            <Button type="button" onClick={goNext} className="flex-1">
-              {t.next}
+            <Button type="button" onClick={goNext} disabled={checkingEmail} className="flex-1">
+              {checkingEmail ? t.checkingEmail : t.next}
             </Button>
           )}
         </div>

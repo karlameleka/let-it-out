@@ -129,6 +129,31 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 1)}${"*".repeat(Math.max(local.length - 1, 1))}@${domain}`;
 }
 
+/** Lets the signup wizard's email page stop the person immediately if the
+ * address is already taken, instead of waiting until the very last page to
+ * find out. requestSignupOtp still re-checks this itself — this is purely
+ * an earlier, friendlier warning, not the source of truth. */
+export async function checkSignupEmailAvailable(email: string): Promise<{ error?: string }> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const trimmed = email.trim();
+  if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { error: dict.validation.emailInvalid };
+  }
+
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-email-check", ip, { windowMs: 10 * 60 * 1000, max: 20 });
+  if (!rateLimitOk) {
+    // Fail open: don't block someone legitimately filling out the wizard
+    // over a rate limit meant for abuse — the final submit re-checks anyway.
+    return {};
+  }
+
+  const existingUser = await prisma.user.findUnique({ where: { email: trimmed } });
+  return existingUser ? { error: dict.auth.accountEmailExists } : {};
+}
+
 export type SignupFormState =
   | { error: string }
   | { pendingSignupId: string; destination: string }

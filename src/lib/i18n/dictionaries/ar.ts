@@ -564,6 +564,7 @@ const ar: Dictionary = {
     birthdayStepHeading: "معلومات أساسية",
     birthdaySubheading: "دي مش هتظهر في أي مكان عام.",
     emailStepHeading: "ما بريدك الإلكتروني؟",
+    checkingEmail: "جارٍ التحقق…",
     passwordStepHeading: "اختار كلمة مرور",
     countryStepHeading: "فين مكانك؟",
     agreeStepHeading: "خلّص إنشاء حسابك",
