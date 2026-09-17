@@ -50,6 +50,12 @@ export default async function AccountPage() {
         </div>
       )}
 
+      <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-red-700">{t.dangerZoneTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.dangerZoneDescription}</p>
+        <DeleteAccountForm dict={dict} userId={session.userId} hasPassword={hasPassword} />
+      </div>
+
       <div className="mt-8 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{t.journalPrivacyTitle}</h2>
         <p className="mt-1 text-sm text-ink/60">{t.journalPrivacyDescription}</p>
@@ -101,12 +107,6 @@ export default async function AccountPage() {
             {t.supportCta}
           </Link>
         </div>
-      </div>
-
-      <div className="mt-8 rounded-2xl border-2 border-red-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-red-700">{t.dangerZoneTitle}</h2>
-        <p className="mt-1 text-sm text-ink/60">{t.dangerZoneDescription}</p>
-        <DeleteAccountForm dict={dict} userId={session.userId} hasPassword={hasPassword} />
       </div>
     </Container>
   );
