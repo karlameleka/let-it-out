@@ -1,5 +1,7 @@
 import { getUserCountStats, getDemographics, getFeatureUsage, getTimeSpentByGroup } from "@/lib/analytics";
 import type { BreakdownRow, TimeSpentRow } from "@/lib/analytics";
+import { resetPageViewTracking } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
@@ -158,6 +160,24 @@ export default async function AdminAnalyticsPage() {
             <BarList rows={timeSpentRows(timeSpent.referral)} formatValue={(v) => `${v} min`} emptyLabel="No session data yet." />
           </Panel>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-red-200 bg-red-50/40 p-5">
+        <h2 className="font-display font-semibold text-red-900">Danger zone</h2>
+        <p className="mt-1 text-sm text-red-800/80">
+          Permanently clears every tracked page view ({featureUsage.total.toLocaleString("en-US")} right now) —
+          feature usage, time-spent, and the Overview dashboard&rsquo;s activity heatmap all go back to no data.
+          For a one-time clean slate (e.g. after a period of internal/QA traffic), not something to run
+          routinely. Nothing else — accounts, journals, orders, bookings — is touched.
+        </p>
+        <form action={resetPageViewTracking} className="mt-3">
+          <ConfirmSubmitButton
+            confirmMessage={`Permanently clear all ${featureUsage.total.toLocaleString("en-US")} tracked page views? This can't be undone.`}
+            className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+          >
+            Clear all tracked page views
+          </ConfirmSubmitButton>
+        </form>
       </div>
     </div>
   );

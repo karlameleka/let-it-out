@@ -820,3 +820,26 @@ export async function sendManualPushNotification(
   });
   return { success: true, sent: result.sent, total: result.total };
 }
+
+/**
+ * Permanently wipes every tracked page view (feature-usage analytics,
+ * average time-spent, and the dashboard's activity heatmap all go back to
+ * "no data yet") — for a one-time clean slate, e.g. after a period of
+ * internal/QA traffic inflated the numbers. Never touches JournalEntry,
+ * Order, SessionBooking, or anything else — PageView is the only table
+ * this clears. Irreversible, so it's logged at WARNING like every other
+ * bulk-delete admin action.
+ */
+export async function resetPageViewTracking() {
+  const admin = await requireAdmin();
+  const { count } = await prisma.pageView.deleteMany({});
+  await logAudit({
+    actor: admin,
+    action: "page_views.reset",
+    summary: `Cleared ${count} tracked page view${count === 1 ? "" : "s"}`,
+    metadata: { count },
+    severity: "WARNING",
+  });
+  revalidatePath("/admin/analytics");
+  revalidatePath("/admin");
+}
