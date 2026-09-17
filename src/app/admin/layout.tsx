@@ -17,6 +17,7 @@ const TABS = [
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/events", label: "Events" },
   { href: "/admin/notifications", label: "Notifications" },
+  { href: "/admin/notification-center", label: "Notification Center" },
   { href: "/admin/workshops", label: "Workshop inquiries" },
   { href: "/admin/workshop-signups", label: "Workshop notify list" },
   { href: "/admin/messages", label: "Contact messages" },
@@ -25,6 +26,7 @@ const TABS = [
   { href: "/admin/intake-form", label: "Intake form" },
   { href: "/admin/reflection-sheet", label: "Reflection sheet" },
   { href: "/admin/resources", label: "Resources" },
+  { href: "/admin/audit-log", label: "Audit Log" },
   { href: "/admin/settings", label: "Site settings" },
   { href: "/account", label: "My account" },
 ];

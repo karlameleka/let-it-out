@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   UserPlus,
@@ -12,6 +13,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
+import DateRangePicker from "@/components/date-range-picker";
+import KpiScorecard from "@/components/kpi-scorecard";
+import RevenueChart from "@/components/charts/revenue-chart";
+import OrdersStatusChart from "@/components/charts/orders-status-chart";
+import ActivityHeatmap from "@/components/charts/activity-heatmap";
+import ExportButtons from "@/components/export-buttons";
+import { resolveDateRange } from "@/lib/date-range";
+import { getDashboardKpis, getRevenueSeries, getOrdersByStatus, getActivityHeatmap } from "@/lib/dashboard-metrics";
 
 type StatCard = {
   href: string;
@@ -73,18 +82,45 @@ function Section({
   );
 }
 
-export default async function AdminOverviewPage() {
-  const [newLeads, pendingOrders, newBookings, newInquiries, messages, workshopSignups, eventRsvps, flaggedChats] =
-    await Promise.all([
-      prisma.lead.count({ where: { status: "NEW" } }),
-      prisma.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_SUBMITTED"] } } }),
-      prisma.bookingRequest.count({ where: { status: "PENDING" } }),
-      prisma.workshopInquiry.count({ where: { status: "NEW" } }),
-      prisma.contactMessage.count(),
-      prisma.workshopInterestSignup.count(),
-      prisma.eventRSVP.count(),
-      prisma.supportChat.count({ where: { flaggedUnresolved: true } }),
-    ]);
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
+  const sp = await searchParams;
+  const range = resolveDateRange(sp);
+
+  const [
+    newLeads,
+    pendingOrders,
+    newBookings,
+    newInquiries,
+    messages,
+    workshopSignups,
+    eventRsvps,
+    flaggedChats,
+    kpis,
+    revenueSeries,
+    ordersByStatus,
+    activityHeatmap,
+  ] = await Promise.all([
+    prisma.lead.count({ where: { status: "NEW" } }),
+    prisma.order.count({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_SUBMITTED"] } } }),
+    prisma.bookingRequest.count({ where: { status: "PENDING" } }),
+    prisma.workshopInquiry.count({ where: { status: "NEW" } }),
+    prisma.contactMessage.count(),
+    prisma.workshopInterestSignup.count(),
+    prisma.eventRSVP.count(),
+    prisma.supportChat.count({ where: { flaggedUnresolved: true } }),
+    getDashboardKpis(range),
+    getRevenueSeries(range),
+    getOrdersByStatus(range),
+    getActivityHeatmap(range),
+  ]);
+
+  const exportParams: Record<string, string> = {};
+  if (sp.from) exportParams.from = sp.from;
+  if (sp.to) exportParams.to = sp.to;
 
   const attentionCards: StatCard[] = [
     { href: "/admin/crm", label: "New leads in the CRM", value: newLeads, icon: UserPlus, hint: "Not yet contacted", urgent: true },
@@ -104,6 +140,46 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-10">
+      <section>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Suspense fallback={<div className="h-8" />}>
+            <DateRangePicker />
+          </Suspense>
+          <ExportButtons endpoint="/admin/export" params={exportParams} />
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {kpis.map((k) => (
+            <KpiScorecard key={k.key} metric={k} />
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-brand-100 bg-white p-5">
+            <h3 className="font-display font-semibold text-brand-900">Revenue</h3>
+            <p className="mt-0.5 text-xs text-ink/50">Shop orders and confirmed counseling sessions, by day.</p>
+            <div className="mt-3">
+              <RevenueChart data={revenueSeries} />
+            </div>
+          </div>
+          <div className="rounded-2xl border border-brand-100 bg-white p-5">
+            <h3 className="font-display font-semibold text-brand-900">Orders by status</h3>
+            <p className="mt-0.5 text-xs text-ink/50">Click a bar to view those orders.</p>
+            <div className="mt-3">
+              <OrdersStatusChart data={ordersByStatus} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-brand-100 bg-white p-5">
+          <h3 className="font-display font-semibold text-brand-900">When people use the app</h3>
+          <p className="mt-0.5 text-xs text-ink/50">Page views by day of week and hour (UTC).</p>
+          <div className="mt-3">
+            <ActivityHeatmap cells={activityHeatmap} />
+          </div>
+        </div>
+      </section>
+
       <p className="text-sm text-ink/60">
         {totalNeedingAttention > 0
           ? `${totalNeedingAttention} item${totalNeedingAttention === 1 ? "" : "s"} across the site could use your attention.`

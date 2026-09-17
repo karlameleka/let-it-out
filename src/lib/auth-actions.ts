@@ -24,6 +24,7 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 import { GENDER_CUSTOM, COUNTRY_CALLING_CODES } from "@/lib/content/geo";
+import { logAudit } from "@/lib/audit-log";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -674,13 +675,27 @@ export async function loginAction(
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     const attempts = user.failedLoginAttempts + 1;
+    const nowLocked = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
     await prisma.user.update({
       where: { id: user.id },
       data: {
         failedLoginAttempts: attempts,
-        lockedUntil: attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
+        lockedUntil: nowLocked ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
       },
     });
+    // Only admin accounts feed the dashboard's audit trail here — logging
+    // every client's failed login would bloat the table with routine
+    // typos and isn't what the admin-facing security log is for.
+    if (user.role === "ADMIN") {
+      await logAudit({
+        actor: { userId: user.id, email: user.email },
+        action: nowLocked ? "admin.account_locked" : "admin.login_failed",
+        summary: nowLocked
+          ? `${user.email} was locked out after ${attempts} failed login attempts`
+          : `Failed login attempt for ${user.email}`,
+        severity: nowLocked ? "SECURITY" : "WARNING",
+      });
+    }
     return { error: a.incorrectLogin };
   }
 
@@ -694,6 +709,14 @@ export async function loginAction(
   if (user.role === "ADMIN" && user.totpEnabled) {
     await createPendingTwoFactorSession(user.id);
     redirect("/login/verify");
+  }
+
+  if (user.role === "ADMIN") {
+    await logAudit({
+      actor: { userId: user.id, email: user.email },
+      action: "admin.login_success",
+      summary: `${user.email} logged in`,
+    });
   }
 
   await createSession({
@@ -965,12 +988,21 @@ export async function verifyTwoFactorAction(
 
   if (!isTotpValid && !matchedBackupCode) {
     const attempts = user.failedLoginAttempts + 1;
+    const nowLocked = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
     await prisma.user.update({
       where: { id: user.id },
       data: {
         failedLoginAttempts: attempts,
-        lockedUntil: attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
+        lockedUntil: nowLocked ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
       },
+    });
+    await logAudit({
+      actor: { userId: user.id, email: user.email },
+      action: nowLocked ? "admin.account_locked" : "admin.login_2fa_failed",
+      summary: nowLocked
+        ? `${user.email} was locked out after ${attempts} failed 2FA attempts`
+        : `Incorrect 2FA code for ${user.email} (password already correct)`,
+      severity: "SECURITY",
     });
     return { error: a.twoFactorCodeIncorrect };
   }
@@ -988,6 +1020,11 @@ export async function verifyTwoFactorAction(
   });
 
   await clearPendingTwoFactorSession();
+  await logAudit({
+    actor: { userId: user.id, email: user.email },
+    action: "admin.login_success",
+    summary: `${user.email} logged in (2FA)`,
+  });
   await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });
   redirect("/admin");
 }

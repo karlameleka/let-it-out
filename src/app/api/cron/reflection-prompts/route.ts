@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendPushToEmails } from "@/lib/web-push";
 import { todayISO } from "@/lib/therapist-data";
+import { logAudit } from "@/lib/audit-log";
 
 /**
  * Once a day (after most same-day sessions have concluded — see
@@ -102,6 +103,15 @@ export async function GET(req: NextRequest) {
         : Promise.resolve({ sent: 0 }),
     ]);
     sent = enResult.sent + arResult.sent;
+  }
+
+  if (created > 0) {
+    await logAudit({
+      skipIp: true,
+      action: "cron.reflection_prompts",
+      summary: `Reflection prompts: created ${created}, sent to ${sent} subscriber${sent === 1 ? "" : "s"}`,
+      metadata: { created, sent, candidates: candidates.length },
+    });
   }
 
   return NextResponse.json({ created, sent, candidates: candidates.length });

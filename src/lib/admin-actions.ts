@@ -9,23 +9,42 @@ import { sendPasswordResetEmail, sendTherapistLoginLinkEmail } from "@/lib/email
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 import { sendPushToAllSubscribers } from "@/lib/web-push";
+import { logAudit } from "@/lib/audit-log";
 
 const PORTAL_SETUP_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const LOGIN_LINK_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function updateOrderStatus(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const orderId = String(formData.get("orderId"));
   const status = String(formData.get("status"));
+  const before = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
   await prisma.order.update({ where: { id: orderId }, data: { status: status as never } });
+  await logAudit({
+    actor: admin,
+    action: "order.status_changed",
+    summary: `Order #${orderId.slice(-8).toUpperCase()} status changed to ${status}`,
+    targetType: "Order",
+    targetId: orderId,
+    metadata: { from: before?.status, to: status },
+  });
   revalidatePath("/admin/orders");
 }
 
 export async function updateBookingStatus(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const bookingId = String(formData.get("bookingId"));
   const status = String(formData.get("status"));
+  const before = await prisma.bookingRequest.findUnique({ where: { id: bookingId }, select: { status: true } });
   await prisma.bookingRequest.update({ where: { id: bookingId }, data: { status: status as never } });
+  await logAudit({
+    actor: admin,
+    action: "booking_request.status_changed",
+    summary: `Booking request status changed to ${status}`,
+    targetType: "BookingRequest",
+    targetId: bookingId,
+    metadata: { from: before?.status, to: status },
+  });
   revalidatePath("/admin/bookings");
 }
 
@@ -45,11 +64,18 @@ function parseOptionalMeetingLink(raw: string): { ok: true; value: string | null
  * CONFIRMED without opening the full edit form. Same effect as picking
  * "CONFIRMED" from that form's status dropdown and saving. */
 export async function markSessionBookingPaid(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const bookingId = String(formData.get("bookingId") ?? "");
   if (!bookingId) return;
 
   await prisma.sessionBooking.update({ where: { id: bookingId }, data: { status: "CONFIRMED" } });
+  await logAudit({
+    actor: admin,
+    action: "session_booking.marked_paid",
+    summary: "Session booking marked paid and confirmed",
+    targetType: "SessionBooking",
+    targetId: bookingId,
+  });
 
   revalidatePath("/admin/bookings");
   revalidatePath("/upcoming");
@@ -171,12 +197,20 @@ export async function updateLeadStatus(formData: FormData) {
 }
 
 export async function deleteOrder(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const orderId = String(formData.get("orderId"));
   await prisma.$transaction([
     prisma.orderItem.deleteMany({ where: { orderId } }),
     prisma.order.delete({ where: { id: orderId } }),
   ]);
+  await logAudit({
+    actor: admin,
+    action: "order.deleted",
+    summary: `Deleted order #${orderId.slice(-8).toUpperCase()}`,
+    targetType: "Order",
+    targetId: orderId,
+    severity: "WARNING",
+  });
   revalidatePath("/admin/orders");
 }
 
@@ -214,10 +248,17 @@ export async function deleteContactMessage(formData: FormData) {
  * a precise time window or a look at the data first,
  * scripts/cleanup-lead-spam.mjs is the safer tool. */
 export async function deleteRecentContactMessages(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const hours = Number(formData.get("hours")) || 48;
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  await prisma.contactMessage.deleteMany({ where: { createdAt: { gte: cutoff } } });
+  const { count } = await prisma.contactMessage.deleteMany({ where: { createdAt: { gte: cutoff } } });
+  await logAudit({
+    actor: admin,
+    action: "contact_messages.bulk_deleted",
+    summary: `Deleted ${count} contact message${count === 1 ? "" : "s"} from the last ${hours}h (spam cleanup)`,
+    metadata: { count, hours },
+    severity: "WARNING",
+  });
   revalidatePath("/admin/messages");
 }
 
@@ -231,10 +272,17 @@ export async function deleteLead(formData: FormData) {
 /** Same "spam wave just hit" cleanup as deleteRecentContactMessages, for
  * the CRM's Lead table. */
 export async function deleteRecentLeads(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const hours = Number(formData.get("hours")) || 48;
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  await prisma.lead.deleteMany({ where: { createdAt: { gte: cutoff } } });
+  const { count } = await prisma.lead.deleteMany({ where: { createdAt: { gte: cutoff } } });
+  await logAudit({
+    actor: admin,
+    action: "leads.bulk_deleted",
+    summary: `Deleted ${count} lead${count === 1 ? "" : "s"} from the last ${hours}h (spam cleanup)`,
+    metadata: { count, hours },
+    severity: "WARNING",
+  });
   revalidatePath("/admin/crm");
 }
 
@@ -260,9 +308,18 @@ export async function deleteCounselorClient(formData: FormData) {
 // disassociated. If the client is logged in elsewhere, their session
 // becomes invalid on their very next request (see getCurrentUser).
 export async function deleteClientAccount(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const userId = String(formData.get("userId"));
+  const client = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, accountCode: true } });
   await deleteUserAccountCompletely(userId, "admin");
+  await logAudit({
+    actor: admin,
+    action: "client.account_deleted",
+    summary: client ? `Deleted client account ${client.email} (${client.accountCode})` : "Deleted a client account",
+    targetType: "User",
+    targetId: userId,
+    severity: "WARNING",
+  });
   // A redirect (not just revalidatePath) so this also works from a client's
   // own detail page — staying there after deletion would try to re-render
   // a client that no longer exists.
@@ -296,7 +353,7 @@ export async function searchAdminClients(query: string) {
 }
 
 export async function createPromoCode(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const code = String(formData.get("code") || "").trim().toUpperCase();
   const discountType = String(formData.get("discountType"));
   const discountValue = Number(formData.get("discountValue"));
@@ -320,21 +377,43 @@ export async function createPromoCode(formData: FormData) {
       counselors: { create: counselorIds.map((counselorId) => ({ counselorId })) },
     },
   });
+  await logAudit({
+    actor: admin,
+    action: "promo_code.created",
+    summary: `Created promo code ${code}`,
+    targetType: "PromoCode",
+    metadata: { code, discountType, discountValue },
+  });
   revalidatePath("/admin/promo-codes");
 }
 
 export async function togglePromoCodeActive(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id"));
   const active = String(formData.get("active")) === "true";
-  await prisma.promoCode.update({ where: { id }, data: { active: !active } });
+  const updated = await prisma.promoCode.update({ where: { id }, data: { active: !active } });
+  await logAudit({
+    actor: admin,
+    action: "promo_code.toggled",
+    summary: `Promo code ${updated.code} ${updated.active ? "activated" : "deactivated"}`,
+    targetType: "PromoCode",
+    targetId: id,
+  });
   revalidatePath("/admin/promo-codes");
 }
 
 export async function deletePromoCode(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id"));
-  await prisma.promoCode.delete({ where: { id } });
+  const deleted = await prisma.promoCode.delete({ where: { id } });
+  await logAudit({
+    actor: admin,
+    action: "promo_code.deleted",
+    summary: `Deleted promo code ${deleted.code}`,
+    targetType: "PromoCode",
+    targetId: id,
+    severity: "WARNING",
+  });
   revalidatePath("/admin/promo-codes");
 }
 
@@ -369,11 +448,13 @@ export async function updateProductPlacement(formData: FormData) {
 // records. The admin UI only ever renders this action for a product with
 // zero orders; this re-check is defense in depth, not the primary gate.
 export async function deleteProduct(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const productId = String(formData.get("productId"));
 
   const orderItemCount = await prisma.orderItem.count({ where: { productId } });
   if (orderItemCount > 0) return;
+
+  const product = await prisma.product.findUnique({ where: { id: productId }, select: { title: true } });
 
   // PromoCodeProduct cascades on delete at the DB level already — only
   // ProductVariant (no order history if we got this far) needs clearing
@@ -382,6 +463,14 @@ export async function deleteProduct(formData: FormData) {
     prisma.productVariant.deleteMany({ where: { productId } }),
     prisma.product.delete({ where: { id: productId } }),
   ]);
+  await logAudit({
+    actor: admin,
+    action: "product.deleted",
+    summary: product ? `Deleted product "${product.title}"` : "Deleted a product",
+    targetType: "Product",
+    targetId: productId,
+    severity: "WARNING",
+  });
   revalidatePath("/admin/products");
   revalidatePath("/shop");
   revalidatePath("/");
@@ -582,9 +671,9 @@ export async function sendTherapistLoginLink(formData: FormData) {
 }
 
 export async function revokeTherapistPortalAccess(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
-  await prisma.counselor.update({
+  const counselor = await prisma.counselor.update({
     where: { id: counselorId },
     data: {
       passwordHash: null,
@@ -595,6 +684,14 @@ export async function revokeTherapistPortalAccess(formData: FormData) {
       failedLoginAttempts: 0,
       lockedUntil: null,
     },
+  });
+  await logAudit({
+    actor: admin,
+    action: "counselor.portal_access_revoked",
+    summary: `Revoked therapist portal access for ${counselor.name}`,
+    targetType: "Counselor",
+    targetId: counselorId,
+    severity: "SECURITY",
   });
   revalidatePath("/admin/counselors/[id]", "page");
 }
@@ -610,7 +707,7 @@ export async function revokeTherapistPortalAccess(formData: FormData) {
 // renders this action for a counselor with zero of that history; this
 // re-check is defense in depth, not the primary gate.
 export async function deleteCounselor(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
 
   const [sessionBookings, bookingRequests, intakeSubmissions, clientNotes, assignedResources, referralsSent, referralsReceived] =
@@ -627,6 +724,8 @@ export async function deleteCounselor(formData: FormData) {
     sessionBookings + bookingRequests + intakeSubmissions + clientNotes + assignedResources + referralsSent + referralsReceived > 0;
   if (hasHistory) return;
 
+  const counselor = await prisma.counselor.findUnique({ where: { id: counselorId }, select: { name: true } });
+
   // CounselorAvailability and PromoCodeCounselor cascade on delete at the
   // DB level already — only ToolkitItem (a counselor's own personal
   // toolkit config, not client data) needs clearing by hand first.
@@ -634,6 +733,14 @@ export async function deleteCounselor(formData: FormData) {
     prisma.toolkitItem.deleteMany({ where: { counselorId } }),
     prisma.counselor.delete({ where: { id: counselorId } }),
   ]);
+  await logAudit({
+    actor: admin,
+    action: "counselor.deleted",
+    summary: counselor ? `Deleted counselor ${counselor.name}` : "Deleted a counselor",
+    targetType: "Counselor",
+    targetId: counselorId,
+    severity: "WARNING",
+  });
   revalidatePath("/admin/counselors");
 }
 
@@ -646,7 +753,7 @@ export async function sendManualPushNotification(
   _prevState: SendPushFormState,
   formData: FormData,
 ): Promise<SendPushFormState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
@@ -673,6 +780,12 @@ export async function sendManualPushNotification(
   const result = await sendPushToAllSubscribers({
     en: { title, body, url },
     ar: { title: titleAr || title, body: bodyAr || body, url },
+  });
+  await logAudit({
+    actor: admin,
+    action: "push.manual_send",
+    summary: `Sent "${title}" to ${result.sent}/${result.total} subscribers`,
+    metadata: { title, sent: result.sent, total: result.total, url },
   });
   return { success: true, sent: result.sent, total: result.total };
 }

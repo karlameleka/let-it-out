@@ -3,6 +3,7 @@ import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { logAudit } from "@/lib/audit-log";
 
 export type SiteSettingsData = {
   arabicEnabled: boolean;
@@ -30,7 +31,7 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData> => {
 
 export async function updateSiteSettings(formData: FormData) {
   "use server";
-  await requireAdmin();
+  const admin = await requireAdmin();
   const arabicEnabled = formData.get("arabicEnabled") === "on";
   const hideJournalTaglineButton = formData.get("hideJournalTaglineButton") === "on";
 
@@ -38,6 +39,12 @@ export async function updateSiteSettings(formData: FormData) {
     where: { id: "singleton" },
     create: { id: "singleton", arabicEnabled, hideJournalTaglineButton },
     update: { arabicEnabled, hideJournalTaglineButton },
+  });
+  await logAudit({
+    actor: admin,
+    action: "site_settings.updated",
+    summary: "Updated site settings",
+    metadata: { arabicEnabled, hideJournalTaglineButton },
   });
 
   revalidatePath("/", "layout");

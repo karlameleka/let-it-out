@@ -117,6 +117,7 @@ model User {
   notificationReads NotificationRead[]
   pageViews      PageView[]
   referralsGiven UserReferral[]
+  auditLogs      AuditLog[]
 }
 
 // A signup that hasn't finished OTP verification yet. Holds everything
@@ -1203,4 +1204,50 @@ model SupportChat {
 
   @@index([userId])
   @@index([status])
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  SECURITY
+}
+
+// A permanent record of admin mutations, admin login activity, and
+// notable background-job outcomes — the source for both the Audit Logs
+// page (the full, filterable history) and the Notification Center (a
+// curated feed of the same rows). actorId deliberately uses SetNull, not
+// the CASCADE every other user-owned table uses: this is the one place an
+// account's own deletion (or someone else's account being deleted by an
+// admin) should NOT take the historical record with it — actorEmail is
+// snapshotted at write time so a row still reads sensibly once actorId
+// has gone null.
+model AuditLog {
+  id         String        @id @default(cuid())
+  actor      User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorId    String?
+  actorEmail String?
+  // Dot-namespaced event key, e.g. "order.status_changed",
+  // "admin.login_failed", "cron.journal_reminder" — grouped/filtered by
+  // this in both the Audit Logs and Notification Center pages.
+  action     String
+  targetType String?
+  targetId   String?
+  // Short human-readable line generated once at write time (e.g. "Marked
+  // order #A1B2C3D4 as Shipped") so every page that lists these rows can
+  // render directly without re-deriving text from action/metadata per row
+  // type.
+  summary    String
+  // Small structured detail alongside summary — e.g. {from: "PENDING",
+  // to: "SHIPPED"} for a status change. Never the full before/after of a
+  // large record, and never raw request bodies (this can hold arbitrary
+  // admin-entered text, so it's for display only, never re-interpreted as
+  // code or HTML).
+  metadata   Json?
+  severity   AuditSeverity @default(INFO)
+  ip         String?
+  createdAt  DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
 }
