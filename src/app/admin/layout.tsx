@@ -6,6 +6,7 @@ import AdminSearch from "@/components/admin-search";
 
 const TABS = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/finance", label: "Finance" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/crm", label: "CRM" },
   { href: "/admin/clients", label: "Clients" },

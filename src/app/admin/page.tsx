@@ -121,6 +121,7 @@ export default async function AdminOverviewPage({
   const exportParams: Record<string, string> = {};
   if (sp.from) exportParams.from = sp.from;
   if (sp.to) exportParams.to = sp.to;
+  const rangeQuery = new URLSearchParams(exportParams).toString();
 
   const attentionCards: StatCard[] = [
     { href: "/admin/crm", label: "New leads in the CRM", value: newLeads, icon: UserPlus, hint: "Not yet contacted", urgent: true },
@@ -150,7 +151,12 @@ export default async function AdminOverviewPage({
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {kpis.map((k) => (
-            <KpiScorecard key={k.key} metric={k} />
+            <KpiScorecard
+              key={k.key}
+              metric={k}
+              href={k.key === "revenue" ? `/admin/finance${rangeQuery ? `?${rangeQuery}` : ""}` : undefined}
+              hrefLabel="Full finance breakdown"
+            />
           ))}
         </div>
 
