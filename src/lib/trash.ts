@@ -99,6 +99,10 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
     delegate: "supportChat",
     dateFields: ["createdAt", "updatedAt", "escalatedAt", "resolvedAt"],
   },
+  JournalPrompt: {
+    delegate: "journalPrompt",
+    dateFields: [],
+  },
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

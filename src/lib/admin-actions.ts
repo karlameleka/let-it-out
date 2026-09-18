@@ -1140,3 +1140,102 @@ export async function resetRevenue() {
   revalidatePath("/admin/bookings");
   revalidatePath("/upcoming");
 }
+
+export type JournalPromptFormState = { error?: string } | undefined;
+
+/** Journal prompts rotate by dayNumber (see getNextPrompt in prompts.ts,
+ * used on /journal/new) — each one must be unique so the rotation has no
+ * collisions. */
+export async function createJournalPrompt(
+  _prevState: JournalPromptFormState,
+  formData: FormData,
+): Promise<JournalPromptFormState> {
+  const admin = await requireAdmin();
+  const dayNumber = Number(formData.get("dayNumber"));
+  const category = String(formData.get("category") || "").trim();
+  const text = String(formData.get("text") || "").trim();
+  const categoryAr = String(formData.get("categoryAr") || "").trim();
+  const textAr = String(formData.get("textAr") || "").trim();
+
+  if (!dayNumber || dayNumber <= 0) return { error: "Day number must be a positive number." };
+  if (!category) return { error: "Category is required." };
+  if (!text) return { error: "Prompt text is required." };
+
+  const existing = await prisma.journalPrompt.findUnique({ where: { dayNumber } });
+  if (existing) return { error: `Day ${dayNumber} is already used by another prompt.` };
+
+  const created = await prisma.journalPrompt.create({
+    data: { dayNumber, category, text, categoryAr: categoryAr || null, textAr: textAr || null },
+  });
+  await logAudit({
+    actor: admin,
+    action: "journal_prompt.created",
+    summary: `Added journal prompt for day ${dayNumber} (${category})`,
+    targetType: "JournalPrompt",
+    targetId: created.id,
+  });
+  revalidatePath("/admin/journal-prompts");
+}
+
+export async function updateJournalPrompt(
+  _prevState: JournalPromptFormState,
+  formData: FormData,
+): Promise<JournalPromptFormState> {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id"));
+  const dayNumber = Number(formData.get("dayNumber"));
+  const category = String(formData.get("category") || "").trim();
+  const text = String(formData.get("text") || "").trim();
+  const categoryAr = String(formData.get("categoryAr") || "").trim();
+  const textAr = String(formData.get("textAr") || "").trim();
+
+  if (!dayNumber || dayNumber <= 0) return { error: "Day number must be a positive number." };
+  if (!category) return { error: "Category is required." };
+  if (!text) return { error: "Prompt text is required." };
+
+  const conflict = await prisma.journalPrompt.findUnique({ where: { dayNumber } });
+  if (conflict && conflict.id !== id) return { error: `Day ${dayNumber} is already used by another prompt.` };
+
+  await prisma.journalPrompt.update({
+    where: { id },
+    data: { dayNumber, category, text, categoryAr: categoryAr || null, textAr: textAr || null },
+  });
+  await logAudit({
+    actor: admin,
+    action: "journal_prompt.updated",
+    summary: `Updated journal prompt for day ${dayNumber} (${category})`,
+    targetType: "JournalPrompt",
+    targetId: id,
+  });
+  revalidatePath("/admin/journal-prompts");
+}
+
+export async function deleteJournalPrompt(formData: FormData) {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id"));
+  const existing = await prisma.journalPrompt.findUnique({ where: { id }, select: { dayNumber: true, category: true } });
+  if (!existing) return;
+  const snapshot = await captureRow("JournalPrompt", id);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "JournalPrompt",
+        originalId: id,
+        summary: `Journal prompt for day ${existing.dayNumber} (${existing.category})`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    prisma.journalPrompt.delete({ where: { id } }),
+  ]);
+  await logAudit({
+    actor: admin,
+    action: "journal_prompt.deleted",
+    summary: `Deleted journal prompt for day ${existing.dayNumber} (${existing.category})`,
+    targetType: "JournalPrompt",
+    targetId: id,
+  });
+  revalidatePath("/admin/journal-prompts");
+}

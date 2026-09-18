@@ -26,6 +26,7 @@ const TABS = [
   { href: "/admin/articles", label: "Articles" },
   { href: "/admin/intake-form", label: "Intake form" },
   { href: "/admin/reflection-sheet", label: "Reflection sheet" },
+  { href: "/admin/journal-prompts", label: "Journal prompts" },
   { href: "/admin/resources", label: "Resources" },
   { href: "/admin/audit-log", label: "Audit Log" },
   { href: "/admin/recently-deleted", label: "Recently Deleted" },
