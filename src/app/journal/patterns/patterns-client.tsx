@@ -67,6 +67,26 @@ export default function PatternsClient({
     ...data.days,
   ];
 
+  // A day can carry several logged mood ids at once — e.g. one wheel
+  // check-in already logs both a core and a secondary id together. Rather
+  // than splitting the day's dot into a stripe per mood, show only the
+  // single most-logged one (ties go to whichever was logged first).
+  function mainMoodOf(moods: string[]): string | null {
+    if (moods.length === 0) return null;
+    const counts = new Map<string, number>();
+    for (const m of moods) counts.set(m, (counts.get(m) ?? 0) + 1);
+    let best = moods[0];
+    let bestCount = 0;
+    for (const m of moods) {
+      const count = counts.get(m)!;
+      if (count > bestCount) {
+        best = m;
+        bestCount = count;
+      }
+    }
+    return best;
+  }
+
   return (
     <Container className="py-16 sm:py-20">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -118,6 +138,7 @@ export default function PatternsClient({
               {cells.map((cell, i) => {
                 if (!cell) return <div key={`blank-${i}`} />;
                 const isToday = cell.date === todayISO;
+                const mainMood = mainMoodOf(cell.moods);
                 return (
                   <div key={cell.date} className="flex flex-col items-center gap-1 py-1">
                     <span className={`text-xs font-medium ${isToday ? "text-brand-700" : "text-ink/60"}`}>
@@ -125,14 +146,11 @@ export default function PatternsClient({
                     </span>
                     <span
                       title={cell.moods.length ? cell.moods.map((m) => moodLabel(m, locale)).join(", ") : undefined}
-                      className={`flex h-5 w-5 overflow-hidden rounded-full border ${
-                        isToday ? "ring-2 ring-brand-400" : ""
-                      } ${cell.moods.length ? "border-black/10" : "border-transparent bg-brand-50/60"}`}
-                    >
-                      {cell.moods.map((mood, m) => (
-                        <span key={m} className="h-full flex-1" style={{ backgroundColor: moodColor(mood) }} />
-                      ))}
-                    </span>
+                      className={`h-5 w-5 rounded-full border ${isToday ? "ring-2 ring-brand-400" : ""} ${
+                        mainMood ? "border-black/10" : "border-transparent bg-brand-50/60"
+                      }`}
+                      style={mainMood ? { backgroundColor: moodColor(mainMood) } : undefined}
+                    />
                   </div>
                 );
               })}
