@@ -70,6 +70,11 @@ type StoredEntry = {
   createdAt: string;
   updatedAt: string;
   prompt: JournalPrompt;
+  // Quick mood check-ins (see logMoodCheckIn) reuse this same store so they
+  // benefit from the same encryption and feed into the same mood-pattern
+  // aggregation, but are tagged so they can be excluded from the journal
+  // feed/streak/word-count — they're moods logged on their own, not entries.
+  kind?: "checkIn";
 };
 
 function normalizeMoods(raw: string[] | string | null | undefined): string[] {
@@ -193,7 +198,7 @@ function computeStats(entries: { createdAt: string; content: string }[]): Journa
 export async function getFeedData(userId: string): Promise<JournalFeedData> {
   const db = await openDb(userId);
   const key = await getKey(db);
-  const stored = await getAllStored(db);
+  const stored = (await getAllStored(db)).filter((e) => e.kind !== "checkIn");
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(stored.map((s) => decryptEntry(key, s)));
   return { entries, stats: computeStats(entries) };
@@ -230,6 +235,28 @@ export async function createEntry(
   // "write your first journal entry" step needs to know — see
   // src/lib/onboarding.ts. Fire-and-forget, no-ops after the first entry.
   markOnboardingJournalStepDone().catch(() => {});
+}
+
+/** Logs a mood on its own, separate from a journal entry — e.g. from the
+ * emotions wheel on My Profile. Stored in the same encrypted store so it
+ * feeds into mood patterns/calendar like any other mood, but tagged so it
+ * never shows up in the journal feed or counts toward streaks/word totals. */
+export async function logMoodCheckIn(userId: string, moods: string[]): Promise<void> {
+  const db = await openDb(userId);
+  const key = await getKey(db);
+  const now = new Date().toISOString();
+  const stored: StoredEntry = {
+    id: crypto.randomUUID(),
+    encContent: await encryptString(key, ""),
+    encPhoto: null,
+    mood: moods,
+    bookmarked: false,
+    createdAt: now,
+    updatedAt: now,
+    prompt: null,
+    kind: "checkIn",
+  };
+  await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
 }
 
 /** Edits an existing entry's content/moods/photo in place — the original
@@ -271,7 +298,7 @@ export async function deleteEntry(userId: string, id: string): Promise<{ success
 export async function exportEntries(userId: string): Promise<JournalExportData> {
   const db = await openDb(userId);
   const key = await getKey(db);
-  const stored = await getAllStored(db);
+  const stored = (await getAllStored(db)).filter((e) => e.kind !== "checkIn");
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(
     stored.map(async (s) => ({ ...(await decryptEntry(key, s)), updatedAt: s.updatedAt })),
