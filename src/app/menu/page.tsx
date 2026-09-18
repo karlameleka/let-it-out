@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { UserCircle, HelpCircle, Info, Scale, Settings, LogOut, LogIn, UserPlus, ChevronRight } from "lucide-react";
+import { UserCircle, HelpCircle, Info, Lock, Settings, LogOut, LogIn, UserPlus, ChevronRight } from "lucide-react";
 import { Container, Eyebrow } from "@/components/ui";
 import { getCurrentUser } from "@/lib/session";
 import { logoutAction } from "@/lib/auth-actions";
@@ -58,7 +58,7 @@ export default async function MenuPage() {
     ...(user ? [{ href: "/profile", label: t.myProfile, icon: UserCircle }] : []),
     { href: "/help-center", label: t.helpCenter, icon: HelpCircle },
     { href: "/about", label: t.about, icon: Info },
-    { href: "/legal", label: t.legal, icon: Scale },
+    { href: "/legal", label: t.legal, icon: Lock },
   ];
 
   return (
