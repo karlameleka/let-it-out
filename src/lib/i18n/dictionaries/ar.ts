@@ -1240,6 +1240,8 @@ const ar: Dictionary = {
     title: "سجّل مزاجك",
     subtitle: "دوس على حاسة عشان تسجّلها — منفصلة عن تدويناتك.",
     viewPatterns: "شوف الأنماط",
+    journalAboutIt: "دوّن عنها",
+    talkAboutIt: "اتكلم عنها",
   },
   reflectionSheet: {
     eyebrow: "بين الجلسات",

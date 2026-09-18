@@ -84,7 +84,7 @@ function SecondaryWedgeLabel({ text, color, startDeg, endDeg }: { text: string; 
       textAnchor="middle"
       dominantBaseline="middle"
       fill={labelColorFor(color)}
-      className="pointer-events-none select-none text-[9.5px] font-medium"
+      className="pointer-events-none select-none text-[10.5px] font-semibold"
     >
       {text}
     </text>

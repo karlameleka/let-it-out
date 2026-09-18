@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpen, MessageCircle } from "lucide-react";
 import { Container, Eyebrow, ButtonLink } from "@/components/ui";
 import EmotionsWheel from "@/components/emotions-wheel";
 import type { Dictionary } from "@/lib/i18n/dictionary";
@@ -29,6 +30,17 @@ export default function MoodWheelClient({
 
       <div className="mt-8 rounded-3xl border-2 border-brand-100 bg-white px-6 py-10 sm:px-10 sm:py-14">
         <EmotionsWheel userId={userId} locale={locale} dict={dict.profile} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <ButtonLink href="/journal/new" variant="outline" className="gap-2">
+          <BookOpen className="h-4 w-4 shrink-0" strokeWidth={2} />
+          {dict.moodWheel.journalAboutIt}
+        </ButtonLink>
+        <ButtonLink href="/counseling" variant="outline" className="gap-2">
+          <MessageCircle className="h-4 w-4 shrink-0" strokeWidth={2} />
+          {dict.moodWheel.talkAboutIt}
+        </ButtonLink>
       </div>
     </Container>
   );

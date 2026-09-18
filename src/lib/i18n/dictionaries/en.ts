@@ -1264,6 +1264,8 @@ const en = {
     title: "Log a mood",
     subtitle: "Tap a feeling to log it — kept separate from your journal entries.",
     viewPatterns: "View patterns",
+    journalAboutIt: "Journal about it",
+    talkAboutIt: "Talk about it",
   },
   reflectionSheet: {
     eyebrow: "Between sessions",
