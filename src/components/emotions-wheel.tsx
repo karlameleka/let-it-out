@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CORE_EMOTIONS, getSecondaryEmotions, type CoreEmotionId, type Mood } from "@/lib/moods";
 import { logMoodCheckIn } from "@/lib/local-journal";
+import { Button } from "@/components/ui";
 import type { Locale } from "@/lib/i18n/locale";
 
 const CX = 150;
@@ -114,16 +115,16 @@ export default function EmotionsWheel({
   onLogged?: () => void;
 }) {
   const [openCore, setOpenCore] = useState<CoreEmotionId | null>(null);
-  const [logged, setLogged] = useState<string | null>(null);
+  const [logged, setLogged] = useState<{ label: string; color: string } | null>(null);
 
   const coreSlice = 360 / CORE_EMOTIONS.length;
   const secondary: Mood[] = openCore ? getSecondaryEmotions(openCore) : [];
   const secondarySlice = secondary.length > 0 ? 360 / secondary.length : 0;
   const openCoreMeta = CORE_EMOTIONS.find((c) => c.id === openCore) ?? null;
 
-  async function log(moodIds: string[], flashLabel: string) {
+  async function log(moodIds: string[], flashLabel: string, flashColor: string) {
     await logMoodCheckIn(userId, moodIds);
-    setLogged(flashLabel);
+    setLogged({ label: flashLabel, color: flashColor });
     onLogged?.();
     window.setTimeout(() => {
       setLogged(null);
@@ -133,7 +134,7 @@ export default function EmotionsWheel({
 
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 300 300" className="w-full max-w-[440px]" role="img" aria-label={dict.wheelPrompt}>
+      <svg viewBox="0 0 300 300" className="w-full max-w-[440px] drop-shadow-[0_8px_20px_rgba(18,53,67,0.12)]" role="img" aria-label={dict.wheelPrompt}>
         {openCore === null
           ? CORE_EMOTIONS.map((core, i) => {
               const startDeg = i * coreSlice;
@@ -165,14 +166,14 @@ export default function EmotionsWheel({
                     stroke="white"
                     strokeWidth={2}
                     className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
-                    onClick={() => log([openCore, mood.id], label)}
+                    onClick={() => log([openCore, mood.id], label, mood.color)}
                   />
                   <SecondaryWedgeLabel text={label} color={mood.color} startDeg={startDeg} endDeg={endDeg} />
                 </g>
               );
             })}
 
-        <circle cx={CX} cy={CY} r={R_INNER - 4} className="fill-white" />
+        <circle cx={CX} cy={CY} r={R_INNER - 4} className="fill-white stroke-brand-100" strokeWidth={2} />
 
         {openCoreMeta && (
           <foreignObject x={CX - R_INNER + 4} y={CY - R_INNER + 4} width={(R_INNER - 4) * 2} height={(R_INNER - 4) * 2}>
@@ -195,19 +196,25 @@ export default function EmotionsWheel({
         )}
       </svg>
 
-      <div className="mt-4 min-h-[3rem] text-center">
+      <div className="mt-5 flex min-h-[4.5rem] flex-col items-center gap-2 text-center">
         {logged ? (
-          <p className="animate-pop-in text-lg font-medium text-brand-700">{dict.wheelLogged}: {logged}</p>
+          <p className="animate-pop-in flex items-center gap-2 text-lg font-medium text-brand-700">
+            <span className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ backgroundColor: logged.color }} />
+            {dict.wheelLogged}: {logged.label}
+          </p>
         ) : openCoreMeta ? (
           <>
             <p className="text-base text-ink/60">{dict.wheelPickSpecific.replace("{core}", locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label)}</p>
-            <button
+            <Button
               type="button"
-              onClick={() => log([openCoreMeta.id], locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label)}
-              className="mt-1.5 text-base font-medium text-brand-600 link-grow w-fit"
+              variant="outline"
+              onClick={() =>
+                log([openCoreMeta.id], locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label, openCoreMeta.color)
+              }
+              className="px-5 py-2 text-sm"
             >
               {dict.wheelJustLog.replace("{core}", locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label)}
-            </button>
+            </Button>
           </>
         ) : (
           <p className="text-base text-ink/50">{dict.wheelPrompt}</p>

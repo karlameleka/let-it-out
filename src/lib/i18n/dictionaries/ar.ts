@@ -964,8 +964,8 @@ const ar: Dictionary = {
     signedInAs: "مسجّل الدخول باسم",
     moodTitle: "أنماط مزاجي",
     moodEmpty: "لسه مفيش بيانات مزاج، اختار مزاجك المرة الجاية لما تحفظ تدوينة.",
-    moodCta: "سجّل مزاجك",
-    wheelCta: "افتح عجلة المزاج",
+    moodCta: "أنماط المزاج",
+    wheelCta: "سجّل مزاجك",
     wheelPrompt: "دوس على حاسة عشان تسجّلها",
     wheelPickSpecific: "اختار حاسة أكتر تحديدًا، أو سجّل \"{core}\" زي ما هي",
     wheelJustLog: "سجّل \"{core}\" زي ما هي",
@@ -1236,6 +1236,7 @@ const ar: Dictionary = {
     hint: "اختار قد ما تحب",
   },
   moodWheel: {
+    eyebrow: "تسجيل المزاج",
     title: "سجّل مزاجك",
     subtitle: "دوس على حاسة عشان تسجّلها — منفصلة عن تدويناتك.",
     viewPatterns: "شوف الأنماط",

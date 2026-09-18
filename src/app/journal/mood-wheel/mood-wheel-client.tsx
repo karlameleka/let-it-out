@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { Container } from "@/components/ui";
+import { Container, Eyebrow, ButtonLink } from "@/components/ui";
 import EmotionsWheel from "@/components/emotions-wheel";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
@@ -17,15 +16,18 @@ export default function MoodWheelClient({
 }) {
   return (
     <Container className="max-w-2xl py-16 sm:py-20">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-3xl font-medium text-brand-900">{dict.moodWheel.title}</h1>
-        <Link href="/journal/patterns" className="text-sm font-medium text-brand-600 link-grow">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Eyebrow>{dict.moodWheel.eyebrow}</Eyebrow>
+          <h1 className="mt-3 font-display text-3xl font-medium text-brand-900 sm:text-4xl">{dict.moodWheel.title}</h1>
+          <p className="mt-2 max-w-sm text-base text-ink/60">{dict.moodWheel.subtitle}</p>
+        </div>
+        <ButtonLink href="/journal/patterns" variant="outline" className="shrink-0">
           {dict.moodWheel.viewPatterns}
-        </Link>
+        </ButtonLink>
       </div>
-      <p className="mt-2 text-base text-ink/60">{dict.moodWheel.subtitle}</p>
 
-      <div className="mt-10 flex justify-center">
+      <div className="mt-8 rounded-3xl border-2 border-brand-100 bg-white px-6 py-10 sm:px-10 sm:py-14">
         <EmotionsWheel userId={userId} locale={locale} dict={dict.profile} />
       </div>
     </Container>

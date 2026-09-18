@@ -977,8 +977,8 @@ const en = {
     signedInAs: "Signed in as",
     moodTitle: "My mood patterns",
     moodEmpty: "No mood data yet, pick a mood next time you save an entry.",
-    moodCta: "Log mood",
-    wheelCta: "Open mood wheel",
+    moodCta: "Mood patterns",
+    wheelCta: "Log mood",
     wheelPrompt: "Tap a feeling to log it",
     wheelPickSpecific: "Pick a more specific feeling, or just log \"{core}\"",
     wheelJustLog: "Just log \"{core}\"",
@@ -1260,6 +1260,7 @@ const en = {
     hint: "pick as many as apply",
   },
   moodWheel: {
+    eyebrow: "Mood check-in",
     title: "Log a mood",
     subtitle: "Tap a feeling to log it — kept separate from your journal entries.",
     viewPatterns: "View patterns",
