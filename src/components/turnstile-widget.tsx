@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import Script from "next/script";
 
 declare global {
@@ -65,6 +66,13 @@ export default function TurnstileWidget({
   const widgetIdRef = useRef<string | null>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const resolvedRef = useRef(false);
+
+  // Opens the connection to Cloudflare's challenge domain (DNS + TLS) the
+  // instant this component renders, ahead of the <script> tag itself —
+  // shaves a full network round-trip off how long the widget takes to
+  // become ready, which matters most on the higher-latency mobile
+  // connections where this wait is most noticeable.
+  if (siteKey) ReactDOM.preconnect("https://challenges.cloudflare.com", { crossOrigin: "anonymous" });
 
   function resolveReady() {
     if (resolvedRef.current) return;
