@@ -8,7 +8,9 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
+import { prisma } from "@/lib/db";
 import LanguageSwitcher from "@/components/language-switcher";
+import DeleteAccountForm from "@/app/account/delete-account-form";
 
 export const metadata: Metadata = { title: "Menu" };
 
@@ -47,6 +49,10 @@ export default async function MenuPage() {
   const baseDict = getDictionary(locale);
   const dict = { ...baseDict, nav: applyOverrides(baseDict.nav, "nav", textOverrides, locale) };
   const t = dict.nav;
+
+  const hasPassword = user
+    ? (await prisma.user.findUnique({ where: { id: user.userId }, select: { passwordHash: true } }))?.passwordHash != null
+    : false;
 
   const NAV_LINKS = [
     ...(user ? [{ href: "/profile", label: t.myProfile, icon: UserCircle }] : []),
@@ -96,6 +102,14 @@ export default async function MenuPage() {
           <div className="mt-4">
             <LanguageSwitcher locale={locale} dict={dict.languageSwitcher} arabicEnabled={settings.arabicEnabled} />
           </div>
+        </div>
+      )}
+
+      {user && (
+        <div className="mt-6 rounded-2xl border-2 border-red-100 bg-white p-6">
+          <h2 className="font-display font-semibold text-red-700">{dict.account.dangerZoneTitle}</h2>
+          <p className="mt-1 text-sm text-ink/60">{dict.account.dangerZoneDescription}</p>
+          <DeleteAccountForm dict={dict} userId={user.userId} hasPassword={hasPassword} />
         </div>
       )}
     </Container>
