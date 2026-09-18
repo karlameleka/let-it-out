@@ -23,14 +23,20 @@ export default function PastItemRow({
   deleteLabel,
   href,
   cta,
+  cancelledLabel,
 }: {
   itemId: string;
   title: string;
   dateTimeLabel: string;
   deleteLabel: Dictionary["upcoming"]["deleteNotification"];
-  /** Present only for a past counseling session — links to /journal/reflection. */
+  /** Present only for a past counseling session that actually happened —
+   * links to /journal/reflection. Omitted for a cancelled session, since
+   * there's nothing to reflect on. */
   href?: string;
   cta?: string;
+  /** Set only for a session cancelled from either side — shows a badge
+   * instead of the reflection prompt/link. */
+  cancelledLabel?: string;
 }) {
   const [, startTransition] = useTransition();
   const router = useRouter();
@@ -49,7 +55,13 @@ export default function PastItemRow({
       <div>
         <p className="font-medium text-brand-900">{title}</p>
         <p className="mt-1 text-sm text-ink/60">{dateTimeLabel}</p>
-        {href && cta && <p className="mt-2 text-xs font-medium text-brand-600">{cta}</p>}
+        {cancelledLabel ? (
+          <span className="mt-2 inline-block rounded-full bg-ink/5 px-2.5 py-0.5 text-xs font-medium text-ink/50">
+            {cancelledLabel}
+          </span>
+        ) : (
+          href && cta && <p className="mt-2 text-xs font-medium text-brand-600">{cta}</p>
+        )}
       </div>
       {href && <ChevronRight className="h-4 w-4 shrink-0 text-ink/30 rtl:-scale-x-100" strokeWidth={2} />}
     </>

@@ -5,6 +5,12 @@ import { pastCancelWindow } from "@/lib/cancel-window";
 import type { RSVPStatus } from "@/generated/prisma/enums";
 import type { Locale } from "@/lib/i18n/locale";
 
+/** How long a cancelled session/request stays visible on /upcoming/past
+ * before the trash-purge cron hard-deletes it — shared with that cron so
+ * the display window here and the actual deletion window can't drift
+ * apart. */
+export const CANCELLED_RETENTION_DAYS = 30;
+
 export type UpcomingSession = {
   id: string;
   /** Raw SessionBooking/BookingRequest id — pass this to cancelSessionBooking
@@ -66,12 +72,16 @@ async function getUpcomingSessions(email: string): Promise<UpcomingSession[]> {
 
   const [sessions, requests] = await Promise.all([
     prisma.sessionBooking.findMany({
-      where: { email, preferredDate: { gte: today }, joinedAt: null },
+      // Cancelled bookings move to /upcoming/past instead (see
+      // getPastItems) regardless of preferredDate, so they don't linger
+      // here indefinitely — a "cancelled but still upcoming" row would
+      // just be confusing.
+      where: { email, status: { not: "CANCELLED" }, preferredDate: { gte: today }, joinedAt: null },
       include: { counselor: true },
       orderBy: { preferredDate: "asc" },
     }),
     prisma.bookingRequest.findMany({
-      where: { email, status: { not: "COMPLETED" }, preferredDate: { gte: today }, joinedAt: null },
+      where: { email, status: { notIn: ["COMPLETED", "CANCELLED"] }, preferredDate: { gte: today }, joinedAt: null },
       include: { counselor: true },
       orderBy: { preferredDate: "asc" },
     }),
@@ -193,6 +203,11 @@ export type PastSession = {
   counselorName: string;
   date: string;
   time?: string | null;
+  /** "CONFIRMED"/"COMPLETED" for a session that actually happened, or
+   * "CANCELLED" — cancelled from either side, shown here (regardless of
+   * preferredDate) for a month before the trash-purge cron hard-deletes
+   * it, see cancelSessionBooking/cancelBookingRequest/cancelClientAppointment. */
+  status: string;
 };
 
 export type PastEvent = {
@@ -203,14 +218,17 @@ export type PastEvent = {
   location: string | null;
 };
 
-/** Attended history for the /upcoming/past subpage: counseling sessions
- * that actually happened (confirmed, not cancelled, date already past) and
- * workshops the client RSVP'd ATTENDING to that have already happened —
- * never sessions/events that were cancelled, missed, or never RSVP'd to. */
+/** History for the /upcoming/past subpage: counseling sessions that
+ * actually happened (confirmed, date already past), sessions cancelled
+ * from either side within the last month (see CANCELLED_RETENTION_DAYS —
+ * the trash-purge cron hard-deletes them after that), and workshops the
+ * client RSVP'd ATTENDING to that have already happened — never events
+ * that were missed or never RSVP'd to. */
 export async function getPastItems(email: string, userId: string, locale: Locale = "en") {
   const today = todayISO();
+  const cancelledSince = new Date(Date.now() - CANCELLED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
-  const [sessions, requests, events] = await Promise.all([
+  const [sessions, cancelledSessions, requests, cancelledRequests, events] = await Promise.all([
     prisma.sessionBooking.findMany({
       where: {
         email,
@@ -220,6 +238,11 @@ export async function getPastItems(email: string, userId: string, locale: Locale
       include: { counselor: true },
       orderBy: { preferredDate: "desc" },
     }),
+    prisma.sessionBooking.findMany({
+      where: { email, status: "CANCELLED", cancelledAt: { gte: cancelledSince } },
+      include: { counselor: true },
+      orderBy: { cancelledAt: "desc" },
+    }),
     prisma.bookingRequest.findMany({
       where: {
         email,
@@ -228,6 +251,11 @@ export async function getPastItems(email: string, userId: string, locale: Locale
       },
       include: { counselor: true },
       orderBy: { preferredDate: "desc" },
+    }),
+    prisma.bookingRequest.findMany({
+      where: { email, status: "CANCELLED", cancelledAt: { gte: cancelledSince } },
+      include: { counselor: true },
+      orderBy: { cancelledAt: "desc" },
     }),
     prisma.event.findMany({
       where: { startAt: { lt: new Date(`${today}T00:00:00`) } },
@@ -244,6 +272,16 @@ export async function getPastItems(email: string, userId: string, locale: Locale
       counselorName: s.counselor.name,
       date: s.preferredDate,
       time: s.preferredTime,
+      status: s.status as string,
+    })),
+    ...cancelledSessions.map((s) => ({
+      id: `session-${s.id}`,
+      bookingId: s.id,
+      kind: "paid" as const,
+      counselorName: s.counselor.name,
+      date: s.preferredDate,
+      time: s.preferredTime,
+      status: s.status as string,
     })),
     ...requests.map((r) => ({
       id: `request-${r.id}`,
@@ -252,6 +290,16 @@ export async function getPastItems(email: string, userId: string, locale: Locale
       counselorName: r.counselor.name,
       date: r.preferredDate,
       time: r.preferredTime,
+      status: r.status as string,
+    })),
+    ...cancelledRequests.map((r) => ({
+      id: `request-${r.id}`,
+      bookingId: r.id,
+      kind: "request" as const,
+      counselorName: r.counselor.name,
+      date: r.preferredDate,
+      time: r.preferredTime,
+      status: r.status as string,
     })),
   ].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -278,4 +326,16 @@ export async function getPastItems(email: string, userId: string, locale: Locale
     sessions: pastSessions.filter((s) => !dismissedIds.has(s.id)),
     events: pastEvents.filter((e) => !dismissedIds.has(e.id)),
   };
+}
+
+/** Hard-deletes SessionBooking/BookingRequest rows cancelled more than
+ * CANCELLED_RETENTION_DAYS ago — called from api/cron/trash-purge
+ * alongside purgeExpiredTrash so there's a single daily cron doing both. */
+export async function purgeExpiredCancelledSessions(): Promise<number> {
+  const cutoff = new Date(Date.now() - CANCELLED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const [sessions, requests] = await Promise.all([
+    prisma.sessionBooking.deleteMany({ where: { status: "CANCELLED", cancelledAt: { lt: cutoff } } }),
+    prisma.bookingRequest.deleteMany({ where: { status: "CANCELLED", cancelledAt: { lt: cutoff } } }),
+  ]);
+  return sessions.count + requests.count;
 }

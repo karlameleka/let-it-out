@@ -9,6 +9,7 @@ import {
   sendReferralNotificationEmail,
   sendAssignedResourceNotificationEmail,
   sendMeetingLinkEmail,
+  sendSupportNotification,
   type AssignedResourceKind,
 } from "@/lib/email";
 import { formatSlotTime } from "@/lib/format-slot";
@@ -675,6 +676,44 @@ export async function setMeetingLink(
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmailForRevalidate)}`);
   revalidatePath("/upcoming");
   return { success: true };
+}
+
+/** Therapist-side counterpart to cancelSessionBooking/cancelBookingRequest
+ * in session-cancel-actions.ts (the client-side cancel from /upcoming) —
+ * same CANCELLED status + cancelledAt stamp, so a session cancelled from
+ * either side moves to /upcoming/past and is purged by the trash-purge
+ * cron a month later the same way. */
+export async function cancelClientAppointment(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const bookingId = String(formData.get("bookingId") ?? "");
+  const bookingKind = String(formData.get("bookingKind") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+
+  if (bookingKind === "paid") {
+    await prisma.sessionBooking.updateMany({
+      where: { id: bookingId, counselorId: session.counselorId, status: { not: "CANCELLED" } },
+      data: { status: "CANCELLED", cancelledAt: new Date() },
+    });
+  } else if (bookingKind === "request") {
+    await prisma.bookingRequest.updateMany({
+      where: { id: bookingId, counselorId: session.counselorId, status: { notIn: ["CANCELLED", "COMPLETED"] } },
+      data: { status: "CANCELLED", cancelledAt: new Date() },
+    });
+  }
+
+  await sendSupportNotification({
+    subject: "A counselor cancelled a client's session",
+    lines: [
+      { label: "Counselor", value: session.name },
+      { label: "Client", value: clientEmail },
+      { label: "Booking", value: bookingId },
+    ],
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/upcoming");
 }
 
 export async function removeAssignedResource(formData: FormData) {

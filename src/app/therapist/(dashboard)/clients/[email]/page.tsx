@@ -9,7 +9,7 @@ import {
   getAssignedResourcesForClient,
   type IntakeAnswerEntry,
 } from "@/lib/therapist-data";
-import { removeAssignedResource, discontinueMedication } from "@/lib/therapist-actions";
+import { removeAssignedResource, discontinueMedication, cancelClientAppointment } from "@/lib/therapist-actions";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
 import ClientNoteForm from "./note-form";
@@ -119,7 +119,22 @@ export default async function TherapistClientProfilePage({
                         {a.kind} · {a.date}
                         {a.time ? ` at ${a.time}` : ""}
                       </p>
-                      <StatusBadge status={a.status} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={a.status} />
+                        {a.status !== "CANCELLED" && a.status !== "COMPLETED" && (
+                          <form action={cancelClientAppointment}>
+                            <input type="hidden" name="bookingId" value={a.id} />
+                            <input type="hidden" name="bookingKind" value={a.bookingKind} />
+                            <input type="hidden" name="clientEmail" value={client.email} />
+                            <ConfirmSubmitButton
+                              confirmMessage="Cancel this session? The client will see it move to their past sessions."
+                              className="text-xs font-medium text-ink/40 hover:text-red-600"
+                            >
+                              Cancel
+                            </ConfirmSubmitButton>
+                          </form>
+                        )}
+                      </div>
                     </div>
                     {a.status === "CONFIRMED" && (
                       <MeetingLinkForm

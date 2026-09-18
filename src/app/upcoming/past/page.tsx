@@ -53,6 +53,7 @@ export default async function PastSessionsPage() {
               const dateTimeLabel =
                 dateFormatter.format(new Date(`${s.date}T00:00:00`)) +
                 (s.time && s.kind === "paid" ? ` · ${formatSlotTime(s.time, locale)}` : s.time ? ` · ${s.time}` : "");
+              const isCancelled = s.status === "CANCELLED";
               return (
                 <PastItemRow
                   key={s.id}
@@ -60,8 +61,9 @@ export default async function PastSessionsPage() {
                   title={`Session with ${s.counselorName}`}
                   dateTimeLabel={dateTimeLabel}
                   deleteLabel={dict.upcoming.deleteNotification}
-                  href="/journal/reflection"
-                  cta={dict.upcoming.reflectionCta}
+                  href={isCancelled ? undefined : "/journal/reflection"}
+                  cta={isCancelled ? undefined : dict.upcoming.reflectionCta}
+                  cancelledLabel={isCancelled ? dict.upcoming.statusCancelled : undefined}
                 />
               );
             })}

@@ -315,6 +315,11 @@ model SessionBooking {
   // Set once the day-before push reminder (see the session-reminders cron)
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
+  // Set when status flips to CANCELLED (by either the client from
+  // /upcoming or the counselor from their portal) — see cancelWindowEnd
+  // usage in the trash-purge cron, which hard-deletes a cancelled booking
+  // a month after this timestamp. Null for anything never cancelled.
+  cancelledAt   DateTime?
   // Site language active when this booking was made — the Paymob webhook
   // that confirms payment runs server-to-server with no visitor cookie, so
   // it needs this to send the confirmation email in the right language.
@@ -649,6 +654,9 @@ model BookingRequest {
   // Set once the day-before push reminder (see the session-reminders cron)
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
+  // Same purpose as SessionBooking.cancelledAt — set when status flips to
+  // CANCELLED, read by the trash-purge cron to hard-delete a month later.
+  cancelledAt    DateTime?
   createdAt      DateTime      @default(now())
 
   @@index([createdAt])
