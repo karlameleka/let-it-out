@@ -72,8 +72,6 @@ const ar: Dictionary = {
     technicalSupportDescription: "تحدث مع مساعد الدعم بخصوص مشاكل التطبيق أو الحساب.",
     whatsapp: "راسلنا عبر واتساب",
     whatsappDescription: "لديك سؤال سريع؟ تحدث مع فريقنا مباشرة.",
-    faq: "الأسئلة الشائعة",
-    faqDescription: "إجابات عن الأسئلة الشائعة حول خدماتنا.",
   },
   onboarding: {
     welcomeHeadline: "أهلاً بيك، {name}!",
@@ -972,7 +970,7 @@ const ar: Dictionary = {
     favoritesCta: "تصفح الموارد",
     medicationsTitle: "الأدوية",
     prescribedBy: "وصفها {name}",
-    sessionsTitle: "جلسات الاستشارة",
+    sessionsTitle: "جلسات استشارتي",
     nextUpcoming: "الجلسة الجاية",
     noUpcoming: "مفيش جلسات قادمة.",
     mostRecent: "آخر جلسة",

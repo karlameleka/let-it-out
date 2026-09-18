@@ -72,8 +72,6 @@ const en = {
     technicalSupportDescription: "Chat with our support assistant about app or account issues.",
     whatsapp: "Message us on WhatsApp",
     whatsappDescription: "Quick questions? Chat with our team directly.",
-    faq: "Browse FAQs",
-    faqDescription: "Answers to common questions about our services.",
   },
   onboarding: {
     welcomeHeadline: "Welcome, {name}!",
@@ -985,7 +983,7 @@ const en = {
     favoritesCta: "Browse resources",
     medicationsTitle: "Medications",
     prescribedBy: "Prescribed by {name}",
-    sessionsTitle: "Counseling sessions",
+    sessionsTitle: "My counseling sessions",
     nextUpcoming: "Next upcoming",
     noUpcoming: "No upcoming sessions.",
     mostRecent: "Most recent",
