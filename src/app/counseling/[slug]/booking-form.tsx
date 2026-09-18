@@ -9,7 +9,7 @@ import { formatSlotTime } from "@/lib/format-slot";
 import PrivacyBadge from "@/components/privacy-badge";
 import MonthCalendar from "@/components/month-calendar";
 import HoneypotField from "@/components/honeypot-field";
-import TurnstileWidget from "@/components/turnstile-widget";
+import SimpleCaptcha from "@/components/simple-captcha";
 
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -31,7 +31,6 @@ export default function BookingForm({
   slots?: BookingSlot[];
 }) {
   const [state, formAction, pending] = useActionState(submitBookingRequest, undefined);
-  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const [useAccount, setUseAccount] = useState(!!account);
   const [customTime, setCustomTime] = useState(slots.length === 0);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(slots[0] ?? null);
@@ -193,11 +192,11 @@ export default function BookingForm({
         <label className={labelClass} htmlFor="message">{t.messageLabel}</label>
         <textarea id="message" name="message" rows={3} className={inputClass} />
       </div>
-      <TurnstileWidget onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
+      <SimpleCaptcha dict={f} />
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <PrivacyBadge text={dict.privacyBadge.booking} />
-      <Button type="submit" disabled={pending || !turnstileReady} className="w-full">
-        {pending ? f.sending : turnstileReady ? t.submit : f.verifying}
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? f.sending : t.submit}
       </Button>
     </form>
   );

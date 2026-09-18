@@ -219,6 +219,10 @@ const ar: Dictionary = {
     send: "إرسال الرسالة",
     sending: "جارٍ الإرسال…",
     verifying: "جارٍ التحقق…",
+    captchaLabel: "اكتب الكود اللي فوق",
+    captchaPlaceholder: "الكود",
+    captchaRefresh: "كود جديد",
+    captchaMismatch: "الكود مش مطابق، حاول تاني.",
   },
   validation: {
     invalidInput: "البيانات المدخلة غير صحيحة.",

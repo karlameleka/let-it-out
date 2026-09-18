@@ -12,7 +12,7 @@ import { formatSlotTime } from "@/lib/format-slot";
 import PrivacyBadge from "@/components/privacy-badge";
 import MonthCalendar from "@/components/month-calendar";
 import HoneypotField from "@/components/honeypot-field";
-import TurnstileWidget from "@/components/turnstile-widget";
+import SimpleCaptcha from "@/components/simple-captcha";
 import { HONEYPOT_FIELD } from "@/lib/anti-spam-shared";
 
 const inputClass =
@@ -46,7 +46,6 @@ export default function SessionBookingFlow({
   const isOffline = useOffline();
   const [useAccount, setUseAccount] = useState(!!account);
   const [pending, setPending] = useState(false);
-  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const [error, setError] = useState<string | null>(null);
   const [sessionBookingId, setSessionBookingId] = useState<string | null>(null);
   const [sessionBookingAccessToken, setSessionBookingAccessToken] = useState<string | null>(null);
@@ -129,7 +128,8 @@ export default function SessionBookingFlow({
       preferredTime,
       promoCode: promoApplied?.code,
       honeypot: String(formData.get(HONEYPOT_FIELD) || ""),
-      turnstileToken: String(formData.get("cf-turnstile-response") || ""),
+      captchaAnswer: String(formData.get("captchaAnswer") || ""),
+      captchaExpected: String(formData.get("captchaExpected") || ""),
     });
 
     setPending(false);
@@ -324,15 +324,15 @@ export default function SessionBookingFlow({
           <p className="mt-1 text-xs text-ink/45">{t.preferredDayHint}</p>
         </div>
       )}
-      <TurnstileWidget onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
+      <SimpleCaptcha dict={f} />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <PrivacyBadge text={dict.privacyBadge.booking} />
       <button
         type="submit"
-        disabled={pending || isOffline || !turnstileReady}
+        disabled={pending || isOffline}
         className="w-full rounded bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-600 active:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] disabled:opacity-60"
       >
-        {isOffline ? dict.offline.reconnectToContinue : pending ? t.justAMoment : !turnstileReady ? f.verifying : t.continueToPayment}
+        {isOffline ? dict.offline.reconnectToContinue : pending ? t.justAMoment : t.continueToPayment}
       </button>
     </form>
   );

@@ -221,6 +221,10 @@ const en = {
     send: "Send message",
     sending: "Sending…",
     verifying: "Verifying…",
+    captchaLabel: "Type the code above",
+    captchaPlaceholder: "Code",
+    captchaRefresh: "Get a new code",
+    captchaMismatch: "That code didn't match. Please try again.",
   },
   validation: {
     invalidInput: "Invalid input.",

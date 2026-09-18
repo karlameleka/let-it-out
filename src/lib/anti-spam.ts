@@ -88,11 +88,18 @@ async function verifyTurnstile(token: string | null, ip: string): Promise<boolea
  * Returns null when the submission should proceed normally. Returns a
  * FormState-shaped object to return as-is otherwise: a honeypot hit
  * pretends success (never tips off the bot that it was caught), while a
- * rate-limit or Turnstile failure surfaces a real, human-readable error.
+ * rate-limit or Turnstile/captcha failure surfaces a real, human-readable
+ * error.
+ *
+ * `opts.simpleCaptcha` swaps the Turnstile network round-trip for a check
+ * against SimpleCaptcha's captchaAnswer/captchaExpected fields instead —
+ * used by the counseling booking forms, where the Turnstile widget's load
+ * time produced a visible "Verifying…" wait that a user reported.
  */
 export async function screenSubmission(
   formData: FormData,
   routeKey: string,
+  opts?: { simpleCaptcha?: boolean },
 ): Promise<{ error?: string; success?: boolean } | null> {
   if (String(formData.get(HONEYPOT_FIELD) ?? "").trim() !== "") {
     return { success: true };
@@ -103,6 +110,15 @@ export async function screenSubmission(
   const allowed = await checkRateLimit(routeKey, ip);
   if (!allowed) {
     return { error: "Too many requests. Please try again in a few minutes." };
+  }
+
+  if (opts?.simpleCaptcha) {
+    const expected = String(formData.get("captchaExpected") ?? "").trim().toUpperCase();
+    const answer = String(formData.get("captchaAnswer") ?? "").trim().toUpperCase();
+    if (!expected || answer !== expected) {
+      return { error: "That code didn't match. Please try again." };
+    }
+    return null;
   }
 
   const turnstileToken = String(formData.get("cf-turnstile-response") ?? "").trim() || null;

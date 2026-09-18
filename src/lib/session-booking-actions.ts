@@ -29,11 +29,12 @@ function buildCreateSessionBookingSchema(v: Dictionary["validation"], c: Diction
 
 export type CreateSessionBookingInput = z.infer<ReturnType<typeof buildCreateSessionBookingSchema>> & {
   // Not real booking data — read only by screenSubmission() below. See
-  // HoneypotField/TurnstileWidget in session-booking-flow.tsx, which this
+  // HoneypotField/SimpleCaptcha in session-booking-flow.tsx, which this
   // action calls directly (not as a <form action>), so those values have to
   // be threaded through explicitly instead of read off a submitted FormData.
   honeypot?: string;
-  turnstileToken?: string;
+  captchaAnswer?: string;
+  captchaExpected?: string;
 };
 export type CreateSessionBookingResult = { error: string } | { sessionBookingId: string; accessToken: string };
 
@@ -84,8 +85,9 @@ export async function createSessionBooking(
 ): Promise<CreateSessionBookingResult> {
   const screenData = new FormData();
   screenData.set(HONEYPOT_FIELD, input.honeypot ?? "");
-  if (input.turnstileToken) screenData.set("cf-turnstile-response", input.turnstileToken);
-  const blocked = await screenSubmission(screenData, "session-booking");
+  screenData.set("captchaAnswer", input.captchaAnswer ?? "");
+  screenData.set("captchaExpected", input.captchaExpected ?? "");
+  const blocked = await screenSubmission(screenData, "session-booking", { simpleCaptcha: true });
   if (blocked) return { error: blocked.error ?? "Something went wrong. Please try again." };
 
   const locale = await getLocale();

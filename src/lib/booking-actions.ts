@@ -50,7 +50,7 @@ export async function submitBookingRequest(
   _prevState: BookingFormState,
   formData: FormData,
 ): Promise<BookingFormState> {
-  const blocked = await screenSubmission(formData, "booking-request");
+  const blocked = await screenSubmission(formData, "booking-request", { simpleCaptcha: true });
   if (blocked) return blocked;
 
   const locale = await getLocale();
