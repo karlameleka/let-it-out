@@ -31,20 +31,59 @@ function wedgePath(startDeg: number, endDeg: number) {
   return `M ${o1.x} ${o1.y} A ${R_OUTER} ${R_OUTER} 0 0 1 ${o2.x} ${o2.y} L ${i1.x} ${i1.y} A ${R_INNER} ${R_INNER} 0 0 0 ${i2.x} ${i2.y} Z`;
 }
 
-function WedgeLabel({ text, startDeg, endDeg }: { text: string; startDeg: number; endDeg: number }) {
+const DARK_LABEL = "#123543"; // brand-900, matches the rest of the app's ink color
+
+/** Some secondary shades run nearly black (e.g. "Calm" at #0C2027) — dark
+ * text on those is unreadable, so pick white or the app's ink color by the
+ * wedge's own luminance rather than hard-coding one text color for all. */
+function labelColorFor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance < 0.45 ? "#ffffff" : DARK_LABEL;
+}
+
+/** The 6 core wedges are wide (60° each) — plenty of room for a short word
+ * sitting upright at a fixed mid-radius, no rotation needed. */
+function CoreWedgeLabel({ text, color, startDeg, endDeg }: { text: string; color: string; startDeg: number; endDeg: number }) {
   const mid = (startDeg + endDeg) / 2;
-  const flip = mid > 90 && mid < 270;
-  const labelR = flip ? R_OUTER - 10 : R_INNER + 10;
+  const pt = polar((R_INNER + R_OUTER) / 2, mid);
+  return (
+    <text
+      x={pt.x}
+      y={pt.y}
+      textAnchor="middle"
+      dominantBaseline="middle"
+      fill={labelColorFor(color)}
+      className="pointer-events-none select-none text-[12px] font-semibold"
+    >
+      {text}
+    </text>
+  );
+}
+
+/** Secondary wedges can be thin (up to 14 for "happy"), so the label follows
+ * the arc (tangent to the circle) instead — the same trick clock-face
+ * numerals use. The label is always centered on its point (anchor="middle"),
+ * so flipping it 180° for the bottom half only changes reading direction,
+ * never its position — unlike a radial (spoke-like) label, this can't come
+ * out upside-down or drift to the wrong side of the wedge. */
+function SecondaryWedgeLabel({ text, color, startDeg, endDeg }: { text: string; color: string; startDeg: number; endDeg: number }) {
+  const mid = (startDeg + endDeg) / 2;
+  const labelR = R_INNER + (R_OUTER - R_INNER) * 0.62;
   const pt = polar(labelR, mid);
-  const rotate = round2(flip ? mid - 90 + 180 : mid - 90);
+  const flip = mid > 90 && mid < 270;
+  const rotate = round2(flip ? mid + 180 : mid);
   return (
     <text
       x={pt.x}
       y={pt.y}
       transform={`rotate(${rotate} ${pt.x} ${pt.y})`}
-      textAnchor={flip ? "end" : "start"}
+      textAnchor="middle"
       dominantBaseline="middle"
-      className="pointer-events-none select-none fill-current text-[9px] font-medium"
+      fill={labelColorFor(color)}
+      className="pointer-events-none select-none text-[7px] font-medium"
     >
       {text}
     </text>
@@ -110,7 +149,7 @@ export default function EmotionsWheel({
                     className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
                     onClick={() => setOpenCore(core.id)}
                   />
-                  <WedgeLabel text={label} startDeg={startDeg} endDeg={endDeg} />
+                  <CoreWedgeLabel text={label} color={core.color} startDeg={startDeg} endDeg={endDeg} />
                 </g>
               );
             })
@@ -128,7 +167,7 @@ export default function EmotionsWheel({
                     className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
                     onClick={() => log([openCore, mood.id], label)}
                   />
-                  <WedgeLabel text={label} startDeg={startDeg} endDeg={endDeg} />
+                  <SecondaryWedgeLabel text={label} color={mood.color} startDeg={startDeg} endDeg={endDeg} />
                 </g>
               );
             })}
