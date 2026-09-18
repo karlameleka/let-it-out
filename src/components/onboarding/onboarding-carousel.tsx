@@ -8,14 +8,15 @@ import { hapticTap } from "@/lib/haptics";
 
 type SlideId = "welcome" | "journal" | "reminders" | "counseling";
 
-/** Phone-frame shell for the journal/reminders/counseling slides — a
- * smaller sibling of install-preview.tsx's PhoneFrame, sized to fit the
- * carousel's diagonal hero band instead of a wide two-column page. */
+/** Phone-frame shell for the journal/reminders/counseling slides — the
+ * preview is the main focus of each slide, so this is sized close to
+ * install-preview.tsx's full-size PhoneFrame rather than a small sidekick
+ * illustration. */
 function MiniPhone({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-[92px] rounded-[16px] bg-white/15 p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-sm sm:w-[102px]">
-      <div className="relative h-[152px] overflow-hidden rounded-[11px] bg-white sm:h-[168px]">
-        <div className="absolute left-1/2 top-0 h-2 w-8 -translate-x-1/2 rounded-b-md bg-brand-900/80" />
+    <div className="w-[168px] rounded-[24px] bg-white/15 p-1.5 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-sm sm:w-[188px]">
+      <div className="relative h-[306px] overflow-hidden rounded-[18px] bg-white sm:h-[342px]">
+        <div className="absolute left-1/2 top-0 h-3 w-14 -translate-x-1/2 rounded-b-lg bg-brand-900/80" />
         {children}
       </div>
     </div>
@@ -25,19 +26,21 @@ function MiniPhone({ children }: { children: React.ReactNode }) {
 function JournalPreviewScreen({ dict }: { dict: Dictionary["install"] }) {
   return (
     <>
-      <div className="bg-brand-50 px-2 pb-1.5 pt-3.5">
-        <p className="text-[5.5px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewSelfExploration}</p>
-        <p className="mt-0.5 font-display text-[8px] font-medium text-brand-900">{dict.previewWelcomeBack}</p>
-        <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-700 px-1.5 py-0.5 text-[5.5px] font-semibold text-white">
-          <PlusCircle className="h-1.5 w-1.5" strokeWidth={2} />
+      <div className="bg-brand-50 px-3.5 pb-3 pt-7">
+        <p className="text-[8px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewSelfExploration}</p>
+        <p className="mt-1 font-display text-[14px] font-medium text-brand-900">{dict.previewWelcomeBack}</p>
+        <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-700 px-2.5 py-1 text-[8px] font-semibold text-white">
+          <PlusCircle className="h-2.5 w-2.5" strokeWidth={2} />
           {dict.previewNewEntry}
         </div>
       </div>
-      <div className="px-2 py-1.5">
-        <div className="rounded-md border border-brand-100 bg-white p-1.5">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500" />
-          <p className="mt-1 line-clamp-2 text-[6.5px] leading-tight text-ink/70">{dict.previewEntry1}</p>
-        </div>
+      <div className="space-y-1.5 px-3.5 py-2.5">
+        {[dict.previewEntry1, dict.previewEntry2].map((entry) => (
+          <div key={entry} className="rounded-lg border border-brand-100 bg-white p-2.5">
+            <span className="inline-block h-2 w-2 rounded-full bg-brand-500" />
+            <p className="mt-1 line-clamp-2 text-[9.5px] leading-tight text-ink/70">{entry}</p>
+          </div>
+        ))}
       </div>
     </>
   );
@@ -45,45 +48,47 @@ function JournalPreviewScreen({ dict }: { dict: Dictionary["install"] }) {
 
 function RemindersPreviewScreen({ dict }: { dict: Dictionary["onboarding"] }) {
   return (
-    <div className="bg-brand-50 px-2 pb-2 pt-3.5">
-      <p className="text-[5.5px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewRemindersEyebrow}</p>
-      <p className="mt-0.5 font-display text-[8px] font-medium text-brand-900">{dict.previewRemindersHeading}</p>
-      <div className="mt-2 flex items-center justify-between rounded-md border border-brand-100 bg-white p-1.5">
-        <span className="flex items-center gap-1">
-          <Bell className="h-2 w-2 text-brand-700" strokeWidth={2} />
-          <span className="text-[6px] font-medium text-ink/80">{dict.previewRemindersLabel}</span>
+    <div className="bg-brand-50 px-3.5 pb-3 pt-7">
+      <p className="text-[8px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewRemindersEyebrow}</p>
+      <p className="mt-1 font-display text-[14px] font-medium text-brand-900">{dict.previewRemindersHeading}</p>
+      <div className="mt-3.5 flex items-center justify-between rounded-lg border border-brand-100 bg-white p-2.5">
+        <span className="flex items-center gap-1.5">
+          <Bell className="h-3 w-3 text-brand-700" strokeWidth={2} />
+          <span className="text-[9px] font-medium text-ink/80">{dict.previewRemindersLabel}</span>
         </span>
-        <span className="relative h-2 w-4 shrink-0 rounded-full bg-brand-700">
-          <span className="absolute right-0.5 top-0.5 h-1 w-1 rounded-full bg-white" />
+        <span className="relative h-3.5 w-7 shrink-0 rounded-full bg-brand-700">
+          <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-white" />
         </span>
       </div>
-      <p className="mt-1 text-[5.5px] font-medium text-ink/40">{dict.previewRemindersTime}</p>
+      <p className="mt-2 text-[8px] font-medium text-ink/40">{dict.previewRemindersTime}</p>
+      <p className="mt-3 text-[9px] leading-relaxed text-ink/50">{dict.previewRemindersNote}</p>
     </div>
   );
 }
 
 function CounselingPreviewScreen({ dict }: { dict: Dictionary["onboarding"] }) {
   return (
-    <div className="bg-brand-50 px-2 pb-2 pt-3.5">
-      <p className="text-[5.5px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewCounselingEyebrow}</p>
-      <p className="mt-0.5 font-display text-[8px] font-medium text-brand-900">{dict.previewCounselingHeading}</p>
-      <div className="mt-2 rounded-md border border-brand-100 bg-white p-1.5">
-        <div className="flex items-center gap-1">
-          <div className="relative h-5 w-5 shrink-0 overflow-hidden rounded-full">
-            <Image src="/counselors/verna-awad.jpg" alt="" fill sizes="20px" className="object-cover" />
+    <div className="bg-brand-50 px-3.5 pb-3 pt-7">
+      <p className="text-[8px] font-semibold uppercase tracking-wide text-brand-500">{dict.previewCounselingEyebrow}</p>
+      <p className="mt-1 font-display text-[14px] font-medium text-brand-900">{dict.previewCounselingHeading}</p>
+      <div className="mt-3.5 rounded-lg border border-brand-100 bg-white p-2.5">
+        <div className="flex items-center gap-1.5">
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full">
+            <Image src="/counselors/verna-awad.jpg" alt="" fill sizes="36px" className="object-cover" />
           </div>
-          <div className="min-w-0">
-            <p className="flex items-center gap-0.5 truncate text-[6px] font-semibold text-brand-900">
-              Verna Awad
-              <BadgeCheck className="h-1.5 w-1.5 shrink-0 text-brand-500" strokeWidth={2} />
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-1 text-[10px] font-semibold text-brand-900">
+              <span className="truncate">Verna Awad</span>
+              <BadgeCheck className="h-2.5 w-2.5 shrink-0 text-brand-500" strokeWidth={2} />
             </p>
-            <p className="truncate text-[5.5px] text-ink/50">{dict.previewCounselingCredentials}</p>
+            <p className="truncate text-[8px] text-ink/50">{dict.previewCounselingCredentials}</p>
           </div>
         </div>
-        <div className="mt-1 rounded-full bg-brand-700 px-1.5 py-0.5 text-center text-[5.5px] font-semibold text-white">
+        <div className="mt-2 rounded-full bg-brand-700 px-2.5 py-1.5 text-center text-[9px] font-semibold text-white">
           {dict.previewCounselingCta}
         </div>
       </div>
+      <p className="mt-3 text-[9px] leading-relaxed text-ink/50">{dict.previewCounselingNote}</p>
     </div>
   );
 }
@@ -91,8 +96,8 @@ function CounselingPreviewScreen({ dict }: { dict: Dictionary["onboarding"] }) {
 function SlideIllustration({ id, dict, installDict }: { id: SlideId; dict: Dictionary["onboarding"]; installDict: Dictionary["install"] }) {
   if (id === "welcome") {
     return (
-      <div className="relative flex h-28 w-28 items-center justify-center rounded-[2rem] bg-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-sm sm:h-32 sm:w-32">
-        <Sparkles className="h-14 w-14 text-white sm:h-16 sm:w-16" strokeWidth={1.6} />
+      <div className="relative flex h-40 w-40 items-center justify-center rounded-[2.5rem] bg-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.12)] backdrop-blur-sm sm:h-48 sm:w-48">
+        <Sparkles className="h-20 w-20 text-white sm:h-24 sm:w-24" strokeWidth={1.6} />
       </div>
     );
   }
@@ -193,17 +198,15 @@ export default function OnboardingCarousel({
       onTouchEnd={onTouchEnd}
     >
       <div
-        className="relative h-[38vh] shrink-0 overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 sm:h-[42vh]"
-        style={{ clipPath: "polygon(0 0, 100% 0, 100% 88%, 0 72%)" }}
+        className="relative h-[56vh] shrink-0 overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 sm:h-[60vh]"
+        style={{ clipPath: "polygon(0 0, 100% 0, 100% 92%, 0 82%)" }}
       >
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
-        <div className="absolute -bottom-6 left-8 h-24 w-24 rounded-full bg-white/10" />
         <div className="flex h-full items-center justify-center pb-6">
           <SlideIllustration id={slide.id} dict={dict} installDict={installDict} />
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-6 pt-6 sm:px-10">
+      <div className="flex flex-1 flex-col px-6 pt-4 sm:px-10">
         <div className="flex justify-center gap-2">
           {slides.map((s, i) => (
             <span
@@ -217,11 +220,11 @@ export default function OnboardingCarousel({
 
         <h2
           id="onboarding-carousel-heading"
-          className="mt-8 text-center font-display text-2xl font-bold text-brand-900 sm:text-3xl"
+          className="mt-4 text-center font-display text-xl font-bold text-brand-900 sm:text-2xl"
         >
           {slide.headline}
         </h2>
-        <p className="mx-auto mt-4 max-w-sm text-center text-sm leading-relaxed text-ink/60">{slide.body}</p>
+        <p className="mx-auto mt-2 max-w-sm text-center text-sm leading-relaxed text-ink/60">{slide.body}</p>
 
         <div className="flex-1" />
 
