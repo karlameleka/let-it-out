@@ -33,12 +33,12 @@ export default function MoodWheelClient({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <ButtonLink href="/journal/new" variant="outline" className="gap-2">
-          <BookOpen className="h-4 w-4 shrink-0" strokeWidth={2} />
+        <ButtonLink href="/journal/new" variant="outline" className="gap-1.5 whitespace-nowrap px-2 py-2.5 text-sm">
+          <BookOpen className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
           {dict.moodWheel.journalAboutIt}
         </ButtonLink>
-        <ButtonLink href="/counseling" variant="outline" className="gap-2">
-          <MessageCircle className="h-4 w-4 shrink-0" strokeWidth={2} />
+        <ButtonLink href="/counseling" variant="outline" className="gap-1.5 whitespace-nowrap px-2 py-2.5 text-sm">
+          <MessageCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
           {dict.moodWheel.talkAboutIt}
         </ButtonLink>
       </div>

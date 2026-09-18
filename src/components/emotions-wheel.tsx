@@ -76,6 +76,12 @@ function SecondaryWedgeLabel({ text, color, startDeg, endDeg }: { text: string; 
   const pt = polar(labelR, mid);
   const flip = mid > 90 && mid < 270;
   const rotate = round2(flip ? mid + 180 : mid);
+  // Scales with how wide this wedge is — cores with few secondaries (Sad,
+  // Angry, Fearful, Surprised, Disgusted) get a roomy max size, while the
+  // tightest ring (Happy's 14 wedges) stays just big enough not to collide
+  // with its neighbors.
+  const span = endDeg - startDeg;
+  const fontSize = round2(Math.max(9.5, Math.min(13, span * 0.44)));
   return (
     <text
       x={pt.x}
@@ -84,7 +90,8 @@ function SecondaryWedgeLabel({ text, color, startDeg, endDeg }: { text: string; 
       textAnchor="middle"
       dominantBaseline="middle"
       fill={labelColorFor(color)}
-      className="pointer-events-none select-none text-[10.5px] font-semibold"
+      style={{ fontSize }}
+      className="pointer-events-none select-none font-semibold"
     >
       {text}
     </text>
@@ -135,23 +142,26 @@ export default function EmotionsWheel({
   return (
     <div className="flex flex-col items-center">
       <svg viewBox="0 0 300 300" className="w-full max-w-[440px] drop-shadow-[0_8px_20px_rgba(18,53,67,0.12)]" role="img" aria-label={dict.wheelPrompt}>
+        {/* Wedges and labels render in two separate passes — all paths, then
+            all labels — rather than interleaved per wedge. A label can be
+            wider than its own wedge's arc (long sub-emotion words in the
+            crowded 14-wedge ring); interleaving would let the next wedge's
+            opaque fill paint over — and visually crop — the previous
+            label's overflow. Labels drawn last always stay on top. */}
         {openCore === null
           ? CORE_EMOTIONS.map((core, i) => {
               const startDeg = i * coreSlice;
               const endDeg = startDeg + coreSlice;
-              const label = locale === "ar" ? core.labelAr : core.label;
               return (
-                <g key={core.id}>
-                  <path
-                    d={wedgePath(startDeg, endDeg)}
-                    fill={core.color}
-                    stroke="white"
-                    strokeWidth={2}
-                    className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
-                    onClick={() => setOpenCore(core.id)}
-                  />
-                  <CoreWedgeLabel text={label} color={core.color} startDeg={startDeg} endDeg={endDeg} />
-                </g>
+                <path
+                  key={core.id}
+                  d={wedgePath(startDeg, endDeg)}
+                  fill={core.color}
+                  stroke="white"
+                  strokeWidth={2}
+                  className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
+                  onClick={() => setOpenCore(core.id)}
+                />
               );
             })
           : secondary.map((mood, i) => {
@@ -159,21 +169,33 @@ export default function EmotionsWheel({
               const endDeg = startDeg + secondarySlice;
               const label = locale === "ar" ? mood.labelAr : mood.label;
               return (
-                <g key={mood.id}>
-                  <path
-                    d={wedgePath(startDeg, endDeg)}
-                    fill={mood.color}
-                    stroke="white"
-                    strokeWidth={2}
-                    className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
-                    onClick={() => log([openCore, mood.id], label, mood.color)}
-                  />
-                  <SecondaryWedgeLabel text={label} color={mood.color} startDeg={startDeg} endDeg={endDeg} />
-                </g>
+                <path
+                  key={mood.id}
+                  d={wedgePath(startDeg, endDeg)}
+                  fill={mood.color}
+                  stroke="white"
+                  strokeWidth={2}
+                  className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
+                  onClick={() => log([openCore, mood.id], label, mood.color)}
+                />
               );
             })}
 
         <circle cx={CX} cy={CY} r={R_INNER - 4} className="fill-white stroke-brand-100" strokeWidth={2} />
+
+        {openCore === null
+          ? CORE_EMOTIONS.map((core, i) => {
+              const startDeg = i * coreSlice;
+              const endDeg = startDeg + coreSlice;
+              const label = locale === "ar" ? core.labelAr : core.label;
+              return <CoreWedgeLabel key={core.id} text={label} color={core.color} startDeg={startDeg} endDeg={endDeg} />;
+            })
+          : secondary.map((mood, i) => {
+              const startDeg = i * secondarySlice;
+              const endDeg = startDeg + secondarySlice;
+              const label = locale === "ar" ? mood.labelAr : mood.label;
+              return <SecondaryWedgeLabel key={mood.id} text={label} color={mood.color} startDeg={startDeg} endDeg={endDeg} />;
+            })}
 
         {openCoreMeta && (
           <foreignObject x={CX - R_INNER + 4} y={CY - R_INNER + 4} width={(R_INNER - 4) * 2} height={(R_INNER - 4) * 2}>
