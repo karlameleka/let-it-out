@@ -18,6 +18,7 @@ const ar: Dictionary = {
     menu: "القائمة",
     myProfile: "ملفي الشخصي",
     helpCenter: "مركز المساعدة",
+    legal: "الشؤون القانونية",
   },
   languageSwitcher: {
     label: "اللغة",
@@ -54,6 +55,10 @@ const ar: Dictionary = {
     terms: "الشروط والأحكام",
     shopPolicy: "سياسة المتجر",
     motto: "رحلة لاكتشاف الذات.",
+  },
+  legal: {
+    title: "الشؤون القانونية",
+    subtitle: "سياسة الخصوصية، الشروط والأحكام، وسياسة المتجر، كلهم في مكان واحد.",
   },
   helpButton: {
     openLabel: "طلب المساعدة",
@@ -1476,6 +1481,7 @@ const ar: Dictionary = {
     talkToCounselor: "لو الموضوع حاسس إنه تقيل، اتكلم عنه مع معالج",
   },
   reframingTool: {
+    backToCbt: "رجوع لتمارين العلاج المعرفي السلوكي",
     ribbon: "تمرين تفاعلي",
     title: "امسك الفكرة. اسأل عنها. أعد صياغتها.",
     description:

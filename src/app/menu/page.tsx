@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { UserCircle, HelpCircle, Info, HeartHandshake, Users, ShoppingBag, Newspaper, Settings, LogOut, LogIn, UserPlus, ChevronRight } from "lucide-react";
+import { UserCircle, HelpCircle, Info, HeartHandshake, Users, ShoppingBag, Newspaper, Scale, Settings, LogOut, LogIn, UserPlus, ChevronRight } from "lucide-react";
 import { Container, Eyebrow } from "@/components/ui";
 import { getCurrentUser } from "@/lib/session";
 import { logoutAction } from "@/lib/auth-actions";
@@ -62,6 +62,7 @@ export default async function MenuPage() {
     { href: "/workshops", label: t.workshops, icon: Users },
     { href: "/shop", label: t.shop, icon: ShoppingBag },
     { href: "/resources", label: t.resources, icon: Newspaper },
+    { href: "/legal", label: t.legal, icon: Scale },
   ];
 
   return (

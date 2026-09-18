@@ -18,6 +18,7 @@ const en = {
     menu: "Menu",
     myProfile: "My Profile",
     helpCenter: "Help Center",
+    legal: "Legal",
   },
   languageSwitcher: {
     label: "Language",
@@ -54,6 +55,10 @@ const en = {
     terms: "Terms & Conditions",
     shopPolicy: "Shop Policy",
     motto: "A self-exploration journey.",
+  },
+  legal: {
+    title: "Legal",
+    subtitle: "Our privacy policy, terms and conditions, and shop policy, all in one place.",
   },
   helpButton: {
     openLabel: "Get help",
@@ -1512,6 +1517,7 @@ const en = {
     talkToCounselor: "If this feels heavy, talk it through with a counselor",
   },
   reframingTool: {
+    backToCbt: "Back to CBT exercises",
     ribbon: "Interactive exercise",
     title: "Catch the thought. Question it. Reframe it.",
     description:
