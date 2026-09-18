@@ -116,9 +116,15 @@ export default async function ProfilePage() {
             )}
           </div>
         </div>
-        <ButtonLink href="/upcoming" variant="outline" className="mt-4 w-full">
-          {t.viewAllSessions}
-        </ButtonLink>
+        {nextSession || lastPastSession ? (
+          <ButtonLink href="/upcoming" variant="outline" className="mt-4 w-full">
+            {t.viewAllSessions}
+          </ButtonLink>
+        ) : (
+          <ButtonLink href="/counseling" variant="outline" className="mt-4 w-full">
+            {dict.nav.bookASession}
+          </ButtonLink>
+        )}
       </div>
     </Container>
   );
