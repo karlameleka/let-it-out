@@ -1195,6 +1195,7 @@ const en = {
     defaultPromptText: "What's on your mind today?",
     promptPlaceholder: "Let it out here...",
     freePlaceholder: "Write whatever's on your mind...",
+    promptMoodLabel: "How does that make you feel?",
     addPhotoLabel: "Add a photo (optional)",
     removePhoto: "Remove photo",
     processing: "Processing…",

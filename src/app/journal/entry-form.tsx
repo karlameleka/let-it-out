@@ -222,23 +222,37 @@ export default function EntryForm({
         <input type="hidden" name="moods" value={moods.join(",")} />
 
         <div className="overflow-hidden rounded-xl border border-brand-200 bg-white focus-within:border-brand-500">
-          <div className="border-b border-brand-100 bg-brand-50/50 p-4">
-            <MoodPicker
-              moods={moods}
-              onChange={setMoods}
-              label={moodPickerDict.label}
-              hint={moodPickerDict.hint}
-              locale={locale}
-            />
-          </div>
-
-          <textarea
-            name="content"
-            rows={6}
-            required
-            placeholder={mode === "prompt" ? dict.promptPlaceholder : dict.freePlaceholder}
-            className="w-full border-0 px-4 py-3 text-sm outline-none"
-          />
+          {/* Explicit keys so switching between prompt/free-flow mode reorders
+              these two blocks in place — via React's keyed list reconciliation —
+              rather than unmounting and remounting them, which would otherwise
+              lose whatever the person had already typed or expanded. */}
+          {(() => {
+            const textareaBlock = (
+              <textarea
+                key="textarea"
+                name="content"
+                rows={6}
+                required
+                placeholder={mode === "prompt" ? dict.promptPlaceholder : dict.freePlaceholder}
+                className="w-full border-0 px-4 py-3 text-sm outline-none"
+              />
+            );
+            const moodPickerBlock = (
+              <div
+                key="moodpicker"
+                className={mode === "prompt" ? "border-t border-brand-100 bg-brand-50/50 p-4" : "border-b border-brand-100 bg-brand-50/50 p-4"}
+              >
+                <MoodPicker
+                  moods={moods}
+                  onChange={setMoods}
+                  label={mode === "prompt" ? dict.promptMoodLabel : moodPickerDict.label}
+                  hint={moodPickerDict.hint}
+                  locale={locale}
+                />
+              </div>
+            );
+            return mode === "prompt" ? [textareaBlock, moodPickerBlock] : [moodPickerBlock, textareaBlock];
+          })()}
         </div>
 
         <div>

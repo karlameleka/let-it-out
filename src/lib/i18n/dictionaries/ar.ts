@@ -1172,6 +1172,7 @@ const ar: Dictionary = {
     defaultPromptText: "إيه اللي في بالك النهاردة؟",
     promptPlaceholder: "أخرج اللي جواك هنا...",
     freePlaceholder: "اكتب أي حاجة في بالك...",
+    promptMoodLabel: "ده بيخليك حاسس بإيه؟",
     addPhotoLabel: "أضف صورة (اختياري)",
     removePhoto: "احذف الصورة",
     processing: "جارٍ المعالجة…",
