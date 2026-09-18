@@ -56,7 +56,7 @@ function CoreWedgeLabel({ text, color, startDeg, endDeg }: { text: string; color
       textAnchor="middle"
       dominantBaseline="middle"
       fill={labelColorFor(color)}
-      className="pointer-events-none select-none text-[12px] font-semibold"
+      className="pointer-events-none select-none text-[16px] font-semibold"
     >
       {text}
     </text>
@@ -83,7 +83,7 @@ function SecondaryWedgeLabel({ text, color, startDeg, endDeg }: { text: string; 
       textAnchor="middle"
       dominantBaseline="middle"
       fill={labelColorFor(color)}
-      className="pointer-events-none select-none text-[7px] font-medium"
+      className="pointer-events-none select-none text-[9.5px] font-medium"
     >
       {text}
     </text>
@@ -133,7 +133,7 @@ export default function EmotionsWheel({
 
   return (
     <div className="flex flex-col items-center">
-      <svg viewBox="0 0 300 300" className="w-full max-w-[280px]" role="img" aria-label={dict.wheelPrompt}>
+      <svg viewBox="0 0 300 300" className="w-full max-w-[440px]" role="img" aria-label={dict.wheelPrompt}>
         {openCore === null
           ? CORE_EMOTIONS.map((core, i) => {
               const startDeg = i * coreSlice;
@@ -183,11 +183,11 @@ export default function EmotionsWheel({
               aria-label={dict.wheelBack}
             >
               {locale === "ar" ? (
-                <ChevronRight className="h-4 w-4 text-ink/40" strokeWidth={2} />
+                <ChevronRight className="h-5 w-5 text-ink/40" strokeWidth={2} />
               ) : (
-                <ChevronLeft className="h-4 w-4 text-ink/40" strokeWidth={2} />
+                <ChevronLeft className="h-5 w-5 text-ink/40" strokeWidth={2} />
               )}
-              <span className="text-xs font-semibold text-brand-900">
+              <span className="text-base font-semibold text-brand-900">
                 {locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label}
               </span>
             </button>
@@ -195,22 +195,22 @@ export default function EmotionsWheel({
         )}
       </svg>
 
-      <div className="mt-3 min-h-[2.5rem] text-center">
+      <div className="mt-4 min-h-[3rem] text-center">
         {logged ? (
-          <p className="animate-pop-in text-sm font-medium text-brand-700">{dict.wheelLogged}: {logged}</p>
+          <p className="animate-pop-in text-lg font-medium text-brand-700">{dict.wheelLogged}: {logged}</p>
         ) : openCoreMeta ? (
           <>
-            <p className="text-sm text-ink/60">{dict.wheelPickSpecific.replace("{core}", locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label)}</p>
+            <p className="text-base text-ink/60">{dict.wheelPickSpecific.replace("{core}", locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label)}</p>
             <button
               type="button"
               onClick={() => log([openCoreMeta.id], locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label)}
-              className="mt-1 text-sm font-medium text-brand-600 link-grow w-fit"
+              className="mt-1.5 text-base font-medium text-brand-600 link-grow w-fit"
             >
               {dict.wheelJustLog.replace("{core}", locale === "ar" ? openCoreMeta.labelAr : openCoreMeta.label)}
             </button>
           </>
         ) : (
-          <p className="text-sm text-ink/50">{dict.wheelPrompt}</p>
+          <p className="text-base text-ink/50">{dict.wheelPrompt}</p>
         )}
       </div>
     </div>

@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Star } from "lucide-react";
 import { getMoodPatterns, type MoodPatterns } from "@/lib/local-journal";
 import { getFavoriteArticleSlugs } from "@/lib/article-favorites";
-import EmotionsWheel from "@/components/emotions-wheel";
 import type { Article } from "@/lib/content/articles";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
@@ -28,10 +27,6 @@ export default function ProfileClient({
 }) {
   const [moodPatterns, setMoodPatterns] = useState<MoodPatterns | null>(null);
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>([]);
-
-  const refreshMoodPatterns = useCallback(() => {
-    getMoodPatterns(userId, locale).then(setMoodPatterns);
-  }, [userId, locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,12 +61,13 @@ export default function ProfileClient({
             dict.moodEmpty
           )}
         </p>
-        <Link href="/journal/patterns" className="mt-3 inline-block text-sm font-medium text-brand-600 link-grow w-fit">
-          {dict.moodCta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
-        </Link>
-
-        <div className="mt-5 border-t border-brand-100 pt-5">
-          <EmotionsWheel userId={userId} locale={locale} dict={dict} onLogged={refreshMoodPatterns} />
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+          <Link href="/journal/patterns" className="inline-block text-sm font-medium text-brand-600 link-grow w-fit">
+            {dict.moodCta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
+          </Link>
+          <Link href="/journal/mood-wheel" className="inline-block text-sm font-medium text-brand-600 link-grow w-fit">
+            {dict.wheelCta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
+          </Link>
         </div>
       </div>
 
