@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getMoodCalendarMonth, hasAnyMoodEntries, type MoodCalendarMonth } from "@/lib/local-journal";
-import { moodColor, moodLabel } from "@/lib/moods";
+import { CORE_EMOTIONS, moodColor, moodCore, moodLabel } from "@/lib/moods";
 import { Container } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
@@ -68,23 +68,28 @@ export default function PatternsClient({
   ];
 
   // A day can carry several logged mood ids at once — e.g. one wheel
-  // check-in already logs both a core and a secondary id together. Rather
-  // than splitting the day's dot into a stripe per mood, show only the
-  // single most-logged one (ties go to whichever was logged first).
-  function mainMoodOf(moods: string[]): string | null {
+  // check-in already logs both a core and a secondary id together, and a
+  // journal entry can have multiple moods picked. Rather than splitting the
+  // day's dot into a stripe per mood, resolve every mood to its core
+  // (universal) emotion and show only the most-logged core's color — so the
+  // calendar always reads as one of the 6 core colors, ties going to
+  // whichever core was logged first.
+  function mainCoreColorOf(moods: string[]): string | null {
     if (moods.length === 0) return null;
+    const keys = moods.map((m) => moodCore(m) ?? m);
     const counts = new Map<string, number>();
-    for (const m of moods) counts.set(m, (counts.get(m) ?? 0) + 1);
-    let best = moods[0];
+    for (const k of keys) counts.set(k, (counts.get(k) ?? 0) + 1);
+    let bestKey = keys[0];
     let bestCount = 0;
-    for (const m of moods) {
-      const count = counts.get(m)!;
+    for (const k of keys) {
+      const count = counts.get(k)!;
       if (count > bestCount) {
-        best = m;
+        bestKey = k;
         bestCount = count;
       }
     }
-    return best;
+    const core = CORE_EMOTIONS.find((c) => c.id === bestKey);
+    return core ? core.color : moodColor(bestKey);
   }
 
   return (
@@ -138,7 +143,7 @@ export default function PatternsClient({
               {cells.map((cell, i) => {
                 if (!cell) return <div key={`blank-${i}`} />;
                 const isToday = cell.date === todayISO;
-                const mainMood = mainMoodOf(cell.moods);
+                const mainColor = mainCoreColorOf(cell.moods);
                 return (
                   <div key={cell.date} className="flex flex-col items-center gap-1 py-1">
                     <span className={`text-xs font-medium ${isToday ? "text-brand-700" : "text-ink/60"}`}>
@@ -147,9 +152,9 @@ export default function PatternsClient({
                     <span
                       title={cell.moods.length ? cell.moods.map((m) => moodLabel(m, locale)).join(", ") : undefined}
                       className={`h-5 w-5 rounded-full border ${isToday ? "ring-2 ring-brand-400" : ""} ${
-                        mainMood ? "border-black/10" : "border-transparent bg-brand-50/60"
+                        mainColor ? "border-black/10" : "border-transparent bg-brand-50/60"
                       }`}
-                      style={mainMood ? { backgroundColor: moodColor(mainMood) } : undefined}
+                      style={mainColor ? { backgroundColor: mainColor } : undefined}
                     />
                   </div>
                 );

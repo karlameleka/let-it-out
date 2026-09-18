@@ -109,3 +109,9 @@ export function moodLabel(id: string, locale: Locale = "en"): string {
 export function moodColor(id: string): string {
   return MOOD_BY_ID.get(id)?.color ?? FALLBACK_COLOR;
 }
+
+/** The core (universal) emotion a mood id belongs to — e.g. "joyful" ->
+ * "happy". Null for legacy/unrecognized values that predate this taxonomy. */
+export function moodCore(id: string): CoreEmotionId | null {
+  return MOOD_BY_ID.get(id)?.core ?? null;
+}
