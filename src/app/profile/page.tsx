@@ -6,9 +6,12 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getUpcomingPageData, getPastItems } from "@/lib/upcoming-items";
 import { getArticles, localizeArticle } from "@/lib/content/articles";
+import { getMyAssignedResources } from "@/lib/client-resources";
 import { formatSlotTime } from "@/lib/format-slot";
 import { Container, Eyebrow, ButtonLink } from "@/components/ui";
 import ProfileClient from "./profile-client";
+import MyToolsItem from "./my-tools-item";
+import MyToolsViewedTracker from "./my-tools-viewed-tracker";
 
 export const metadata: Metadata = { title: "My Profile" };
 
@@ -20,7 +23,7 @@ export default async function ProfilePage() {
   const dict = getDictionary(locale);
   const t = dict.profile;
 
-  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications] = await Promise.all([
+  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications, myTools] = await Promise.all([
     getUpcomingPageData(user.email, user.userId, locale),
     getPastItems(user.email, user.userId, locale),
     getArticles(),
@@ -29,6 +32,7 @@ export default async function ProfilePage() {
       include: { counselor: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     }),
+    getMyAssignedResources(user.email),
   ]);
   const articles = rawArticles.map((a) => localizeArticle(a, locale));
 
@@ -49,10 +53,24 @@ export default async function ProfilePage() {
   return (
     <Container className="max-w-2xl pt-6 pb-10 sm:pt-14 sm:pb-20">
       <Eyebrow>{t.title}</Eyebrow>
-      <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">{t.title}</h1>
-      <p className="mt-2 text-sm text-ink/60">{t.subtitle}</p>
+      <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">{t.greeting.replace("{name}", user.name)}</h1>
+      <p className="mt-2 text-sm text-ink/60">{t.signedInAs} {user.email}</p>
 
       <ProfileClient userId={user.userId} locale={locale} articles={articles} dict={t} />
+
+      <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <MyToolsViewedTracker hasUnviewed={myTools.some((item) => !item.viewedAt)} />
+        <h2 className="font-display font-semibold text-brand-900">{t.myToolsTitle}</h2>
+        {myTools.length === 0 ? (
+          <p className="mt-2 text-sm text-ink/50">{t.myToolsEmpty}</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {myTools.map((item) => (
+              <MyToolsItem key={item.id} item={item} dict={dict.myTools} />
+            ))}
+          </div>
+        )}
+      </div>
 
       {medications.length > 0 && (
         <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">

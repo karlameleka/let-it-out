@@ -10,11 +10,8 @@ import { Reveal } from "@/components/reveal";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getArticles, localizeArticle } from "@/lib/content/articles";
 import { getCurrentUser } from "@/lib/session";
-import { getMyAssignedResources } from "@/lib/client-resources";
 import { getResourceBlocks, type ResourceBlockKind } from "@/lib/resource-blocks";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
-import MyToolsItem from "./my-tools-item";
-import MyToolsViewedTracker from "./my-tools-viewed-tracker";
 import MyAssessmentsPromo from "./my-assessments-promo";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -33,7 +30,6 @@ export default async function ResourcesPage() {
     getResourceBlocks(),
     getSiteTextOverrides(),
   ]);
-  const myTools = user ? await getMyAssignedResources(user.email) : [];
   const articleList = rawArticleList.map((a) => localizeArticle(a, locale));
   const dict = getDictionary(locale);
   const t = applyOverrides(dict.resourcesHome, "resourcesHome", overrides, locale);
@@ -153,26 +149,6 @@ export default async function ResourcesPage() {
 
   const sections = blocks.filter((b) => !b.hidden).map((b) => blockContent[b.kind]);
 
-  const myToolsSection = user ? (
-    <section className="pt-2 pb-8 sm:py-10" key="my-tools" id="my-tools">
-      <MyToolsViewedTracker hasUnviewed={myTools.some((item) => !item.viewedAt)} />
-      <Reveal>
-        <Container>
-          <SectionHeading eyebrow={t.myToolsEyebrow} title={t.myToolsTitle} />
-          {myTools.length === 0 ? (
-            <p className="mt-6 text-sm text-ink/60">{t.myToolsEmpty}</p>
-          ) : (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {myTools.map((item) => (
-                <MyToolsItem key={item.id} item={item} dict={dict.myTools} />
-              ))}
-            </div>
-          )}
-        </Container>
-      </Reveal>
-    </section>
-  ) : null;
-
   return (
     <>
       <section className="bg-brand-50 pt-6 pb-4 sm:pt-14 sm:pb-20">
@@ -191,8 +167,6 @@ export default async function ResourcesPage() {
       </section>
 
       <WaveDivider fill="fill-white" />
-
-      {myToolsSection}
 
       {sections}
     </>

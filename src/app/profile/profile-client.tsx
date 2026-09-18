@@ -3,16 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Star } from "lucide-react";
-import { getFeedData, getMoodPatterns, type MoodPatterns } from "@/lib/local-journal";
+import { getMoodPatterns, type MoodPatterns } from "@/lib/local-journal";
 import { getFavoriteArticleSlugs } from "@/lib/article-favorites";
 import type { Article } from "@/lib/content/articles";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
-/** Journal streak, mood patterns, and favorite articles all live only on
- * this device (see local-journal.ts / article-favorites.ts) — nothing here
- * is fetched from the server, so this whole section is a client component
- * that reads after mount, same hydration-mismatch avoidance as the other
+/** Mood patterns and favorite articles both live only on this device (see
+ * local-journal.ts / article-favorites.ts) — nothing here is fetched from
+ * the server, so this whole section is a client component that reads
+ * after mount, same hydration-mismatch avoidance as the other
  * local-journal-backed pages (patterns-client.tsx, article-progress-badge). */
 export default function ProfileClient({
   userId,
@@ -25,15 +25,11 @@ export default function ProfileClient({
   articles: Article[];
   dict: Dictionary["profile"];
 }) {
-  const [streak, setStreak] = useState<{ streak: number; total: number } | null>(null);
   const [moodPatterns, setMoodPatterns] = useState<MoodPatterns | null>(null);
   const [favoriteSlugs, setFavoriteSlugs] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    getFeedData(userId).then((data) => {
-      if (!cancelled) setStreak({ streak: data.stats.streak, total: data.stats.total });
-    });
     getMoodPatterns(userId, locale).then((patterns) => {
       if (!cancelled) setMoodPatterns(patterns);
     });
@@ -49,24 +45,10 @@ export default function ProfileClient({
   return (
     <div className="mt-6 space-y-4">
       <div className="rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
-        <h2 className="font-display font-semibold text-brand-900">{dict.streakTitle}</h2>
-        <p className="mt-2 text-sm text-ink/70">
-          {streak === null
-            ? " "
-            : streak.streak > 0
-              ? dict.streakBody.replace("{count}", String(streak.streak)).replace("{total}", String(streak.total))
-              : dict.streakEmpty}
-        </p>
-        <Link href="/journal" className="mt-3 inline-block text-sm font-medium text-brand-600 link-grow w-fit">
-          {dict.streakCta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
-        </Link>
-      </div>
-
-      <div className="rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <h2 className="font-display font-semibold text-brand-900">{dict.moodTitle}</h2>
         <p className="mt-2 flex items-center gap-2 text-sm text-ink/70">
           {moodPatterns === null ? (
-            " "
+            " "
           ) : moodPatterns.topMood ? (
             <>
               <span

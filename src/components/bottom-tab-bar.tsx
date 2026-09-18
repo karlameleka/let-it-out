@@ -18,9 +18,9 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   const TABS = [
     { href: "/", label: dict.home, icon: Home, matches: ["/"], badge: 0 },
     { href: "/services", label: dict.ourServices, icon: HeartHandshake, matches: ["/services", "/counseling", "/workshops"], badge: 0 },
-    { href: "/resources", label: dict.resources, icon: Newspaper, matches: ["/resources"], badge: unreadToolsCount },
+    { href: "/resources", label: dict.resources, icon: Newspaper, matches: ["/resources"], badge: 0 },
     { href: "/shop", label: dict.shop, icon: ShoppingBag, matches: ["/shop"], badge: 0 },
-    { href: "/menu", label: dict.menu, icon: Menu, matches: ["/menu"], badge: 0 },
+    { href: "/menu", label: dict.menu, icon: Menu, matches: ["/menu"], badge: unreadToolsCount },
   ];
 
   return (

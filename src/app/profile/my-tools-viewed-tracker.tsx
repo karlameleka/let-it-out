@@ -5,8 +5,8 @@ import { markMyToolsViewed } from "@/lib/client-resources-actions";
 import { useUnreadTools } from "@/lib/unread-tools-context";
 
 /** Renders nothing — fires once when the client's "My tools" section has
- * actually been shown to them, clearing the unread badge on the Resources
- * tab and the installed-app icon. */
+ * actually been shown to them, clearing the unread badge on the Menu tab
+ * and the installed-app icon. */
 export default function MyToolsViewedTracker({ hasUnviewed }: { hasUnviewed: boolean }) {
   const { refetch } = useUnreadTools();
 
