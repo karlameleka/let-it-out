@@ -48,22 +48,11 @@ export default function HelpCenterFilter({ faqs, dict }: { faqs: Faq[]; dict: Di
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCategory(null)}
-            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              category === null
-                ? "border-brand-600 bg-brand-600 text-white"
-                : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
-            }`}
-          >
-            {dict.allTopics}
-          </button>
           {CATEGORIES.map((c) => (
             <button
               key={c}
               type="button"
-              onClick={() => setCategory(c)}
+              onClick={() => setCategory((current) => (current === c ? null : c))}
               className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                 category === c
                   ? "border-brand-600 bg-brand-600 text-white"

@@ -282,20 +282,6 @@ const en = {
     sessionLengthBadge: "50-minute session",
     waitlistBadge: "Waitlist",
     unavailableBadge: "Unavailable",
-    faqEyebrow: "Good to know",
-    faqTitle: "Frequently asked questions",
-    faq1Q: "Is what I share in session confidential?",
-    faq1A:
-      "Yes. Everything you share with your counselor is confidential. The only exceptions are narrow legal and ethical ones: an imminent risk of serious harm to you or someone else, suspected abuse of a minor, or disclosure required by law. Your counselor will walk you through this at the start of your work together.",
-    faq2Q: "What does a session actually look like?",
-    faq2A:
-      "Sessions run 50 minutes and are held one-on-one with your counselor over video call. Once your booking request is confirmed, you'll get the video link by email ahead of time.",
-    faq3Q: "Can I choose which counselor I see?",
-    faq3A:
-      "Yes. Browse profiles below and book directly with the counselor whose background and specialties feel like the right fit for you.",
-    faq4Q: "What if I need to reschedule?",
-    faq4A:
-      "Just reach out as early as you can, by email or through the contact page, and we'll help you find a new time.",
   },
   counselorProfile: {
     backToCounseling: "Back to counseling",
@@ -440,17 +426,6 @@ const en = {
     ourJournalsTitle: "Our journals",
     testimonialsEyebrow: "In their words",
     testimonialsTitle: "What our journalers say",
-    faqEyebrow: "Good to know",
-    faqTitle: "Frequently asked questions",
-    faq1Q: "How long does delivery take?",
-    faq1A:
-      "Within Egypt, orders typically arrive within 3–5 business days of your order being confirmed, for a flat shipping fee of EGP 100 anywhere in the country. Outside Egypt, shipping time and cost are confirmed with you directly before your order ships.",
-    faq2Q: "What if my journal arrives damaged or wrong?",
-    faq2A:
-      "Contact us within 7 days of delivery and we'll arrange a replacement or refund. Since payment is collected on delivery, other return requests are handled case-by-case, just reach out and we'll sort it out.",
-    faq3Q: "How do I pay?",
-    faq3A:
-      "You'll choose at checkout: pay securely online by card or mobile wallet, or choose Cash on Delivery and pay when your journal arrives.",
     outOfStock: "Out of stock",
     onlyLeft: "Only {count} left",
     buyNow: "Buy now",
@@ -1023,7 +998,6 @@ const en = {
     title: "Help Center",
     subtitle: "Search our most common questions, or filter by topic.",
     searchPlaceholder: "Search for help...",
-    allTopics: "All",
     categoryCounseling: "Counseling",
     categoryShop: "Shop",
     categoryWorkshops: "Workshops",

@@ -6,7 +6,6 @@ import { Container, SectionHeading } from "@/components/ui";
 import { PRODUCT_PHOTOS } from "@/components/product-cover";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import PriceDisplay from "@/components/price-display";
-import { FaqList } from "@/components/faq";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -29,12 +28,6 @@ export default async function ShopPage() {
     getLocale(),
   ]);
   const t = getDictionary(locale).shop;
-
-  const SHOP_FAQ = [
-    { question: t.faq1Q, answer: t.faq1A },
-    { question: t.faq2Q, answer: t.faq2A },
-    { question: t.faq3Q, answer: t.faq3A },
-  ];
 
   return (
     <>
@@ -115,17 +108,6 @@ export default async function ShopPage() {
             <SectionHeading eyebrow={t.testimonialsEyebrow} title={t.testimonialsTitle} />
             <div className="mt-10">
               <TestimonialCarousel quotes={SHOP_TESTIMONIALS} />
-            </div>
-          </Container>
-        </Reveal>
-      </section>
-
-      <section className="py-16 sm:py-20">
-        <Reveal>
-          <Container className="max-w-2xl">
-            <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
-            <div className="mt-8">
-              <FaqList items={SHOP_FAQ} />
             </div>
           </Container>
         </Reveal>

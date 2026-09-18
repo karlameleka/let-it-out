@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, Swash, DoodleField } from "@/components/decor";
-import { FaqList } from "@/components/faq";
 import { Reveal } from "@/components/reveal";
 import CounselorFinder from "./counselor-finder";
 import MarkCounselingExplored from "./mark-explored";
@@ -77,13 +76,6 @@ export default async function CounselingPage() {
     displayLanguages: locale === "ar" && c.languagesAr.length > 0 ? c.languagesAr : c.languages,
   }));
 
-  const COUNSELING_FAQ = [
-    { question: t.faq1Q, answer: t.faq1A },
-    { question: t.faq2Q, answer: t.faq2A },
-    { question: t.faq3Q, answer: t.faq3A },
-    { question: t.faq4Q, answer: t.faq4A },
-  ];
-
   return (
     <>
       <section className="relative overflow-hidden bg-brand-50 pt-6 pb-6 sm:pt-14 sm:pb-10">
@@ -113,17 +105,6 @@ export default async function CounselingPage() {
               <CounselorFinder counselors={counselors} filters={filters} dict={dict} locale={locale} />
             </div>
             {user && <MarkCounselingExplored />}
-          </Container>
-        </Reveal>
-      </section>
-
-      <section id="faq" className="bg-brand-50 py-16 sm:py-20">
-        <Reveal>
-          <Container className="max-w-2xl">
-            <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
-            <div className="mt-8">
-              <FaqList items={COUNSELING_FAQ} />
-            </div>
           </Container>
         </Reveal>
       </section>
