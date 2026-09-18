@@ -1,3 +1,5 @@
+export type HelpCenterCategory = "counseling" | "shop" | "workshops" | "resources" | "technical";
+
 const en = {
   nav: {
     home: "Home",
@@ -15,6 +17,7 @@ const en = {
     bookASession: "Book a session",
     menu: "Menu",
     myProfile: "My Profile",
+    helpCenter: "Help Center",
   },
   languageSwitcher: {
     label: "Language",
@@ -1008,6 +1011,112 @@ const en = {
     viewAllSessions: "View all sessions",
     myToolsTitle: "My tools",
     myToolsEmpty: "Nothing here yet, your therapist can send you tools, PDFs, and assignments here after a session.",
+  },
+  helpCenter: {
+    title: "Help Center",
+    subtitle: "Search our most common questions, or filter by topic.",
+    searchPlaceholder: "Search for help...",
+    allTopics: "All",
+    categoryCounseling: "Counseling",
+    categoryShop: "Shop",
+    categoryWorkshops: "Workshops",
+    categoryResources: "Resources",
+    categoryTechnical: "Technical",
+    noMatches: "No results for that search — try a different word, or reach out below.",
+    contactTitle: "Still need help?",
+    contactDescription: "Chat with our support team for anything these answers didn't cover.",
+    contactCta: "Chat with support",
+    faqs: [
+      {
+        category: "counseling",
+        question: "Is what I share in session confidential?",
+        answer:
+          "Yes. Everything you share with your counselor is confidential. The only exceptions are narrow legal and ethical ones: an imminent risk of serious harm to you or someone else, suspected abuse of a minor, or disclosure required by law. Your counselor will walk you through this at the start of your work together.",
+      },
+      {
+        category: "counseling",
+        question: "What does a session actually look like?",
+        answer:
+          "Sessions run 50 minutes and are held one-on-one with your counselor over video call. Once your booking request is confirmed, you'll get the video link by email ahead of time.",
+      },
+      {
+        category: "counseling",
+        question: "Can I choose which counselor I see?",
+        answer:
+          "Yes. Browse profiles on the Counseling page and book directly with the counselor whose background and specialties feel like the right fit for you.",
+      },
+      {
+        category: "shop",
+        question: "How long does delivery take?",
+        answer:
+          "Within Egypt, orders typically arrive within 3–5 business days of your order being confirmed, for a flat shipping fee of EGP 100 anywhere in the country. Outside Egypt, shipping time and cost are confirmed with you directly before your order ships.",
+      },
+      {
+        category: "shop",
+        question: "What if my journal arrives damaged or wrong?",
+        answer:
+          "Contact us within 7 days of delivery and we'll arrange a replacement or refund. Since payment is collected on delivery, other return requests are handled case-by-case, just reach out and we'll sort it out.",
+      },
+      {
+        category: "shop",
+        question: "How do I pay?",
+        answer:
+          "You'll choose at checkout: pay securely online by card or mobile wallet, or choose Cash on Delivery and pay when your journal arrives.",
+      },
+      {
+        category: "workshops",
+        question: "How do I sign up for a workshop?",
+        answer:
+          "Browse upcoming workshops on the Workshops page and register directly from there — you'll get a confirmation email with all the details.",
+      },
+      {
+        category: "workshops",
+        question: "Are workshops online or in person?",
+        answer:
+          "Most workshops are held online over video call; a few in-person sessions in Cairo are marked clearly on that workshop's page.",
+      },
+      {
+        category: "workshops",
+        question: "Can my company book a private workshop?",
+        answer:
+          "Yes — reach out through the Contact page and tell us a bit about your team and goals, and we'll put together a plan.",
+      },
+      {
+        category: "resources",
+        question: "Are the guided journals and articles free?",
+        answer: "Yes, every article and guided exercise on the Resources page is free to read and use.",
+      },
+      {
+        category: "resources",
+        question: "Can I save articles to read later?",
+        answer:
+          "Tap the star icon on any article to add it to your favorites — you'll find them all together on your Profile.",
+      },
+      {
+        category: "resources",
+        question: "Does my therapist see what I read?",
+        answer:
+          "No. Your reading activity and favorites stay private to your device and are never shared with your counselor.",
+      },
+      {
+        category: "technical",
+        question: "The app isn't loading properly, what should I do?",
+        answer:
+          "Try refreshing the page, or closing and reopening the app first. If that doesn't help, chat with us below and we'll help you sort it out.",
+      },
+      {
+        category: "technical",
+        question: "I'm not receiving notifications.",
+        answer:
+          "Make sure notifications are allowed for Let It Out in your phone's settings, and that you've added the app to your home screen for the most reliable delivery.",
+      },
+      {
+        category: "technical",
+        question: "How do I delete my account?",
+        answer:
+          "Go to Menu, scroll to the Danger Zone at the bottom, and select Delete my account. This permanently deletes your journal entries.",
+      },
+    ] as { category: HelpCenterCategory; question: string; answer: string }[],
   },
   journalHome: {
     ribbon: "Free journaling app",

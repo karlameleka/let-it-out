@@ -71,7 +71,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
               </span>
             </Link>
             <Link
-              href="/counseling#faq"
+              href="/help-center"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
             >
