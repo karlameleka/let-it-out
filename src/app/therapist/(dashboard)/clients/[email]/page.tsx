@@ -68,7 +68,7 @@ export default async function TherapistClientProfilePage({
 
   return (
     <div className="space-y-6">
-      <Link href="/therapist/clients" className="text-sm font-medium text-brand-600 link-grow">
+      <Link href="/therapist/clients" className="text-sm font-medium text-brand-600 link-grow lg:hidden">
         ← Back to clients
       </Link>
 
@@ -97,7 +97,7 @@ export default async function TherapistClientProfilePage({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_260px]">
         <div className="space-y-8">
           <div>
             <h2 className="font-display font-semibold text-brand-900">Intake form</h2>
