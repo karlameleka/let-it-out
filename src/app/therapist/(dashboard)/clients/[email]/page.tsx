@@ -10,6 +10,7 @@ import {
   type IntakeAnswerEntry,
 } from "@/lib/therapist-data";
 import { removeAssignedResource, discontinueMedication, cancelClientAppointment } from "@/lib/therapist-actions";
+import { logAudit } from "@/lib/audit-log";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
 import ClientNoteForm from "./note-form";
@@ -38,6 +39,29 @@ export default async function TherapistClientProfilePage({
   ]);
   if (!client) notFound();
   const canPrescribe = counselor?.canPrescribeMedication ?? false;
+
+  // Counselor access to a client's notes/medications/intake is itself
+  // sensitive — this is the one place in the app that surfaces all three
+  // together, so it's the natural point to leave an audit trail of who
+  // looked at whose records and when. Placed after the 404 check above so
+  // an email typo doesn't create a misleading "viewed" entry for a client
+  // that was never actually shown.
+  await logAudit({
+    // No userId: a counselor isn't a User row, and AuditLog.actorId is FK'd
+    // to User — see the comment on logAudit's actor type. counselorId goes
+    // in metadata instead, so the entry is still traceable back to them.
+    actor: { email: session.email },
+    action: "therapist.view_client_records",
+    summary: `${session.name} viewed ${client.name}'s records`,
+    targetType: "ClientProfile",
+    targetId: client.email,
+    metadata: {
+      counselorId: session.counselorId,
+      notes: client.notes.length,
+      medications: client.medications.length,
+      intakeSubmissions: client.intakeSubmissions.length,
+    },
+  });
 
   const currentNextSteps = client.notes.find((n) => n.nextSteps)?.nextSteps ?? null;
   const latestIntake = client.intakeSubmissions[0];

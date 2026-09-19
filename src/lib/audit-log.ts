@@ -20,7 +20,15 @@ export type AuditSeverity = "INFO" | "WARNING" | "SECURITY";
  * snapshotted now — see the AuditLog model comment for why.
  */
 export async function logAudit(entry: {
-  actor?: { userId: string; email: string } | null;
+  // `userId` is optional (unlike `email`) because AuditLog.actorId is a
+  // hard FK to User — only an admin (a User with role ADMIN) can be
+  // linked that way. A counselor/therapist actor (e.g. viewing a client's
+  // records from the therapist portal) isn't a User row at all, so those
+  // call sites omit userId and rely on actorEmail alone to identify who —
+  // passing a Counselor id here would violate the FK and silently drop
+  // the entire audit entry (caught below, logged to the server console,
+  // but the log write itself never happens).
+  actor?: { userId?: string; email: string } | null;
   action: string;
   summary: string;
   targetType?: string;
