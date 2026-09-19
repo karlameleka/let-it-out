@@ -1,21 +1,45 @@
 import { prisma } from "@/lib/db";
-import { deleteBookingRequest } from "@/lib/admin-actions";
+import { deleteBookingRequest, deleteSessionBooking, markSessionBookingPaid } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import SessionBookingEditForm from "./session-booking-edit-form";
 import BookingRequestEditForm from "./booking-request-edit-form";
+import AdminPagination from "@/components/admin-pagination";
+import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 
-export default async function AdminBookingsPage() {
-  const [sessionBookings, bookings, counselors] = await Promise.all([
-    prisma.sessionBooking.findMany({ orderBy: { createdAt: "desc" }, include: { counselor: true } }),
-    prisma.bookingRequest.findMany({ orderBy: { createdAt: "desc" }, include: { counselor: true } }),
+export default async function AdminBookingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sessionPage?: string; bookingPage?: string }>;
+}) {
+  const { sessionPage: sessionPageParam, bookingPage: bookingPageParam } = await searchParams;
+  const sessionPage = parseAdminPage(sessionPageParam);
+  const bookingPage = parseAdminPage(bookingPageParam);
+
+  const [sessionBookings, sessionBookingCount, bookings, bookingCount, counselors] = await Promise.all([
+    prisma.sessionBooking.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { counselor: true },
+      skip: (sessionPage - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
+    }),
+    prisma.sessionBooking.count(),
+    prisma.bookingRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { counselor: true },
+      skip: (bookingPage - 1) * ADMIN_PAGE_SIZE,
+      take: ADMIN_PAGE_SIZE,
+    }),
+    prisma.bookingRequest.count(),
     prisma.counselor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
+  const sessionTotalPages = Math.max(1, Math.ceil(sessionBookingCount / ADMIN_PAGE_SIZE));
+  const bookingTotalPages = Math.max(1, Math.ceil(bookingCount / ADMIN_PAGE_SIZE));
 
   return (
     <div className="space-y-10">
       <div>
         <h2 className="font-display font-semibold text-brand-900">
-          Paid sessions <span className="text-sm font-normal text-ink/40">({sessionBookings.length})</span>
+          Paid sessions <span className="text-sm font-normal text-ink/40">({sessionBookingCount})</span>
         </h2>
         <p className="mt-1 text-sm text-ink/60">Sessions booked and paid for through the in-app flow.</p>
         <div className="mt-4 space-y-4">
@@ -37,29 +61,58 @@ export default async function AdminBookingsPage() {
                   </a>
                 )}
                 <p className="mt-1 text-xs text-ink/40">{b.createdAt.toLocaleString("en-GB")}</p>
-                <SessionBookingEditForm
-                  booking={{
-                    id: b.id,
-                    name: b.name,
-                    email: b.email,
-                    phone: b.phone,
-                    counselorId: b.counselorId,
-                    preferredDate: b.preferredDate,
-                    preferredTime: b.preferredTime,
-                    status: b.status,
-                    meetingLink: b.meetingLink,
-                  }}
-                  counselors={counselors}
-                />
+                <div className="mt-3 flex flex-wrap items-start gap-2">
+                  {b.status === "PENDING_PAYMENT" && (
+                    <form action={markSessionBookingPaid}>
+                      <input type="hidden" name="bookingId" value={b.id} />
+                      <button
+                        type="submit"
+                        className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+                      >
+                        Mark as paid
+                      </button>
+                    </form>
+                  )}
+                  <SessionBookingEditForm
+                    booking={{
+                      id: b.id,
+                      name: b.name,
+                      email: b.email,
+                      phone: b.phone,
+                      counselorId: b.counselorId,
+                      preferredDate: b.preferredDate,
+                      preferredTime: b.preferredTime,
+                      status: b.status,
+                      meetingLink: b.meetingLink,
+                    }}
+                    counselors={counselors}
+                  />
+                  <form action={deleteSessionBooking}>
+                    <input type="hidden" name="bookingId" value={b.id} />
+                    <ConfirmSubmitButton
+                      confirmMessage={`Delete this paid session booking for ${b.name} permanently? This removes the record of a real ${b.priceEGP - b.discountEGP} EGP payment and can't be undone.`}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </ConfirmSubmitButton>
+                  </form>
+                </div>
               </div>
             </div>
           ))}
         </div>
+        <AdminPagination
+          page={sessionPage}
+          totalPages={sessionTotalPages}
+          basePath="/admin/bookings"
+          pageParam="sessionPage"
+          extraParams={bookingPage > 1 ? { bookingPage: String(bookingPage) } : {}}
+        />
       </div>
 
       <div>
         <h2 className="font-display font-semibold text-brand-900">
-          Booking requests <span className="text-sm font-normal text-ink/40">({bookings.length})</span>
+          Booking requests <span className="text-sm font-normal text-ink/40">({bookingCount})</span>
         </h2>
         <p className="mt-1 text-sm text-ink/60">Manual requests from the free-form request flow.</p>
         <div className="mt-4 space-y-4">
@@ -115,6 +168,13 @@ export default async function AdminBookingsPage() {
             </div>
           ))}
         </div>
+        <AdminPagination
+          page={bookingPage}
+          totalPages={bookingTotalPages}
+          basePath="/admin/bookings"
+          pageParam="bookingPage"
+          extraParams={sessionPage > 1 ? { sessionPage: String(sessionPage) } : {}}
+        />
       </div>
     </div>
   );

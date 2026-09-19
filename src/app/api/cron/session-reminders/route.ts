@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendPushToEmails } from "@/lib/web-push";
 import { tomorrowISO } from "@/lib/therapist-data";
+import { logAudit } from "@/lib/audit-log";
 
 export async function GET(req: NextRequest) {
   // Same fail-closed auth pattern as the journal-reminder cron — this
@@ -35,6 +36,9 @@ export async function GET(req: NextRequest) {
   ]);
 
   const bookingCount = sessions.length + requests.length;
+  // Nothing worth a Notification Center entry on a routine "no sessions
+  // tomorrow" day — only a run that actually sent something (or the
+  // failure case below) is worth surfacing.
   if (bookingCount === 0) {
     return NextResponse.json({ sent: 0, removed: 0, total: 0, bookings: 0 });
   }
@@ -45,8 +49,8 @@ export async function GET(req: NextRequest) {
   // the exact time varies per booking, so it's left out of the shared
   // copy and clients see it on /upcoming after tapping through.
   const result = await sendPushToEmails(emails, {
-    title: "Let It Out",
-    body: "You have a counseling session coming up tomorrow — tap for the details.",
+    title: "Session reminder",
+    body: "You have a counseling session coming up tomorrow, tap for the details.",
     url: "/upcoming",
   });
 
@@ -60,6 +64,13 @@ export async function GET(req: NextRequest) {
       data: { reminderSentAt: new Date() },
     }),
   ]);
+
+  await logAudit({
+    skipIp: true,
+    action: "cron.session_reminders",
+    summary: `Session reminders: sent to ${result.sent}/${result.total} subscribers for ${bookingCount} booking${bookingCount === 1 ? "" : "s"}`,
+    metadata: { ...result, bookings: bookingCount },
+  });
 
   return NextResponse.json({ ...result, bookings: bookingCount });
 }

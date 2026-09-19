@@ -2,26 +2,32 @@ import Link from "next/link";
 import { Phone, Download, X, EyeOff, Eye } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
-import { removeToolkitItem, toggleDefaultTool } from "@/lib/therapist-actions";
-import { CLIENT_TOOLS, SESSION_PROMPTS, CRISIS_PROTOCOL } from "@/lib/therapist-toolkit";
+import { removeToolkitItem, toggleDefaultTool, updateSessionPrompts } from "@/lib/therapist-actions";
+import { CLIENT_TOOLS, SESSION_PROMPTS, CRISIS_PROTOCOL, type PromptCard } from "@/lib/therapist-toolkit";
 import AddToolkitItemForm from "./add-item-form";
 import PdfOpenButton from "@/components/pdf-open-button";
+import SessionPromptsEditor from "@/components/session-prompts-editor";
 
 export default async function TherapistToolkitPage() {
   const session = await requireCounselor();
   const counselor = await prisma.counselor.findUnique({
     where: { id: session.counselorId },
-    select: { hiddenDefaultTools: true, toolkitItems: { orderBy: { createdAt: "desc" } } },
+    select: {
+      hiddenDefaultTools: true,
+      toolkitItems: { orderBy: { createdAt: "desc" } },
+      sessionPromptCards: true,
+    },
   });
   const hiddenDefaultTools = counselor?.hiddenDefaultTools ?? [];
   const toolkitItems = counselor?.toolkitItems ?? [];
+  const sessionPrompts = (counselor?.sessionPromptCards as PromptCard[] | null) ?? SESSION_PROMPTS;
 
   return (
     <div className="space-y-10">
       <div>
         <h2 className="font-display font-semibold text-brand-900">Your toolbox</h2>
         <p className="mt-1 text-sm text-ink/60">
-          The built-in exercises, plus anything you&rsquo;ve added yourself — links or PDFs. Hide what you
+          The built-in exercises, plus anything you&rsquo;ve added yourself, links or PDFs. Hide what you
           don&rsquo;t use, add what you do.
         </p>
 
@@ -101,18 +107,12 @@ export default async function TherapistToolkitPage() {
 
       <div>
         <h2 className="font-display font-semibold text-brand-900">Session prompts</h2>
-        <p className="mt-1 text-sm text-ink/60">Quick starting points — adapt to your own style and this client.</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {SESSION_PROMPTS.map((card) => (
-            <div key={card.title} className="rounded-2xl border border-brand-100 bg-white p-5">
-              <p className="font-display font-semibold text-brand-900">{card.title}</p>
-              <ul className="mt-3 space-y-2">
-                {card.prompts.map((p) => (
-                  <li key={p} className="text-sm text-ink/70">&ldquo;{p}&rdquo;</li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <p className="mt-1 text-sm text-ink/60">
+          Quick starting points, adapt to your own style and this client. Edit freely; this is your own copy,
+          not shared with other counselors.
+        </p>
+        <div className="mt-4">
+          <SessionPromptsEditor initialCards={sessionPrompts} defaultCards={SESSION_PROMPTS} action={updateSessionPrompts} />
         </div>
       </div>
 

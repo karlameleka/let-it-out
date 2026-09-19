@@ -52,7 +52,7 @@ export default async function AdminSupportPage() {
           <h2 className="font-display font-semibold text-brand-900">Live chat</h2>
           <p className="mt-1 text-sm text-ink/60">
             Clients&rsquo; &ldquo;Having technical issues? Live Chat&rdquo; conversations from Account settings. The
-            bot only handles app/technical issues — anything psychological gets redirected, never answered.
+            bot only handles app/technical issues, anything psychological gets redirected, never answered.
           </p>
           {flaggedCount > 0 && (
             <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">

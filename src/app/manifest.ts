@@ -2,12 +2,22 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "Let It Out",
     short_name: "Let It Out",
     description:
-      "A psychologist-led mental health service — online counseling, guided journals, and workshops.",
+      "A psychologist-led mental health service, online counseling, guided journals, and workshops.",
     start_url: "/",
+    scope: "/",
     display: "standalone",
+    // Once installed, reuse the existing app window for in-scope links
+    // (including a /qr/<slug> link opened from a scanned QR code) instead
+    // of leaving them to open in the browser.
+    launch_handler: { client_mode: "navigate-existing" },
+    // Lets the site's own pages ask navigator.getInstalledRelatedApps()
+    // whether this PWA is already installed (self-referencing "webapp"
+    // entry is the documented pattern for that check).
+    related_applications: [{ platform: "webapp", url: "/manifest.webmanifest" }],
     background_color: "#1e5b73",
     theme_color: "#1e5b73",
     icons: [

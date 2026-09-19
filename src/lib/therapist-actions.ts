@@ -3,10 +3,18 @@
 import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
-import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES } from "@/lib/therapist-toolkit";
+import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES, type PromptCard } from "@/lib/therapist-toolkit";
 import { getBaseUrl } from "@/lib/base-url";
-import { sendReferralNotificationEmail, sendAssignedResourceNotificationEmail, sendMeetingLinkEmail } from "@/lib/email";
+import {
+  sendReferralNotificationEmail,
+  sendAssignedResourceNotificationEmail,
+  sendMeetingLinkEmail,
+  sendSupportNotification,
+  type AssignedResourceKind,
+} from "@/lib/email";
 import { formatSlotTime } from "@/lib/format-slot";
+import { sendPushToEmails } from "@/lib/web-push";
+import type { Locale } from "@/lib/i18n/locale";
 import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/therapist-data";
 
 export type TherapistProfileFormState = { error?: string; success?: boolean } | undefined;
@@ -231,7 +239,7 @@ export async function addToolkitLink(
   try {
     new URL(url);
   } catch {
-    return { error: "That link doesn't look valid — include https://" };
+    return { error: "That link doesn't look valid, include https://" };
   }
 
   await prisma.toolkitItem.create({
@@ -257,7 +265,7 @@ export async function addToolkitPdf(
   if (!title) return { error: "Please give it a title." };
   if (!fileData.startsWith("data:application/pdf")) return { error: "Please attach a PDF file." };
   if (dataUriByteSize(fileData) > MAX_TOOLKIT_PDF_BYTES) {
-    return { error: `That PDF is too large — please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
+    return { error: `That PDF is too large, please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
   }
 
   await prisma.toolkitItem.create({
@@ -303,6 +311,39 @@ export async function toggleDefaultTool(formData: FormData) {
     : [...counselor.hiddenDefaultTools, key];
 
   await prisma.counselor.update({ where: { id: session.counselorId }, data: { hiddenDefaultTools: hidden } });
+
+  revalidatePath("/therapist/toolkit");
+}
+
+/** Overwrites this counselor's own "Session prompts" cards on the Toolkit
+ * page with whatever was submitted — same replace-the-whole-set approach as
+ * updateCounselorFilterAssignments, simpler than diffing individual prompts.
+ * Cards with an empty title or no non-empty prompts are dropped. */
+export async function updateSessionPrompts(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(String(formData.get("cardsJson") ?? "[]"));
+  } catch {
+    return;
+  }
+  if (!Array.isArray(parsed)) return;
+
+  const cards: PromptCard[] = parsed
+    .map((c) => ({
+      title: String((c as { title?: unknown })?.title ?? "").trim(),
+      prompts: Array.isArray((c as { prompts?: unknown })?.prompts)
+        ? (c as { prompts: unknown[] }).prompts.map((p) => String(p).trim()).filter(Boolean)
+        : [],
+    }))
+    .filter((c) => c.title && c.prompts.length > 0);
+
+  await prisma.counselor.update({
+    where: { id: session.counselorId },
+    data: { sessionPromptCards: cards },
+  });
 
   revalidatePath("/therapist/toolkit");
 }
@@ -418,21 +459,43 @@ export async function acknowledgeReferral(formData: FormData) {
 export type AssignResourceFormState = { error?: string; success?: boolean } | undefined;
 
 /** Best-effort, non-blocking — a missing/misspelled clientName or email
- * config must never stop the resource itself from being saved. */
+ * config must never stop the resource itself from being saved. This runs
+ * from the counselor's own browser session, which has no access to the
+ * client's locale cookie, so it looks up the client's own stored
+ * preference (User.locale) instead — absent for clients without an
+ * account, in which case it falls back to English. */
 async function notifyClientOfAssignedResource(
   clientEmail: string,
   clientName: string,
   counselorName: string,
-  kindLabel: string,
+  kind: AssignedResourceKind,
 ) {
   const baseUrl = await getBaseUrl();
+  const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { locale: true } });
+  const locale: Locale = client?.locale === "ar" ? "ar" : "en";
+  const resourcesUrl = `${baseUrl}/resources#my-tools`;
   await sendAssignedResourceNotificationEmail({
     to: clientEmail,
     toName: clientName || "there",
     counselorName,
-    kindLabel,
-    resourcesUrl: `${baseUrl}/resources#my-tools`,
+    kind,
+    resourcesUrl,
+    locale,
   });
+
+  // Best-effort — a missing/expired push subscription (or the client never
+  // having enabled push) must never block the resource itself or the email
+  // above. The OS/browser already shows the app as the notification's
+  // source, so the title carries the specific "who" instead of repeating
+  // the brand name.
+  await sendPushToEmails([clientEmail], {
+    title: locale === "ar" ? `رسالة من ${counselorName}` : `Message from ${counselorName}`,
+    body:
+      locale === "ar"
+        ? "بعتلك حاجة جديدة في أدواتي، دوس عشان تشوفها."
+        : "Sent you something new in My Tools, tap to take a look.",
+    url: "/resources#my-tools",
+  }).catch((err) => console.error("[therapist-actions] Failed to send assigned-resource push:", err));
 }
 
 export async function assignResourceLink(
@@ -454,13 +517,13 @@ export async function assignResourceLink(
   try {
     new URL(url);
   } catch {
-    return { error: "That link doesn't look valid — include https://" };
+    return { error: "That link doesn't look valid, include https://" };
   }
 
   await prisma.assignedResource.create({
     data: { counselorId: session.counselorId, clientEmail, title, description: description || null, kind: "LINK", url },
   });
-  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "a tool");
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "TOOL");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -484,7 +547,7 @@ export async function assignResourcePdf(
   if (!title) return { error: "Please give it a title." };
   if (!fileData.startsWith("data:application/pdf")) return { error: "Please attach a PDF file." };
   if (dataUriByteSize(fileData) > MAX_TOOLKIT_PDF_BYTES) {
-    return { error: `That PDF is too large — please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
+    return { error: `That PDF is too large, please keep it under ${Math.floor(MAX_TOOLKIT_PDF_BYTES / (1024 * 1024))}MB.` };
   }
 
   await prisma.assignedResource.create({
@@ -498,7 +561,7 @@ export async function assignResourcePdf(
       fileName: fileName || `${title}.pdf`,
     },
   });
-  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "a PDF");
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "PDF");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -524,7 +587,7 @@ export async function assignResourceNote(
   await prisma.assignedResource.create({
     data: { counselorId: session.counselorId, clientEmail, title, kind: isAssignment ? "ASSIGNMENT" : "TEXT", content },
   });
-  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, isAssignment ? "an assignment" : "a note");
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, isAssignment ? "ASSIGNMENT" : "NOTE");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
   return { success: true };
@@ -556,7 +619,7 @@ export async function setMeetingLink(
   try {
     new URL(meetingLink);
   } catch {
-    return { error: "That link doesn't look valid — include https://" };
+    return { error: "That link doesn't look valid, include https://" };
   }
 
   let clientEmail: string;
@@ -582,12 +645,15 @@ export async function setMeetingLink(
     preferredTime = booking.preferredTime;
   }
 
-  const dateLabel = new Date(`${preferredDate}T00:00:00`).toLocaleDateString("en-GB", {
+  const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { id: true, locale: true } });
+  const clientLocale: Locale = client?.locale === "ar" ? "ar" : "en";
+
+  const dateLabel = new Date(`${preferredDate}T00:00:00`).toLocaleDateString(clientLocale === "ar" ? "ar-EG" : "en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
   });
-  const sessionLabel = preferredTime ? `${dateLabel} · ${formatSlotTime(preferredTime, "en")}` : dateLabel;
+  const sessionLabel = preferredTime ? `${dateLabel} · ${formatSlotTime(preferredTime, clientLocale)}` : dateLabel;
 
   await sendMeetingLinkEmail({
     to: clientEmail,
@@ -595,10 +661,59 @@ export async function setMeetingLink(
     counselorName: session.name,
     meetingLink,
     sessionLabel,
+    locale: clientLocale,
   });
 
+  // Resets this booking's /upcoming notification back to unread — a
+  // client who already opened it before the link existed would otherwise
+  // never see that it now has one. Only meaningful for clients with an
+  // account (NotificationRead is keyed by userId, not email).
+  if (client) {
+    const itemId = bookingKind === "paid" ? `session-${bookingId}` : `request-${bookingId}`;
+    await prisma.notificationRead.deleteMany({ where: { userId: client.id, itemId } });
+  }
+
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmailForRevalidate)}`);
+  revalidatePath("/upcoming");
   return { success: true };
+}
+
+/** Therapist-side counterpart to cancelSessionBooking/cancelBookingRequest
+ * in session-cancel-actions.ts (the client-side cancel from /upcoming) —
+ * same CANCELLED status + cancelledAt stamp, so a session cancelled from
+ * either side moves to /upcoming/past and is purged by the trash-purge
+ * cron a month later the same way. */
+export async function cancelClientAppointment(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const bookingId = String(formData.get("bookingId") ?? "");
+  const bookingKind = String(formData.get("bookingKind") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+
+  if (bookingKind === "paid") {
+    await prisma.sessionBooking.updateMany({
+      where: { id: bookingId, counselorId: session.counselorId, status: { not: "CANCELLED" } },
+      data: { status: "CANCELLED", cancelledAt: new Date() },
+    });
+  } else if (bookingKind === "request") {
+    await prisma.bookingRequest.updateMany({
+      where: { id: bookingId, counselorId: session.counselorId, status: { notIn: ["CANCELLED", "COMPLETED"] } },
+      data: { status: "CANCELLED", cancelledAt: new Date() },
+    });
+  }
+
+  await sendSupportNotification({
+    subject: "A counselor cancelled a client's session",
+    lines: [
+      { label: "Counselor", value: session.name },
+      { label: "Client", value: clientEmail },
+      { label: "Booking", value: bookingId },
+    ],
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/upcoming");
 }
 
 export async function removeAssignedResource(formData: FormData) {
@@ -609,6 +724,65 @@ export async function removeAssignedResource(formData: FormData) {
   const clientEmail = String(formData.get("clientEmail") ?? "").trim();
 
   await prisma.assignedResource.deleteMany({ where: { id: itemId, counselorId: session.counselorId } });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+}
+
+export type MedicationFormState = { error?: string; success?: boolean } | undefined;
+
+export async function addMedication(
+  _prevState: MedicationFormState,
+  formData: FormData,
+): Promise<MedicationFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  // Re-checked here, not just hidden in the UI — canPrescribeMedication is
+  // an admin-granted permission, so a counselor without it must not be able
+  // to add one by posting directly to this action.
+  const counselor = await prisma.counselor.findUnique({
+    where: { id: session.counselorId },
+    select: { canPrescribeMedication: true },
+  });
+  if (!counselor?.canPrescribeMedication) return { error: "You don't have permission to add medications." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const dosage = String(formData.get("dosage") ?? "").trim();
+  const instructions = String(formData.get("instructions") ?? "").trim();
+
+  if (!clientEmail || !clientName) return { error: "Missing client." };
+  if (!name) return { error: "Please enter a medication name." };
+
+  await prisma.medication.create({
+    data: {
+      counselorId: session.counselorId,
+      clientEmail,
+      clientName,
+      name,
+      dosage: dosage || null,
+      instructions: instructions || null,
+    },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  return { success: true };
+}
+
+/** Marks a medication as discontinued rather than deleting it, so the
+ * client's history stays intact. */
+export async function discontinueMedication(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const medicationId = String(formData.get("medicationId") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+
+  await prisma.medication.updateMany({
+    where: { id: medicationId, counselorId: session.counselorId },
+    data: { active: false },
+  });
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
 }

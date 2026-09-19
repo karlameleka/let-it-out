@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import InstallCard from "@/components/install-card";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function InstallOverlay({ initialOpen }: { initialOpen: boolean }) {
+export default function InstallOverlay({ initialOpen, dict }: { initialOpen: boolean; dict: Dictionary["install"] }) {
   const router = useRouter();
 
   if (!initialOpen) return null;
@@ -23,7 +24,7 @@ export default function InstallOverlay({ initialOpen }: { initialOpen: boolean }
         >
           ✕
         </button>
-        <InstallCard />
+        <InstallCard dict={dict} />
       </div>
     </div>
   );

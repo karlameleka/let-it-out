@@ -125,14 +125,29 @@ export type IntakeAnswerEntry = { section: string; label: string; value: string 
  * private session notes for them (most recent first). Nothing here is
  * shared across counselors — every query is scoped by counselorId. */
 export async function getClientProfile(counselorId: string, clientEmail: string) {
-  const [sessionBookings, bookingRequests, intakeSubmissions, notes] = await Promise.all([
+  const [sessionBookings, bookingRequests, intakeSubmissions, notes, medications] = await Promise.all([
     prisma.sessionBooking.findMany({ where: { counselorId, email: clientEmail }, orderBy: { createdAt: "desc" } }),
     prisma.bookingRequest.findMany({ where: { counselorId, email: clientEmail }, orderBy: { createdAt: "desc" } }),
     prisma.intakeSubmission.findMany({ where: { counselorId, clientEmail }, orderBy: { submittedAt: "desc" } }),
     prisma.clientNote.findMany({ where: { counselorId, clientEmail }, orderBy: [{ sessionDate: "desc" }, { createdAt: "desc" }] }),
+    // Unlike notes (private to the counselor who wrote them), medications
+    // are shared across every counselor treating this client — not scoped
+    // to counselorId — since knowing what a client is prescribed matters
+    // for their safety regardless of who prescribed it.
+    prisma.medication.findMany({
+      where: { clientEmail },
+      include: { counselor: { select: { name: true } } },
+      orderBy: [{ active: "desc" }, { createdAt: "desc" }],
+    }),
   ]);
 
-  if (sessionBookings.length === 0 && bookingRequests.length === 0 && intakeSubmissions.length === 0 && notes.length === 0) {
+  if (
+    sessionBookings.length === 0 &&
+    bookingRequests.length === 0 &&
+    intakeSubmissions.length === 0 &&
+    notes.length === 0 &&
+    medications.length === 0
+  ) {
     return null;
   }
 
@@ -140,12 +155,13 @@ export async function getClientProfile(counselorId: string, clientEmail: string)
   const latest = allRows.reduce((a, b) => (b.createdAt > a.createdAt ? b : a), allRows[0]);
 
   return {
-    name: latest?.name ?? intakeSubmissions[0]?.clientName ?? notes[0]?.clientName ?? clientEmail,
+    name: latest?.name ?? intakeSubmissions[0]?.clientName ?? notes[0]?.clientName ?? medications[0]?.clientName ?? clientEmail,
     email: clientEmail,
     phone: latest?.phone ?? null,
     appointments: deriveAppointments({ sessionBookings, bookingRequests }),
     intakeSubmissions,
     notes,
+    medications,
   };
 }
 

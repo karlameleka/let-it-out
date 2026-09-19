@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, LifeBuoy, MessageCircle, Phone, HelpCircle } from "lucide-react";
-import { QuestionMarkIcon } from "@/components/lio-icons";
+import { X, LifeBuoy, MessageCircle, Phone, Star } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=201288200533";
@@ -18,7 +17,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/support")) return null;
 
   return (
-    <div className="fixed bottom-24 end-5 z-50 md:bottom-5">
+    <div className="fixed bottom-[calc(7.5rem+env(safe-area-inset-bottom))] end-5 z-50 md:bottom-5">
       {open && (
         <div className="animate-pop-in absolute bottom-[calc(100%+0.75rem)] end-0 w-72 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-xl">
           <p className="font-display font-semibold text-brand-900">{dict.heading}</p>
@@ -72,14 +71,14 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
               </span>
             </Link>
             <Link
-              href="/counseling#faq"
+              href="/feedback"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
             >
-              <HelpCircle className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
+              <Star className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
               <span>
-                <span className="block text-sm font-medium text-ink/80">{dict.faq}</span>
-                <span className="block text-xs text-ink/50">{dict.faqDescription}</span>
+                <span className="block text-sm font-medium text-ink/80">{dict.submitFeedback}</span>
+                <span className="block text-xs text-ink/50">{dict.submitFeedbackDescription}</span>
               </span>
             </Link>
           </div>
@@ -96,10 +95,7 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
         {open ? (
           <X className="h-6 w-6" strokeWidth={2} />
         ) : (
-          <>
-            <LifeBuoy className="h-6 w-6 sm:hidden" strokeWidth={2} />
-            <QuestionMarkIcon className="hidden h-6 w-6 sm:block" />
-          </>
+          <LifeBuoy className="h-6 w-6" strokeWidth={2} />
         )}
       </button>
     </div>

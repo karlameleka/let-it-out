@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
@@ -11,6 +12,16 @@ const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 const PENDING_2FA_COOKIE = "lio_2fa_pending";
 const PENDING_2FA_MAX_AGE_SECONDS = 5 * 60; // 5 minutes to enter the code
+
+const PENDING_SOCIAL_SIGNUP_COOKIE = "lio_social_signup_pending";
+const PENDING_SOCIAL_SIGNUP_MAX_AGE_SECONDS = 10 * 60; // 10 minutes to finish the form
+
+export type PendingSocialSignup = {
+  provider: "google" | "apple";
+  providerId: string;
+  email: string;
+  name: string;
+};
 
 export async function createSession(payload: SessionPayload) {
   const token = await new SignJWT({ ...payload })
@@ -34,7 +45,14 @@ export async function destroySession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function getCurrentUser(): Promise<SessionPayload | null> {
+// Memoized per-request (React cache(), same pattern as getSiteSettings/
+// getSiteTextOverrides) — this is the single funnel almost every
+// page/layout/component reads the session through, so without this every
+// one of those call sites was doing its own redundant prisma.user.findUnique
+// round-trip for the exact same user on the exact same request (e.g. root
+// layout.tsx and the page it renders each calling this once, on top of any
+// nested components that also check auth).
+export const getCurrentUser = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -47,9 +65,12 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
   // different browser) would otherwise keep working until the cookie
   // expires. Checking existence here — the single funnel every page/action
   // reads the session through — makes deletion take effect immediately on
-  // that account's very next request instead.
-  const exists = await prisma.user.findUnique({ where: { id: session.userId }, select: { id: true } });
-  if (!exists) {
+  // that account's very next request instead. Also re-reads role from the
+  // DB rather than trusting the JWT's own role claim: nothing in this app
+  // currently changes a user's role, but requireAdmin() should never end up
+  // trusting a 30-day-old claim over the account's actual current role.
+  const current = await prisma.user.findUnique({ where: { id: session.userId }, select: { role: true } });
+  if (!current) {
     // Clearing the cookie only works from a Server Function/Route Handler,
     // not while a Server Component is rendering — swallow that case since
     // returning null already treats this request as logged out either way.
@@ -57,8 +78,8 @@ export async function getCurrentUser(): Promise<SessionPayload | null> {
     return null;
   }
 
-  return session;
-}
+  return { ...session, role: current.role };
+});
 
 export async function requireUser(): Promise<SessionPayload> {
   const user = await getCurrentUser();
@@ -116,4 +137,55 @@ export async function getPendingTwoFactorUserId(): Promise<string | null> {
 export async function clearPendingTwoFactorSession() {
   const cookieStore = await cookies();
   cookieStore.delete(PENDING_2FA_COOKIE);
+}
+
+/**
+ * Google/Apple have already verified this person's identity by the time
+ * their OAuth callback runs, but a brand-new signup still needs to answer
+ * the same demographic questions as an email signup — so instead of
+ * creating the User immediately, the callback stashes the verified
+ * identity here (short-lived, purpose-scoped, httpOnly — the client never
+ * sees or can tamper with it) and sends them to /signup to finish the
+ * rest of the form on the same page. completeSocialSignup() reads it back
+ * to know which identity to attach once they submit.
+ */
+export async function createPendingSocialSignup(data: PendingSocialSignup) {
+  const token = await new SignJWT({ ...data, purpose: "social_signup_pending" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(`${PENDING_SOCIAL_SIGNUP_MAX_AGE_SECONDS}s`)
+    .sign(getSecretKey());
+
+  const cookieStore = await cookies();
+  cookieStore.set(PENDING_SOCIAL_SIGNUP_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: PENDING_SOCIAL_SIGNUP_MAX_AGE_SECONDS,
+  });
+}
+
+export async function getPendingSocialSignup(): Promise<PendingSocialSignup | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(PENDING_SOCIAL_SIGNUP_COOKIE)?.value;
+  if (!token) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, getSecretKey());
+    if (payload.purpose !== "social_signup_pending") return null;
+    return {
+      provider: payload.provider as "google" | "apple",
+      providerId: payload.providerId as string,
+      email: payload.email as string,
+      name: payload.name as string,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPendingSocialSignup() {
+  const cookieStore = await cookies();
+  cookieStore.delete(PENDING_SOCIAL_SIGNUP_COOKIE);
 }

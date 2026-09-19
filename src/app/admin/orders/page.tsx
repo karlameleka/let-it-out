@@ -1,19 +1,42 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { updateOrderStatus, deleteOrder } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import ExportButtons from "@/components/export-buttons";
 
 const STATUSES = ["PENDING_PAYMENT", "PAYMENT_SUBMITTED", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED"];
 
-export default async function AdminOrdersPage() {
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const { status } = await searchParams;
+  const statusFilter = status && (STATUSES as readonly string[]).includes(status) ? status : undefined;
+
   const orders = await prisma.order.findMany({
+    where: statusFilter ? { status: statusFilter as never } : undefined,
     orderBy: { createdAt: "desc" },
     include: { items: true },
   });
 
   return (
     <div className="space-y-4">
-      {orders.length === 0 && <p className="text-sm text-ink/60">No orders yet.</p>}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {statusFilter ? (
+          <p className="text-sm text-ink/60">
+            Filtered to <span className="font-medium text-ink/80">{statusFilter.replaceAll("_", " ")}</span> ·{" "}
+            <Link href="/admin/orders" className="font-medium text-brand-600 underline">
+              Clear
+            </Link>
+          </p>
+        ) : (
+          <span />
+        )}
+        <ExportButtons endpoint="/admin/orders/export" params={statusFilter ? { status: statusFilter } : {}} />
+      </div>
+      {orders.length === 0 && <p className="text-sm text-ink/60">No orders {statusFilter ? "with this status" : "yet"}.</p>}
       {orders.map((order) => (
         <div key={order.id} className="rounded-2xl border border-brand-100 bg-white p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -78,7 +101,7 @@ export default async function AdminOrdersPage() {
           {order.paymentRef && (
             <p className="mt-2 text-sm text-ink/60">
               Payment ref: <span className="font-medium text-ink/80">{order.paymentRef}</span>
-              {order.paymentNote && ` — ${order.paymentNote}`}
+              {order.paymentNote && `, ${order.paymentNote}`}
             </p>
           )}
 

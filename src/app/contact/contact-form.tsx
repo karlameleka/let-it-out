@@ -1,12 +1,18 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { submitContactMessage } from "@/lib/contact-actions";
 import { Button } from "@/components/ui";
+import HoneypotField from "@/components/honeypot-field";
+import TurnstileWidget from "@/components/turnstile-widget";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function ContactForm({ dict }: { dict: Dictionary }) {
   const [state, formAction, pending] = useActionState(submitContactMessage, undefined);
+  // Starts true when Turnstile isn't configured (nothing to wait for) —
+  // see turnstile-widget.tsx for why this needs to hold the submit button
+  // rather than trusting the hidden input is already populated.
+  const [turnstileReady, setTurnstileReady] = useState(!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
   const t = dict.contact;
   const f = dict.forms;
 
@@ -21,6 +27,7 @@ export default function ContactForm({ dict }: { dict: Dictionary }) {
 
   return (
     <form action={formAction} className="space-y-4">
+      <HoneypotField />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={f.yourName} name="name" />
         <Field label={f.email} name="email" type="email" />
@@ -38,9 +45,10 @@ export default function ContactForm({ dict }: { dict: Dictionary }) {
           className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
         />
       </div>
+      <TurnstileWidget onReady={() => setTurnstileReady(true)} onError={() => setTurnstileReady(true)} />
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
-      <Button type="submit" disabled={pending}>
-        {pending ? f.sending : f.send}
+      <Button type="submit" disabled={pending || !turnstileReady}>
+        {pending ? f.sending : turnstileReady ? f.send : f.verifying}
       </Button>
     </form>
   );

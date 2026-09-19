@@ -38,6 +38,14 @@ const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password"
  * here, at the edge, before any admin route (page or API) executes, closes
  * that gap regardless of what gets added later.
  *
+ * frame-src/connect-src allow challenges.cloudflare.com for Cloudflare
+ * Turnstile (see turnstile-widget.tsx): Turnstile renders its challenge in
+ * an iframe from that origin and its script makes fetch/XHR calls back to
+ * it, neither of which strict-dynamic covers (that only governs script-src).
+ * The script tag itself needs no separate allowlisting — it's injected by
+ * next/script from within an already-nonced, trusted script, so
+ * strict-dynamic propagates trust to it automatically.
+ *
  * Trusted Types is added as `Content-Security-Policy-Report-Only`, not in
  * the enforced policy above: it's a separate header, so this reports DOM
  * XSS-sink violations (dangerouslySetInnerHTML aside, we have none in our
@@ -79,8 +87,8 @@ export async function proxy(request: NextRequest) {
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob:;
     font-src 'self';
-    connect-src 'self';
-    frame-src 'none';
+    connect-src 'self' https://challenges.cloudflare.com;
+    frame-src https://challenges.cloudflare.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

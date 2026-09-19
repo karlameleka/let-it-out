@@ -8,11 +8,15 @@ import EntryGates from "@/components/entry-gates";
 import { SerwistProvider } from "@serwist/turbopack/react";
 import OfflineBanner from "@/components/offline-banner";
 import InitialSplash from "@/components/initial-splash";
+import NativeAppInit from "@/components/native-app-init";
+import MotionProvider from "@/components/motion/motion-provider";
 import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
 import AppBadgeSync from "@/components/app-badge-sync";
 import PushAutoPrompt from "@/components/push-auto-prompt";
+import ReferralActivationWatcher from "@/components/referral-activation-watcher";
 import AnalyticsTracker from "@/components/analytics-tracker";
+import OnboardingRoot from "@/components/onboarding/onboarding-root";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { UnreadToolsProvider } from "@/lib/unread-tools-context";
@@ -22,6 +26,7 @@ import { getLocale, dirForLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
+import { getOnboardingState } from "@/lib/onboarding";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -63,6 +68,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#1e5b73",
+  // Lets the page draw under the iOS notch/home-indicator instead of
+  // being letterboxed above it — without this, every env(safe-area-
+  // inset-*) reference in the app (the bottom tab bar's padding, the
+  // floating help button's position) resolves to 0, so the "safe area"
+  // handling silently did nothing.
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -74,6 +85,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   ]);
   const baseDict = getDictionary(locale);
   const dict = { ...baseDict, nav: applyOverrides(baseDict.nav, "nav", textOverrides, locale) };
+  const onboardingState = user && user.role === "USER" ? await getOnboardingState(user.userId) : null;
 
   return (
     <html
@@ -81,34 +93,47 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       dir={dirForLocale(locale)}
       className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-ink pb-20 md:pb-0">
+      <body className="min-h-full flex flex-col bg-white text-ink pb-24 lg:pb-0">
+        <NativeAppInit />
         <InitialSplash />
         <OfflineBanner message={dict.offline.bannerMessage} />
-        <CurrencyProvider>
-          <CartProvider>
-            <UnreadToolsProvider>
-              <UpcomingProvider>
-                <SiteHeader
-                  user={user}
-                  locale={locale}
-                  dict={dict}
-                  arabicEnabled={settings.arabicEnabled}
-                />
-                <main className="flex-1">
-                  <ViewTransition name="page-content">{children}</ViewTransition>
-                </main>
-                <SiteFooter locale={locale} dict={dict.footer} />
-                <EntryGates />
-                <SerwistProvider swUrl="/serwist/sw.js" />
-                <HelpButton dict={dict.helpButton} />
-                <BottomTabBar dict={dict.nav} />
-                <AppBadgeSync />
-                <PushAutoPrompt loggedIn={Boolean(user)} />
-                {user && <AnalyticsTracker />}
-              </UpcomingProvider>
-            </UnreadToolsProvider>
-          </CartProvider>
-        </CurrencyProvider>
+        <MotionProvider>
+          <CurrencyProvider>
+            <CartProvider>
+              <UnreadToolsProvider>
+                <UpcomingProvider>
+                  <SiteHeader
+                    user={user}
+                    locale={locale}
+                    dict={dict}
+                    arabicEnabled={settings.arabicEnabled}
+                  />
+                  <main className="flex-1">
+                    <ViewTransition name="page-content">{children}</ViewTransition>
+                  </main>
+                  <SiteFooter locale={locale} dict={dict.footer} />
+                  <EntryGates />
+                  <SerwistProvider swUrl="/serwist/sw.js" />
+                  <HelpButton dict={dict.helpButton} />
+                  <BottomTabBar dict={dict.nav} />
+                  <AppBadgeSync />
+                  <PushAutoPrompt loggedIn={Boolean(user)} />
+                  <ReferralActivationWatcher />
+                  {user && <AnalyticsTracker />}
+                  {(!user || user.role === "USER") && (
+                    <OnboardingRoot
+                      loggedIn={Boolean(user)}
+                      firstName={user?.name.split(" ")[0] ?? ""}
+                      accountState={onboardingState}
+                      dict={dict.onboarding}
+                      installDict={dict.install}
+                    />
+                  )}
+                </UpcomingProvider>
+              </UnreadToolsProvider>
+            </CartProvider>
+          </CurrencyProvider>
+        </MotionProvider>
       </body>
     </html>
   );

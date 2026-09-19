@@ -80,7 +80,7 @@ serwist.addEventListeners();
 self.addEventListener("push", (event) => {
   let data = {
     title: "Let It Out",
-    body: "A new prompt is waiting for you — take a few minutes to write.",
+    body: "A new prompt is waiting for you, take a few minutes to write.",
     url: "/journal",
   };
 

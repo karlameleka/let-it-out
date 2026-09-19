@@ -15,9 +15,11 @@ enum Role {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  // Nullable: accounts created via Google sign-in don't collect a phone
-  // number. Required for accounts created through the email/password
-  // signup form, where it also doubles as an alternate login identifier.
+  // Collected on the signup wizard's country page (calling code + number,
+  // stored together as one E.164-ish string, e.g. "+201001234567") — used
+  // to prefill checkout/booking forms with the number they already gave
+  // us. Nullable only for accounts created before this was required
+  // again. Never a login identifier.
   phone        String?  @unique
   // Nullable: accounts created via Google sign-in have no password.
   passwordHash String?
@@ -30,11 +32,22 @@ model User {
   // repeat sign-ins without depending on email.
   googleId String? @unique
 
+  // Same idea as googleId, for "Sign in with Apple" — Apple's stable
+  // per-user, per-Services-ID identifier (the id_token's "sub" claim).
+  appleId String? @unique
+
   // Short human-readable identifier shown on the admin client list (e.g.
   // over phone/email support) — never the raw internal id. Assigned by a
   // DB sequence via generate_account_code(); see the account_code
   // migration.
   accountCode String @unique @default(dbgenerated("generate_account_code()"))
+
+  // Personal invite-a-friend code, shown as a link/QR code in Account
+  // settings. Random (not sequential like accountCode) since it's shared
+  // publicly and guessability would let someone mint referral rewards
+  // against a stranger's account. Assigned by generate_referral_code();
+  // see the referral_system migration.
+  referralCode String @unique @default(dbgenerated("generate_referral_code()"))
 
   // Set when a password-reset email is requested; cleared once used or
   // once a new one is issued. The token itself is never stored — only a
@@ -61,7 +74,7 @@ model User {
   // Demographics, required at signup (collected once, not editable later
   // from account settings). Columns stay nullable so accounts created
   // before this requirement existed don't break.
-  birthYear      Int?
+  birthDate      DateTime? @db.Date
   gender         String?
   country        String?
   referralSource String?
@@ -69,8 +82,38 @@ model User {
   // signup (e.g. ["Journaling", "Counseling"]).
   serviceInterests String[] @default([])
 
+  // Three separate consents required on the signup wizard's final "agree"
+  // step (Data Processing, Telehealth, and Terms of Care) — timestamped
+  // rather than a single boolean so there's a compliance record of when
+  // each specific consent was given, not just that some consent was.
+  // Nullable for accounts created before this was required.
+  consentDataProcessingAt DateTime?
+  consentTelehealthAt     DateTime?
+  consentTermsOfCareAt    DateTime?
+
   // Off by default, matching Apple Journal — opt-in from account settings.
   journalLockEnabled Boolean @default(false)
+
+  // First-time onboarding (welcome modal + setup checklist), see
+  // src/lib/onboarding.ts. Nullable "seen/done" timestamps rather than
+  // booleans so a debug/support query can tell not just whether but when.
+  // Backfilled to non-null for every pre-existing account in this
+  // feature's migration so only genuinely new signups see the welcome
+  // modal — the two step-completion columns are deliberately left null
+  // for existing accounts, since showing an honestly-partial checklist to
+  // a returning user is fine, unlike re-showing the welcome modal.
+  onboardingWelcomeSeenAt        DateTime?
+  onboardingChecklistDismissedAt DateTime?
+  onboardingJournalDoneAt        DateTime?
+  onboardingCounselingDoneAt     DateTime?
+
+  // Site language preference, captured at signup and kept in sync on every
+  // setLocale() call (see src/lib/i18n/actions.ts) — the same pattern as
+  // PushSubscription.locale. Needed so staff-triggered emails (a counselor
+  // assigning a resource or posting a meeting link) can be sent in the
+  // client's own language even though the action runs from the counselor's
+  // browser, which has no access to the client's locale cookie.
+  locale String @default("en")
 
   journalEntries JournalEntry[]
   bookingRequests BookingRequest[]
@@ -79,34 +122,34 @@ model User {
   webauthnCredentials WebAuthnCredential[]
   supportChats   SupportChat[]
   eventRsvps     EventRSVP[]
+  reflectionPrompts ReflectionPrompt[]
   notificationReads NotificationRead[]
   pageViews      PageView[]
-}
-
-enum OtpChannel {
-  EMAIL
-  PHONE
+  referralsGiven UserReferral[]
+  auditLogs      AuditLog[]
+  trashedItems   TrashedItem[]
+  feedback       Feedback[]
 }
 
 // A signup that hasn't finished OTP verification yet. Holds everything
 // needed to create the real User once the code is confirmed, so nothing is
-// written to the User table (and no email/phone is "claimed") until the
-// person actually proves they own the address/number. Replaced (not
-// updated) on every new attempt for the same email/phone — see
-// requestSignupOtp in auth-actions.ts.
+// written to the User table (and no email is "claimed") until the person
+// actually proves they own the address. Replaced (not updated) on every
+// new attempt for the same email — see requestSignupOtp in auth-actions.ts.
+// Only holds what's known once the signup wizard's email page is verified
+// (name/email/birthday/gender) — password, country, referral source, and
+// interests are collected on later pages and go straight from that final
+// form submission into the real User row in completeSignup, never through
+// here. See requestEmailVerification / verifyEmailVerification / completeSignup
+// in auth-actions.ts.
 model PendingSignup {
-  id               String     @id @default(cuid())
-  name             String
-  email            String     @unique
-  phone            String     @unique
-  passwordHash     String
-  birthYear        Int
-  gender           String
-  country          String
-  referralSource   String
-  serviceInterests String[]
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  birthDate       DateTime  @db.Date
+  gender          String
+  emailVerifiedAt DateTime?
 
-  otpChannel    OtpChannel
   otpCodeHash   String
   otpExpiresAt  DateTime
   otpSentAt     DateTime @default(now())
@@ -122,6 +165,14 @@ model Counselor {
   bio          String   @db.Text
   specialties  String[]
   languages    String[] @default([])
+  // Optional Arabic translations, nullable/empty and falling back to the
+  // English fields whenever unset — same pattern as Article/Product above.
+  // specialtiesAr/languagesAr are matched to specialties/languages by index.
+  nameAr        String?
+  credentialsAr String?
+  bioAr         String?  @db.Text
+  specialtiesAr String[] @default([])
+  languagesAr   String[] @default([])
   photoUrl     String?
   active       Boolean  @default(true)
   sortOrder    Int      @default(0)
@@ -136,6 +187,19 @@ model Counselor {
   // Controls whether the booking UI on this counselor's page is live.
   // WAITLIST/UNAVAILABLE both show a badge and hide the booking form.
   availabilityStatus AvailabilityStatus @default(AVAILABLE)
+  // Admin-granted permission letting this counselor edit the *shared,
+  // sitewide* intake form and reflection sheet question sets from their
+  // own /therapist portal (see requireFormsConfigEditor in
+  // forms-config-auth.ts) — the same singleton config the admin dashboard
+  // edits, not a per-counselor copy. Off by default; most counselors never
+  // see those tabs.
+  canEditFormsConfig Boolean @default(false)
+
+  // Admin-granted permission letting this counselor add/discontinue
+  // medications for their clients from their own /therapist portal (see
+  // Medication below) — reserved for psychiatrists, since prescribing is
+  // outside most counselors' clinical scope. Off by default.
+  canPrescribeMedication Boolean @default(false)
 
   // Self-service therapist portal login (/therapist). Null passwordHash
   // means portal access hasn't been set up yet for this counselor — an
@@ -164,17 +228,51 @@ model Counselor {
   // from their own Toolkit page — the built-in tools stay real app
   // features, just personally toggled off rather than deleted.
   hiddenDefaultTools String[] @default([])
+  // Per-counselor override of the "Session prompts" cards shown on their own
+  // Toolkit page (PromptCard[] shape, see therapist-toolkit.ts). Null means
+  // this counselor hasn't customized it yet, so the built-in SESSION_PROMPTS
+  // constant is shown instead — same null-means-defaults pattern as
+  // specialtiesAr/languagesAr elsewhere on this model.
+  sessionPromptCards Json?
 
   bookingRequests     BookingRequest[]
   sessionBookings     SessionBooking[]
   promoCodes          PromoCodeCounselor[]
   intakeSubmissions   IntakeSubmission[]
   clientNotes         ClientNote[]
+  medications         Medication[]
   toolkitItems        ToolkitItem[]
   referralsSent       Referral[]              @relation("ReferralsSent")
   referralsReceived   Referral[]              @relation("ReferralsReceived")
   assignedResources   AssignedResource[]
   availabilityWindows CounselorAvailability[]
+  filters             CounselorFilterAssignment[]
+}
+
+// Admin-defined filter chips shown on /counseling (e.g. "Prescribes
+// medication") — replaces what used to be a single hardcoded boolean on
+// Counselor, so the admin dashboard (/admin/counseling-filters) can add or
+// remove filters freely instead of needing a code change per filter.
+// Filter chips combine with AND semantics on the public page: a counselor
+// must carry every currently-selected filter to match.
+model CounselorFilter {
+  id        String   @id @default(cuid())
+  label     String
+  labelAr   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  counselors CounselorFilterAssignment[]
+}
+
+model CounselorFilterAssignment {
+  id          String          @id @default(cuid())
+  counselor   Counselor       @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  counselorId String
+  filter      CounselorFilter @relation(fields: [filterId], references: [id], onDelete: Cascade)
+  filterId    String
+
+  @@unique([counselorId, filterId])
 }
 
 enum AvailabilityStatus {
@@ -220,9 +318,30 @@ model SessionBooking {
   // Set by the counselor from their portal once a session is confirmed —
   // immediately surfaced to the client on /upcoming and emailed to them.
   meetingLink   String?
+  // Set the first time the client taps this booking's meeting link from
+  // /upcoming — lets it move to /upcoming/past right away instead of
+  // waiting for preferredDate to roll into the past.
+  joinedAt      DateTime?
   // Set once the day-before push reminder (see the session-reminders cron)
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
+  // Set when status flips to CANCELLED (by either the client from
+  // /upcoming or the counselor from their portal) — see cancelWindowEnd
+  // usage in the trash-purge cron, which hard-deletes a cancelled booking
+  // a month after this timestamp. Null for anything never cancelled.
+  cancelledAt   DateTime?
+  // Site language active when this booking was made — the Paymob webhook
+  // that confirms payment runs server-to-server with no visitor cookie, so
+  // it needs this to send the confirmation email in the right language.
+  locale        String               @default("en")
+  // Hashed bearer token required to view/act on this booking's
+  // confirmation page as a guest — the id alone is a cuid(), not a
+  // cryptographically random secret, so it isn't a safe substitute for an
+  // ownership check (see order-access.ts). Null only for bookings created
+  // before this field existed, which fall back to the old id-only
+  // behavior; every booking created from here on always gets one. Logged-in
+  // clients bypass this entirely via an email match instead.
+  accessTokenHash String?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 }
@@ -241,6 +360,11 @@ model IntakeFormToken {
   counselorId    String
   counselorName  String
   counselorEmail String?
+  // Site language active when the session was requested — snapshotted so
+  // the intake page renders in the right language regardless of whether
+  // the device that later opens the emailed link carries the same locale
+  // cookie (e.g. the client opens it on a different browser or phone).
+  locale         String    @default("en")
   createdAt      DateTime  @default(now())
   expiresAt      DateTime
   usedAt         DateTime?
@@ -290,6 +414,32 @@ model ClientNote {
   updatedAt   DateTime  @updatedAt
 
   @@index([counselorId, clientEmail])
+}
+
+// A medication a psychiatrist has prescribed for a client, added from their
+// own /therapist portal (gated by Counselor.canPrescribeMedication — see
+// addMedication in therapist-actions.ts, which re-checks that flag server
+// side rather than trusting the UI). Visible to the client themselves on
+// their My Profile page (matched by email, the same client-identification
+// pattern ClientNote uses), and to every counselor treating them, not just
+// the one who added it, since a client may see more than one therapist.
+model Medication {
+  id           String    @id @default(cuid())
+  counselor    Counselor @relation(fields: [counselorId], references: [id])
+  counselorId  String
+  clientEmail  String
+  clientName   String
+  name         String
+  dosage       String?
+  instructions String?   @db.Text
+  // Discontinued rather than deleted, so the client's history isn't
+  // silently erased if a psychiatrist takes them off something.
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([counselorId, clientEmail])
+  @@index([clientEmail])
 }
 
 enum ToolkitItemKind {
@@ -441,6 +591,12 @@ model Event {
   meetingLink String?
   createdAt   DateTime    @default(now())
   rsvps       EventRSVP[]
+  // Optional Arabic translations, admin-entered per event, falling back to
+  // the English fields whenever empty — shown to viewers whose site locale
+  // is Arabic (bell/notification list) and used for the Arabic half of the
+  // locale-split "new event" push notification.
+  titleAr       String?
+  descriptionAr String?  @db.Text
 
   @@index([startAt])
 }
@@ -501,10 +657,19 @@ model BookingRequest {
   // Set by the counselor from their portal once a session is confirmed —
   // immediately surfaced to the client on /upcoming and emailed to them.
   meetingLink    String?
+  // Set the first time the client taps this booking's meeting link from
+  // /upcoming — lets it move to /upcoming/past right away instead of
+  // waiting for preferredDate to roll into the past.
+  joinedAt       DateTime?
   // Set once the day-before push reminder (see the session-reminders cron)
   // has gone out for this booking, so it's never sent twice.
   reminderSentAt DateTime?
+  // Same purpose as SessionBooking.cancelledAt — set when status flips to
+  // CANCELLED, read by the trash-purge cron to hard-delete a month later.
+  cancelledAt    DateTime?
   createdAt      DateTime      @default(now())
+
+  @@index([createdAt])
 }
 
 // A recurring weekly window (e.g. "Monday 09:00–17:00") a counselor has
@@ -517,8 +682,15 @@ model CounselorAvailability {
   id          String    @id @default(cuid())
   counselor   Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
   counselorId String
-  // 0 = Sunday … 6 = Saturday, matching JS Date#getDay().
-  dayOfWeek   Int
+  // Exactly one of dayOfWeek/date is set (enforced in
+  // therapist-availability-actions.ts, not at the DB level — same
+  // application-level-validation convention as the rest of this app).
+  // 0 = Sunday … 6 = Saturday, matching JS Date#getDay(). Set for a
+  // recurring weekly window; null for a one-off single-date window.
+  dayOfWeek   Int?
+  // "YYYY-MM-DD". Set for a one-off window opened for a specific day
+  // (today up to a month out); null for a recurring weekly window.
+  date        String?
   // 24-hour "HH:mm", e.g. "09:00" / "17:00". No timezone — like the rest of
   // this app, times are plain Cairo-local values, never converted.
   startTime   String
@@ -546,6 +718,8 @@ model WorkshopInquiry {
   message          String?       @db.Text
   status           InquiryStatus @default(NEW)
   createdAt        DateTime      @default(now())
+
+  @@index([createdAt])
 }
 
 enum ProductCategory {
@@ -562,12 +736,22 @@ model Product {
   durationDays  Int?
   active      Boolean         @default(true)
   sortOrder   Int             @default(0)
+  // Optional Arabic translations — null/empty falls back to the English
+  // field above, so the shop still renders in Arabic view before an admin
+  // fills these in.
+  titleAr       String?
+  descriptionAr String?         @db.Text
 
   variants   ProductVariant[]
   orderItems OrderItem[]
   promoCodes PromoCodeProduct[]
 }
 
+// EBOOK is intentionally kept even though nothing creates or sells that
+// format anymore (see the 20260917190000_remove_ebook_purchase_option
+// migration) — Postgres can't drop an enum value without recreating the
+// type, which fails if any row still references it, so it's left defined
+// but unused rather than risk that against data this schema can't inspect.
 enum ProductFormat {
   PHYSICAL
   EBOOK
@@ -580,10 +764,10 @@ model ProductVariant {
   format     ProductFormat
   priceEGP   Int
   sku        String        @unique
-  // Physical-stock count. Null means untracked/unlimited (e.g. the EBOOK
-  // format, which has no inventory to run out of). When set, the shop
-  // shows "Only N left" under a low-stock threshold and blocks purchase
-  // at 0.
+  // Physical-stock count. Null means untracked/unlimited. (Historically also
+  // used for the now-removed EBOOK format, which had no inventory to run
+  // out of.) When set, the shop shows "Only N left" under a low-stock
+  // threshold and blocks purchase at 0.
   stockCount Int?
 
   orderItems OrderItem[]
@@ -635,6 +819,29 @@ model PromoCode {
   // Empty = applies to every therapist's session price. Non-empty = only
   // valid when booking one of these counselors.
   counselors PromoCodeCounselor[]
+  // Present only for a code auto-generated by the referral system (see
+  // Referral below) — distinguishes a friend's welcome discount from an
+  // ordinary admin-authored code.
+  userReferral   UserReferral?
+}
+
+// One row per successfully activated invite-a-friend referral — created
+// only once the invited friend's PWA install actually completes (see
+// activateReferral() in referral-actions.ts), never for a click or a
+// signup alone. Existence of the row IS the "activated" state, so there's
+// no separate status field. promoCodeId is unique/1:1: each activation
+// mints exactly one single-use 20%-off code for the friend. Named
+// "UserReferral" (not "Referral") to avoid colliding with the unrelated
+// therapist-to-therapist Referral model above.
+model UserReferral {
+  id          String    @id @default(cuid())
+  referrer    User      @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  referrerId  String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id])
+  promoCodeId String    @unique
+  activatedAt DateTime  @default(now())
+
+  @@index([referrerId])
 }
 
 model PromoCodeProduct {
@@ -679,6 +886,14 @@ model Order {
   status          OrderStatus   @default(PENDING_PAYMENT)
   paymentRef      String?
   paymentNote     String?       @db.Text
+  // Site language active when this order was placed — the Paymob webhook
+  // that confirms payment runs server-to-server with no visitor cookie, so
+  // it needs this to send the confirmation email in the right language.
+  locale          String        @default("en")
+  // Hashed bearer token required to view/act on this order's confirmation
+  // page as a guest — see the matching field on SessionBooking above for
+  // the full reasoning. Logged-in customers bypass this via userId instead.
+  accessTokenHash String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -706,18 +921,24 @@ model ContactMessage {
   subject   String
   message   String   @db.Text
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model WorkshopInterestSignup {
   id        String   @id @default(cuid())
   email     String
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model ResourceNotifySignup {
   id        String   @id @default(cuid())
   email     String
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model JournalPrompt {
@@ -725,6 +946,10 @@ model JournalPrompt {
   dayNumber Int      @unique
   category  String
   text      String   @db.Text
+  // Optional Arabic translations, falling back to the English fields when
+  // empty — same pattern as Article/Product/Counselor above.
+  textAr     String? @db.Text
+  categoryAr String?
 
   entries JournalEntry[]
 }
@@ -753,6 +978,11 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+  // The site locale ("en"/"ar") active when this browser subscribed, kept
+  // in sync on every language switch (see setLocale) — lets a broadcast
+  // push pick the right language per recipient at send time, since a push
+  // payload is fixed the moment it's sent, unlike a page render.
+  locale    String   @default("en")
 }
 
 // One row per page a logged-in person opens — the only usage signal behind
@@ -828,11 +1058,26 @@ model Lead {
   notes         String?    @db.Text
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+
+  @@index([type, createdAt])
+  @@index([createdAt])
 }
 
-enum ResourcesPromoPlacement {
-  TOP
-  BOTTOM
+// One row per public-form submission attempt, used only to enforce the
+// 3-requests-per-10-minutes-per-IP limit shared across every unauthenticated
+// lead-capturing form (contact, workshop interest/inquiry, resource notify,
+// booking request) — see checkRateLimit() in anti-spam.ts. `key` is
+// "<routeKey>:<ip>" so each form has its own quota per IP. Rows past their
+// window are opportunistically deleted the next time that same key is hit,
+// which keeps this table's size roughly proportional to actual traffic
+// instead of growing without bound the way Lead/ContactMessage did during
+// the September 2026 spam-bot incident.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }
 
 // Sitewide feature toggles editable from /admin/settings, without a code
@@ -841,18 +1086,37 @@ enum ResourcesPromoPlacement {
 model SiteSettings {
   id                      String                  @id @default("singleton")
   arabicEnabled           Boolean                 @default(true)
-  // Placement/visibility of the promo card on the Resources page (currently
-  // promotes the journaling app; named generically since what it promotes
-  // has changed before and may again).
-  resourcesPromoPlacement ResourcesPromoPlacement @default(TOP)
-  resourcesPromoHidden    Boolean                 @default(false)
   // Article slugs hidden from the Resources listing. Still reachable at
-  // their direct URL — this is an archive toggle, not a delete.
+  // their direct URL — this is an archive toggle, not a delete. Edited from
+  // /admin/resources alongside the ResourceBlock ordering below, even
+  // though it lives on this row rather than its own.
   hiddenArticleSlugs      String[]                @default([])
   // Hides the "Let it out. One page at a time." teal card / journal-app
   // button on the homepage.
   hideJournalTaglineButton Boolean                @default(false)
   updatedAt               DateTime                @updatedAt
+}
+
+enum ResourceBlockKind {
+  JOURNAL_PROMO
+  CBT_PROMO
+  BREATHING_PROMO
+  ASSESSMENTS_PROMO
+  ARTICLES
+}
+
+// One row per section on the /resources page (the journal/CBT/breathing/
+// assessments promo cards, plus the article list itself) — lets an admin
+// hide or reorder any of them from /admin/resources. `kind` is the row's
+// own primary key since this is a small fixed set, never admin-created or
+// deleted. Each promo kind's editable title/label/body/CTA text lives in
+// SiteText (see site-text.ts), not here — this table is purely about
+// visibility and order; ARTICLES ignores SiteText entirely since the
+// article list has no single editable title/body of its own.
+model ResourceBlock {
+  kind      ResourceBlockKind @id
+  hidden    Boolean           @default(false)
+  sortOrder Int               @default(0)
 }
 
 model Article {
@@ -871,6 +1135,14 @@ model Article {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  // Optional Arabic translations — same shape as their English
+  // counterparts above. Null/empty falls back to English, so an article
+  // still renders in Arabic view before an admin fills these in.
+  titleAr     String?
+  excerptAr   String?  @db.Text
+  sectionsAr  Json?
+  checkInsAr  Json?
+  categoryAr  String?
 }
 
 // Singleton row holding the counseling intake form's questions (see
@@ -878,9 +1150,53 @@ model Article {
 // from /admin/intake-form instead of being hardcoded, since it's clinical
 // content the practice owner needs to be able to adjust without a deploy.
 model IntakeFormConfig {
-  id        String   @id @default("singleton")
-  sections  Json
-  updatedAt DateTime @updatedAt
+  id         String   @id @default("singleton")
+  sections   Json
+  // Optional Arabic translation of `sections`, same IntakeSection[] shape —
+  // admin-editable from /admin/intake-form. Null/missing means no Arabic
+  // version has been entered yet, so Arabic-locale clients still see the
+  // English questions (never a blank form).
+  sectionsAr Json?
+  updatedAt  DateTime @updatedAt
+}
+
+// Singleton row holding the "in-between sessions" reflection sheet's
+// questions (a flat, ordered list — see src/lib/reflection-sheet-config.ts
+// for the ReflectionQuestion[] shape). Admin-editable from
+// /admin/reflection-sheet. Seeded with a starter set of prompts via
+// migration (see 20260827190000_add_reflection_sheet), since this needs to
+// exist in production without an admin visiting the dashboard first.
+model ReflectionSheetConfig {
+  id          String   @id @default("singleton")
+  questions   Json
+  // Optional, fully independent Arabic version of `questions` (own
+  // question count/order — nothing requires it to mirror the English
+  // list, since answers are stored purely on the client's own device and
+  // never parsed against this config server-side). Null/empty falls back
+  // to English.
+  questionsAr Json?
+  updatedAt   DateTime @updatedAt
+}
+
+// One row per counseling session that has already prompted its client to
+// fill out the private "in-between sessions" reflection sheet — created by
+// the reflection-prompts cron once a session's day has passed. Doubles as
+// both the "already notified" guard (via the unique constraint below) and
+// the in-app notification record surfaced on /upcoming, read-tracked the
+// same way as sessions/events (see NotificationRead, itemId
+// "reflection-<id>"). The reflection sheet's actual answers are never
+// stored here or anywhere server-side — see src/lib/local-reflection.ts.
+model ReflectionPrompt {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  // Which booking triggered this — "session" (SessionBooking) or
+  // "request" (BookingRequest) — kept for debugging/traceability only.
+  sourceKind String
+  sourceId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([sourceKind, sourceId])
 }
 
 // Admin-editable overrides for specific English UI strings, keyed by
@@ -940,4 +1256,133 @@ model SupportChat {
 
   @@index([userId])
   @@index([status])
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  SECURITY
+}
+
+// A permanent record of admin mutations, admin login activity, and
+// notable background-job outcomes — the source for both the Audit Logs
+// page (the full, filterable history) and the Notification Center (a
+// curated feed of the same rows). actorId deliberately uses SetNull, not
+// the CASCADE every other user-owned table uses: this is the one place an
+// account's own deletion (or someone else's account being deleted by an
+// admin) should NOT take the historical record with it — actorEmail is
+// snapshotted at write time so a row still reads sensibly once actorId
+// has gone null.
+model AuditLog {
+  id         String        @id @default(cuid())
+  actor      User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorId    String?
+  actorEmail String?
+  // Dot-namespaced event key, e.g. "order.status_changed",
+  // "admin.login_failed", "cron.journal_reminder" — grouped/filtered by
+  // this in both the Audit Logs and Notification Center pages.
+  action     String
+  targetType String?
+  targetId   String?
+  // Short human-readable line generated once at write time (e.g. "Marked
+  // order #A1B2C3D4 as Shipped") so every page that lists these rows can
+  // render directly without re-deriving text from action/metadata per row
+  // type.
+  summary    String
+  // Small structured detail alongside summary — e.g. {from: "PENDING",
+  // to: "SHIPPED"} for a status change. Never the full before/after of a
+  // large record, and never raw request bodies (this can hold arbitrary
+  // admin-entered text, so it's for display only, never re-interpreted as
+  // code or HTML).
+  metadata   Json?
+  severity   AuditSeverity @default(INFO)
+  ip         String?
+  createdAt  DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+}
+
+// A 24-hour undo buffer for admin deletes — see src/lib/trash.ts. Every
+// admin delete this app supports (see RESTORE_HANDLERS there) writes one
+// row here *before* the real delete, holding a full JSON snapshot of the
+// row (and, for models with real children like Order/OrderItem, those
+// children too) — not a soft-delete flag on the original table, so no
+// query anywhere else in the app needs to remember to filter these out.
+// A cron (api/cron/trash-purge, see vercel.json) hard-deletes rows once
+// `deletedAt` is more than 24h old; restoring recreates the original
+// row(s) with their original id via RESTORE_HANDLERS and removes this
+// row. deletedById deliberately uses SetNull, same reasoning as
+// AuditLog.actorId — deletedByEmail is snapshotted so the row still reads
+// sensibly once the admin's own account is gone.
+model TrashedItem {
+  id             String   @id @default(cuid())
+  // The original Prisma model name (e.g. "Order", "Product") — looked up
+  // against RESTORE_HANDLERS to know how to recreate the row(s).
+  modelName      String
+  // The original row's id, kept even after data is JSON — used to restore
+  // with the same id (so anything that referenced it, e.g. a
+  // NotificationRead itemId, still resolves) and shown in the UI.
+  originalId     String
+  // Short human-readable line for the Recently Deleted list (e.g. "Order
+  // #A1B2C3D4 · 450 EGP"), generated once at write time — same convention
+  // as AuditLog.summary.
+  summary        String
+  // The full row (Date fields as ISO strings) — and, for models with
+  // real children, `{ ...row, _children: [...] }` — enough for the
+  // matching RESTORE_HANDLERS entry to recreate it exactly.
+  data           Json
+  deletedBy      User?    @relation(fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedById    String?
+  deletedByEmail String?
+  deletedAt      DateTime @default(now())
+
+  @@index([deletedAt])
+  @@index([modelName, originalId])
+}
+
+// One row per email address that has ever visited the "manage email
+// preferences" page (linked from the footer of every customer-facing
+// email, see emailShell in src/lib/email.ts) and changed something — a
+// missing row means "no preference set", i.e. receive everything. Keyed
+// by the raw lowercased email, not User.id, so it works the same way for
+// a guest who only ever submitted a contact form as for a full account
+// holder. notificationsOptOut only gates the one genuinely optional email
+// this app sends (a counselor assigning a resource) — every other email
+// (OTP, password reset, order/booking confirmations, meeting links,
+// intake requests) is essential to something the recipient asked for and
+// always sends regardless of this flag; the preferences page says so.
+model EmailPreference {
+  email               String   @id
+  notificationsOptOut Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+}
+
+// Which part of the app a Feedback row is about — the picker on the
+// /feedback page, and the filter on the admin feedback list.
+enum FeedbackService {
+  COUNSELING
+  JOURNALS
+  WORKSHOPS
+  RESOURCES
+  SHOP
+  APP_GENERAL
+}
+
+// A star rating + optional comment about one service, submitted from
+// /feedback. Logged-in users only (see requireUser() in
+// feedback-actions.ts), so there's always a real account behind every
+// row — no honeypot/rate-limit needed here the way the public
+// lead-capturing forms need them.
+model Feedback {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  service   FeedbackService
+  rating    Int
+  comment   String?         @db.Text
+  createdAt DateTime        @default(now())
+
+  @@index([createdAt])
 }

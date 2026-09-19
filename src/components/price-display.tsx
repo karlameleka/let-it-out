@@ -3,26 +3,19 @@
 import { formatEGP } from "@/lib/format";
 import { useCurrency } from "@/lib/currency-context";
 
+/** Shows a price in the visitor's local currency once they've picked a
+ * non-Egypt country (at signup or via the country picker), falling back to
+ * EGP otherwise. Never shows both — Paymob still charges the exact EGP
+ * amount regardless of what's displayed here. */
 export default function PriceDisplay({
   egpAmount,
   className,
-  convertedClassName,
 }: {
   egpAmount: number;
   className?: string;
-  convertedClassName?: string;
 }) {
   const { formatConverted } = useCurrency();
   const converted = formatConverted(egpAmount);
 
-  return (
-    <span className={className}>
-      {formatEGP(egpAmount)}
-      {converted && (
-        <span className={convertedClassName ?? "ml-1.5 text-ink/40"}>
-          (&asymp; {converted})
-        </span>
-      )}
-    </span>
-  );
+  return <span className={className}>{converted ?? formatEGP(egpAmount)}</span>;
 }

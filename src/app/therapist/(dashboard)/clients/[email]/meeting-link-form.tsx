@@ -40,7 +40,7 @@ export default function MeetingLinkForm({
         </button>
       </div>
       {state?.error && <p className="mt-1.5 text-xs text-red-600">{state.error}</p>}
-      {state?.success && <p className="mt-1.5 text-xs text-brand-600">Saved — the client has been emailed the link.</p>}
+      {state?.success && <p className="mt-1.5 text-xs text-brand-600">Saved, the client has been emailed the link.</p>}
     </form>
   );
 }

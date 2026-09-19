@@ -1,19 +1,20 @@
 import { prisma } from "@/lib/db";
-import { updateVariantStock, updateProductPlacement } from "@/lib/admin-actions";
+import { updateVariantStock, updateProductPlacement, updateProductArabicContent, deleteProduct } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 export default async function AdminProductsPage() {
   const products = await prisma.product.findMany({
     orderBy: { sortOrder: "asc" },
-    include: { variants: true },
+    include: { variants: true, _count: { select: { orderItems: true } } },
   });
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink/60">
-        Set a stock number for physical journals. Leave it blank for unlimited/untracked (that&apos;s the
-        default for ebooks). The shop shows &ldquo;Only N left&rdquo; at 5 or fewer, and blocks purchase at 0.
-        Uncheck &ldquo;Visible&rdquo; to archive a product without deleting it.
+        Set a stock number for physical journals. Leave it blank for unlimited/untracked. The shop shows
+        &ldquo;Only N left&rdquo; at 5 or fewer, and blocks purchase at 0. Uncheck &ldquo;Visible&rdquo; to
+        archive a product without deleting it.
       </p>
       {products.map((product) => (
         <div key={product.id} className="rounded-2xl border border-brand-100 bg-white p-5">
@@ -90,10 +91,68 @@ export default async function AdminProductsPage() {
                     )}
                   </div>
                 ) : (
-                  <span className="text-xs text-ink/40">Digital — no inventory to track</span>
+                  <span className="text-xs text-ink/40">Digital, no inventory to track</span>
                 )}
               </form>
             ))}
+          </div>
+          <form
+            action={updateProductArabicContent}
+            className="mt-3 space-y-2 rounded-xl border border-dashed border-brand-200 bg-brand-50/40 p-4"
+          >
+            <input type="hidden" name="productId" value={product.id} />
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">
+              Arabic (optional, falls back to English until filled in)
+            </p>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${product.id}-titleAr`}>
+                Title
+              </label>
+              <input
+                id={`${product.id}-titleAr`}
+                name="titleAr"
+                dir="rtl"
+                defaultValue={product.titleAr ?? ""}
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor={`${product.id}-descriptionAr`}>
+                Description
+              </label>
+              <textarea
+                id={`${product.id}-descriptionAr`}
+                name="descriptionAr"
+                dir="rtl"
+                rows={3}
+                defaultValue={product.descriptionAr ?? ""}
+                className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Save Arabic content
+            </button>
+          </form>
+          <div className="mt-3 border-t border-brand-50 pt-3">
+            {product._count.orderItems > 0 ? (
+              <p className="text-xs text-ink/40">
+                Has order history, can&rsquo;t be deleted. Uncheck &ldquo;Visible&rdquo; above to archive
+                instead.
+              </p>
+            ) : (
+              <form action={deleteProduct}>
+                <input type="hidden" name="productId" value={product.id} />
+                <ConfirmSubmitButton
+                  confirmMessage={`Delete ${product.title}? This removes it permanently. It has no order history yet, so nothing else is affected.`}
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                >
+                  Delete product
+                </ConfirmSubmitButton>
+              </form>
+            )}
           </div>
         </div>
       ))}

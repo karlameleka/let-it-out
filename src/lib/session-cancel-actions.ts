@@ -19,7 +19,7 @@ export async function cancelSessionBooking(id: string): Promise<CancelResult> {
     return { error: "This session is less than 24 hours away and can no longer be cancelled online." };
   }
 
-  await prisma.sessionBooking.update({ where: { id }, data: { status: "CANCELLED" } });
+  await prisma.sessionBooking.update({ where: { id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
 
   await sendSupportNotification({
     subject: "A client cancelled their session booking",
@@ -52,7 +52,7 @@ export async function cancelBookingRequest(id: string): Promise<CancelResult> {
     return { error: "This session is less than 24 hours away and can no longer be cancelled online." };
   }
 
-  await prisma.bookingRequest.update({ where: { id }, data: { status: "CANCELLED" } });
+  await prisma.bookingRequest.update({ where: { id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
 
   await sendSupportNotification({
     subject: "A client cancelled their session request",

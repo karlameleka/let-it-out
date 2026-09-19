@@ -22,7 +22,7 @@ const EN_TOPICS: WorkshopTopic[] = [
     title: "Burnout Prevention",
     description:
       "Helping teams recognize early signs of burnout and build boundaries and habits that protect long-term wellbeing.",
-    stat: "Nearly 1 in 3 GCC employees report burnout symptoms, and 36% intend to leave their job — over twice the global rate.",
+    stat: "Nearly 1 in 3 GCC employees report burnout symptoms, and 36% intend to leave their job, over twice the global rate.",
     statSource: "McKinsey Health Institute",
   },
   {
@@ -38,7 +38,7 @@ const EN_TOPICS: WorkshopTopic[] = [
     title: "Parenting 101",
     description:
       "Foundational, psychology-backed guidance for parents navigating the everyday emotional needs of their children.",
-    stat: "At least 5% of parents worldwide experience parental burnout — often invisible until it affects the whole family.",
+    stat: "At least 5% of parents worldwide experience parental burnout, often invisible until it affects the whole family.",
     statSource: "Roskam & Mikolajczak, 42-country international study",
   },
   {
@@ -53,7 +53,7 @@ const EN_TOPICS: WorkshopTopic[] = [
     slug: "self-expression-through-art",
     title: "Self-Expression Through Art",
     description:
-      "An interactive, creative workshop using art as a tool for emotional processing and self-exploration — no artistic experience required.",
+      "An interactive, creative workshop using art as a tool for emotional processing and self-exploration, no artistic experience required.",
     stat: "Across 35 studies and 3,000+ participants, visual art therapy produced a significant, measurable drop in anxiety symptoms.",
     statSource: "Huang et al., meta-analysis, Journal of Psychiatric and Mental Health Nursing",
   },
@@ -81,7 +81,7 @@ const AR_TOPICS: WorkshopTopic[] = [
     slug: "burnout-prevention",
     title: "الوقاية من الإرهاق الوظيفي",
     description: "مساعدة الفرق على التعرف على العلامات المبكرة للإرهاق الوظيفي، وبناء حدود وعادات تحمي رفاهيتهم على المدى الطويل.",
-    stat: "ما يقارب 1 من كل 3 موظفين في دول الخليج يُبلغون عن أعراض إرهاق وظيفي، و36% ينوون ترك وظائفهم — أكثر من ضعف المعدل العالمي.",
+    stat: "ما يقارب 1 من كل 3 موظفين في دول الخليج يُبلغون عن أعراض إرهاق وظيفي، و36% ينوون ترك وظائفهم، أكثر من ضعف المعدل العالمي.",
     statSource: "McKinsey Health Institute",
   },
   {
@@ -95,7 +95,7 @@ const AR_TOPICS: WorkshopTopic[] = [
     slug: "parenting-101",
     title: "أساسيات التربية",
     description: "إرشادات أساسية مبنية على علم النفس للآباء الذين يتعاملون مع الاحتياجات العاطفية اليومية لأطفالهم.",
-    stat: "5% على الأقل من الآباء حول العالم يعانون من إرهاق الأبوة — وغالبًا ما يكون غير مرئي حتى يؤثر على الأسرة بأكملها.",
+    stat: "5% على الأقل من الآباء حول العالم يعانون من إرهاق الأبوة، وغالبًا ما يكون غير مرئي حتى يؤثر على الأسرة بأكملها.",
     statSource: "Roskam & Mikolajczak, 42-country international study",
   },
   {
@@ -108,7 +108,7 @@ const AR_TOPICS: WorkshopTopic[] = [
   {
     slug: "self-expression-through-art",
     title: "التعبير عن الذات من خلال الفن",
-    description: "ورشة عمل تفاعلية وإبداعية تستخدم الفن كأداة للمعالجة العاطفية واكتشاف الذات — لا حاجة لخبرة فنية سابقة.",
+    description: "ورشة عمل تفاعلية وإبداعية تستخدم الفن كأداة للمعالجة العاطفية واكتشاف الذات، لا حاجة لخبرة فنية سابقة.",
     stat: "عبر 35 دراسة وأكثر من 3000 مشارك، أدى العلاج بالفن البصري إلى انخفاض ملحوظ وقابل للقياس في أعراض القلق.",
     statSource: "Huang et al., meta-analysis, Journal of Psychiatric and Mental Health Nursing",
   },

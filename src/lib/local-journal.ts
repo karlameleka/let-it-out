@@ -1,6 +1,8 @@
 "use client";
 
 import { MOODS } from "@/lib/moods";
+import type { Locale } from "@/lib/i18n/locale";
+import { markOnboardingJournalStepDone } from "@/lib/onboarding";
 
 // Device-only journal storage. Entries never leave the browser: content and
 // any attached photo are encrypted with AES-256-GCM using a key that is
@@ -30,7 +32,7 @@ export type JournalStats = { total: number; streak: number; totalWords: number }
 
 export type JournalFeedData = { entries: JournalFeedEntry[]; stats: JournalStats };
 
-export type JournalEntryDetail = JournalFeedEntry;
+export type JournalEntryDetail = JournalFeedEntry & { updatedAt: string };
 
 export type JournalExportEntry = JournalFeedEntry & { updatedAt: string };
 
@@ -45,6 +47,17 @@ export type MoodPatterns = {
   heatmap: { date: string; moods: string[] }[];
 };
 
+export type MoodCalendarDay = { date: string; day: number; moods: string[] };
+
+export type MoodCalendarMonth = {
+  year: number;
+  month: number; // 0-11
+  leadingBlanks: number;
+  days: MoodCalendarDay[];
+  frequency: { id: string; label: string; color: string; count: number; percent: number }[];
+  totalEntries: number;
+};
+
 type StoredEntry = {
   id: string;
   encContent: { iv: string; data: string };
@@ -57,6 +70,11 @@ type StoredEntry = {
   createdAt: string;
   updatedAt: string;
   prompt: JournalPrompt;
+  // Quick mood check-ins (see logMoodCheckIn) reuse this same store so they
+  // benefit from the same encryption and feed into the same mood-pattern
+  // aggregation, but are tagged so they can be excluded from the journal
+  // feed/streak/word-count — they're moods logged on their own, not entries.
+  kind?: "checkIn";
 };
 
 function normalizeMoods(raw: string[] | string | null | undefined): string[] {
@@ -180,7 +198,7 @@ function computeStats(entries: { createdAt: string; content: string }[]): Journa
 export async function getFeedData(userId: string): Promise<JournalFeedData> {
   const db = await openDb(userId);
   const key = await getKey(db);
-  const stored = await getAllStored(db);
+  const stored = (await getAllStored(db)).filter((e) => e.kind !== "checkIn");
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(stored.map((s) => decryptEntry(key, s)));
   return { entries, stats: computeStats(entries) };
@@ -191,7 +209,7 @@ export async function getEntryDetail(userId: string, id: string): Promise<Journa
   const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
   if (!stored) return null;
   const key = await getKey(db);
-  return decryptEntry(key, stored);
+  return { ...(await decryptEntry(key, stored)), updatedAt: stored.updatedAt };
 }
 
 export async function createEntry(
@@ -212,6 +230,53 @@ export async function createEntry(
     prompt: input.prompt,
   };
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+  // Entry content itself never leaves the browser, but the fact that a
+  // first entry now exists is exactly what the onboarding checklist's
+  // "write your first journal entry" step needs to know — see
+  // src/lib/onboarding.ts. Fire-and-forget, no-ops after the first entry.
+  markOnboardingJournalStepDone().catch(() => {});
+}
+
+/** Logs a mood on its own, separate from a journal entry — e.g. from the
+ * emotions wheel on My Profile. Stored in the same encrypted store so it
+ * feeds into mood patterns/calendar like any other mood, but tagged so it
+ * never shows up in the journal feed or counts toward streaks/word totals. */
+export async function logMoodCheckIn(userId: string, moods: string[]): Promise<void> {
+  const db = await openDb(userId);
+  const key = await getKey(db);
+  const now = new Date().toISOString();
+  const stored: StoredEntry = {
+    id: crypto.randomUUID(),
+    encContent: await encryptString(key, ""),
+    encPhoto: null,
+    mood: moods,
+    bookmarked: false,
+    createdAt: now,
+    updatedAt: now,
+    prompt: null,
+    kind: "checkIn",
+  };
+  await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+}
+
+/** Edits an existing entry's content/moods/photo in place — the original
+ * prompt and createdAt stay fixed, only updatedAt moves. */
+export async function updateEntry(
+  userId: string,
+  id: string,
+  input: { content: string; moods: string[]; photoUrl: string | null },
+): Promise<{ success: boolean }> {
+  const db = await openDb(userId);
+  const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
+  if (!stored) return { success: false };
+
+  const key = await getKey(db);
+  stored.encContent = await encryptString(key, input.content);
+  stored.encPhoto = input.photoUrl ? await encryptString(key, input.photoUrl) : null;
+  stored.mood = input.moods;
+  stored.updatedAt = new Date().toISOString();
+  await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+  return { success: true };
 }
 
 export async function toggleBookmark(userId: string, id: string): Promise<{ success: boolean; bookmarked?: boolean }> {
@@ -233,7 +298,7 @@ export async function deleteEntry(userId: string, id: string): Promise<{ success
 export async function exportEntries(userId: string): Promise<JournalExportData> {
   const db = await openDb(userId);
   const key = await getKey(db);
-  const stored = await getAllStored(db);
+  const stored = (await getAllStored(db)).filter((e) => e.kind !== "checkIn");
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(
     stored.map(async (s) => ({ ...(await decryptEntry(key, s)), updatedAt: s.updatedAt })),
@@ -298,7 +363,7 @@ export async function migrateFromServer(
 
 const HEATMAP_WEEKS = 12;
 
-export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
+export async function getMoodPatterns(userId: string, locale: Locale = "en"): Promise<MoodPatterns> {
   const db = await openDb(userId);
   const stored = await getAllStored(db);
 
@@ -324,7 +389,7 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
 
   const frequency = MOODS.map((m) => ({
     id: m.id,
-    label: m.label,
+    label: locale === "ar" ? m.labelAr : m.label,
     color: m.color,
     count: counts.get(m.id) ?? 0,
     percent: totalWithMood > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalWithMood) * 100) : 0,
@@ -345,4 +410,63 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
   }
 
   return { frequency, topMood, totalWithMood, heatmap };
+}
+
+/** One calendar month's worth of moods — for the calendar view on the
+ * patterns page, navigable by month rather than a fixed rolling window.
+ * `leadingBlanks` is how many empty cells the grid needs before day 1
+ * (0 = the month starts on a Sunday). */
+export async function getMoodCalendarMonth(
+  userId: string,
+  year: number,
+  month: number,
+  locale: Locale = "en",
+): Promise<MoodCalendarMonth> {
+  const db = await openDb(userId);
+  const stored = await getAllStored(db);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingBlanks = new Date(year, month, 1).getDay();
+
+  const moodsByDate = new Map<string, string[]>();
+  const counts = new Map<string, number>();
+  for (const e of stored) {
+    const key = e.createdAt.slice(0, 10);
+    const [y, m] = key.split("-").map(Number);
+    if (y !== year || m !== month + 1) continue;
+    const moods = normalizeMoods(e.mood);
+    if (moods.length === 0) continue;
+    const existing = moodsByDate.get(key);
+    if (existing) existing.push(...moods);
+    else moodsByDate.set(key, [...moods]);
+    for (const mood of moods) counts.set(mood, (counts.get(mood) ?? 0) + 1);
+  }
+  const totalEntries = [...counts.values()].reduce((a, b) => a + b, 0);
+
+  const frequency = MOODS.map((m) => ({
+    id: m.id,
+    label: locale === "ar" ? m.labelAr : m.label,
+    color: m.color,
+    count: counts.get(m.id) ?? 0,
+    percent: totalEntries > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalEntries) * 100) : 0,
+  }))
+    .filter((m) => m.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const days: MoodCalendarDay[] = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    days.push({ date: key, day: d, moods: moodsByDate.get(key) ?? [] });
+  }
+
+  return { year, month, leadingBlanks, days, frequency, totalEntries };
+}
+
+/** Whether this account has ever logged a mood, anywhere in its history —
+ * used to tell "nothing logged this month, try another one" apart from
+ * "no mood data at all yet" on the calendar view. */
+export async function hasAnyMoodEntries(userId: string): Promise<boolean> {
+  const db = await openDb(userId);
+  const stored = await getAllStored(db);
+  return stored.some((e) => normalizeMoods(e.mood).length > 0);
 }

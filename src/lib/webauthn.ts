@@ -81,7 +81,7 @@ export async function verifyWebAuthnRegistration(
   if (!user) return { success: false, error: "Please log in again." };
 
   const expectedChallenge = await getWebAuthnChallenge(user.userId, "registration");
-  if (!expectedChallenge) return { success: false, error: "That setup attempt expired — try again." };
+  if (!expectedChallenge) return { success: false, error: "That setup attempt expired, try again." };
   await clearWebAuthnChallenge();
 
   const { rpID, origin } = await getRpIdAndOrigin();
@@ -147,7 +147,7 @@ export async function verifyJournalUnlockBiometric(
   if (!user) return { success: false, error: "Please log in again." };
 
   const expectedChallenge = await getWebAuthnChallenge(user.userId, "authentication");
-  if (!expectedChallenge) return { success: false, error: "That unlock attempt expired — try again." };
+  if (!expectedChallenge) return { success: false, error: "That unlock attempt expired, try again." };
   await clearWebAuthnChallenge();
 
   const stored = await prisma.webAuthnCredential.findUnique({ where: { credentialId: response.id } });
@@ -173,7 +173,7 @@ export async function verifyJournalUnlockBiometric(
     return { success: false, error: err instanceof Error ? err.message : "Verification failed." };
   }
 
-  if (!verification.verified) return { success: false, error: "Couldn't verify — try again or use your password." };
+  if (!verification.verified) return { success: false, error: "Couldn't verify, try again or use your password." };
 
   // Anti-replay: an authenticator's counter must strictly increase on
   // every use, so persisting the new value is what makes a captured old

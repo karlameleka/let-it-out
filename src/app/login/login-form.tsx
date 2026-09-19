@@ -5,15 +5,18 @@ import Link from "next/link";
 import { loginAction } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
 import GoogleAuthButton from "@/components/google-auth-button";
+import AppleAuthButton from "@/components/apple-auth-button";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function LoginForm({
   dict,
   googleEnabled = false,
+  appleEnabled = false,
   error,
 }: {
   dict: Dictionary;
   googleEnabled?: boolean;
+  appleEnabled?: boolean;
   error?: string;
 }) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
@@ -21,9 +24,12 @@ export default function LoginForm({
 
   return (
     <div className="space-y-4">
-      {googleEnabled && (
+      {(googleEnabled || appleEnabled) && (
         <>
-          <GoogleAuthButton label={t.continueWithGoogle} />
+          <div className="space-y-2.5">
+            {appleEnabled && <AppleAuthButton label={t.continueWithApple} />}
+            {googleEnabled && <GoogleAuthButton label={t.continueWithGoogle} />}
+          </div>
           <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-ink/40">
             <span className="h-px flex-1 bg-brand-100" />
             {t.orDivider}
@@ -35,13 +41,13 @@ export default function LoginForm({
 
       <form action={formAction} className="space-y-4">
         <div>
-          <label htmlFor="identifier" className="mb-1 block text-sm font-medium text-ink/80">
-            {t.emailOrPhone}
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-ink/80">
+            {dict.forms.email}
           </label>
           <input
-            id="identifier"
-            name="identifier"
-            type="text"
+            id="email"
+            name="email"
+            type="email"
             autoComplete="username"
             required
             className="w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"

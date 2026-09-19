@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 import { counselorMatchesSearch } from "@/lib/counseling-search-keywords";
 
 type Counselor = {
@@ -14,8 +15,19 @@ type Counselor = {
   credentials: string;
   specialties: string[];
   languages: string[];
+  displayName: string;
+  displayCredentials: string;
+  displaySpecialties: string[];
+  displayLanguages: string[];
   photoUrl: string | null;
   availabilityStatus: "AVAILABLE" | "WAITLIST" | "UNAVAILABLE";
+  filterIds: string[];
+};
+
+type CounselingFilter = {
+  id: string;
+  label: string;
+  labelAr: string | null;
 };
 
 function AvailabilityBadge({
@@ -39,17 +51,43 @@ function AvailabilityBadge({
 
 export default function CounselorFinder({
   counselors,
+  filters,
   dict,
+  locale,
 }: {
   counselors: Counselor[];
+  filters: CounselingFilter[];
   dict: Dictionary;
+  locale: Locale;
 }) {
   const t = dict.counseling;
   const [query, setQuery] = useState("");
+  const [activeFilterIds, setActiveFilterIds] = useState<string[]>([]);
+
+  function toggleFilter(id: string) {
+    setActiveFilterIds((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
+  }
+
+  // Read after mount (not as lazy initial state) so server and first
+  // client render match, same pattern as the other viewport/preference
+  // reads in this app.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMobile(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   const results = useMemo(
-    () => counselors.filter((c) => counselorMatchesSearch(c, query)),
-    [counselors, query],
+    () =>
+      counselors.filter(
+        (c) =>
+          activeFilterIds.every((id) => c.filterIds.includes(id)) && counselorMatchesSearch(c, query),
+      ),
+    [counselors, query, activeFilterIds],
   );
 
   return (
@@ -60,7 +98,7 @@ export default function CounselorFinder({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.searchPlaceholder}
+          placeholder={isMobile ? t.searchPlaceholderShort : t.searchPlaceholder}
           className="w-full rounded-2xl border border-brand-200 bg-white ps-11 pe-11 py-3.5 text-sm font-medium text-ink/80 outline-none transition-colors placeholder:text-ink/40 focus:border-brand-400"
         />
         {query && (
@@ -74,6 +112,30 @@ export default function CounselorFinder({
           </button>
         )}
       </div>
+
+      {filters.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {filters.map((f) => {
+            const active = activeFilterIds.includes(f.id);
+            const label = locale === "ar" && f.labelAr ? f.labelAr : f.label;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => toggleFilter(f.id)}
+                aria-pressed={active}
+                className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  active
+                    ? "border-brand-600 bg-brand-600 text-white"
+                    : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {results.length === 0 ? (
         <p className="mt-8 text-sm text-ink/60">
@@ -94,35 +156,35 @@ export default function CounselorFinder({
               {c.photoUrl ? (
                 <Image
                   src={c.photoUrl}
-                  alt={c.name}
+                  alt={c.displayName}
                   width={56}
                   height={56}
                   className="h-14 w-14 rounded-full border-2 border-brand-200 object-cover transition-colors duration-300 group-hover:border-white/30 group-active:border-white/30"
                 />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brand-200 bg-brand-50 font-display text-lg font-semibold text-brand-700 transition-colors duration-300 group-hover:border-white/30 group-hover:bg-white/10 group-hover:text-white group-active:border-white/30 group-active:bg-white/10 group-active:text-white">
-                  {c.name.split(" ").map((n) => n[0]).join("")}
+                  {c.displayName.split(" ").map((n) => n[0]).join("")}
                 </div>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.name}</h3>
+                <h3 className="font-display text-lg font-semibold text-brand-900 transition-colors duration-300 group-hover:text-white group-active:text-white">{c.displayName}</h3>
                 <AvailabilityBadge status={c.availabilityStatus} dict={t} />
               </div>
-              <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.credentials}</p>
+              <p className="mt-1 text-sm text-ink/60 transition-colors duration-300 group-hover:text-white/70 group-active:text-white/70">{c.displayCredentials}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {c.specialties.slice(0, 3).map((s) => (
-                  <span key={s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors duration-300 group-hover:bg-white/10 group-hover:text-white group-active:bg-white/10 group-active:text-white">
+                {c.displaySpecialties.slice(0, 3).map((s, i) => (
+                  <span key={c.specialties[i] ?? s} className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors duration-300 group-hover:bg-white/10 group-hover:text-white group-active:bg-white/10 group-active:text-white">
                     {s}
                   </span>
                 ))}
               </div>
-              {c.languages.length > 0 && (
+              {c.displayLanguages.length > 0 && (
                 <p className="mt-3 text-xs text-ink/50 transition-colors duration-300 group-hover:text-white/60 group-active:text-white/60">
-                  <span className="font-medium text-ink/60 transition-colors duration-300 group-hover:text-white/80 group-active:text-white/80">{t.speaks}:</span> {c.languages.join(", ")}
+                  <span className="font-medium text-ink/60 transition-colors duration-300 group-hover:text-white/80 group-active:text-white/80">{t.speaks}:</span> {c.displayLanguages.join(locale === "ar" ? "، " : ", ")}
                 </p>
               )}
               <p className="mt-4 text-sm font-medium text-brand-600 link-grow w-fit transition-colors duration-300 group-hover:text-white group-active:text-white">
-                {t.viewProfileCta} &rarr;
+                {t.viewProfileCta} <span className="inline-block rtl:-scale-x-100">&rarr;</span>
               </p>
             </Link>
           ))}

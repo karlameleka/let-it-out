@@ -39,7 +39,7 @@ export default async function TherapistDashboardLayout({ children }: { children:
           </form>
         </div>
 
-        <TherapistNav />
+        <TherapistNav canEditFormsConfig={counselor.canEditFormsConfig} />
         <div className="mt-8 pb-16">{children}</div>
       </Container>
     </div>

@@ -67,7 +67,7 @@ export async function confirmTotpEnrollment(
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user?.totpSecret) {
-    return { error: "Start setup again — no pending authenticator to confirm." };
+    return { error: "Start setup again, no pending authenticator to confirm." };
   }
 
   if (!verifyTotpCode(decryptTotpSecret(user.totpSecret), parsed.data.code)) {
