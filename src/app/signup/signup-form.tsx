@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, Circle } from "lucide-react";
+import { isValidPhoneNumber } from "libphonenumber-js/mobile";
 import {
   requestEmailVerification,
   verifyEmailVerification,
@@ -430,7 +431,7 @@ export default function SignupForm({
       case "country":
         if (!country.trim()) return t.countryRequired;
         if (!phoneCountryCode || !phoneNumber.trim()) return t.phoneRequired;
-        if (phoneNumber.replace(/\D/g, "").length < 6) return t.phoneInvalid;
+        if (!isValidPhoneNumber(`${phoneCountryCode}${phoneNumber.replace(/\D/g, "")}`)) return t.phoneInvalid;
         return null;
       case "referral":
         if (!referralSource) return t.referralSourceRequired;

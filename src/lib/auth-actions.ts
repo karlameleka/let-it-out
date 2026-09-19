@@ -25,6 +25,7 @@ import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 import { GENDER_CUSTOM, COUNTRY_CALLING_CODES } from "@/lib/content/geo";
 import { logAudit } from "@/lib/audit-log";
+import { isValidPhoneNumber } from "libphonenumber-js/mobile";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -83,8 +84,10 @@ const CALLING_CODES = new Set(Object.values(COUNTRY_CALLING_CODES));
 
 /** Combines the country page's calling-code select and phone number field
  * into one E.164-ish string ("+201001234567") for storage — validates the
- * code is one this app actually offers and the number is a plausible
- * length once non-digits are stripped. */
+ * code is one this app actually offers and, using libphonenumber-js's
+ * per-country mobile-number metadata (correct digit count and prefix for
+ * that specific country, not just "some digits"), that the result is a
+ * real mobile number. */
 function resolvePhone(
   a: Dictionary["auth"],
   phoneCountryCode: string,
@@ -92,8 +95,9 @@ function resolvePhone(
 ): { phone: string } | { error: string } {
   if (!CALLING_CODES.has(phoneCountryCode)) return { error: a.phoneInvalid };
   const digits = phoneNumber.replace(/\D/g, "");
-  if (digits.length < 6 || digits.length > 14) return { error: a.phoneInvalid };
-  return { phone: `${phoneCountryCode}${digits}` };
+  const phone = `${phoneCountryCode}${digits}`;
+  if (!isValidPhoneNumber(phone)) return { error: a.phoneInvalid };
+  return { phone };
 }
 
 function buildEmailVerificationSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
