@@ -72,8 +72,11 @@ export default function PatternsClient({
   // journal entry can have multiple moods picked. Rather than splitting the
   // day's dot into a stripe per mood, resolve every mood to its core
   // (universal) emotion and show only the most-logged core's color — so the
-  // calendar always reads as one of the 6 core colors, ties going to
-  // whichever core was logged first.
+  // calendar always reads as one of the 6 core colors. Ties go to "happy" —
+  // the one pleasant core in this palette — over whichever was logged
+  // first, so a day split evenly between happy and something else reads as
+  // the good day; a tie between two unpleasant cores still falls back to
+  // whichever was logged first.
   function mainCoreColorOf(moods: string[]): string | null {
     if (moods.length === 0) return null;
     const keys = moods.map((m) => moodCore(m) ?? m);
@@ -83,7 +86,8 @@ export default function PatternsClient({
     let bestCount = 0;
     for (const k of keys) {
       const count = counts.get(k)!;
-      if (count > bestCount) {
+      const isTieBreakWin = count === bestCount && k === "happy" && bestKey !== "happy";
+      if (count > bestCount || isTieBreakWin) {
         bestKey = k;
         bestCount = count;
       }

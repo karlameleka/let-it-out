@@ -67,7 +67,7 @@ export default function SessionPromptsEditor({
             <div className="mt-3 space-y-2">
               {card.prompts.map((p) => (
                 <div key={p.id} className="flex items-start gap-2">
-                  <input
+                  <textarea
                     value={p.text}
                     onChange={(e) =>
                       updateCard(card.id, (c) => ({
@@ -76,7 +76,8 @@ export default function SessionPromptsEditor({
                       }))
                     }
                     placeholder="Prompt"
-                    className={`${inputClasses} text-sm`}
+                    rows={2}
+                    className={`${inputClasses} resize-y text-sm`}
                   />
                   <button
                     type="button"

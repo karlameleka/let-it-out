@@ -26,14 +26,14 @@ export default function TherapistNav({ canEditFormsConfig = false }: { canEditFo
   const TABS = canEditFormsConfig ? [...BASE_TABS, ...FORMS_CONFIG_TABS] : BASE_TABS;
 
   return (
-    <nav className="mt-6 flex flex-wrap gap-2 border-b border-brand-200 pb-2">
+    <nav className="scrollbar-hide -mx-4 mt-6 flex gap-2 overflow-x-auto border-b border-brand-200 px-4 pb-2 sm:-mx-6 sm:px-6 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
       {TABS.map((t) => {
         const active = t.href === "/therapist" ? pathname === t.href : pathname.startsWith(t.href);
         return (
           <Link
             key={t.href}
             href={t.href}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
               active ? "bg-brand-700 text-white" : "text-ink/70 hover:bg-white"
             }`}
           >

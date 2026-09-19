@@ -132,6 +132,16 @@ select:focus-visible,
   background-size: 100% 1px;
 }
 
+/* Hides the scrollbar on an intentionally horizontally-scrollable strip
+   (e.g. a mobile tab row) without disabling the scroll itself. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes float-slow {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-14px) rotate(3deg); }
