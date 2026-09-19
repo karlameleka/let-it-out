@@ -128,6 +128,7 @@ model User {
   referralsGiven UserReferral[]
   auditLogs      AuditLog[]
   trashedItems   TrashedItem[]
+  feedback       Feedback[]
 }
 
 // A signup that hasn't finished OTP verification yet. Holds everything
@@ -1356,4 +1357,32 @@ model EmailPreference {
   email               String   @id
   notificationsOptOut Boolean  @default(false)
   updatedAt           DateTime @updatedAt
+}
+
+// Which part of the app a Feedback row is about — the picker on the
+// /feedback page, and the filter on the admin feedback list.
+enum FeedbackService {
+  COUNSELING
+  JOURNALS
+  WORKSHOPS
+  RESOURCES
+  SHOP
+  APP_GENERAL
+}
+
+// A star rating + optional comment about one service, submitted from
+// /feedback. Logged-in users only (see requireUser() in
+// feedback-actions.ts), so there's always a real account behind every
+// row — no honeypot/rate-limit needed here the way the public
+// lead-capturing forms need them.
+model Feedback {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  service   FeedbackService
+  rating    Int
+  comment   String?         @db.Text
+  createdAt DateTime        @default(now())
+
+  @@index([createdAt])
 }

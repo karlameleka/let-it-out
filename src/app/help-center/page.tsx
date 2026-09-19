@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Star } from "lucide-react";
 import { Container, Eyebrow } from "@/components/ui";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -33,6 +33,20 @@ export default async function HelpCenterPage() {
           >
             <MessageCircle className="h-4 w-4" strokeWidth={2} />
             {t.contactCta}
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-brand-900">{t.feedbackTitle}</h2>
+        <p className="mt-1 text-sm text-ink/60">{t.feedbackDescription}</p>
+        <div className="mt-4">
+          <Link
+            href="/feedback"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 px-4 py-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50"
+          >
+            <Star className="h-4 w-4" strokeWidth={2} />
+            {t.feedbackCta}
           </Link>
         </div>
       </div>
