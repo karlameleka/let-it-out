@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import { submitFeedback } from "@/lib/feedback-actions";
@@ -26,6 +26,20 @@ export default function FeedbackForm({ dict }: { dict: Dictionary }) {
   const [service, setService] = useState(SERVICES[0].value);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+
+  // Swapping the (taller) form for the (shorter) success card leaves
+  // scrollY wherever it was, which the browser then clamps to the new
+  // page height — reading as an unwanted jump toward the bottom. Reset
+  // to the top on that transition, but not on first mount. Same pattern
+  // as the QR self-assessment results screen (assessment-quiz.tsx).
+  const skipNextScrollReset = useRef(true);
+  useEffect(() => {
+    if (skipNextScrollReset.current) {
+      skipNextScrollReset.current = false;
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [state?.success]);
 
   if (state?.success) {
     return (

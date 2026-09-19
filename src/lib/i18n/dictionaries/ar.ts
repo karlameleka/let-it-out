@@ -72,6 +72,8 @@ const ar: Dictionary = {
     technicalSupportDescription: "تحدث مع مساعد الدعم بخصوص مشاكل التطبيق أو الحساب.",
     whatsapp: "راسلنا عبر واتساب",
     whatsappDescription: "لديك سؤال سريع؟ تحدث مع فريقنا مباشرة.",
+    submitFeedback: "إرسال رأيك",
+    submitFeedbackDescription: "قيّم تجربتك مع أي جزء من Let It Out.",
   },
   onboarding: {
     welcomeHeadline: "أهلاً بيك، {name}!",

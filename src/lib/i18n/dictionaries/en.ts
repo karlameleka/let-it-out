@@ -72,6 +72,8 @@ const en = {
     technicalSupportDescription: "Chat with our support assistant about app or account issues.",
     whatsapp: "Message us on WhatsApp",
     whatsappDescription: "Quick questions? Chat with our team directly.",
+    submitFeedback: "Submit feedback",
+    submitFeedbackDescription: "Rate your experience with any part of Let It Out.",
   },
   onboarding: {
     welcomeHeadline: "Welcome, {name}!",

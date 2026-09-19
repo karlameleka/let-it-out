@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, LifeBuoy, MessageCircle, Phone } from "lucide-react";
+import { X, LifeBuoy, MessageCircle, Phone, Star } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=201288200533";
@@ -68,6 +68,17 @@ export default function HelpButton({ dict }: { dict: Dictionary["helpButton"] })
               <span>
                 <span className="block text-sm font-medium text-ink/80">{dict.technicalSupport}</span>
                 <span className="block text-xs text-ink/50">{dict.technicalSupportDescription}</span>
+              </span>
+            </Link>
+            <Link
+              href="/feedback"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-xl border border-brand-100 p-3 transition-colors hover:bg-brand-50 active:bg-brand-50"
+            >
+              <Star className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={2} />
+              <span>
+                <span className="block text-sm font-medium text-ink/80">{dict.submitFeedback}</span>
+                <span className="block text-xs text-ink/50">{dict.submitFeedbackDescription}</span>
               </span>
             </Link>
           </div>
