@@ -82,6 +82,15 @@ model User {
   // signup (e.g. ["Journaling", "Counseling"]).
   serviceInterests String[] @default([])
 
+  // Three separate consents required on the signup wizard's final "agree"
+  // step (Data Processing, Telehealth, and Terms of Care) — timestamped
+  // rather than a single boolean so there's a compliance record of when
+  // each specific consent was given, not just that some consent was.
+  // Nullable for accounts created before this was required.
+  consentDataProcessingAt DateTime?
+  consentTelehealthAt     DateTime?
+  consentTermsOfCareAt    DateTime?
+
   // Off by default, matching Apple Journal — opt-in from account settings.
   journalLockEnabled Boolean @default(false)
 

@@ -15,6 +15,9 @@ export default async function LegalPage() {
   const LINKS = [
     { href: "/privacy", label: f.privacyPolicy },
     { href: "/terms", label: f.terms },
+    { href: "/legal/data-processing", label: dict.dataProcessingPage.title },
+    { href: "/legal/telehealth-consent", label: dict.telehealthConsentPage.title },
+    { href: "/legal/terms-of-care", label: dict.termsOfCarePage.title },
     { href: "/shop-policy", label: f.shopPolicy },
   ];
 

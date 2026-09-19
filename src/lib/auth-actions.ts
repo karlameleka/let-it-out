@@ -126,6 +126,9 @@ function buildCompleteSignupSchema(v: Dictionary["validation"], a: Dictionary["a
       referralSource: z.string().trim().min(1, a.referralSourceRequired),
       serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
       agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
+      consentDataProcessing: z.string().nullable().refine((v) => v === "on", { message: a.consentDataProcessingRequired }),
+      consentTelehealth: z.string().nullable().refine((v) => v === "on", { message: a.consentTelehealthRequired }),
+      consentTermsOfCare: z.string().nullable().refine((v) => v === "on", { message: a.consentTermsOfCareRequired }),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: a.confirmPasswordMismatch,
@@ -350,6 +353,9 @@ export async function completeSignup(
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
     agreedToPolicy: formData.get("agreedToPolicy"),
+    consentDataProcessing: formData.get("consentDataProcessing"),
+    consentTelehealth: formData.get("consentTelehealth"),
+    consentTermsOfCare: formData.get("consentTermsOfCare"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
@@ -386,6 +392,7 @@ export async function completeSignup(
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+  const consentedAt = new Date();
 
   const user = await prisma.user.create({
     data: {
@@ -399,6 +406,9 @@ export async function completeSignup(
       referralSource,
       serviceInterests,
       locale,
+      consentDataProcessingAt: consentedAt,
+      consentTelehealthAt: consentedAt,
+      consentTermsOfCareAt: consentedAt,
     },
   });
 
@@ -448,6 +458,9 @@ function buildSocialSignupSchema(a: Dictionary["auth"]) {
     referralSource: z.string().trim().min(1, a.referralSourceRequired),
     serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
     agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
+    consentDataProcessing: z.string().nullable().refine((v) => v === "on", { message: a.consentDataProcessingRequired }),
+    consentTelehealth: z.string().nullable().refine((v) => v === "on", { message: a.consentTelehealthRequired }),
+    consentTermsOfCare: z.string().nullable().refine((v) => v === "on", { message: a.consentTermsOfCareRequired }),
   });
 }
 
@@ -485,6 +498,9 @@ export async function completeSocialSignup(
     referralSource: formData.get("referralSource"),
     serviceInterests: formData.getAll("serviceInterests"),
     agreedToPolicy: formData.get("agreedToPolicy"),
+    consentDataProcessing: formData.get("consentDataProcessing"),
+    consentTelehealth: formData.get("consentTelehealth"),
+    consentTermsOfCare: formData.get("consentTermsOfCare"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
@@ -537,6 +553,8 @@ export async function completeSocialSignup(
     return { error: a.phoneAlreadyExists };
   }
 
+  const socialConsentedAt = new Date();
+
   const user = await prisma.user.create({
     data: {
       name: pending.name,
@@ -550,6 +568,9 @@ export async function completeSocialSignup(
       referralSource,
       serviceInterests,
       locale,
+      consentDataProcessingAt: socialConsentedAt,
+      consentTelehealthAt: socialConsentedAt,
+      consentTermsOfCareAt: socialConsentedAt,
     },
   });
 

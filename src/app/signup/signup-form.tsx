@@ -340,6 +340,9 @@ export default function SignupForm({
   const [referralSource, setReferralSource] = useState("");
   const [serviceInterests, setServiceInterests] = useState<string[]>([]);
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
+  const [consentDataProcessing, setConsentDataProcessing] = useState(false);
+  const [consentTelehealth, setConsentTelehealth] = useState(false);
+  const [consentTermsOfCare, setConsentTermsOfCare] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [cancelingSocial, setCancelingSocial] = useState(false);
 
@@ -607,6 +610,15 @@ export default function SignupForm({
           if (!agreedToPolicy) {
             e.preventDefault();
             setStepError(t.agreeToPolicyRequired);
+          } else if (!consentDataProcessing) {
+            e.preventDefault();
+            setStepError(t.consentDataProcessingRequired);
+          } else if (!consentTelehealth) {
+            e.preventDefault();
+            setStepError(t.consentTelehealthRequired);
+          } else if (!consentTermsOfCare) {
+            e.preventDefault();
+            setStepError(t.consentTermsOfCareRequired);
           }
         }}
         className="space-y-4"
@@ -893,6 +905,63 @@ export default function SignupForm({
               <Link href="/terms" target="_blank" className="font-medium text-brand-600 link-grow">
                 {dict.footer.terms}
               </Link>
+            </span>
+          </label>
+          <label className="flex items-start gap-2.5 text-sm text-ink/70">
+            <input
+              type="checkbox"
+              name="consentDataProcessing"
+              checked={consentDataProcessing}
+              onChange={(e) => {
+                setConsentDataProcessing(e.target.checked);
+                if (e.target.checked) setStepError(null);
+              }}
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span>
+              {t.consentDataProcessingPrefix}{" "}
+              <Link href="/legal/data-processing" target="_blank" className="font-medium text-brand-600 link-grow">
+                {t.consentDataProcessingLinkText}
+              </Link>
+              .
+            </span>
+          </label>
+          <label className="flex items-start gap-2.5 text-sm text-ink/70">
+            <input
+              type="checkbox"
+              name="consentTelehealth"
+              checked={consentTelehealth}
+              onChange={(e) => {
+                setConsentTelehealth(e.target.checked);
+                if (e.target.checked) setStepError(null);
+              }}
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span>
+              {t.consentTelehealthPrefix}{" "}
+              <Link href="/legal/telehealth-consent" target="_blank" className="font-medium text-brand-600 link-grow">
+                {t.consentTelehealthLinkText}
+              </Link>
+              .
+            </span>
+          </label>
+          <label className="flex items-start gap-2.5 text-sm text-ink/70">
+            <input
+              type="checkbox"
+              name="consentTermsOfCare"
+              checked={consentTermsOfCare}
+              onChange={(e) => {
+                setConsentTermsOfCare(e.target.checked);
+                if (e.target.checked) setStepError(null);
+              }}
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span>
+              {t.consentTermsOfCarePrefix}{" "}
+              <Link href="/legal/terms-of-care" target="_blank" className="font-medium text-brand-600 link-grow">
+                {t.consentTermsOfCareLinkText}
+              </Link>
+              .
             </span>
           </label>
           <PrivacyBadge text={dict.privacyBadge.signup} />
