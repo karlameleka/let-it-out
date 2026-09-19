@@ -70,18 +70,33 @@ function CoreWedgeLabel({ text, color, startDeg, endDeg }: { text: string; color
  * so flipping it 180° for the bottom half only changes reading direction,
  * never its position — unlike a radial (spoke-like) label, this can't come
  * out upside-down or drift to the wrong side of the wedge. */
+// Rough average glyph advance width for Inter Semibold, as a fraction of
+// font-size — used only to estimate whether a given word will fit the arc
+// it's being placed on, not for precise layout.
+const AVG_CHAR_WIDTH_EM = 0.58;
+
 function SecondaryWedgeLabel({ text, color, startDeg, endDeg }: { text: string; color: string; startDeg: number; endDeg: number }) {
   const mid = (startDeg + endDeg) / 2;
-  const labelR = R_INNER + (R_OUTER - R_INNER) * 0.62;
+  // Pushed out to 0.78 (was 0.62) — closer to the rim means more
+  // circumferential room per wedge, which matters most for the crowded
+  // 14-wedge "Happy" ring, without the text's own height reaching R_OUTER.
+  const labelR = R_INNER + (R_OUTER - R_INNER) * 0.78;
   const pt = polar(labelR, mid);
   const flip = mid > 90 && mid < 270;
   const rotate = round2(flip ? mid + 180 : mid);
-  // Scales with how wide this wedge is — cores with few secondaries (Sad,
-  // Angry, Fearful, Surprised, Disgusted) get a roomy max size, while the
-  // tightest ring (Happy's 14 wedges) stays just big enough not to collide
-  // with its neighbors.
   const span = endDeg - startDeg;
-  const fontSize = round2(Math.max(9.5, Math.min(13, span * 0.44)));
+  // Two independent ceilings, whichever is stricter wins: how wide the
+  // wedge itself is (span-based, as before — keeps short words from
+  // ballooning in a roomy wedge), and how much arc length this specific
+  // word actually needs at labelR (character-count-based — the part that
+  // was missing before, which is why long words like "Passionate" or
+  // "Confident" still overflowed a merely-span-sized font). A wedge with
+  // few, short words is limited by the first; the crowded Happy ring's
+  // longer words are limited by the second.
+  const arcLength = labelR * (span * Math.PI) / 180;
+  const fontForSpan = span * 0.44;
+  const fontForWordLength = arcLength / (Math.max(text.length, 1) * AVG_CHAR_WIDTH_EM);
+  const fontSize = round2(Math.max(8, Math.min(13, fontForSpan, fontForWordLength)));
   return (
     <text
       x={pt.x}
