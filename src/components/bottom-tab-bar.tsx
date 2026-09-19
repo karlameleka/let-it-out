@@ -37,7 +37,13 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
           <MotionLink
             key={href}
             href={href}
-            onClick={hapticTap}
+            onClick={() => {
+              hapticTap();
+              // Tapping the already-active tab a second time doesn't
+              // navigate anywhere new — treat it as "take me back to the
+              // top" instead, the same gesture iOS/Android tab bars use.
+              if (active) window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
             whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
             className={`flex flex-1 flex-col items-center gap-1 pb-1 pt-2.5 text-[11.5px] font-bold transition-colors duration-300 ${
