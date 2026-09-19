@@ -12,6 +12,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:backup": "node scripts/backup-db.mjs",
+    "db:encrypt-fields": "node scripts/encrypt-existing-data.mjs",
     "spam:inspect": "node scripts/inspect-lead-spam.mjs",
     "spam:cleanup": "node scripts/cleanup-lead-spam.mjs",
     "e2e": "node scripts/e2e.mjs",
