@@ -759,7 +759,11 @@ export async function logoutAction() {
 function buildChangePasswordSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
   return z
     .object({
-      currentPassword: z.string().optional(),
+      // Nullish, not just optional — see deleteAccountSchema's comment
+      // below. This field isn't rendered at all for accounts with no
+      // password yet (Google/Apple sign-in), so formData.get() returns
+      // null rather than undefined for them.
+      currentPassword: z.string().nullish(),
       newPassword: z.string().min(8, a.newPasswordMin8),
       confirmPassword: z.string().min(1, a.confirmPasswordRequired),
     })
@@ -812,7 +816,13 @@ export async function changePasswordAction(
 }
 
 const deleteAccountSchema = z.object({
-  password: z.string().optional(),
+  // Nullish, not just optional: the password field isn't rendered at all
+  // for accounts with no password (Google/Apple sign-in — see
+  // delete-account-form.tsx), so formData.get("password") is null, not
+  // undefined. z.string().optional() rejects null and surfaced as a raw
+  // "Invalid input: expected string, received null" to those users,
+  // blocking them from ever deleting their account.
+  password: z.string().nullish(),
 });
 
 export type DeleteAccountFormState = { error?: string; success?: boolean } | undefined;
