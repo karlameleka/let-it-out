@@ -1106,6 +1106,8 @@ const ar: Dictionary = {
     mostRecent: "آخر جلسة",
     noPast: "لسه مفيش جلسات سابقة.",
     viewAllSessions: "شوف كل الجلسات",
+    inBetweenSessions: "بين الجلسات",
+    inBetweenSessionsLocked: "هتتفتح بعد ما تحجز أول جلسة ويتم تأكيدها.",
     myToolsTitle: "أدواتي",
     myToolsEmpty: "لسه مفيش حاجة هنا، معالجك يقدر يبعتلك أدوات وملفات PDF ومهام هنا بعد الجلسة.",
   },
@@ -1251,7 +1253,6 @@ const ar: Dictionary = {
     wordsWritten: "كلمة مكتوبة",
     newEntry: "تدوينة جديدة",
     moodPatterns: "أنماط المزاج",
-    reflectionSheetLink: "ورقة التأمل",
     searchPlaceholder: "دوّر في تدويناتك...",
     bookmarked: "المفضلة",
     emptyNoEntries: "تدويناتك هتظهر هنا بمجرد ما تحفظ أول واحدة.",
@@ -1370,6 +1371,7 @@ const ar: Dictionary = {
   },
   reflectionSheet: {
     eyebrow: "بين الجلسات",
+    backToProfile: "رجوع للبروفايل",
     title: "ورقة التأمل",
     description:
       "مساحة خاصة تتأمل فيها مع نفسك بين جلسات الاستشارة. إجاباتك بتتحفظ على جهازك ده بس، مش بترسل لينا، ومش بيشوفها معالجك.",

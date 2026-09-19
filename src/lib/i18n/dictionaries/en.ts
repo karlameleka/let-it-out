@@ -1119,6 +1119,8 @@ const en = {
     mostRecent: "Most recent",
     noPast: "No past sessions yet.",
     viewAllSessions: "View all sessions",
+    inBetweenSessions: "In-between sessions",
+    inBetweenSessionsLocked: "Unlocks once your first session is booked and confirmed.",
     myToolsTitle: "My tools",
     myToolsEmpty: "Nothing here yet, your therapist can send you tools, PDFs, and assignments here after a session.",
   },
@@ -1274,7 +1276,6 @@ const en = {
     wordsWritten: "words written",
     newEntry: "New entry",
     moodPatterns: "Mood patterns",
-    reflectionSheetLink: "Reflection sheet",
     searchPlaceholder: "Search your entries...",
     bookmarked: "Bookmarked",
     emptyNoEntries: "Your entries will show up here once you save your first one.",
@@ -1394,6 +1395,7 @@ const en = {
   },
   reflectionSheet: {
     eyebrow: "Between sessions",
+    backToProfile: "Back to profile",
     title: "Reflection sheet",
     description:
       "A private space to check in with yourself between counseling sessions. Answers are saved only on this device, never sent to us, and never seen by your therapist.",

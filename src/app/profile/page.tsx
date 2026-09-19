@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { NotebookPen, LockKeyhole } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
-import { getUpcomingPageData, getPastItems } from "@/lib/upcoming-items";
+import { getUpcomingPageData, getPastItems, hasConfirmedSession } from "@/lib/upcoming-items";
 import { getArticles, localizeArticle } from "@/lib/content/articles";
 import { getMyAssignedResources } from "@/lib/client-resources";
 import { formatSlotTime } from "@/lib/format-slot";
-import { Container, Eyebrow, ButtonLink } from "@/components/ui";
+import { Container, Eyebrow, Button, ButtonLink } from "@/components/ui";
 import ProfileClient from "./profile-client";
 import MyToolsItem from "./my-tools-item";
 import MyToolsViewedTracker from "./my-tools-viewed-tracker";
@@ -23,17 +24,19 @@ export default async function ProfilePage() {
   const dict = getDictionary(locale);
   const t = dict.profile;
 
-  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications, myTools] = await Promise.all([
-    getUpcomingPageData(user.email, user.userId, locale),
-    getPastItems(user.email, user.userId, locale),
-    getArticles(),
-    prisma.medication.findMany({
-      where: { clientEmail: user.email, active: true },
-      include: { counselor: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
-    }),
-    getMyAssignedResources(user.email),
-  ]);
+  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications, myTools, canUseInBetweenSessions] =
+    await Promise.all([
+      getUpcomingPageData(user.email, user.userId, locale),
+      getPastItems(user.email, user.userId, locale),
+      getArticles(),
+      prisma.medication.findMany({
+        where: { clientEmail: user.email, active: true },
+        include: { counselor: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      getMyAssignedResources(user.email),
+      hasConfirmedSession(user.email),
+    ]);
   const articles = rawArticles.map((a) => localizeArticle(a, locale));
 
   const nextSession = upcomingSessions.find((s) => s.status !== "CANCELLED") ?? null;
@@ -124,6 +127,20 @@ export default async function ProfilePage() {
           <ButtonLink href="/counseling" variant="outline" className="mt-4 w-full">
             {dict.nav.bookASession}
           </ButtonLink>
+        )}
+        {canUseInBetweenSessions ? (
+          <ButtonLink href="/journal/reflection" variant="outline" className="mt-3 w-full">
+            <NotebookPen className="h-4 w-4" strokeWidth={2} />
+            {t.inBetweenSessions}
+          </ButtonLink>
+        ) : (
+          <>
+            <Button disabled variant="outline" className="mt-3 w-full">
+              <LockKeyhole className="h-4 w-4" strokeWidth={2} />
+              {t.inBetweenSessions}
+            </Button>
+            <p className="mt-2 text-center text-xs text-ink/40">{t.inBetweenSessionsLocked}</p>
+          </>
         )}
       </div>
     </Container>

@@ -328,6 +328,19 @@ export async function getPastItems(email: string, userId: string, locale: Locale
   };
 }
 
+/** Whether this client has ever had a counseling session actually
+ * confirmed (paid SessionBooking or free BookingRequest) — regardless of
+ * whether it's still upcoming or already happened. Used to gate the
+ * "In-between sessions" reflection tool on My Profile, which only makes
+ * sense once a therapeutic relationship has actually started. */
+export async function hasConfirmedSession(email: string): Promise<boolean> {
+  const [booking, request] = await Promise.all([
+    prisma.sessionBooking.findFirst({ where: { email, status: "CONFIRMED" }, select: { id: true } }),
+    prisma.bookingRequest.findFirst({ where: { email, status: { in: ["CONFIRMED", "COMPLETED"] } }, select: { id: true } }),
+  ]);
+  return booking !== null || request !== null;
+}
+
 /** Hard-deletes SessionBooking/BookingRequest rows cancelled more than
  * CANCELLED_RETENTION_DAYS ago — called from api/cron/trash-purge
  * alongside purgeExpiredTrash so there's a single daily cron doing both. */

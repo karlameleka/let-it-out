@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getJournalLockEnabled } from "@/lib/journal-lock";
 import { getReflectionQuestions } from "@/lib/reflection-sheet-config";
+import { hasConfirmedSession } from "@/lib/upcoming-items";
 import { Container, Eyebrow } from "@/components/ui";
 import JournalLockGate from "@/components/journal-lock-gate";
 import ReflectionClient from "./reflection-client";
@@ -17,18 +18,25 @@ export default async function ReflectionPage() {
   if (!user) redirect("/login");
 
   const locale = await getLocale();
-  const [lockEnabled, questions] = await Promise.all([
+  const [lockEnabled, questions, canUse] = await Promise.all([
     getJournalLockEnabled(user.userId),
     getReflectionQuestions(locale),
+    hasConfirmedSession(user.email),
   ]);
+  // Only reachable once a first session is booked and confirmed — see the
+  // gated "In-between sessions" entry point in the My Profile counseling
+  // box. Redirect rather than 404 so someone who bookmarked the old
+  // journal-embedded link lands somewhere useful instead of a dead end.
+  if (!canUse) redirect("/profile");
+
   const dict = getDictionary(locale);
   const t = dict.reflectionSheet;
 
   return (
     <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>
       <Container className="max-w-2xl py-16 sm:py-20">
-        <Link href="/journal" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
-          <span className="inline-block rtl:-scale-x-100">&larr;</span> {dict.entryForm.backToJournal}
+        <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
+          <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToProfile}
         </Link>
         <div className="mt-4">
           <Eyebrow>{t.eyebrow}</Eyebrow>
