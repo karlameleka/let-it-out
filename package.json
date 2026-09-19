@@ -33,6 +33,7 @@
     "@simplewebauthn/server": "^13.3.3",
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
+    "framer-motion": "^13.4.0",
     "jose": "^6.2.8",
     "libphonenumber-js": "^1.13.13",
     "lucide-react": "^1.31.0",

@@ -336,6 +336,13 @@ const ar: Dictionary = {
     dateRequired: "من فضلك اختار تاريخ مفضل.",
     timeRequired: "من فضلك اختار وقت مفضل.",
   },
+  bookingWizard: {
+    stepDetails: "بياناتك",
+    stepTime: "اختر الموعد",
+    stepConfirm: "تأكيد",
+    back: "رجوع",
+    next: "التالي",
+  },
   sessionStatus: {
     backToCounseling: "رجوع للاستشارات",
     sessionWith: "جلسة مع",

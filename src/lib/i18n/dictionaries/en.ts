@@ -343,6 +343,13 @@ const en = {
     dateRequired: "Please choose a preferred date.",
     timeRequired: "Please choose a preferred time.",
   },
+  bookingWizard: {
+    stepDetails: "Your details",
+    stepTime: "Pick a time",
+    stepConfirm: "Confirm",
+    back: "Back",
+    next: "Next",
+  },
   sessionStatus: {
     backToCounseling: "Back to counseling",
     sessionWith: "Session with",

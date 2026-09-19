@@ -2,14 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { Home, HeartHandshake, Newspaper, ShoppingBag, Menu } from "lucide-react";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useUnreadTools } from "@/lib/unread-tools-context";
 import { hapticTap } from "@/lib/haptics";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
+
+const MotionLink = motion.create(Link);
 
 export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   const pathname = usePathname();
   const { count: unreadToolsCount } = useUnreadTools();
+  const scrollDirection = useScrollDirection();
 
   // /support runs as a fixed, full-viewport chat screen with the input
   // pinned to the true bottom edge — the tab bar would sit on top of it.
@@ -24,17 +29,27 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   ];
 
   return (
-    <nav
+    <motion.nav
+      // Tucks itself fully off-screen while the user is actively reading
+      // down a page (more room for content), and settles back the moment
+      // they scroll up looking for navigation — the "safe area" inset
+      // that keeps it clear of the iOS home-indicator travels with it
+      // either way, since it's baked into the element's own padding
+      // rather than the translate transform.
+      animate={{ y: scrollDirection === "down" ? "100%" : "0%" }}
+      transition={{ type: "spring", stiffness: 420, damping: 38 }}
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-brand-200 bg-white shadow-[0_-4px_16px_-4px_rgba(18,53,67,0.12)] lg:hidden"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.85rem)" }}
     >
       {TABS.map(({ href, label, icon: Icon, matches, badge }) => {
         const active = matches.some((m) => (m === "/" ? pathname === "/" : pathname === m || pathname?.startsWith(m + "/")));
         return (
-          <Link
+          <MotionLink
             key={href}
             href={href}
             onClick={hapticTap}
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
             className={`flex flex-1 flex-col items-center gap-1 pb-1 pt-2.5 text-[11.5px] font-bold transition-colors duration-300 ${
               active ? "text-brand-700" : "text-ink/40"
             }`}
@@ -59,9 +74,9 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
               )}
             </span>
             {label}
-          </Link>
+          </MotionLink>
         );
       })}
-    </nav>
+    </motion.nav>
   );
 }

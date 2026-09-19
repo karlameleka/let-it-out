@@ -1,6 +1,7 @@
 "use client";
 
 import { useOffline } from "next/offline";
+import { SkeletonRows } from "@/components/skeleton";
 
 // Route-level Suspense fallback for every /journal/* page (feed, composer,
 // entry detail, history, patterns, reflection). With experimental.useOffline
@@ -34,11 +35,7 @@ export default function JournalLoading() {
           {WAITING_TEXT[locale]}
         </p>
       )}
-      <div className="animate-pulse space-y-3">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-24 rounded-2xl border-2 border-brand-100 bg-brand-50/60" />
-        ))}
-      </div>
+      <SkeletonRows count={3} lineClassName="h-24 rounded-2xl border-2 border-brand-100" />
     </div>
   );
 }
