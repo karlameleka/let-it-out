@@ -142,6 +142,18 @@ select:focus-visible,
   display: none;
 }
 
+/* Continuous logo-row scroll (see LogoMarquee) — the track holds the
+   logo list twice back to back, so translating by exactly -50% of its
+   own width loops seamlessly. A calm, steady drift rather than a fast
+   ticker, in keeping with the app's tone. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+
 @keyframes float-slow {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-14px) rotate(3deg); }
