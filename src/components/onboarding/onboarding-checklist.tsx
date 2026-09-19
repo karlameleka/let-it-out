@@ -67,7 +67,7 @@ export default function OnboardingChecklist({
   }
 
   return (
-    <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] start-5 z-40 md:bottom-5">
+    <div className="fixed bottom-[calc(7.5rem+env(safe-area-inset-bottom))] start-5 z-40 md:bottom-5">
       {checklistOpen && (
         <div className="animate-pop-in absolute bottom-[calc(100%+0.75rem)] start-0 w-72 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-xl">
           <div className="flex items-start justify-between gap-2">

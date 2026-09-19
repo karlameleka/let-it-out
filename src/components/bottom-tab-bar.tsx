@@ -29,7 +29,7 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-brand-200 bg-white shadow-[0_-4px_16px_-4px_rgba(18,53,67,0.12)] lg:hidden"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.85rem)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
     >
       {TABS.map(({ href, label, icon: Icon, matches, badge }) => {
         const active = matches.some((m) => (m === "/" ? pathname === "/" : pathname === m || pathname?.startsWith(m + "/")));
