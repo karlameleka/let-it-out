@@ -9,13 +9,21 @@ const MAX_DRAG = 140;
 /** Swipe-left-to-delete wrapper for a notification row. Dragging the child
  * far enough left and releasing permanently dismisses it (calls
  * `onDelete`, expected to hit `dismissNotification` and refresh); a short
- * drag springs back. Pointer Events cover touch + mouse in one handler set. */
+ * drag springs back. Pointer Events cover touch + mouse in one handler set.
+ *
+ * When `confirmBeforeDelete` is given, a swipe past the threshold awaits it
+ * before animating away — resolving `false` springs the row back instead
+ * of deleting it, so a caller can interpose a confirmation dialog (e.g.
+ * "cancel the session too?") without this component knowing anything
+ * about that dialog's content. */
 export default function SwipeToDelete({
   onDelete,
+  confirmBeforeDelete,
   deleteLabel,
   children,
 }: {
   onDelete: () => void;
+  confirmBeforeDelete?: () => Promise<boolean>;
   deleteLabel: string;
   children: React.ReactNode;
 }) {
@@ -45,18 +53,25 @@ export default function SwipeToDelete({
     }
   }
 
-  function finishDrag() {
+  async function finishDrag() {
     if (startX.current === null) return;
     startX.current = null;
     setDragging(false);
-    if (armed.current) {
-      hapticWarning();
-      setRemoving(true);
-      setDragX(-(MAX_DRAG + 60));
-      setTimeout(onDelete, 160);
-    } else {
+    if (!armed.current) {
       setDragX(0);
+      return;
     }
+    if (confirmBeforeDelete) {
+      const confirmed = await confirmBeforeDelete();
+      if (!confirmed) {
+        setDragX(0);
+        return;
+      }
+    }
+    hapticWarning();
+    setRemoving(true);
+    setDragX(-(MAX_DRAG + 60));
+    setTimeout(onDelete, 160);
   }
 
   return (

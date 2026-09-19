@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown, Video } from "lucide-react";
@@ -41,8 +41,11 @@ export default function SessionRow({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [confirmingDismiss, setConfirmingDismiss] = useState(false);
+  const [cancellingFromDismiss, setCancellingFromDismiss] = useState(false);
   const router = useRouter();
   const { refetch } = useUpcoming();
+  const dismissResolveRef = useRef<((proceed: boolean) => void) | null>(null);
 
   const expandable = Boolean(href) || canCancel || Boolean(meetingLink);
 
@@ -97,8 +100,52 @@ export default function SessionRow({
     });
   }
 
+  // Gates the swipe-to-delete gesture on a booked/pending session or
+  // request: rather than silently dismissing the notification for a
+  // session the person may not realize is still on the books, ask
+  // whether they also want to cancel it. Resolves once the modal below
+  // reports which of its three buttons was pressed.
+  function requestDismissConfirm(): Promise<boolean> {
+    return new Promise((resolve) => {
+      dismissResolveRef.current = resolve;
+      setConfirmingDismiss(true);
+    });
+  }
+
+  function resolveDismissConfirm(proceed: boolean) {
+    setConfirmingDismiss(false);
+    dismissResolveRef.current?.(proceed);
+    dismissResolveRef.current = null;
+  }
+
+  function handleDismissOnly() {
+    resolveDismissConfirm(true);
+  }
+
+  function handleCancelSessionAndDismiss() {
+    setCancellingFromDismiss(true);
+    startTransition(async () => {
+      const result = kind === "paid" ? await cancelSessionBooking(bookingId) : await cancelBookingRequest(bookingId);
+      setCancellingFromDismiss(false);
+      if ("error" in result) {
+        resolveDismissConfirm(false);
+        setError(result.error);
+        return;
+      }
+      await markNotificationRead(itemId);
+      resolveDismissConfirm(true);
+      router.refresh();
+      refetch();
+    });
+  }
+
   return (
-    <SwipeToDelete onDelete={handleDismiss} deleteLabel={dict.deleteNotification}>
+    <>
+    <SwipeToDelete
+      onDelete={handleDismiss}
+      confirmBeforeDelete={canCancel ? requestDismissConfirm : undefined}
+      deleteLabel={dict.deleteNotification}
+    >
       <div className={`rounded-2xl border bg-white transition-colors ${read ? "border-brand-100" : "border-brand-300"}`}>
         <button type="button" onClick={handleToggle} className="flex w-full items-center justify-between gap-3 p-5 text-start">
           <div className="flex items-start gap-2">
@@ -157,5 +204,43 @@ export default function SessionRow({
         )}
       </div>
     </SwipeToDelete>
+    {confirmingDismiss && (
+      <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+        <div className="w-full max-w-sm animate-pop-in overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+          <div className="px-6 py-5">
+            <h2 className="font-display text-lg font-semibold text-brand-900">{dict.dismissSessionTitle}</h2>
+            <p className="mt-2 text-sm text-ink/70">{dict.dismissSessionBody}</p>
+            {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleCancelSessionAndDismiss}
+                disabled={cancellingFromDismiss}
+                className="rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-700 disabled:opacity-50"
+              >
+                {cancellingFromDismiss ? dict.cancelling : dict.dismissSessionAndCancel}
+              </button>
+              <button
+                type="button"
+                onClick={handleDismissOnly}
+                disabled={cancellingFromDismiss}
+                className="rounded-full border border-brand-200 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+              >
+                {dict.dismissSessionOnly}
+              </button>
+              <button
+                type="button"
+                onClick={() => resolveDismissConfirm(false)}
+                disabled={cancellingFromDismiss}
+                className="rounded-full px-4 py-2.5 text-sm font-medium text-ink/50 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+              >
+                {dict.dismissSessionKeep}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
