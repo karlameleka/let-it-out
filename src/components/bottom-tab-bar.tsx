@@ -7,14 +7,12 @@ import { Home, HeartHandshake, Newspaper, ShoppingBag, Menu } from "lucide-react
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useUnreadTools } from "@/lib/unread-tools-context";
 import { hapticTap } from "@/lib/haptics";
-import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 const MotionLink = motion.create(Link);
 
 export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   const pathname = usePathname();
   const { count: unreadToolsCount } = useUnreadTools();
-  const scrollDirection = useScrollDirection();
 
   // /support runs as a fixed, full-viewport chat screen with the input
   // pinned to the true bottom edge — the tab bar would sit on top of it.
@@ -29,15 +27,7 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
   ];
 
   return (
-    <motion.nav
-      // Tucks itself fully off-screen while the user is actively reading
-      // down a page (more room for content), and settles back the moment
-      // they scroll up looking for navigation — the "safe area" inset
-      // that keeps it clear of the iOS home-indicator travels with it
-      // either way, since it's baked into the element's own padding
-      // rather than the translate transform.
-      animate={{ y: scrollDirection === "down" ? "100%" : "0%" }}
-      transition={{ type: "spring", stiffness: 420, damping: 38 }}
+    <nav
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-brand-200 bg-white shadow-[0_-4px_16px_-4px_rgba(18,53,67,0.12)] lg:hidden"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.85rem)" }}
     >
@@ -77,6 +67,6 @@ export default function BottomTabBar({ dict }: { dict: Dictionary["nav"] }) {
           </MotionLink>
         );
       })}
-    </motion.nav>
+    </nav>
   );
 }
