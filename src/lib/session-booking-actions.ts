@@ -11,6 +11,7 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { screenSubmission, HONEYPOT_FIELD } from "@/lib/anti-spam";
 import { generateOrderAccessToken } from "@/lib/order-access";
+import { trackEvent } from "@/lib/analytics-events";
 
 function buildCreateSessionBookingSchema(v: Dictionary["validation"], c: Dictionary["counselorProfile"]) {
   return z.object({
@@ -152,6 +153,17 @@ export async function createSessionBooking(
     }
     return created;
   });
+
+  // SessionBooking has no userId FK (guest checkout is the norm here, and
+  // logged-in ownership is matched by email elsewhere — see order-access.ts)
+  // so attribution to a specific user for behavioral analytics is a
+  // best-effort lookup, not a join. Guest bookings still count toward
+  // Acquisition/Revenue funnel totals via the userId: null branch.
+  void prisma.user
+    .findUnique({ where: { email: booking.email }, select: { id: true } })
+    .then((matchedUser) =>
+      trackEvent(matchedUser?.id ?? null, "SessionBooking", "created", { counselorId: counselor.id }),
+    );
 
   const finalPriceEGP = counselor.priceEGP - discountEGP;
   const dateTimeLine = booking.preferredTime

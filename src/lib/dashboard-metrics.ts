@@ -21,7 +21,10 @@ export type KpiMetric = {
   prevValue: number;
 };
 
-async function revenueForRange(range: DateRange): Promise<{ shopEGP: number; sessionsEGP: number }> {
+/** Exported for reuse by behavioral-metrics.ts (AARRR's Revenue stage) —
+ * same "what counts as revenue" definition (only confirmed payments) used
+ * in both places. */
+export async function revenueForRange(range: DateRange): Promise<{ shopEGP: number; sessionsEGP: number }> {
   const [orders, sessions] = await Promise.all([
     prisma.order.aggregate({
       where: { status: { in: PAID_ORDER_STATUSES }, createdAt: { gte: range.from, lte: range.to } },

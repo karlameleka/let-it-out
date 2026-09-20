@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { sendSupportNotification } from "@/lib/email";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { trackEvent } from "@/lib/analytics-events";
 import type { FeedbackService } from "@/generated/prisma/enums";
 
 const SERVICES: FeedbackService[] = ["COUNSELING", "JOURNALS", "WORKSHOPS", "RESOURCES", "SHOP", "APP_GENERAL"];
@@ -52,6 +53,8 @@ export async function submitFeedback(_prevState: FeedbackFormState, formData: Fo
       comment: parsed.data.comment || null,
     },
   });
+
+  void trackEvent(session.userId, "Feedback", "submitted", { service: feedback.service, rating: feedback.rating });
 
   await sendSupportNotification({
     subject: `New feedback: ${SERVICE_LABELS[feedback.service]} (${feedback.rating}/5)`,

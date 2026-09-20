@@ -25,6 +25,7 @@ import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 import { GENDER_CUSTOM, COUNTRY_CALLING_CODES } from "@/lib/content/geo";
 import { logAudit } from "@/lib/audit-log";
+import { trackEvent } from "@/lib/analytics-events";
 import { isValidPhoneNumber } from "libphonenumber-js/mobile";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -417,6 +418,7 @@ export async function completeSignup(
   });
 
   await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+  void trackEvent(user.id, "User", "signed_up", { referralSource });
 
   const demographicNotes = [
     `Birth date: ${pending.birthDate.toISOString().slice(0, 10)}`,
@@ -579,6 +581,7 @@ export async function completeSocialSignup(
   });
 
   await clearPendingSocialSignup();
+  void trackEvent(user.id, "User", "signed_up", { referralSource });
 
   const demographicNotes = [
     `Birth date: ${birthDate.toISOString().slice(0, 10)}`,
@@ -742,6 +745,11 @@ export async function loginAction(
       action: "admin.login_success",
       summary: `${user.email} logged in`,
     });
+  } else {
+    // Staff accounts are deliberately excluded from behavioral analytics —
+    // AARRR/HEART/stickiness describe real customer usage, and the one or
+    // two admin accounts logging in daily would otherwise skew DAU/MAU.
+    void trackEvent(user.id, "User", "logged_in");
   }
 
   await createSession({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createSession, createPendingSocialSignup } from "@/lib/session";
 import { getGoogleOAuthConfig } from "@/lib/google-auth";
+import { trackEvent } from "@/lib/analytics-events";
 
 const STATE_COOKIE = "lio_google_oauth_state";
 
@@ -90,6 +91,10 @@ export async function GET(request: NextRequest) {
         response.cookies.delete(STATE_COOKIE);
         return response;
       }
+    }
+
+    if (user.role !== "ADMIN") {
+      void trackEvent(user.id, "User", "logged_in");
     }
 
     await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });

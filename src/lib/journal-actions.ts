@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
 import { getLocale } from "@/lib/i18n/locale";
+import { trackEvent } from "@/lib/analytics-events";
 
 /** Fetches a fresh, likely-different prompt for the "shuffle" button. */
 export async function shufflePrompt(currentPromptId?: string) {
@@ -23,6 +24,16 @@ export async function shufflePrompt(currentPromptId?: string) {
     category: locale === "ar" && prompt.categoryAr ? prompt.categoryAr : prompt.category,
     text: locale === "ar" && prompt.textAr ? prompt.textAr : prompt.text,
   };
+}
+
+/** Journal entries live entirely on-device now (see local-journal.ts) —
+ * there's no server-side row to hook a tracking call onto, so entry-form.tsx
+ * calls this directly, fire-and-forget, right after a local save succeeds.
+ * No entry content is ever sent, just the fact that one was created. */
+export async function trackJournalEntryCreated(): Promise<void> {
+  const session = await requireUser().catch(() => null);
+  if (!session) return;
+  void trackEvent(session.userId, "JournalEntry", "created");
 }
 
 export type JournalExportEntry = {

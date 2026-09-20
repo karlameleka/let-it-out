@@ -5,6 +5,7 @@ import { ImagePlus, PenLine, Shuffle, Sparkles, WifiOff, X } from "lucide-react"
 import { useOffline } from "next/offline";
 import { shufflePrompt } from "@/lib/journal-actions";
 import { createEntry, type EntryFormState } from "@/lib/local-journal";
+import { trackJournalEntryCreated } from "@/lib/journal-actions";
 import { compressImage } from "@/lib/compress-image";
 import { Button } from "@/components/ui";
 import MoodPicker from "@/components/mood-picker";
@@ -73,6 +74,7 @@ export default function EntryForm({
         photoUrl: (String(formData.get("photoUrl") ?? "") || null),
         prompt: mode === "prompt" && prompt ? { category: prompt.category, text: prompt.text } : null,
       });
+      void trackJournalEntryCreated();
       return { success: true };
     } catch {
       return { error: dict.saveError };

@@ -9,7 +9,11 @@ import { GENDERS, REFERRAL_SOURCES } from "@/lib/content/geo";
 const MIN_DWELL_MS = 20_000;
 const SESSION_GAP_MS = 30 * 60 * 1000;
 
-function featureForPath(path: string): string {
+/** Exported for reuse by behavioral-metrics.ts (Feature Adoption Depth) —
+ * the same path→feature bucketing the admin analytics page already uses
+ * for "most/least used features", so a feature's adoption count means the
+ * same thing in both places. */
+export function featureForPath(path: string): string {
   if (path === "/") return "Home";
   if (path.startsWith("/journal")) return "Journal";
   if (path.startsWith("/counseling")) return "Counseling";

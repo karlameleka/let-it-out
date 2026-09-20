@@ -9,6 +9,7 @@ import {
   type AssessmentResultRecord,
 } from "@/lib/local-assessments";
 import { scoreAssessment, type AssessmentDefinition, type AssessmentSlug, type CategoryScore } from "@/lib/assessments";
+import { trackAssessmentEvent } from "@/lib/assessment-actions";
 import { Button, ButtonLink } from "@/components/ui";
 
 const SCALE = [1, 2, 3, 4, 5] as const;
@@ -121,6 +122,7 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
       const score = scoreAssessment(definition, answers);
       const answerList = definition.questions.map((q) => ({ questionId: q.id, value: answers[q.id] }));
       await createAssessmentResult(userId, definition.slug, answerList);
+      void trackAssessmentEvent(definition.slug, "completed");
       setLatestScore(score);
       setResults(await getAssessmentResults(userId, definition.slug));
       setView("results");
@@ -184,7 +186,14 @@ export default function AssessmentQuiz({ definition, userId }: { definition: Ass
             <p className="mt-5 text-xs text-ink/45">{definition.disclaimer}</p>
           </div>
         </div>
-        <Button type="button" onClick={() => setView("quiz")} className="w-full sm:w-auto">
+        <Button
+          type="button"
+          onClick={() => {
+            void trackAssessmentEvent(definition.slug, "started");
+            setView("quiz");
+          }}
+          className="w-full sm:w-auto"
+        >
           Start the assessment
         </Button>
         {pastResults}

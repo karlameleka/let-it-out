@@ -124,11 +124,12 @@ model User {
   eventRsvps     EventRSVP[]
   reflectionPrompts ReflectionPrompt[]
   notificationReads NotificationRead[]
-  pageViews      PageView[]
-  referralsGiven UserReferral[]
-  auditLogs      AuditLog[]
-  trashedItems   TrashedItem[]
-  feedback       Feedback[]
+  pageViews       PageView[]
+  referralsGiven  UserReferral[]
+  auditLogs       AuditLog[]
+  trashedItems    TrashedItem[]
+  feedback        Feedback[]
+  analyticsEvents AnalyticsEvent[]
 }
 
 // A signup that hasn't finished OTP verification yet. Holds everything
@@ -1000,6 +1001,41 @@ model PageView {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// The general-purpose behavioral event log — every tracked "someone did
+// something" moment, shaped as (object, action) pairs (e.g. object
+// "SessionBooking", action "created") rather than one bespoke table per
+// feature. Backs the AARRR/HEART/stickiness/adoption/time-to-value
+// reporting on /admin/behavioral-analytics; PageView (route views only)
+// and AuditLog (admin/system actions only) stay as they are and are read
+// alongside this table, not replaced by it.
+//
+// userId is nullable because some of the events worth counting for
+// Acquisition/Revenue happen before or without an account at all (guest
+// shop checkout, guest session booking) — those rows carry object/action
+// and non-PII properties only. Anything that needs a specific user (TTV,
+// feature-adoption depth, retention) naturally only considers rows where
+// userId is set.
+model AnalyticsEvent {
+  id     String @id @default(cuid())
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+  // PascalCase-ish entity name the action happened to, e.g. "User",
+  // "JournalEntry", "SessionBooking", "Order", "Assessment", "Feedback",
+  // "Referral". Deliberately a plain string, not an enum — new event
+  // types shouldn't need a migration to start being recorded.
+  object String
+  // snake_case verb, e.g. "signed_up", "logged_in", "created", "started",
+  // "completed", "confirmed", "submitted", "activated".
+  action String
+  // Small, non-PII context (e.g. { referralSource }, { assessmentType },
+  // { amountEGP }) — never raw journal/assessment content or contact info.
+  properties Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([object, action, createdAt])
 }
 
 // A registered platform authenticator (Face ID, Touch ID, Windows Hello,

@@ -8,6 +8,7 @@ const TABS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/finance", label: "Finance" },
   { href: "/admin/analytics", label: "Analytics" },
+  { href: "/admin/behavioral-analytics", label: "Behavioral Analytics" },
   { href: "/admin/crm", label: "CRM" },
   { href: "/admin/clients", label: "Clients" },
   { href: "/admin/orders", label: "Orders" },

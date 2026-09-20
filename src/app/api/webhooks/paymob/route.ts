@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendCustomerConfirmation } from "@/lib/email";
 import { formatEGP } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics-events";
 
 /**
  * Field order Paymob uses to build the HMAC digest for the "TRANSACTION"
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
         where: { id: referenceId },
         data: { status: "CONFIRMED", paymentRef: transactionId },
       });
+      void trackEvent(existingOrder.userId, "Order", "confirmed", { totalEGP: existingOrder.totalEGP });
 
       const isAr = existingOrder.locale === "ar";
       await sendCustomerConfirmation({
@@ -144,6 +146,9 @@ export async function POST(req: NextRequest) {
         where: { id: referenceId },
         data: { status: "CONFIRMED", paymentRef: transactionId },
       });
+      void prisma.user
+        .findUnique({ where: { email: existingSessionBooking.email }, select: { id: true } })
+        .then((matchedUser) => trackEvent(matchedUser?.id ?? null, "SessionBooking", "confirmed"));
 
       const isAr = existingSessionBooking.locale === "ar";
       await sendCustomerConfirmation({

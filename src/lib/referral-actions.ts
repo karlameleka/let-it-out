@@ -6,6 +6,7 @@ import { getCurrentUser, requireUser } from "@/lib/session";
 import { getBaseUrl } from "@/lib/base-url";
 import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
 import { PromoDiscountType } from "@/generated/prisma/enums";
+import { trackEvent } from "@/lib/analytics-events";
 
 const REWARD_DISCOUNT_PERCENT = 20;
 const REWARD_EXPIRY_DAYS = 60;
@@ -115,6 +116,8 @@ export async function activateReferral(code: string): Promise<ActivateReferralRe
       data: { referrerId: referrer.id, promoCodeId: promoCode.id },
     });
   });
+
+  void trackEvent(referrer.id, "Referral", "activated");
 
   return { success: true, promoCode: promoCodeValue, discountPercent: REWARD_DISCOUNT_PERCENT };
 }

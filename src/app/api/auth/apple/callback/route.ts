@@ -6,6 +6,7 @@ import { createLead } from "@/lib/leads";
 import { sendWelcomeEmail } from "@/lib/email";
 import { getAppleOAuthConfig, generateAppleClientSecret } from "@/lib/apple-auth";
 import { getLocale } from "@/lib/i18n/locale";
+import { trackEvent } from "@/lib/analytics-events";
 
 const STATE_COOKIE = "lio_apple_oauth_state";
 
@@ -121,6 +122,10 @@ export async function POST(request: NextRequest) {
       });
       const baseUrl = new URL(request.url).origin;
       await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy`, locale });
+    }
+
+    if (user.role !== "ADMIN") {
+      void trackEvent(user.id, "User", isNewUser ? "signed_up" : "logged_in");
     }
 
     await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });

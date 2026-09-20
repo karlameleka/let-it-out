@@ -13,6 +13,7 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
 import { screenSubmission, HONEYPOT_FIELD } from "@/lib/anti-spam";
 import { generateOrderAccessToken, verifyOrderAccessToken } from "@/lib/order-access";
+import { trackEvent } from "@/lib/analytics-events";
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   INSTAPAY: "InstaPay",
@@ -257,6 +258,14 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     }
     return created;
   });
+
+  void trackEvent(order.userId, "Order", "placed", { totalEGP: order.totalEGP, paymentMethod });
+  // Cash on Delivery skips the payment-webhook confirmation step entirely
+  // (see the transaction above) — its "confirmed" moment is creation
+  // itself, not a later status flip like online payments get.
+  if (order.status === "CONFIRMED") {
+    void trackEvent(order.userId, "Order", "confirmed", { totalEGP: order.totalEGP });
+  }
 
   const itemsSummary = orderItemsData
     .map((i) => `${i.titleSnapshot} x${i.quantity}`)
