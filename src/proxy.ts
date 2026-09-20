@@ -76,6 +76,14 @@ export async function proxy(request: NextRequest) {
     );
   }
 
+  // /site only exists as the rewrite target above — reached directly (e.g.
+  // someone guessing the URL on the app domain), it would render the
+  // marketing header/footer nested inside the app's own full shell instead
+  // of standing alone. Bounce it home rather than show that.
+  if (!isMarketingHost && request.nextUrl.pathname === "/site") {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   if (request.nextUrl.pathname.startsWith("/admin")) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;
     const session = token ? await verifySessionToken(token) : null;
