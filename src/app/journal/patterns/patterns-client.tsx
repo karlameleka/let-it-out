@@ -156,7 +156,7 @@ export default function PatternsClient({
                     <span
                       title={cell.moods.length ? cell.moods.map((m) => moodLabel(m, locale)).join(", ") : undefined}
                       className={`h-5 w-5 rounded-full border ${isToday ? "ring-2 ring-brand-400" : ""} ${
-                        mainColor ? "border-black/10" : "border-transparent bg-brand-50/60"
+                        mainColor ? "border-brand-900/10" : "border-transparent bg-brand-50/60"
                       }`}
                       style={mainColor ? { backgroundColor: mainColor } : undefined}
                     />
@@ -175,7 +175,7 @@ export default function PatternsClient({
               <p className="mt-1 flex items-center gap-1.5 text-sm text-ink/60">
                 {dict.mostCommonMood}
                 <span
-                  className="h-2.5 w-2.5 rounded-full border border-black/10"
+                  className="h-2.5 w-2.5 rounded-full border border-brand-900/10"
                   style={{ backgroundColor: data.frequency[0].color }}
                 />
                 <span className="font-medium text-ink/80">{data.frequency[0].label}</span> ({data.frequency[0].count}×)
@@ -191,7 +191,7 @@ export default function PatternsClient({
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2">
                         <span
-                          className="h-2.5 w-2.5 rounded-full border border-black/10"
+                          className="h-2.5 w-2.5 rounded-full border border-brand-900/10"
                           style={{ backgroundColor: m.color }}
                         />
                         <span className="text-ink/80">{m.label}</span>

@@ -56,7 +56,7 @@ export default function MoodPicker({
                     : "border-brand-100 bg-white text-ink/70 hover:border-brand-300 active:border-brand-300"
               }`}
             >
-              <span className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ backgroundColor: core.color }} />
+              <span className="h-2.5 w-2.5 rounded-full border border-brand-900/10" style={{ backgroundColor: core.color }} />
               {locale === "ar" ? core.labelAr : core.label}
             </button>
           );
@@ -76,7 +76,7 @@ export default function MoodPicker({
                   : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300 active:border-brand-300"
               }`}
             >
-              <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: m.color }} />
+              <span className="h-2 w-2 rounded-full border border-brand-900/10" style={{ backgroundColor: m.color }} />
               {locale === "ar" ? m.labelAr : m.label}
             </button>
           ))}

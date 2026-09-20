@@ -63,7 +63,7 @@ export async function toPdfBuffer<T>(
       .fillColor("#666666")
       .text(`Generated ${new Date().toLocaleString("en-GB")} · ${rows.length} row${rows.length === 1 ? "" : "s"}`);
     doc.moveDown(1);
-    doc.fillColor("#000000");
+    doc.fillColor("#123543"); // brand-900 — dark teal, never plain black.
 
     const colWidth = (doc.page.width - doc.page.margins.left - doc.page.margins.right) / columns.length;
 

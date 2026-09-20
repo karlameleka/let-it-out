@@ -344,7 +344,7 @@ function EntryCard({
                   <span
                     key={m}
                     title={moodLabel(m)}
-                    className="h-2.5 w-2.5 rounded-full border border-black/10"
+                    className="h-2.5 w-2.5 rounded-full border border-brand-900/10"
                     style={{ backgroundColor: moodColor(m) }}
                   />
                 ))}

@@ -114,7 +114,7 @@ export default function ClientNoteItem({
               key={m}
               className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50/60 px-2.5 py-1 text-xs font-medium text-ink/70"
             >
-              <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: moodColor(m) }} />
+              <span className="h-2 w-2 rounded-full border border-brand-900/10" style={{ backgroundColor: moodColor(m) }} />
               {moodLabel(m)}
             </span>
           ))}

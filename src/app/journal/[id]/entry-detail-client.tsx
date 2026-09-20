@@ -201,7 +201,7 @@ export default function EntryDetailClient({
                   className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-white py-1 pl-1 pr-3 text-xs font-medium text-brand-700 shadow-sm"
                 >
                   <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full border border-brand-900/10"
                     style={{ backgroundColor: moodColor(m) }}
                   />
                   {moodLabel(m, locale)}

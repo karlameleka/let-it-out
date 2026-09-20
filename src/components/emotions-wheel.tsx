@@ -382,7 +382,7 @@ export default function EmotionsWheel({
       <div className="mt-5 flex min-h-[4.5rem] flex-col items-center gap-2 text-center">
         {logged ? (
           <p className="animate-pop-in flex items-center gap-2 text-lg font-medium text-brand-700">
-            <span className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ backgroundColor: logged.color }} />
+            <span className="h-2.5 w-2.5 rounded-full border border-brand-900/10" style={{ backgroundColor: logged.color }} />
             {dict.wheelLogged}: {logged.label}
           </p>
         ) : expanded ? (
