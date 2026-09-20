@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { MapPin, Phone, Mail } from "lucide-react";
+import { Download, MapPin, Phone, Mail } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { WaveDivider } from "@/components/decor";
 import { SOCIAL_LINKS } from "@/components/social-icons";
@@ -10,17 +10,9 @@ const CONTACT_PHONE = "+20 128 8200533";
 const CONTACT_PHONE_HREF = "tel:+201288200533";
 const CONTACT_EMAIL = "letitoutsupport@gmail.com";
 
-// In-page anchors, plus the one real destination outside this site: the
-// app-install flow. See the comment on marketing-header.tsx's NAV_LINKS.
-const EXPLORE_LINKS = [
-  { href: "#story", label: "About us" },
-  { href: "#services", label: "Our services" },
-  { href: `${APP_ORIGIN}/install`, label: "Get the app" },
-];
-
 export function MarketingFooter() {
   return (
-    <footer id="contact" className="relative mt-24 scroll-mt-16 overflow-hidden bg-brand-900 text-brand-50">
+    <footer className="relative mt-24 overflow-hidden bg-brand-900 text-brand-50">
       <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />
 
       <Image
@@ -32,30 +24,19 @@ export function MarketingFooter() {
       />
 
       <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-        <div className="relative grid gap-8 sm:grid-cols-2 sm:gap-10 md:grid-cols-4">
-          <div className="md:col-span-2">
+        <div className="relative grid gap-8 sm:grid-cols-2 sm:gap-10">
+          <div>
             <Logo variant="horizontal-white" height={32} />
             <p className="mt-4 max-w-sm text-sm text-brand-100/80">
               Enhancing Mental Health using Evidence-based Research since 2021
             </p>
-            <p className="mt-2 max-w-sm text-sm text-brand-100/60">
-              Online Counseling • Guided Journals • Trainings and Workshops
-            </p>
-          </div>
-
-          <div className="hidden sm:block">
-            <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-200">
-              Explore
-            </h3>
-            <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
-              {EXPLORE_LINKS.map((link) => (
-                <li key={link.href}>
-                  <a href={link.href} className="hover:text-white active:text-white">
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <a
+              href={`${APP_ORIGIN}/install`}
+              className="mt-5 inline-flex items-center gap-1.5 rounded bg-white px-4 py-2 text-sm font-semibold tracking-tight text-brand-800 transition-colors hover:bg-brand-50 active:bg-brand-50"
+            >
+              <Download className="h-4 w-4" strokeWidth={2} />
+              Download the app
+            </a>
           </div>
 
           <div>

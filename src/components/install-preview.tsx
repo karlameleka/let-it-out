@@ -81,7 +81,7 @@ export default function InstallPreview({ dict }: { dict: Dictionary["install"] }
   );
 }
 
-function PhoneFrame({ label, children }: { label: string; children: React.ReactNode }) {
+export function PhoneFrame({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="mx-auto w-[220px] rounded-[28px] bg-brand-900 p-2 shadow-xl">

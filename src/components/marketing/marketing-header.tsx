@@ -4,15 +4,10 @@ import { Logo } from "@/components/logo";
 
 const APP_ORIGIN = "https://www.letitouteg.org";
 
-// All in-page anchors — this site stands on its own (see proxy.ts), so
-// nothing here links into the live app except the "download" CTAs below.
-const NAV_LINKS = [
-  { href: "#services", label: "Services" },
-  { href: "#app", label: "Get the app" },
-  { href: "#story", label: "About" },
-  { href: "#contact", label: "Contact" },
-];
-
+// Deliberately no nav links — this page has one job (get someone to
+// download the app), so the only thing to click besides the logo is the
+// download CTA. See proxy.ts and the PR notes for why nothing here links
+// into the live app itself.
 export function MarketingHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -20,18 +15,6 @@ export function MarketingHeader() {
         <Link href="/" aria-label="Let It Out home" className="inline-flex items-center">
           <Logo height={40} className="h-9 w-auto sm:h-10" priority />
         </Link>
-
-        <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="link-grow pb-0.5 text-sm font-medium text-ink/70 hover:text-brand-700 active:text-brand-700"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
 
         <a
           href={`${APP_ORIGIN}/install`}
