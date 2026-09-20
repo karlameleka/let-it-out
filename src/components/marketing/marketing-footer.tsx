@@ -4,7 +4,7 @@ import { Logo } from "@/components/logo";
 import { WaveDivider } from "@/components/decor";
 import { SOCIAL_LINKS } from "@/components/social-icons";
 
-const APP_ORIGIN = "https://letitouteg.org";
+const APP_ORIGIN = "https://www.letitouteg.org";
 const OFFICE_MAPS_URL = "https://maps.app.goo.gl/ym5Dc5zvyxfPVxcZA";
 const CONTACT_PHONE = "+20 128 8200533";
 const CONTACT_PHONE_HREF = "tel:+201288200533";
