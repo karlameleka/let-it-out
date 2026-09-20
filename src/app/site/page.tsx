@@ -6,7 +6,7 @@ import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
 import { Reveal } from "@/components/reveal";
 import InstallPreview from "@/components/install-preview";
 
-const APP_ORIGIN = "https://letitouteg.org";
+const APP_ORIGIN = "https://www.letitouteg.org";
 
 export const metadata: Metadata = {
   title: { absolute: "Let It Out | Mental Health Services, Egypt" },

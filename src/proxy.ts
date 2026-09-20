@@ -7,14 +7,15 @@ import { THERAPIST_SESSION_COOKIE, verifyTherapistSessionToken } from "@/lib/the
 // other /therapist route is the gated portal.
 const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password", "/therapist/reset-password"];
 
-// The marketing site (services + "download the app") lives on its own
-// subdomain, separate from the PWA at the apex domain — so an existing
-// installed/bookmarked letitouteg.org keeps behaving exactly as it always
-// has. Only "/" is served there (rewritten to the /site route below); any
-// other path on this host bounces to the same path on the real app, since
-// the marketing site doesn't duplicate the app's routes.
-const MARKETING_HOSTNAME = "www.letitouteg.org";
-const APP_ORIGIN = "https://letitouteg.org";
+// The marketing site (services + "download the app") lives on the apex
+// domain, separate from the PWA — which is canonically served at
+// www.letitouteg.org (Vercel's Production domain) — so an existing
+// installed/bookmarked www.letitouteg.org keeps behaving exactly as it
+// always has. Only "/" is served on the apex (rewritten to the /site route
+// below); any other path on this host bounces to the same path on the real
+// app, since the marketing site doesn't duplicate the app's routes.
+const MARKETING_HOSTNAME = "letitouteg.org";
+const APP_ORIGIN = "https://www.letitouteg.org";
 
 /**
  * Sets a strict, nonce-based Content-Security-Policy on every page request.

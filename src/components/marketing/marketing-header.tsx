@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { Logo } from "@/components/logo";
 
-const APP_ORIGIN = "https://letitouteg.org";
+const APP_ORIGIN = "https://www.letitouteg.org";
 
 const NAV_LINKS = [
   { href: "#services", label: "Services" },

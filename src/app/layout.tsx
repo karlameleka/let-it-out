@@ -68,9 +68,9 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const hdrs = await headers();
-  // Set by proxy.ts when this request came in on the marketing subdomain
-  // (www.letitouteg.org) — that page brings its own header/footer and
-  // isn't part of the installable PWA, so none of the app chrome below
+  // Set by proxy.ts when this request came in on the marketing apex domain
+  // (letitouteg.org) — that page brings its own header/footer and isn't
+  // part of the installable PWA, so none of the app chrome below
   // (nav, bottom tab bar, install prompts, service worker) applies to it.
   // It also needs none of the app's DB-backed settings/session/text-override
   // lookups, so those are skipped entirely on this path.
