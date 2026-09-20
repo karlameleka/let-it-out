@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Download, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { ShieldCheck, Sparkles, Users } from "lucide-react";
 import { Container, SectionHeading } from "@/components/ui";
 import { Ribbon, WaveDivider, DoodleField } from "@/components/decor";
 import { Reveal } from "@/components/reveal";
 import InstallPreview, { PhoneFrame } from "@/components/install-preview";
+import { DownloadButton } from "@/components/marketing/download-button";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
-const APP_ORIGIN = "https://www.letitouteg.org";
 // This page is deliberately English-only marketing copy (no locale
 // switcher here) — InstallPreview needs a dict for its phone-preview
 // mock content, so it gets the "en" one directly.
@@ -52,18 +52,6 @@ const TRUST_LOGOS = [
   },
   { name: "Fahim Foundation", src: "/brand/trusted-by/fahim-foundation.png", width: 349, height: 89 },
 ];
-
-function DownloadButton({ className = "" }: { className?: string }) {
-  return (
-    <a
-      href={`${APP_ORIGIN}/install`}
-      className={`inline-flex items-center justify-center gap-2 rounded bg-brand-700 px-6 py-3 text-sm font-semibold tracking-tight text-white shadow-sm shadow-brand-900/20 transition-all duration-300 ease-out hover:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:bg-brand-600 active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] ${className}`}
-    >
-      <Download className="h-4 w-4" strokeWidth={2} />
-      Download the app
-    </a>
-  );
-}
 
 export default function MarketingHomePage() {
   return (

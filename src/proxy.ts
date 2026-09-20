@@ -12,12 +12,14 @@ const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password"
 // www.letitouteg.org (Vercel's Production domain) — so an existing
 // installed/bookmarked www.letitouteg.org keeps behaving exactly as it
 // always has. It's a deliberately small, standalone cluster of pages (not
-// a mirror of the app): "/" plus its own /privacy and /terms, so those stay
-// reachable without installing anything. Everything else on this host
+// a mirror of the app): the homepage, its own /privacy and /terms, and a
+// short-form feature page per tool (/counseling, /journaling, /workshops)
+// — same path names the real app uses for some of these, but on a
+// different host, so there's no collision. Everything else on this host
 // bounces to the same path on the real app.
 const MARKETING_HOSTNAME = "letitouteg.org";
 const APP_ORIGIN = "https://www.letitouteg.org";
-const MARKETING_PATHS = ["/", "/privacy", "/terms"];
+const MARKETING_PATHS = ["/", "/privacy", "/terms", "/counseling", "/journaling", "/workshops"];
 
 /**
  * Sets a strict, nonce-based Content-Security-Policy on every page request.
