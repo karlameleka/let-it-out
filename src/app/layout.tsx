@@ -111,7 +111,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   <main className="flex-1">
                     <ViewTransition name="page-content">{children}</ViewTransition>
                   </main>
-                  <SiteFooter locale={locale} dict={dict.footer} />
+                  <SiteFooter locale={locale} dict={dict} />
                   <EntryGates />
                   <SerwistProvider swUrl="/serwist/sw.js" />
                   <HelpButton dict={dict.helpButton} />
