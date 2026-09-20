@@ -209,7 +209,7 @@ const en = {
     value2Text: "Grounded in CBT, DBT, and research that's actually been tested.",
     value3Label: "Accessible",
     value3Text: "Straightforward pricing and language. Care shouldn't feel like a maze.",
-    value4Label: "Human, not clinical",
+    value4Label: "Human, and real",
     value4Text: "We meet you where you are, not where a textbook says you should be.",
     communityEyebrow: "Community engagement",
     communityTitle: "Building healthier, more supportive environments",
