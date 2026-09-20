@@ -17,7 +17,6 @@ const ar: Dictionary = {
     signUp: "إنشاء حساب",
     bookASession: "احجز جلسة",
     toggleMenu: "فتح القائمة",
-    getApp: "حمّل التطبيق",
   },
   languageSwitcher: {
     label: "اللغة",
@@ -43,7 +42,6 @@ const ar: Dictionary = {
     workshops: "ورش العمل",
     guidedJournals: "اليوميات الإرشادية",
     journalingApp: "تطبيق اليوميات",
-    getApp: "حمّل التطبيق",
     getInTouchHeading: "تواصل معنا",
     contactUs: "اتصل بنا",
     officeLocation: "مصر الجديدة، القاهرة، مصر",
@@ -86,7 +84,6 @@ const ar: Dictionary = {
     heroDescription:
       "يهتم Let It Out بصحتك النفسية عبر أبحاث علمية وأدوات عملية ورعاية إنسانية — من خلال استشارات فردية، ويوميات إرشادية، وورش عمل لأماكن العمل والمجتمعات.",
     heroCtaServices: "استكشف خدماتنا",
-    heroCtaApp: "حمّل التطبيق",
     heroPromptQuote: "«ما هو الشيء الذي فعله جسدك من أجلك اليوم ولم تشكره عليه؟»",
     heroPromptLabel: "سؤال اليوم",
     heroCardQuote: "أخرِج ما بداخلك. صفحة في كل مرة.",
@@ -119,11 +116,6 @@ const ar: Dictionary = {
     journalDescription:
       "أنشئ حسابًا مجانيًا للحصول على تدوينات إرشادية لاكتشاف الذات ومساحة خاصة للكتابة — مباشرة على التطبيق.",
     journalCta: "ابدأ التدوين مجانًا",
-    appEyebrow: "حمّل التطبيق",
-    appTitle: "Let It Out، على شاشتك الرئيسية مباشرة.",
-    appDescription:
-      "حمّل التطبيق للوصول الفوري إلى يومياتك وجلساتك ومواردك — بدون شريط متصفح، وبدون الحاجة لمتجر تطبيقات.",
-    appCta: "حمّل التطبيق",
   },
   services: {
     ribbon: "خدماتنا",

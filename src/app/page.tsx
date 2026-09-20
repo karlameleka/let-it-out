@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Download } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
@@ -9,7 +8,6 @@ import StoryTeaser from "@/components/story-teaser";
 import { ProductCover, PRODUCT_PHOTOS } from "@/components/product-cover";
 import { formatEGP } from "@/lib/format";
 import InstallOverlay from "@/components/install-overlay";
-import InstallPreview from "@/components/install-preview";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -56,9 +54,6 @@ export default async function HomePage({
             <div className="animate-rise mt-9 flex flex-wrap items-center gap-x-8 gap-y-4" style={{ animationDelay: "0.28s" }}>
               <ButtonLink href="/services" variant="primary">
                 {t.heroCtaServices}
-              </ButtonLink>
-              <ButtonLink href="/install" variant="text">
-                {t.heroCtaApp} &rarr;
               </ButtonLink>
             </div>
           </div>
@@ -147,30 +142,6 @@ export default async function HomePage({
                 description={t.service3Description}
                 cta={t.service3Cta}
               />
-            </div>
-          </Container>
-        </Reveal>
-      </section>
-
-      {/* Get the App */}
-      <section className="relative overflow-hidden bg-white pb-20 pt-8 sm:pt-14">
-        <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-white" />
-        <Reveal>
-          <Container>
-            <SectionHeading
-              align="center"
-              eyebrow={t.appEyebrow}
-              title={t.appTitle}
-              description={t.appDescription}
-            />
-            <div className="mt-12">
-              <InstallPreview />
-            </div>
-            <div className="mt-10 flex justify-center">
-              <ButtonLink href="/install" variant="primary">
-                <Download className="h-4 w-4" strokeWidth={2} />
-                {t.appCta}
-              </ButtonLink>
             </div>
           </Container>
         </Reveal>
