@@ -1,6 +1,8 @@
 import { Star } from "lucide-react";
 import { prisma } from "@/lib/db";
 import AdminPagination from "@/components/admin-pagination";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import { clearAllFeedback } from "@/lib/admin-actions";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 
 const SERVICE_LABELS: Record<string, string> = {
@@ -72,6 +74,25 @@ export default async function AdminFeedbackPage({
         </div>
       )}
       <AdminPagination page={page} totalPages={totalPages} basePath="/admin/feedback" />
+
+      {totalCount > 0 && (
+        <div className="mt-8 rounded-2xl border border-red-200 bg-red-50/40 p-5">
+          <h2 className="font-display font-semibold text-red-900">Danger zone</h2>
+          <p className="mt-1 text-sm text-red-800/80">
+            Permanently clears every submitted feedback rating and comment ({totalCount} right now) — the
+            Happiness score on the Behavioral Analytics dashboard goes back to no data too. For a one-time clean
+            slate (e.g. after a period of internal/QA testing), not something to run routinely.
+          </p>
+          <form action={clearAllFeedback} className="mt-3">
+            <ConfirmSubmitButton
+              confirmMessage={`Permanently clear all ${totalCount} feedback submission${totalCount === 1 ? "" : "s"}? This can't be undone.`}
+              className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+            >
+              Clear all feedback
+            </ConfirmSubmitButton>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

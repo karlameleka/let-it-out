@@ -1070,6 +1070,29 @@ export async function resetPageViewTracking() {
   revalidatePath("/admin");
 }
 
+/**
+ * Permanently wipes every submitted feedback rating/comment — for a
+ * one-time clean slate (e.g. after internal/QA testing produced
+ * submissions that shouldn't count). Same "Danger zone" treatment as
+ * resetPageViewTracking: no customer-facing record depends on a feedback
+ * row existing, so this is a hard delete rather than routed through
+ * TrashedItem. Also resets the Happiness score on the behavioral
+ * analytics dashboard, which reads directly from this table.
+ */
+export async function clearAllFeedback() {
+  const admin = await requireAdmin();
+  const { count } = await prisma.feedback.deleteMany({});
+  await logAudit({
+    actor: admin,
+    action: "feedback.cleared",
+    summary: `Cleared ${count} feedback submission${count === 1 ? "" : "s"}`,
+    metadata: { count },
+    severity: "WARNING",
+  });
+  revalidatePath("/admin/feedback");
+  revalidatePath("/admin/behavioral-analytics");
+}
+
 const PAID_ORDER_STATUSES: OrderStatus[] = [OrderStatus.CONFIRMED, OrderStatus.SHIPPED, OrderStatus.COMPLETED];
 
 /**
