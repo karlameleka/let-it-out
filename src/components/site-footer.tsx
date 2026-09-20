@@ -20,7 +20,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary 
   const f = dict.footer;
 
   return (
-    <footer className="relative mt-24 overflow-hidden bg-brand-900 text-brand-50">
+    <footer className="relative mt-10 overflow-hidden bg-brand-900 text-brand-50">
       <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />
 
       <div className="relative mx-auto max-w-6xl px-4 py-6 sm:px-6">

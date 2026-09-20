@@ -108,7 +108,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                     dict={dict}
                     arabicEnabled={settings.arabicEnabled}
                   />
-                  <main className="flex-1">
+                  {/* No flex-1 here on purpose — a "sticky footer" that
+                      stretches main to fill the viewport pins the footer to
+                      the bottom on every short page (e.g. /menu), which
+                      reads as a large empty gap above it and can force a
+                      scroll just to reach a footer that's otherwise fully
+                      visible already. The footer should just follow
+                      whatever content each page actually has. */}
+                  <main>
                     <ViewTransition name="page-content">{children}</ViewTransition>
                   </main>
                   <SiteFooter locale={locale} dict={dict} />
