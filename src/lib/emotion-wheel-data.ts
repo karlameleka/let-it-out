@@ -24,10 +24,13 @@ export type WheelCore = {
  * EmotionsWheel's log() call), so calendar coloring and legacy entries
  * stay fully compatible without this file touching that one.
  *
- * Colors are a muted 5-hue family (amber/blue/terracotta/violet/sage) in
- * the app's soft, low-saturation style — deliberately not the reference
- * wheel's bright saturated hues, and not constrained to the site-wide
- * brand teal ramp either (this widget needs 5 clearly distinct hues to
+ * Colors reuse the exact 5 core hues already established (and previously
+ * approved) for CORE_EMOTIONS in moods.ts — not the reference wheel's own
+ * bright saturated hues, and not a newly-invented palette either. Each
+ * core's secondary/tertiary shade is a tint or shade of that same exact
+ * hex, generated the same way the app's existing per-core palette already
+ * does it (see moods.ts's SECONDARY_LABELS comment) — this widget still
+ * needs several distinguishable hues to read at a glance, the same
  * read at a glance, the same exception moods.ts's existing palette
  * already made). Order within each ring (clockwise) matches the source
  * wheel's layout, so adjacent wedges across ring/core boundaries line up.
@@ -37,9 +40,9 @@ export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCo
     id: "fearful",
     label: "Fearful",
     labelAr: "خايف",
-    colorCore: "#7A5EA8",
-    colorSecondary: "#A78FC7",
-    colorTertiary: "#E4DBF0",
+    colorCore: "#D8E4FB",
+    colorSecondary: "#8FA8E8",
+    colorTertiary: "#B5C6F2",
     secondaries: [
       { label: "Threatened", labelAr: "يشعر بالتهديد", tertiary: [
         { label: "Overwhelmed", labelAr: "مرهق" },
@@ -67,9 +70,9 @@ export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCo
     id: "disgusted",
     label: "Disgusted",
     labelAr: "مشمئز",
-    colorCore: "#4C8C6B",
-    colorSecondary: "#8DBBA2",
-    colorTertiary: "#DCEAE1",
+    colorCore: "#DDE7EA",
+    colorSecondary: "#82A6AC",
+    colorTertiary: "#ADC6CA",
     secondaries: [
       { label: "Repelled", labelAr: "نافر", tertiary: [
         { label: "Horrified", labelAr: "مرتعب" },
@@ -97,9 +100,9 @@ export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCo
     id: "happy",
     label: "Happy",
     labelAr: "مبسوط",
-    colorCore: "#C98F3E",
-    colorSecondary: "#E0B876",
-    colorTertiary: "#F3E1C2",
+    colorCore: "#3388A4",
+    colorSecondary: "#73B0C7",
+    colorTertiary: "#C3E1EA",
     secondaries: [
       { label: "Optimistic", labelAr: "متفائل", tertiary: [
         { label: "Hopeful", labelAr: "يحمل أملاً" },
@@ -127,9 +130,9 @@ export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCo
     id: "sad",
     label: "Sad",
     labelAr: "زعلان",
-    colorCore: "#3D6FA6",
-    colorSecondary: "#7FA3C9",
-    colorTertiary: "#D2E1EE",
+    colorCore: "#8677A3",
+    colorSecondary: "#AC9FC0",
+    colorTertiary: "#DAD3E5",
     secondaries: [
       { label: "Lonely", labelAr: "وحيد", tertiary: [
         { label: "Isolated", labelAr: "منعزل" },
@@ -157,9 +160,9 @@ export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCo
     id: "angry",
     label: "Angry",
     labelAr: "متضايق",
-    colorCore: "#B24C42",
-    colorSecondary: "#D08278",
-    colorTertiary: "#F1D4CF",
+    colorCore: "#1E5B73",
+    colorSecondary: "#4F8BA3",
+    colorTertiary: "#A8CCDA",
     secondaries: [
       { label: "Humiliated", labelAr: "مُهان", tertiary: [
         { label: "Disrespected", labelAr: "غير محترم" },

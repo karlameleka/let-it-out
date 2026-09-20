@@ -8,16 +8,6 @@ import { logMoodCheckIn } from "@/lib/local-journal";
 import { Button } from "@/components/ui";
 import type { Locale } from "@/lib/i18n/locale";
 
-const CX = 220;
-const CY = 220;
-// Center hub, then core / secondary / tertiary rings, each band wide
-// enough for its own label style (tangential for the first two, radial
-// for the crowded 7.2°-wide tertiary wedges — see RadialLabel below).
-const R0 = 40;
-const R1 = 95;
-const R2 = 140;
-const R3 = 200;
-
 // Rounded to 2dp: raw floats from Math.cos/sin can differ in their last bit
 // between the server and client JS engines, which trips a hydration
 // mismatch on the numbers embedded in the SVG markup.
@@ -25,18 +15,22 @@ function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-function polar(r: number, angleDeg: number) {
-  const rad = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: round2(CX + r * Math.cos(rad)), y: round2(CY + r * Math.sin(rad)) };
+function makePolar(cx: number, cy: number) {
+  return function polar(r: number, angleDeg: number) {
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    return { x: round2(cx + r * Math.cos(rad)), y: round2(cy + r * Math.sin(rad)) };
+  };
 }
 
-function wedgePath(rInner: number, rOuter: number, startDeg: number, endDeg: number) {
-  const o1 = polar(rOuter, startDeg);
-  const o2 = polar(rOuter, endDeg);
-  const i1 = polar(rInner, endDeg);
-  const i2 = polar(rInner, startDeg);
-  const large = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${o1.x} ${o1.y} A ${rOuter} ${rOuter} 0 ${large} 1 ${o2.x} ${o2.y} L ${i1.x} ${i1.y} A ${rInner} ${rInner} 0 ${large} 0 ${i2.x} ${i2.y} Z`;
+function makeWedgePath(polar: ReturnType<typeof makePolar>) {
+  return function wedgePath(rInner: number, rOuter: number, startDeg: number, endDeg: number) {
+    const o1 = polar(rOuter, startDeg);
+    const o2 = polar(rOuter, endDeg);
+    const i1 = polar(rInner, endDeg);
+    const i2 = polar(rInner, startDeg);
+    const large = endDeg - startDeg > 180 ? 1 : 0;
+    return `M ${o1.x} ${o1.y} A ${rOuter} ${rOuter} 0 ${large} 1 ${o2.x} ${o2.y} L ${i1.x} ${i1.y} A ${rInner} ${rInner} 0 ${large} 0 ${i2.x} ${i2.y} Z`;
+  };
 }
 
 const DARK_LABEL = "#123543"; // brand-900 — a dark navy, never pure black.
@@ -53,60 +47,35 @@ function labelColorFor(hex: string): string {
 }
 
 // Rough average glyph advance width for Inter Semibold, as a fraction of
-// font-size — used only to estimate whether a given word will fit the
-// space it's being placed in, not for precise layout.
+// font-size — used only to estimate whether a given word will fit the arc
+// it's being placed on, not for precise layout.
 const AVG_CHAR_WIDTH_EM = 0.58;
 
-/** Core ring (5 wide, 72°-each wedges) — plenty of room for a short word
- * sitting upright at mid-radius, no rotation needed. */
-function CoreWedgeLabel({ text, color, startDeg, endDeg }: { text: string; color: string; startDeg: number; endDeg: number }) {
-  const mid = (startDeg + endDeg) / 2;
-  const pt = polar((R0 + R1) / 2, mid);
-  return (
-    <text
-      x={pt.x}
-      y={pt.y}
-      textAnchor="middle"
-      dominantBaseline="middle"
-      fill={labelColorFor(color)}
-      className="pointer-events-none select-none text-[17px] font-semibold"
-    >
-      {text}
-    </text>
-  );
-}
-
-/** Secondary ring label — follows the arc (tangent to the circle), the
- * same trick clock-face numerals use. Anchored at its own center point, so
- * flipping it 180° for the bottom half only changes reading direction,
- * never its position. */
-function ArcLabel({
+/** Wide wedges (36° or more) — plenty of room for a short word sitting
+ * upright at mid-radius, no rotation needed. */
+function UprightLabel({
   text,
   color,
   startDeg,
   endDeg,
   labelR,
+  polar,
+  fontSize,
 }: {
   text: string;
   color: string;
   startDeg: number;
   endDeg: number;
   labelR: number;
+  polar: ReturnType<typeof makePolar>;
+  fontSize: number;
 }) {
   const mid = (startDeg + endDeg) / 2;
   const pt = polar(labelR, mid);
-  const flip = mid > 90 && mid < 270;
-  const rotate = round2(flip ? mid + 180 : mid);
-  const span = endDeg - startDeg;
-  const arcLength = (labelR * (span * Math.PI)) / 180;
-  const fontForSpan = span * 0.6;
-  const fontForWordLength = arcLength / (Math.max(text.length, 1) * AVG_CHAR_WIDTH_EM);
-  const fontSize = round2(Math.max(8, Math.min(13, fontForSpan, fontForWordLength)));
   return (
     <text
       x={pt.x}
       y={pt.y}
-      transform={`rotate(${rotate} ${pt.x} ${pt.y})`}
       textAnchor="middle"
       dominantBaseline="middle"
       fill={labelColorFor(color)}
@@ -118,34 +87,34 @@ function ArcLabel({
   );
 }
 
-/** Tertiary ring label — these wedges are only 7.2° wide (10 per core), far
- * too narrow for text to follow the arc, but each wedge is nice and deep
- * radially. So the label runs outward along the wedge's own spoke instead
- * (rotated to point away from center), giving it the wedge's full radial
- * depth to work with rather than its cramped angular width. Wedges whose
- * outward direction would render upside-down (the left half of the wheel)
- * flip to read inward instead, staying upright either way. */
-function RadialLabel({
+/** Narrower wedges — the label follows the arc (tangent to the circle),
+ * the same trick clock-face numerals use. Anchored at its own center
+ * point, so flipping it 180° for the bottom half only changes reading
+ * direction, never its position. */
+function ArcLabel({
   text,
   color,
   startDeg,
   endDeg,
-  rInner,
-  rOuter,
+  labelR,
+  polar,
 }: {
   text: string;
   color: string;
   startDeg: number;
   endDeg: number;
-  rInner: number;
-  rOuter: number;
+  labelR: number;
+  polar: ReturnType<typeof makePolar>;
 }) {
   const mid = (startDeg + endDeg) / 2;
-  const pt = polar((rInner + rOuter) / 2, mid);
-  const flip = mid > 180 && mid < 360;
-  const rotate = round2(flip ? mid + 90 : mid - 90);
-  const radialLength = rOuter - rInner;
-  const fontSize = round2(Math.max(7, Math.min(12, radialLength / (Math.max(text.length, 1) * AVG_CHAR_WIDTH_EM))));
+  const pt = polar(labelR, mid);
+  const flip = mid > 90 && mid < 270;
+  const rotate = round2(flip ? mid + 180 : mid);
+  const span = endDeg - startDeg;
+  const arcLength = (labelR * (span * Math.PI)) / 180;
+  const fontForSpan = span * 0.34;
+  const fontForWordLength = arcLength / (Math.max(text.length, 1) * AVG_CHAR_WIDTH_EM);
+  const fontSize = round2(Math.max(11, Math.min(17, fontForSpan, fontForWordLength)));
   return (
     <text
       x={pt.x}
@@ -164,18 +133,206 @@ function RadialLabel({
 
 const CORE_SLICE = 360 / EMOTION_WHEEL.length;
 
+/** The 5-core selector wheel — Fearful/Disgusted/Happy/Sad/Angry, tap one
+ * to open its own full feelings wheel (see ExpandedWheel below). */
+function CoreSelectorWheel({
+  locale,
+  onSelect,
+  ariaLabel,
+}: {
+  locale: Locale;
+  onSelect: (id: CoreEmotionId) => void;
+  ariaLabel: string;
+}) {
+  const CX = 220;
+  const CY = 220;
+  const R0 = 60;
+  const R1 = 200;
+  const polar = makePolar(CX, CY);
+  const wedgePath = makeWedgePath(polar);
+
+  return (
+    <svg
+      viewBox="0 0 440 440"
+      className="w-full max-w-[440px] drop-shadow-[0_8px_20px_rgba(18,53,67,0.12)]"
+      role="img"
+      aria-label={ariaLabel}
+    >
+      {EMOTION_WHEEL.map((core, i) => {
+        const startDeg = i * CORE_SLICE;
+        const endDeg = startDeg + CORE_SLICE;
+        return (
+          <path
+            key={core.id}
+            d={wedgePath(R0, R1, startDeg, endDeg)}
+            fill={core.colorCore}
+            stroke="white"
+            strokeWidth={3}
+            className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
+            onClick={() => onSelect(core.id)}
+          />
+        );
+      })}
+      {EMOTION_WHEEL.map((core, i) => {
+        const startDeg = i * CORE_SLICE;
+        const endDeg = startDeg + CORE_SLICE;
+        const label = locale === "ar" ? core.labelAr : core.label;
+        return (
+          <UprightLabel
+            key={core.id}
+            text={label}
+            color={core.colorCore}
+            startDeg={startDeg}
+            endDeg={endDeg}
+            labelR={(R0 + R1) / 2}
+            polar={polar}
+            fontSize={22}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+/** One core's own full feelings wheel — its 5 secondary feelings and their
+ * 10 tertiary feelings, each ring using the full 360° (not squeezed into a
+ * slice of the 5-core wheel), so every wedge gets as much room as the
+ * 5-core wheel's own wedges do. Tap the center to go back. */
+function ExpandedWheel({
+  core,
+  locale,
+  onBack,
+  onLog,
+  ariaLabel,
+}: {
+  core: WheelCore;
+  locale: Locale;
+  onBack: () => void;
+  onLog: (label: string, color: string) => void;
+  ariaLabel: string;
+}) {
+  const CX = 260;
+  const CY = 260;
+  const R0 = 62;
+  const R1 = 175;
+  const R2 = 250;
+  const polar = makePolar(CX, CY);
+  const wedgePath = makeWedgePath(polar);
+  const secondarySlice = 360 / core.secondaries.length;
+  const tertiarySlice = 360 / (core.secondaries.length * 2);
+
+  return (
+    <svg
+      viewBox="0 0 520 520"
+      className="w-full max-w-[600px] drop-shadow-[0_8px_20px_rgba(18,53,67,0.12)]"
+      role="img"
+      aria-label={ariaLabel}
+    >
+      {core.secondaries.map((secondary, si) => {
+        const sStart = si * secondarySlice;
+        const sEnd = sStart + secondarySlice;
+        const sLabel = locale === "ar" ? secondary.labelAr : secondary.label;
+        return (
+          <path
+            key={secondary.label}
+            d={wedgePath(R0, R1, sStart, sEnd)}
+            fill={core.colorSecondary}
+            stroke="white"
+            strokeWidth={2.5}
+            className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
+            onClick={() => onLog(sLabel, core.colorSecondary)}
+          />
+        );
+      })}
+      {core.secondaries.flatMap((secondary, si) =>
+        secondary.tertiary.map((leaf, ti) => {
+          const tStart = (si * 2 + ti) * tertiarySlice;
+          const tEnd = tStart + tertiarySlice;
+          const tLabel = locale === "ar" ? leaf.labelAr : leaf.label;
+          return (
+            <path
+              key={leaf.label}
+              d={wedgePath(R1, R2, tStart, tEnd)}
+              fill={core.colorTertiary}
+              stroke="white"
+              strokeWidth={2}
+              className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
+              onClick={() => onLog(tLabel, core.colorTertiary)}
+            />
+          );
+        }),
+      )}
+
+      <circle cx={CX} cy={CY} r={R0 - 4} className="fill-white stroke-brand-100" strokeWidth={2} />
+
+      {core.secondaries.map((secondary, si) => {
+        const sStart = si * secondarySlice;
+        const sEnd = sStart + secondarySlice;
+        const sLabel = locale === "ar" ? secondary.labelAr : secondary.label;
+        return (
+          <UprightLabel
+            key={secondary.label}
+            text={sLabel}
+            color={core.colorSecondary}
+            startDeg={sStart}
+            endDeg={sEnd}
+            labelR={(R0 + R1) / 2}
+            polar={polar}
+            fontSize={17}
+          />
+        );
+      })}
+      {core.secondaries.flatMap((secondary, si) =>
+        secondary.tertiary.map((leaf, ti) => {
+          const tStart = (si * 2 + ti) * tertiarySlice;
+          const tEnd = tStart + tertiarySlice;
+          const tLabel = locale === "ar" ? leaf.labelAr : leaf.label;
+          return (
+            <ArcLabel
+              key={leaf.label}
+              text={tLabel}
+              color={core.colorTertiary}
+              startDeg={tStart}
+              endDeg={tEnd}
+              labelR={(R1 + R2) / 2}
+              polar={polar}
+            />
+          );
+        }),
+      )}
+
+      <foreignObject x={CX - R0 + 4} y={CY - R0 + 4} width={(R0 - 4) * 2} height={(R0 - 4) * 2}>
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-full text-center"
+        >
+          {locale === "ar" ? (
+            <ChevronRight className="h-5 w-5 text-ink/40" strokeWidth={2} />
+          ) : (
+            <ChevronLeft className="h-5 w-5 text-ink/40" strokeWidth={2} />
+          )}
+          <span className="text-sm font-semibold text-brand-900">
+            {locale === "ar" ? core.labelAr : core.label}
+          </span>
+        </button>
+      </foreignObject>
+    </svg>
+  );
+}
+
 /** Interactive 3-tier feelings wheel — Fearful/Disgusted/Happy/Sad/Angry at
- * the center, tap one to reveal its 5 more specific secondary feelings and
- * their 10 even-more-specific tertiary feelings, stacked around that same
- * slice (the other four cores stay collapsed). Tap any visible wedge —
- * core, secondary, or tertiary — to log it. Logged moods are saved
- * separately from journal entries (see logMoodCheckIn in local-journal.ts)
- * but still count toward mood patterns/calendar, which resolve colors by
- * core id only — see moods.ts — so every tap here logs under its core id
- * regardless of which ring was tapped, keeping full compatibility with
- * MoodPicker's own (unrelated) short list and existing logged history.
- * Deliberately a distinct, wheel-shaped interaction from MoodPicker's pill
- * chips, which stay dedicated to tagging a journal entry while writing. */
+ * the center, tap one to open its own full feelings wheel (5 secondary
+ * feelings, each with 2 tertiary feelings), using the full circle rather
+ * than a cramped slice so every word has room to read. Tap any wedge on
+ * either wheel to log it. Logged moods are saved separately from journal
+ * entries (see logMoodCheckIn in local-journal.ts) but still count toward
+ * mood patterns/calendar, which resolve colors by core id only — see
+ * moods.ts — so every tap here logs under its core id regardless of which
+ * ring was tapped, keeping full compatibility with MoodPicker's own
+ * (unrelated) short list and existing logged history. Deliberately a
+ * distinct, wheel-shaped interaction from MoodPicker's pill chips, which
+ * stay dedicated to tagging a journal entry while writing. */
 export default function EmotionsWheel({
   userId,
   locale,
@@ -210,140 +367,17 @@ export default function EmotionsWheel({
 
   return (
     <div className="flex flex-col items-center">
-      <svg
-        viewBox="0 0 440 440"
-        className="w-full max-w-[480px] drop-shadow-[0_8px_20px_rgba(18,53,67,0.12)]"
-        role="img"
-        aria-label={dict.wheelPrompt}
-      >
-        {/* Wedges and labels render in two separate passes — all paths, then
-            all labels — rather than interleaved per wedge, so a label that
-            overflows its own wedge's space never gets visually cropped by
-            the next wedge's opaque fill painting over it. */}
-        {EMOTION_WHEEL.map((core, i) => {
-          const startDeg = i * CORE_SLICE;
-          const endDeg = startDeg + CORE_SLICE;
-          const isExpanded = core.id === expandedId;
-          const secondarySlice = CORE_SLICE / core.secondaries.length;
-          const tertiarySlice = CORE_SLICE / (core.secondaries.length * 2);
-          return (
-            <g key={core.id}>
-              <path
-                d={wedgePath(R0, R1, startDeg, endDeg)}
-                fill={core.colorCore}
-                stroke="white"
-                strokeWidth={2}
-                className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
-                onClick={() => setExpandedId(isExpanded ? null : core.id)}
-              />
-              {isExpanded &&
-                core.secondaries.map((secondary, si) => {
-                  const sStart = startDeg + si * secondarySlice;
-                  const sEnd = sStart + secondarySlice;
-                  const sLabel = locale === "ar" ? secondary.labelAr : secondary.label;
-                  return (
-                    <path
-                      key={secondary.label}
-                      d={wedgePath(R1, R2, sStart, sEnd)}
-                      fill={core.colorSecondary}
-                      stroke="white"
-                      strokeWidth={1.5}
-                      className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
-                      onClick={() => log(core.id, sLabel, core.colorSecondary)}
-                    />
-                  );
-                })}
-              {isExpanded &&
-                core.secondaries.flatMap((secondary, si) =>
-                  secondary.tertiary.map((leaf, ti) => {
-                    const tStart = startDeg + (si * 2 + ti) * tertiarySlice;
-                    const tEnd = tStart + tertiarySlice;
-                    const tLabel = locale === "ar" ? leaf.labelAr : leaf.label;
-                    return (
-                      <path
-                        key={leaf.label}
-                        d={wedgePath(R2, R3, tStart, tEnd)}
-                        fill={core.colorTertiary}
-                        stroke="white"
-                        strokeWidth={1}
-                        className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-80"
-                        onClick={() => log(core.id, tLabel, core.colorTertiary)}
-                      />
-                    );
-                  }),
-                )}
-            </g>
-          );
-        })}
-
-        <circle cx={CX} cy={CY} r={R0 - 4} className="fill-white stroke-brand-100" strokeWidth={2} />
-
-        {EMOTION_WHEEL.map((core, i) => {
-          const startDeg = i * CORE_SLICE;
-          const endDeg = startDeg + CORE_SLICE;
-          const isExpanded = core.id === expandedId;
-          const secondarySlice = CORE_SLICE / core.secondaries.length;
-          const tertiarySlice = CORE_SLICE / (core.secondaries.length * 2);
-          const coreLabel = locale === "ar" ? core.labelAr : core.label;
-          return (
-            <g key={core.id}>
-              <CoreWedgeLabel text={coreLabel} color={core.colorCore} startDeg={startDeg} endDeg={endDeg} />
-              {isExpanded &&
-                core.secondaries.map((secondary, si) => {
-                  const sStart = startDeg + si * secondarySlice;
-                  const sEnd = sStart + secondarySlice;
-                  const sLabel = locale === "ar" ? secondary.labelAr : secondary.label;
-                  return (
-                    <ArcLabel
-                      key={secondary.label}
-                      text={sLabel}
-                      color={core.colorSecondary}
-                      startDeg={sStart}
-                      endDeg={sEnd}
-                      labelR={(R1 + R2) / 2}
-                    />
-                  );
-                })}
-              {isExpanded &&
-                core.secondaries.flatMap((secondary, si) =>
-                  secondary.tertiary.map((leaf, ti) => {
-                    const tStart = startDeg + (si * 2 + ti) * tertiarySlice;
-                    const tEnd = tStart + tertiarySlice;
-                    const tLabel = locale === "ar" ? leaf.labelAr : leaf.label;
-                    return (
-                      <RadialLabel
-                        key={leaf.label}
-                        text={tLabel}
-                        color={core.colorTertiary}
-                        startDeg={tStart}
-                        endDeg={tEnd}
-                        rInner={R2}
-                        rOuter={R3}
-                      />
-                    );
-                  }),
-                )}
-            </g>
-          );
-        })}
-
-        {expanded && (
-          <foreignObject x={CX - R0 + 4} y={CY - R0 + 4} width={(R0 - 4) * 2} height={(R0 - 4) * 2}>
-            <button
-              type="button"
-              onClick={() => setExpandedId(null)}
-              className="flex h-full w-full items-center justify-center rounded-full"
-              aria-label={dict.wheelBack}
-            >
-              {locale === "ar" ? (
-                <ChevronRight className="h-5 w-5 text-ink/40" strokeWidth={2} />
-              ) : (
-                <ChevronLeft className="h-5 w-5 text-ink/40" strokeWidth={2} />
-              )}
-            </button>
-          </foreignObject>
-        )}
-      </svg>
+      {expanded ? (
+        <ExpandedWheel
+          core={expanded}
+          locale={locale}
+          onBack={() => setExpandedId(null)}
+          onLog={(label, color) => log(expanded.id, label, color)}
+          ariaLabel={dict.wheelPickSpecific.replace("{core}", locale === "ar" ? expanded.labelAr : expanded.label)}
+        />
+      ) : (
+        <CoreSelectorWheel locale={locale} onSelect={setExpandedId} ariaLabel={dict.wheelPrompt} />
+      )}
 
       <div className="mt-5 flex min-h-[4.5rem] flex-col items-center gap-2 text-center">
         {logged ? (
