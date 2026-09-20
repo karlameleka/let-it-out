@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ViewTransition } from "react";
+import { headers } from "next/headers";
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/site-header";
@@ -66,6 +67,30 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const hdrs = await headers();
+  // Set by proxy.ts when this request came in on the marketing subdomain
+  // (www.letitouteg.org) — that page brings its own header/footer and
+  // isn't part of the installable PWA, so none of the app chrome below
+  // (nav, bottom tab bar, install prompts, service worker) applies to it.
+  // It also needs none of the app's DB-backed settings/session/text-override
+  // lookups, so those are skipped entirely on this path.
+  const isMarketingSite = hdrs.get("x-marketing-site") === "1";
+
+  if (isMarketingSite) {
+    const locale = await getLocale();
+    return (
+      <html
+        lang={locale}
+        dir={dirForLocale(locale)}
+        className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col bg-white text-ink">
+          <main className="flex-1">{children}</main>
+        </body>
+      </html>
+    );
+  }
+
   const [user, locale, settings, textOverrides] = await Promise.all([
     getCurrentUser(),
     getLocale(),
