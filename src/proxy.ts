@@ -7,6 +7,16 @@ import { THERAPIST_SESSION_COOKIE, verifyTherapistSessionToken } from "@/lib/the
 // other /therapist route is the gated portal.
 const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password", "/therapist/reset-password"];
 
+// The marketing site (services + "download the app") lives on the apex
+// domain, separate from the PWA — which is canonically served at
+// www.letitouteg.org (Vercel's Production domain) — so an existing
+// installed/bookmarked www.letitouteg.org keeps behaving exactly as it
+// always has. Only "/" is served on the apex (rewritten to the /site route
+// below); any other path on this host bounces to the same path on the real
+// app, since the marketing site doesn't duplicate the app's routes.
+const MARKETING_HOSTNAME = "letitouteg.org";
+const APP_ORIGIN = "https://www.letitouteg.org";
+
 /**
  * Sets a strict, nonce-based Content-Security-Policy on every page request.
  * `middleware.ts` was renamed to `proxy.ts` in Next.js 16 — same mechanism.
@@ -56,6 +66,16 @@ const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password"
  * enforced cspHeader below to actually block DOM-based XSS sinks.
  */
 export async function proxy(request: NextRequest) {
+  const hostname = (request.headers.get("host") ?? "").split(":")[0];
+  const isMarketingHost = hostname === MARKETING_HOSTNAME;
+
+  if (isMarketingHost && request.nextUrl.pathname !== "/") {
+    return NextResponse.redirect(
+      `${APP_ORIGIN}${request.nextUrl.pathname}${request.nextUrl.search}`,
+      308,
+    );
+  }
+
   if (request.nextUrl.pathname.startsWith("/admin")) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;
     const session = token ? await verifySessionToken(token) : null;
@@ -103,8 +123,16 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", cspHeader);
+  if (isMarketingHost) {
+    requestHeaders.set("x-marketing-site", "1");
+  }
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const response = isMarketingHost
+    ? NextResponse.rewrite(
+        new URL("/site", request.url),
+        { request: { headers: requestHeaders } },
+      )
+    : NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", cspHeader);
   response.headers.set("Content-Security-Policy-Report-Only", trustedTypesReportOnly);
   return response;
