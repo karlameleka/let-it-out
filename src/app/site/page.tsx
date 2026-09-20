@@ -5,8 +5,13 @@ import { Container, SectionHeading, Eyebrow } from "@/components/ui";
 import { Ribbon, WaveDivider, DoodleField, Swash } from "@/components/decor";
 import { Reveal } from "@/components/reveal";
 import InstallPreview from "@/components/install-preview";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 const APP_ORIGIN = "https://www.letitouteg.org";
+// This page is deliberately English-only marketing copy (no locale
+// switcher here) — InstallPreview needs a dict for its phone-preview
+// mock content, so it gets the "en" one directly.
+const installDict = getDictionary("en").install;
 
 export const metadata: Metadata = {
   title: { absolute: "Let It Out | Mental Health Services, Egypt" },
@@ -185,7 +190,7 @@ export default function MarketingHomePage() {
             </div>
 
             <div className="mt-12">
-              <InstallPreview />
+              <InstallPreview dict={installDict} />
             </div>
 
             <div className="mt-10 flex justify-center">
