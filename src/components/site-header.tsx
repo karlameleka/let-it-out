@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Download } from "lucide-react";
 import { CartIcon } from "@/components/lio-icons";
 import { LogoLink } from "@/components/logo";
 import { logoutAction } from "@/lib/auth-actions";
@@ -105,6 +105,14 @@ export default function SiteHeader({
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
+          <Link
+            href="/install"
+            className="inline-flex items-center gap-1.5 rounded border-[1.5px] border-brand-200 px-4 py-2 text-sm font-semibold tracking-tight text-brand-700 transition-all duration-300 ease-out hover:border-brand-400 hover:bg-brand-50 active:border-brand-400 active:bg-brand-50 md:px-5 md:py-2.5"
+          >
+            <Download className="h-4 w-4" strokeWidth={2} />
+            {dict.nav.getApp}
+          </Link>
+
           {user ? (
             <div className="flex items-center gap-3">
               <Link
@@ -167,6 +175,14 @@ export default function SiteHeader({
       {open && (
         <div className="border-t border-brand-100 bg-white px-4 pb-4 md:hidden">
           <nav className="flex flex-col gap-1 pt-2">
+            <Link
+              href="/install"
+              onClick={() => setOpen(false)}
+              className="mb-1 inline-flex items-center gap-2 rounded-md bg-brand-50 px-2 py-2 text-sm font-semibold text-brand-700"
+            >
+              <Download className="h-4 w-4" strokeWidth={2} />
+              {dict.nav.getApp}
+            </Link>
             {MOBILE_NAV_LINKS.map((link) => (
               <Link
                 key={link.href}

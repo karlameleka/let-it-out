@@ -55,6 +55,7 @@ export default function SiteFooter({ dict }: { locale: Locale; dict: Dictionary[
               <li><Link href="/workshops" className="hover:text-white active:text-white">{dict.workshops}</Link></li>
               <li><Link href="/shop" className="hover:text-white active:text-white">{dict.guidedJournals}</Link></li>
               <li><Link href="/journal" className="hover:text-white active:text-white">{dict.journalingApp}</Link></li>
+              <li><Link href="/install" className="hover:text-white active:text-white">{dict.getApp}</Link></li>
             </ul>
           </div>
 

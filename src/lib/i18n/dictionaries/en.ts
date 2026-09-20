@@ -15,6 +15,7 @@ const en = {
     signUp: "Sign up",
     bookASession: "Book a session",
     toggleMenu: "Toggle menu",
+    getApp: "Get the app",
   },
   languageSwitcher: {
     label: "Language",
@@ -40,6 +41,7 @@ const en = {
     workshops: "Workshops",
     guidedJournals: "Guided journals",
     journalingApp: "Journaling app",
+    getApp: "Get the app",
     getInTouchHeading: "Get in touch",
     contactUs: "Contact us",
     officeLocation: "Heliopolis, Cairo, Egypt",
@@ -82,6 +84,7 @@ const en = {
     heroDescription:
       "Let It Out enhances wellbeing through evidence-based research, practical tools, and compassionate care — through one-on-one counseling, guided journals, and workshops for workplaces and communities.",
     heroCtaServices: "Explore our services",
+    heroCtaApp: "Download the app",
     heroPromptQuote:
       "“What is one thing your body did for you today that you didn’t thank it for?”",
     heroPromptLabel: "Today's prompt",
@@ -115,6 +118,11 @@ const en = {
     journalDescription:
       "Create a free account for guided, self-exploration prompts and a private space to write — right on the app.",
     journalCta: "Start journaling free",
+    appEyebrow: "Get the app",
+    appTitle: "Let It Out, right on your home screen.",
+    appDescription:
+      "Install the app for one-tap access to your journal, sessions, and resources — no browser bar, no app store needed.",
+    appCta: "Download the app",
   },
   services: {
     ribbon: "Our services",
