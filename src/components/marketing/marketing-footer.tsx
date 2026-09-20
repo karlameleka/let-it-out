@@ -10,17 +10,17 @@ const CONTACT_PHONE = "+20 128 8200533";
 const CONTACT_PHONE_HREF = "tel:+201288200533";
 const CONTACT_EMAIL = "letitoutsupport@gmail.com";
 
+// In-page anchors, plus the one real destination outside this site: the
+// app-install flow. See the comment on marketing-header.tsx's NAV_LINKS.
 const EXPLORE_LINKS = [
-  { href: `${APP_ORIGIN}/about`, label: "About us" },
-  { href: `${APP_ORIGIN}/counseling`, label: "Counseling" },
-  { href: `${APP_ORIGIN}/workshops`, label: "Workshops" },
-  { href: `${APP_ORIGIN}/shop`, label: "Guided journals" },
+  { href: "#story", label: "About us" },
+  { href: "#services", label: "Our services" },
   { href: `${APP_ORIGIN}/install`, label: "Get the app" },
 ];
 
 export function MarketingFooter() {
   return (
-    <footer className="relative mt-24 overflow-hidden bg-brand-900 text-brand-50">
+    <footer id="contact" className="relative mt-24 scroll-mt-16 overflow-hidden bg-brand-900 text-brand-50">
       <WaveDivider className="absolute -top-[1px] left-0 -translate-y-full" fill="fill-brand-900" />
 
       <Image
@@ -63,7 +63,6 @@ export function MarketingFooter() {
               Get in touch
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-brand-100/80">
-              <li><a href={`${APP_ORIGIN}/contact`} className="hover:text-white active:text-white">Contact us</a></li>
               <li>
                 <a href={CONTACT_PHONE_HREF} className="inline-flex items-center gap-1.5 hover:text-white active:text-white">
                   <Phone className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
@@ -108,8 +107,8 @@ export function MarketingFooter() {
         <div className="relative mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-brand-100/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Let It Out. Est. 2021. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href={`${APP_ORIGIN}/privacy`} className="hover:text-white active:text-white">Privacy Policy</a>
-            <a href={`${APP_ORIGIN}/terms`} className="hover:text-white active:text-white">Terms &amp; Conditions</a>
+            <a href="/privacy" className="hover:text-white active:text-white">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white active:text-white">Terms &amp; Conditions</a>
           </div>
           <p className="italic">A self-exploration journey.</p>
         </div>

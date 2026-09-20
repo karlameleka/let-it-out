@@ -4,11 +4,13 @@ import { Logo } from "@/components/logo";
 
 const APP_ORIGIN = "https://www.letitouteg.org";
 
+// All in-page anchors — this site stands on its own (see proxy.ts), so
+// nothing here links into the live app except the "download" CTAs below.
 const NAV_LINKS = [
   { href: "#services", label: "Services" },
   { href: "#app", label: "Get the app" },
-  { href: `${APP_ORIGIN}/about`, label: "About" },
-  { href: `${APP_ORIGIN}/contact`, label: "Contact" },
+  { href: "#story", label: "About" },
+  { href: "#contact", label: "Contact" },
 ];
 
 export function MarketingHeader() {

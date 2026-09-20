@@ -11,11 +11,13 @@ const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password"
 // domain, separate from the PWA — which is canonically served at
 // www.letitouteg.org (Vercel's Production domain) — so an existing
 // installed/bookmarked www.letitouteg.org keeps behaving exactly as it
-// always has. Only "/" is served on the apex (rewritten to the /site route
-// below); any other path on this host bounces to the same path on the real
-// app, since the marketing site doesn't duplicate the app's routes.
+// always has. It's a deliberately small, standalone cluster of pages (not
+// a mirror of the app): "/" plus its own /privacy and /terms, so those stay
+// reachable without installing anything. Everything else on this host
+// bounces to the same path on the real app.
 const MARKETING_HOSTNAME = "letitouteg.org";
 const APP_ORIGIN = "https://www.letitouteg.org";
+const MARKETING_PATHS = ["/", "/privacy", "/terms"];
 
 /**
  * Sets a strict, nonce-based Content-Security-Policy on every page request.
@@ -69,18 +71,19 @@ export async function proxy(request: NextRequest) {
   const hostname = (request.headers.get("host") ?? "").split(":")[0];
   const isMarketingHost = hostname === MARKETING_HOSTNAME;
 
-  if (isMarketingHost && request.nextUrl.pathname !== "/") {
+  if (isMarketingHost && !MARKETING_PATHS.includes(request.nextUrl.pathname)) {
     return NextResponse.redirect(
       `${APP_ORIGIN}${request.nextUrl.pathname}${request.nextUrl.search}`,
       308,
     );
   }
 
-  // /site only exists as the rewrite target above — reached directly (e.g.
-  // someone guessing the URL on the app domain), it would render the
-  // marketing header/footer nested inside the app's own full shell instead
-  // of standing alone. Bounce it home rather than show that.
-  if (!isMarketingHost && request.nextUrl.pathname === "/site") {
+  // /site (and its /privacy, /terms pages) only exist as the rewrite
+  // target above — reached directly (e.g. someone guessing the URL on the
+  // app domain), it would render the marketing header/footer nested inside
+  // the app's own full shell instead of standing alone. Bounce it home
+  // rather than show that.
+  if (!isMarketingHost && request.nextUrl.pathname.startsWith("/site")) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -137,7 +140,10 @@ export async function proxy(request: NextRequest) {
 
   const response = isMarketingHost
     ? NextResponse.rewrite(
-        new URL("/site", request.url),
+        new URL(
+          request.nextUrl.pathname === "/" ? "/site" : `/site${request.nextUrl.pathname}`,
+          request.url,
+        ),
         { request: { headers: requestHeaders } },
       )
     : NextResponse.next({ request: { headers: requestHeaders } });

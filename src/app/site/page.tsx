@@ -19,30 +19,34 @@ export const metadata: Metadata = {
     "Psychologist-led mental health support — online counseling, guided journals, and workplace workshops. Download the Let It Out app to get started.",
 };
 
+// Every card leads to the app-download flow rather than the live app
+// page for that service — this site is a standalone teaser, not a portal
+// into the PWA, so "see counselor profiles" etc. would dead-end into an
+// app someone hasn't installed yet. Downloading is the one real next step.
 const SERVICES = [
   {
     index: "01",
     title: "Individual Online Counseling",
     description:
       "One-on-one sessions with specialized psychotherapists using CBT, ACT, and DBT frameworks, personalized to you.",
-    cta: "See counselor profiles",
-    href: `${APP_ORIGIN}/counseling`,
+    cta: "Download the app",
+    href: `${APP_ORIGIN}/install`,
   },
   {
     index: "02",
     title: "Trainings and Workshops",
     description:
       "Interactive, evidence-based sessions designed to enhance employee wellbeing — from stress-management to mental health first-aid.",
-    cta: "See workshop topics",
-    href: `${APP_ORIGIN}/workshops`,
+    cta: "Download the app",
+    href: `${APP_ORIGIN}/install`,
   },
   {
     index: "03",
     title: "Guided Journals & Digital Resources",
     description:
       "Practical, CBT-informed self-help journals to help you build a healthier relationship with yourself and others.",
-    cta: "Browse journals",
-    href: `${APP_ORIGIN}/shop`,
+    cta: "Download the app",
+    href: `${APP_ORIGIN}/install`,
   },
 ];
 
@@ -207,7 +211,7 @@ export default function MarketingHomePage() {
       </section>
 
       {/* Story */}
-      <section className="relative overflow-hidden bg-brand-50 pb-20 pt-16 sm:pt-20">
+      <section id="story" className="relative overflow-hidden bg-brand-50 pb-20 pt-16 scroll-mt-16 sm:pt-20">
         <WaveDivider className="absolute -top-px left-0 -translate-y-full" fill="fill-brand-50" />
         <Reveal>
           <Container className="max-w-2xl text-center">
@@ -218,8 +222,8 @@ export default function MarketingHomePage() {
             <p className="mt-4 text-base text-ink/70">
               Founded by Egyptian psychologist Karla Meleka, Let It Out delivers professional mental health support tailored to your community&apos;s needs, reducing stigma, one mind at a time.
             </p>
-            <a href={`${APP_ORIGIN}/about`} className="mt-6 inline-block !rounded-none !px-0 !py-0 font-semibold text-ink link-grow">
-              Read our story &rarr;
+            <a href={`${APP_ORIGIN}/install`} className="mt-6 inline-block !rounded-none !px-0 !py-0 font-semibold text-ink link-grow">
+              Download the app &rarr;
             </a>
           </Container>
         </Reveal>
