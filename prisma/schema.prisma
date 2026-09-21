@@ -525,6 +525,11 @@ enum AssignedResourceKind {
   PDF
   TEXT
   ASSIGNMENT
+  // The Cognitive Reframing exercise, embedded and played inline on the
+  // client's My Profile page rather than opened as a link — see
+  // MyToolsItem and the reframing-tool component. No url/fileData/content
+  // needed; the client identifies it purely by this kind.
+  REFRAMING_TOOL
 }
 
 // A resource a therapist has sent directly to one specific client — visible

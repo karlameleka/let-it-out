@@ -61,7 +61,7 @@ export default async function ProfilePage() {
 
       <ProfileClient userId={user.userId} locale={locale} articles={articles} dict={t} />
 
-      <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+      <div id="my-tools" className="mt-6 scroll-mt-24 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <MyToolsViewedTracker hasUnviewed={myTools.some((item) => !item.viewedAt)} />
         <h2 className="font-display font-semibold text-brand-900">{t.myToolsTitle}</h2>
         {myTools.length === 0 ? (
@@ -69,7 +69,7 @@ export default async function ProfilePage() {
         ) : (
           <div className="mt-4 space-y-3">
             {myTools.map((item) => (
-              <MyToolsItem key={item.id} item={item} dict={dict.myTools} />
+              <MyToolsItem key={item.id} item={item} dict={dict.myTools} reframingDict={dict.reframingTool} locale={locale} />
             ))}
           </div>
         )}

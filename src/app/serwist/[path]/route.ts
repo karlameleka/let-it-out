@@ -28,7 +28,7 @@ const STATIC_PAGES = [
   "/resources/cbt-exercises",
   "/resources/cbt-exercises/grounding",
   "/resources/cbt-exercises/next-step",
-  "/resources/cognitive-reframing",
+  "/resources/cbt-exercises/gratitude",
   "/contact",
   "/privacy",
   "/terms",

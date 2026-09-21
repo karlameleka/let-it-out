@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Brain, Compass, Footprints, X } from "lucide-react";
+import { Brain, Heart, Compass, Footprints, X } from "lucide-react";
 import { getCbtHistory, deleteCbtEntry, type CbtHistoryEntry, type CbtExerciseType } from "@/lib/cbt-history";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
@@ -19,6 +19,7 @@ export default function CbtHistoryList({ dict }: { dict: Dictionary["cbtExercise
     reframing: { label: dict.typeReframing, icon: Brain },
     grounding: { label: dict.typeGrounding, icon: Compass },
     "next-step": { label: dict.typeNextStep, icon: Footprints },
+    gratitude: { label: dict.typeGratitude, icon: Heart },
   };
   const [entries, setEntries] = useState<CbtHistoryEntry[] | null>(null);
 

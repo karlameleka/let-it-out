@@ -4,10 +4,28 @@ import { Download, Check } from "lucide-react";
 import { toggleResourceComplete } from "@/lib/client-resources-actions";
 import type { MyAssignedResource } from "@/lib/client-resources";
 import PdfOpenButton from "@/components/pdf-open-button";
+import ReframingTool from "@/components/reframing-tool";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
-export default function MyToolsItem({ item, dict }: { item: MyAssignedResource; dict: Dictionary["myTools"] }) {
+export default function MyToolsItem({
+  item,
+  dict,
+  reframingDict,
+  locale,
+}: {
+  item: MyAssignedResource;
+  dict: Dictionary["myTools"];
+  reframingDict: Dictionary["reframingTool"];
+  locale: Locale;
+}) {
   const isDone = Boolean(item.completedAt);
+
+  function markDone() {
+    const fd = new FormData();
+    fd.set("itemId", item.id);
+    void toggleResourceComplete(fd);
+  }
 
   return (
     <div className={`rounded-2xl border p-5 ${isDone ? "border-brand-100 bg-brand-50/40" : "border-brand-100 bg-white"}`}>
@@ -53,6 +71,11 @@ export default function MyToolsItem({ item, dict }: { item: MyAssignedResource; 
           <Download className="h-4 w-4" strokeWidth={2} />
           {dict.openDownloadPdf}
         </PdfOpenButton>
+      )}
+      {item.kind === "REFRAMING_TOOL" && (
+        <div className="mt-3">
+          <ReframingTool dict={reframingDict} locale={locale} onComplete={isDone ? undefined : markDone} />
+        </div>
       )}
     </div>
   );

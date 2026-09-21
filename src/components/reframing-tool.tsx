@@ -26,7 +26,19 @@ function randomPrompt(excludeSituation?: string): ReframingPrompt {
 
 type Step = 0 | 1 | 2 | 3 | 4;
 
-export default function ReframingTool({ dict, locale }: { dict: Dictionary["reframingTool"]; locale: Locale }) {
+/** The Cognitive Reframing exercise — a therapist-assigned tool, embedded
+ * directly on the client's My Profile page (see MyToolsItem) rather than a
+ * standalone public page, so `onComplete` lets the caller mark the
+ * assignment done the moment the client finishes a round. */
+export default function ReframingTool({
+  dict,
+  locale,
+  onComplete,
+}: {
+  dict: Dictionary["reframingTool"];
+  locale: Locale;
+  onComplete?: () => void;
+}) {
   const isAr = locale === "ar";
   const intensityLabels = isAr ? INTENSITY_LABELS_AR : INTENSITY_LABELS;
   // Starts on a fixed first prompt (not a random one) so server and client
@@ -97,6 +109,7 @@ export default function ReframingTool({ dict, locale }: { dict: Dictionary["refr
       },
     });
     setStep(4);
+    onComplete?.();
   }
 
   const feelingLabel = isAr ? EMOTIONS.find((e) => e.id === feeling)?.labelAr : EMOTIONS.find((e) => e.id === feeling)?.label;

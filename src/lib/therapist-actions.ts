@@ -473,7 +473,7 @@ async function notifyClientOfAssignedResource(
   const baseUrl = await getBaseUrl();
   const client = await prisma.user.findUnique({ where: { email: clientEmail }, select: { locale: true } });
   const locale: Locale = client?.locale === "ar" ? "ar" : "en";
-  const resourcesUrl = `${baseUrl}/resources#my-tools`;
+  const resourcesUrl = `${baseUrl}/profile#my-tools`;
   await sendAssignedResourceNotificationEmail({
     to: clientEmail,
     toName: clientName || "there",
@@ -494,7 +494,7 @@ async function notifyClientOfAssignedResource(
       locale === "ar"
         ? "بعتلك حاجة جديدة في أدواتي، دوس عشان تشوفها."
         : "Sent you something new in My Tools, tap to take a look.",
-    url: "/resources#my-tools",
+    url: "/profile#my-tools",
   }).catch((err) => console.error("[therapist-actions] Failed to send assigned-resource push:", err));
 }
 
@@ -590,6 +590,35 @@ export async function assignResourceNote(
   await notifyClientOfAssignedResource(clientEmail, clientName, session.name, isAssignment ? "ASSIGNMENT" : "NOTE");
 
   revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  return { success: true };
+}
+
+/** Sends the built-in Cognitive Reframing exercise to a client — unlike
+ * assignResourceLink, this doesn't store a URL. The client plays the
+ * actual exercise inline on their My Profile page (see MyToolsItem and
+ * reframing-tool.tsx), identified purely by kind: REFRAMING_TOOL. Called
+ * from the Toolkit page's featured card, not a specific client's page, so
+ * it takes the client to send it to as a plain field rather than relying
+ * on route params. */
+export async function assignReframingTool(
+  _prevState: AssignResourceFormState,
+  formData: FormData,
+): Promise<AssignResourceFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
+
+  if (!clientEmail) return { error: "Please choose a client." };
+
+  await prisma.assignedResource.create({
+    data: { counselorId: session.counselorId, clientEmail, title: "Cognitive Reframing", kind: "REFRAMING_TOOL" },
+  });
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "TOOL");
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/therapist/toolkit");
   return { success: true };
 }
 

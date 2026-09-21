@@ -1,10 +1,16 @@
 // Static, curated content for the therapist portal's "Toolkit" page and the
 // condensed sidebar shown on a client's profile — reference material and
 // quick links a therapist might reach for during or around a session. The
-// 4 CLIENT_TOOLS entries below are real site features (not admin-editable),
+// CLIENT_TOOLS entries below are real site features (not admin-editable),
 // but a therapist can personally hide any of them via Counselor.hiddenDefaultTools
 // (keyed by `key`) — they can also add their own links/PDFs on top, stored
 // as ToolkitItem rows (see therapist-actions.ts).
+//
+// Cognitive Reframing isn't here — it's not a plain link a therapist can
+// hand a client. It's featured separately on the Toolkit page with its own
+// "Send to client" action, which assigns it as an AssignedResourceKind of
+// REFRAMING_TOOL — played inline on the client's My Profile page rather
+// than opened as a link. See the toolkit page and MyToolsItem.
 
 export type ClientTool = {
   /** Stable id — used as the entry in Counselor.hiddenDefaultTools. Never
@@ -24,12 +30,6 @@ export const CLIENT_TOOLS: ClientTool[] = [
     title: "Guided Breathing",
     description: "Box breathing, 4-7-8, and coherent breathing, paced with a visual guide.",
     href: "/resources/breathing",
-  },
-  {
-    key: "cognitive-reframing",
-    title: "Cognitive Reframing",
-    description: "Walks through catching, examining, and reframing a stuck thought.",
-    href: "/resources/cognitive-reframing",
   },
   {
     key: "grounding",

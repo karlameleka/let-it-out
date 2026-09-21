@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Brain, Compass, Footprints } from "lucide-react";
+import { Heart, Compass, Footprints } from "lucide-react";
 import { Container } from "@/components/ui";
 import { Ribbon, DoodleField } from "@/components/decor";
 import CbtStreakStats from "./cbt-streak-stats";
 import CbtHistoryList from "./cbt-history-list";
-import CbtThinkingPatterns from "./cbt-thinking-patterns";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
-  title: "CBT Exercises",
-  description: "Short, evidence-based CBT techniques, cognitive reframing, grounding, and behavioral activation.",
+  title: "Go-To Toolkit",
+  description: "Short, practical techniques, a gratitude pause, grounding, and behavioral activation.",
 };
 
 export default async function CbtExercisesPage() {
@@ -20,8 +19,8 @@ export default async function CbtExercisesPage() {
 
   const EXERCISES = [
     {
-      href: "/resources/cognitive-reframing",
-      icon: Brain,
+      href: "/resources/cbt-exercises/gratitude",
+      icon: Heart,
       duration: t.exercise1Duration,
       title: t.exercise1Title,
       description: t.exercise1Description,
@@ -85,7 +84,6 @@ export default async function CbtExercisesPage() {
             ))}
           </div>
 
-          <CbtThinkingPatterns dict={t} />
           <CbtHistoryList dict={t} />
         </Container>
       </section>
