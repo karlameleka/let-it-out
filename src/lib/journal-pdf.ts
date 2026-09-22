@@ -66,7 +66,7 @@ function journalEntryHtml(entry: JournalExportEntry, locale: "en" | "ar"): strin
   parts.push(`<p style="margin-top:12px; font-size:14px; line-height:1.7; white-space:pre-wrap;">${escapeHtml(entry.content)}</p>`);
   if (entry.songUrl) {
     parts.push(
-      `<p style="margin-top:10px; font-size:12px; color:#3f7a8c;">&#9834; <a href="${entry.songUrl}" style="color:#3f7a8c;">${escapeHtml(entry.songUrl)}</a></p>`,
+      `<p style="margin-top:10px; font-size:12px; color:#3f7a8c;">&#9834; <a href="${entry.songUrl}" style="color:#3f7a8c;">${escapeHtml(entry.songName?.trim() || entry.songUrl)}</a></p>`,
     );
   }
   return `<div style="${BLOCK_STYLE} border:1px solid #e3edf0; border-radius:14px; margin-top:12px;">${parts.join("")}</div>`;

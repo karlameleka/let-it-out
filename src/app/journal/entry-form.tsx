@@ -10,7 +10,7 @@ import { compressImage } from "@/lib/compress-image";
 import { parseSpotifyEmbedUrl } from "@/lib/spotify";
 import { Button } from "@/components/ui";
 import MoodPicker from "@/components/mood-picker";
-import SpotifyEmbed from "@/components/spotify-embed";
+import SongAttachment from "@/components/song-attachment";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -75,6 +75,7 @@ export default function EntryForm({
           .filter(Boolean),
         photoUrl: (String(formData.get("photoUrl") ?? "") || null),
         songUrl: (String(formData.get("songUrl") ?? "") || null),
+        songName: (String(formData.get("songName") ?? "").trim() || null),
         prompt: mode === "prompt" && prompt ? { category: prompt.category, text: prompt.text } : null,
       });
       void trackJournalEntryCreated();
@@ -95,6 +96,7 @@ export default function EntryForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [songInput, setSongInput] = useState("");
   const [song, setSong] = useState<string | null>(null);
+  const [songName, setSongName] = useState("");
   const [songError, setSongError] = useState<string | null>(null);
 
   if (state !== lastHandledState) {
@@ -106,6 +108,7 @@ export default function EntryForm({
       setPhotoError(null);
       setSong(null);
       setSongInput("");
+      setSongName("");
       setSongError(null);
     }
   }
@@ -153,18 +156,21 @@ export default function EntryForm({
   }
 
   function attachSong() {
-    const embedUrl = parseSpotifyEmbedUrl(songInput);
-    if (!embedUrl) {
-      setSongError(dict.invalidSpotifyLinkError);
+    const trimmed = songInput.trim();
+    try {
+      new URL(trimmed);
+    } catch {
+      setSongError(dict.invalidLinkError);
       return;
     }
     setSongError(null);
-    setSong(embedUrl);
+    setSong(trimmed);
   }
 
   function removeSong() {
     setSong(null);
     setSongInput("");
+    setSongName("");
     setSongError(null);
   }
 
@@ -322,17 +328,41 @@ export default function EntryForm({
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.addSongLabel}</p>
           {song ? (
-            <div className="relative max-w-sm">
-              <SpotifyEmbed embedUrl={song} />
-              <button
-                type="button"
-                onClick={removeSong}
-                aria-label={dict.removeSong}
-                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
-              >
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-            </div>
+            parseSpotifyEmbedUrl(song) ? (
+              <div className="relative max-w-sm">
+                <SongAttachment url={song} name={null} />
+                <button
+                  type="button"
+                  onClick={removeSong}
+                  aria-label={dict.removeSong}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              </div>
+            ) : (
+              <div className="relative max-w-sm rounded-xl border border-brand-200 bg-white p-3">
+                <div className="flex items-center gap-2">
+                  <Music className="h-4 w-4 shrink-0 text-ink/40" strokeWidth={2} />
+                  <input
+                    type="text"
+                    value={songName}
+                    onChange={(e) => setSongName(e.target.value)}
+                    placeholder={dict.songNamePlaceholder}
+                    className="min-w-0 flex-1 border-0 p-0 text-sm outline-none"
+                  />
+                </div>
+                <p className="mt-1.5 truncate ps-6 text-xs text-ink/40">{song}</p>
+                <button
+                  type="button"
+                  onClick={removeSong}
+                  aria-label={dict.removeSong}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              </div>
+            )
           ) : (
             <div className="flex max-w-sm items-center gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-dashed border-brand-200 px-3 py-2.5">
@@ -357,6 +387,7 @@ export default function EntryForm({
           )}
           {songError && <p className="mt-1.5 text-xs text-red-600">{songError}</p>}
           <input type="hidden" name="songUrl" value={song ?? ""} />
+          <input type="hidden" name="songName" value={song && !parseSpotifyEmbedUrl(song) ? songName : ""} />
         </div>
 
         {isOffline && !state?.success && (

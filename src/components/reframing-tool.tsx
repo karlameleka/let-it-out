@@ -90,12 +90,12 @@ export default function ReframingTool({
     });
   }
 
-  function finish() {
+  async function finish() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     setStreak(recordCbtCompletion().streak);
-    saveCbtEntry({
+    await saveCbtEntry({
       type: "reframing",
       summary: reframe.trim(),
       data: {

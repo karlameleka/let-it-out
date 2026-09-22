@@ -39,12 +39,12 @@ export default function NextStepTool({
     setCount(Number(window.localStorage.getItem(STORAGE_KEY) ?? "0"));
   }, []);
 
-  function finish() {
+  async function finish() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     setStreak(recordCbtCompletion().streak);
-    saveCbtEntry({
+    await saveCbtEntry({
       type: "next-step",
       summary: tinyStep.trim(),
       data: { stuckOn, tinyStep, when: when ?? "" },

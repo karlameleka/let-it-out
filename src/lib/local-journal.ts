@@ -25,6 +25,10 @@ export type JournalFeedEntry = {
   bookmarked: boolean;
   photoUrl: string | null;
   songUrl: string | null;
+  // A user-typed display label for a non-Spotify song link (Spotify links
+  // are embedded via SpotifyEmbed instead and don't need one). Null for
+  // Spotify links or when left blank.
+  songName: string | null;
   createdAt: string;
   prompt: JournalPrompt;
 };
@@ -64,6 +68,7 @@ type StoredEntry = {
   encContent: { iv: string; data: string };
   encPhoto: { iv: string; data: string } | null;
   encSong: { iv: string; data: string } | null;
+  encSongName: { iv: string; data: string } | null;
   // Legacy entries (written before multi-mood support) stored a single
   // string here; new entries always store an array. Normalized on read via
   // normalizeMoods() so both shapes coexist in the same object store.
@@ -158,10 +163,11 @@ async function decryptString(key: CryptoKey, enc: { iv: string; data: string }):
 }
 
 async function decryptEntry(key: CryptoKey, stored: StoredEntry): Promise<JournalFeedEntry> {
-  const [content, photoUrl, songUrl] = await Promise.all([
+  const [content, photoUrl, songUrl, songName] = await Promise.all([
     decryptString(key, stored.encContent),
     stored.encPhoto ? decryptString(key, stored.encPhoto) : Promise.resolve(null),
     stored.encSong ? decryptString(key, stored.encSong) : Promise.resolve(null),
+    stored.encSongName ? decryptString(key, stored.encSongName) : Promise.resolve(null),
   ]);
   return {
     id: stored.id,
@@ -170,6 +176,7 @@ async function decryptEntry(key: CryptoKey, stored: StoredEntry): Promise<Journa
     bookmarked: stored.bookmarked,
     photoUrl,
     songUrl,
+    songName,
     createdAt: stored.createdAt,
     prompt: stored.prompt,
   };
@@ -236,7 +243,14 @@ export async function getEntryDetail(userId: string, id: string): Promise<Journa
 
 export async function createEntry(
   userId: string,
-  input: { content: string; moods: string[]; photoUrl: string | null; songUrl: string | null; prompt: JournalPrompt },
+  input: {
+    content: string;
+    moods: string[];
+    photoUrl: string | null;
+    songUrl: string | null;
+    songName: string | null;
+    prompt: JournalPrompt;
+  },
 ): Promise<void> {
   const db = await openDb(userId);
   const key = await getKey(db);
@@ -246,6 +260,7 @@ export async function createEntry(
     encContent: await encryptString(key, input.content),
     encPhoto: input.photoUrl ? await encryptString(key, input.photoUrl) : null,
     encSong: input.songUrl ? await encryptString(key, input.songUrl) : null,
+    encSongName: input.songName ? await encryptString(key, input.songName) : null,
     mood: input.moods,
     bookmarked: false,
     createdAt: now,
@@ -273,6 +288,7 @@ export async function logMoodCheckIn(userId: string, moods: string[]): Promise<v
     encContent: await encryptString(key, ""),
     encPhoto: null,
     encSong: null,
+    encSongName: null,
     mood: moods,
     bookmarked: false,
     createdAt: now,
@@ -288,7 +304,13 @@ export async function logMoodCheckIn(userId: string, moods: string[]): Promise<v
 export async function updateEntry(
   userId: string,
   id: string,
-  input: { content: string; moods: string[]; photoUrl: string | null; songUrl: string | null },
+  input: {
+    content: string;
+    moods: string[];
+    photoUrl: string | null;
+    songUrl: string | null;
+    songName: string | null;
+  },
 ): Promise<{ success: boolean }> {
   const db = await openDb(userId);
   const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
@@ -298,6 +320,7 @@ export async function updateEntry(
   stored.encContent = await encryptString(key, input.content);
   stored.encPhoto = input.photoUrl ? await encryptString(key, input.photoUrl) : null;
   stored.encSong = input.songUrl ? await encryptString(key, input.songUrl) : null;
+  stored.encSongName = input.songName ? await encryptString(key, input.songName) : null;
   stored.mood = input.moods;
   stored.updatedAt = new Date().toISOString();
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
@@ -374,6 +397,7 @@ export async function migrateFromServer(
       encContent: await encryptString(key, e.content),
       encPhoto: e.photoUrl ? await encryptString(key, e.photoUrl) : null,
       encSong: null,
+      encSongName: null,
       mood: e.mood ? [e.mood] : [],
       bookmarked: e.bookmarked,
       createdAt: e.createdAt,

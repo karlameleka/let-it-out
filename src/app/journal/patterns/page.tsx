@@ -18,7 +18,7 @@ export default async function MoodPatternsPage() {
 
   return (
     <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>
-      <PatternsClient userId={user.userId} dict={dict.moodPatterns} locale={locale} />
+      <PatternsClient userId={user.userId} dict={dict.moodPatterns} typesDict={dict.cbtExercises} locale={locale} />
     </JournalLockGate>
   );
 }

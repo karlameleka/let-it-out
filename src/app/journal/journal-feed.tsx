@@ -91,7 +91,10 @@ export default function JournalFeed({
     <>
       <section className="relative overflow-hidden bg-brand-50">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <Link href="/resources" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
+            <span className="inline-block rtl:-scale-x-100">&larr;</span> {dict.backToResources}
+          </Link>
+          <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{dict.eyebrow}</p>
               <h1 className="mt-2 font-display text-3xl font-medium text-brand-900 sm:text-4xl">

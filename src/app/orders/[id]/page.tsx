@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Container } from "@/components/ui";
 import { formatEGP } from "@/lib/format";
@@ -30,7 +31,8 @@ export default async function OrderConfirmationPage({
   // ownership check — see order-access.ts. A logged-in customer is
   // recognized by userId; a guest needs the access token minted alongside
   // this order and carried in the confirmation link/redirect.
-  const isOwner = (user && order.userId === user.userId) || verifyOrderAccessToken(token, order.accessTokenHash);
+  const isLoggedInOwner = Boolean(user && order.userId === user.userId);
+  const isOwner = isLoggedInOwner || verifyOrderAccessToken(token, order.accessTokenHash);
   if (!isOwner) notFound();
 
   const fullDict = getDictionary(locale);
@@ -51,6 +53,11 @@ export default async function OrderConfirmationPage({
   return (
     <Container className="py-16 sm:py-20">
       <div className="mx-auto max-w-2xl">
+        {isLoggedInOwner && (
+          <Link href="/orders" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
+            <span className="inline-block rtl:-scale-x-100">&larr;</span> {fullDict.myOrders.backToOrders}
+          </Link>
+        )}
         <p className="text-sm font-medium text-brand-600">
           {t.orderNumber.replace("{id}", order.id.slice(-8).toUpperCase())}
         </p>

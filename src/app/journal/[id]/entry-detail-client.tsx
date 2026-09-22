@@ -16,7 +16,7 @@ import { parseSpotifyEmbedUrl } from "@/lib/spotify";
 import { moodColor, moodLabel } from "@/lib/moods";
 import { Container, Button } from "@/components/ui";
 import MoodPicker from "@/components/mood-picker";
-import SpotifyEmbed from "@/components/spotify-embed";
+import SongAttachment from "@/components/song-attachment";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -54,6 +54,7 @@ export default function EntryDetailClient({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editSongInput, setEditSongInput] = useState("");
   const [editSong, setEditSong] = useState<string | null>(null);
+  const [editSongName, setEditSongName] = useState("");
   const [editSongError, setEditSongError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function EntryDetailClient({
     setEditPhoto(entry.photoUrl);
     setEditPhotoError(null);
     setEditSong(entry.songUrl);
+    setEditSongName(entry.songName ?? "");
     setEditSongInput("");
     setEditSongError(null);
     setEditError(null);
@@ -98,18 +100,21 @@ export default function EntryDetailClient({
   }
 
   function attachEditSong() {
-    const embedUrl = parseSpotifyEmbedUrl(editSongInput);
-    if (!embedUrl) {
-      setEditSongError(entryFormDict.invalidSpotifyLinkError);
+    const trimmed = editSongInput.trim();
+    try {
+      new URL(trimmed);
+    } catch {
+      setEditSongError(entryFormDict.invalidLinkError);
       return;
     }
     setEditSongError(null);
-    setEditSong(embedUrl);
+    setEditSong(trimmed);
   }
 
   function removeEditSong() {
     setEditSong(null);
     setEditSongInput("");
+    setEditSongName("");
     setEditSongError(null);
   }
 
@@ -121,7 +126,13 @@ export default function EntryDetailClient({
     }
     setEditSaving(true);
     setEditError(null);
-    const result = await updateEntry(userId, id, { content, moods: editMoods, photoUrl: editPhoto, songUrl: editSong });
+    const result = await updateEntry(userId, id, {
+      content,
+      moods: editMoods,
+      photoUrl: editPhoto,
+      songUrl: editSong,
+      songName: editSong && !parseSpotifyEmbedUrl(editSong) ? editSongName.trim() || null : null,
+    });
     if (!result.success) {
       setEditSaving(false);
       setEditError(dict.editSaveError);
@@ -296,17 +307,41 @@ export default function EntryDetailClient({
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">{entryFormDict.addSongLabel}</p>
               {editSong ? (
-                <div className="relative max-w-sm">
-                  <SpotifyEmbed embedUrl={editSong} />
-                  <button
-                    type="button"
-                    onClick={removeEditSong}
-                    aria-label={entryFormDict.removeSong}
-                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
-                  >
-                    <X className="h-3.5 w-3.5" strokeWidth={2} />
-                  </button>
-                </div>
+                parseSpotifyEmbedUrl(editSong) ? (
+                  <div className="relative max-w-sm">
+                    <SongAttachment url={editSong} name={null} />
+                    <button
+                      type="button"
+                      onClick={removeEditSong}
+                      aria-label={entryFormDict.removeSong}
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative max-w-sm rounded-xl border border-brand-200 bg-white p-3">
+                    <div className="flex items-center gap-2">
+                      <Music className="h-4 w-4 shrink-0 text-ink/40" strokeWidth={2} />
+                      <input
+                        type="text"
+                        value={editSongName}
+                        onChange={(e) => setEditSongName(e.target.value)}
+                        placeholder={entryFormDict.songNamePlaceholder}
+                        className="min-w-0 flex-1 border-0 p-0 text-sm outline-none"
+                      />
+                    </div>
+                    <p className="mt-1.5 truncate ps-6 text-xs text-ink/40">{editSong}</p>
+                    <button
+                      type="button"
+                      onClick={removeEditSong}
+                      aria-label={entryFormDict.removeSong}
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                  </div>
+                )
               ) : (
                 <div className="flex max-w-sm items-center gap-2">
                   <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-dashed border-brand-200 px-3 py-2.5">
@@ -391,7 +426,7 @@ export default function EntryDetailClient({
 
             {entry.songUrl && (
               <div className="mb-6 max-w-sm">
-                <SpotifyEmbed embedUrl={entry.songUrl} />
+                <SongAttachment url={entry.songUrl} name={entry.songName} />
               </div>
             )}
 

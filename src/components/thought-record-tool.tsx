@@ -64,25 +64,27 @@ export default function ThoughtRecordTool({
     });
   }
 
-  function finish() {
+  async function finish() {
     const prevCount = count ?? Number(window.localStorage.getItem(STORAGE_KEY) ?? "0");
     const next = prevCount + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     setStreak(recordCbtCompletion().streak);
-    saveCbtEntry({
+    const feelingLabelEn = EMOTIONS.find((e) => e.id === feeling)?.label ?? "";
+    await saveCbtEntry({
       type: "thought-record",
       summary: balanced.trim(),
       data: {
         situation,
         automaticThought,
-        feeling: EMOTIONS.find((e) => e.id === feeling)?.label ?? "",
+        feelingBefore: intensityBefore !== null ? `${feelingLabelEn}, ${INTENSITY_LABELS[intensityBefore]}` : feelingLabelEn,
         distortions: COGNITIVE_DISTORTIONS.filter((d) => distortions.has(d.id))
           .map((d) => d.label)
           .join(", "),
         evidenceFor,
         evidenceAgainst,
         balanced,
+        feelingAfter: intensityAfter !== null ? `${feelingLabelEn}, ${INTENSITY_LABELS[intensityAfter]}` : "",
       },
     });
     setStep(4);

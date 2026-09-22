@@ -16,7 +16,8 @@ export default async function ProfileReframingPage() {
   if (!user) redirect("/login");
 
   const locale = await getLocale();
-  const t = getDictionary(locale).reframingTool;
+  const dict = getDictionary(locale);
+  const t = dict.reframingTool;
 
   const assignment = await getMyReframingAssignment(user.email);
   if (!assignment) redirect("/profile");
@@ -53,7 +54,14 @@ export default async function ProfileReframingPage() {
           </div>
 
           <div className="mt-8">
-            <ReframingPageClient itemId={assignment.id} isDone={Boolean(assignment.completedAt)} dict={t} locale={locale} />
+            <ReframingPageClient
+              itemId={assignment.id}
+              isDone={Boolean(assignment.completedAt)}
+              dict={t}
+              historyDict={dict.cbtHistoryModal}
+              typeLabel={dict.cbtExercises.typeReframing}
+              locale={locale}
+            />
           </div>
         </Container>
       </section>

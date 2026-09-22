@@ -40,12 +40,12 @@ export default function GratitudeTool({
     setNotes((prev) => prev.map((n, i) => (i === step ? value : n)));
   }
 
-  function finish() {
+  async function finish() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     setStreak(recordCbtCompletion().streak);
-    saveCbtEntry({
+    await saveCbtEntry({
       type: "gratitude",
       summary: notes.find((n) => n.trim()) ?? "Gratitude pause",
       data: Object.fromEntries(PROMPTS.map((p, i) => [p.label, notes[i]])),

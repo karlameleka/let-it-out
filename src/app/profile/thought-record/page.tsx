@@ -16,7 +16,8 @@ export default async function ProfileThoughtRecordPage() {
   if (!user) redirect("/login");
 
   const locale = await getLocale();
-  const t = getDictionary(locale).thoughtRecord;
+  const dict = getDictionary(locale);
+  const t = dict.thoughtRecord;
 
   const assignment = await getMyThoughtRecordAssignment(user.email);
   if (!assignment) redirect("/profile");
@@ -53,7 +54,14 @@ export default async function ProfileThoughtRecordPage() {
           </div>
 
           <div className="mt-8">
-            <ThoughtRecordPageClient itemId={assignment.id} isDone={Boolean(assignment.completedAt)} dict={t} locale={locale} />
+            <ThoughtRecordPageClient
+              itemId={assignment.id}
+              isDone={Boolean(assignment.completedAt)}
+              dict={t}
+              historyDict={dict.cbtHistoryModal}
+              typeLabel={dict.cbtExercises.typeThoughtRecord}
+              locale={locale}
+            />
           </div>
         </Container>
       </section>

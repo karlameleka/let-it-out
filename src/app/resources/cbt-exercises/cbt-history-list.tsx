@@ -31,12 +31,11 @@ export default function CbtHistoryList({ dict }: { dict: Dictionary["cbtExercise
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setEntries(getCbtHistory());
+    getCbtHistory().then(setEntries);
   }, []);
 
-  function remove(id: string) {
-    deleteCbtEntry(id);
+  async function remove(id: string) {
+    await deleteCbtEntry(id);
     setEntries((prev) => prev?.filter((e) => e.id !== id) ?? prev);
   }
 

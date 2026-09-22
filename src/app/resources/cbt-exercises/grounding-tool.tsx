@@ -42,12 +42,12 @@ export default function GroundingTool({
     setNotes((prev) => prev.map((n, i) => (i === step ? value : n)));
   }
 
-  function finish() {
+  async function finish() {
     const next = (count ?? 0) + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     setStreak(recordCbtCompletion().streak);
-    saveCbtEntry({
+    await saveCbtEntry({
       type: "grounding",
       summary: notes.find((n) => n.trim()) ?? "5-4-3-2-1 grounding session",
       data: Object.fromEntries(SENSES.map((s, i) => [s.label, notes[i]])),

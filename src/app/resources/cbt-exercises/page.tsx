@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Heart, Compass, Footprints } from "lucide-react";
+import { Smile, Compass, Footprints } from "lucide-react";
 import { Container } from "@/components/ui";
 import { Ribbon, DoodleField } from "@/components/decor";
 import CbtStreakStats from "./cbt-streak-stats";
@@ -20,7 +20,7 @@ export default async function CbtExercisesPage() {
   const EXERCISES = [
     {
       href: "/resources/cbt-exercises/gratitude",
-      icon: Heart,
+      icon: Smile,
       duration: t.exercise1Duration,
       title: t.exercise1Title,
       description: t.exercise1Description,

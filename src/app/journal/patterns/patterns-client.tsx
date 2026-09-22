@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Brain, ChevronLeft, ChevronRight, Compass, Footprints, NotebookPen, Smile } from "lucide-react";
 import { getMoodCalendarMonth, hasAnyMoodEntries, getDayDetail, type MoodCalendarMonth, type DayDetail } from "@/lib/local-journal";
+import { getCbtHistory, type CbtHistoryEntry, type CbtExerciseType } from "@/lib/cbt-history";
 import { CORE_EMOTIONS, moodColor, moodCore, moodLabel } from "@/lib/moods";
 import { Container } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
@@ -12,12 +13,21 @@ import type { Locale } from "@/lib/i18n/locale";
 export default function PatternsClient({
   userId,
   dict,
+  typesDict,
   locale,
 }: {
   userId: string;
   dict: Dictionary["moodPatterns"];
+  typesDict: Dictionary["cbtExercises"];
   locale: Locale;
 }) {
+  const TYPE_META: Record<CbtExerciseType, { label: string; icon: typeof Brain }> = {
+    reframing: { label: typesDict.typeReframing, icon: Brain },
+    grounding: { label: typesDict.typeGrounding, icon: Compass },
+    "next-step": { label: typesDict.typeNextStep, icon: Footprints },
+    gratitude: { label: typesDict.typeGratitude, icon: Smile },
+    "thought-record": { label: typesDict.typeThoughtRecord, icon: NotebookPen },
+  };
   const intlLocale = locale === "ar" ? "ar-EG" : "en-GB";
   const today = useMemo(() => new Date(), []);
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -28,12 +38,21 @@ export default function PatternsClient({
   const [hasAnyData, setHasAnyData] = useState<boolean | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayDetail, setDayDetail] = useState<DayDetail | null>(null);
+  const [dayTools, setDayTools] = useState<CbtHistoryEntry[]>([]);
 
   useEffect(() => {
     if (!selectedDate) return;
     let cancelled = false;
     getDayDetail(userId, selectedDate).then((detail) => {
       if (!cancelled) setDayDetail(detail);
+    });
+    // CBT/tool completions (reframing, grounding, gratitude, thought record,
+    // etc.) live in a separate device-only store from journal entries — see
+    // cbt-history.ts — filtered here to whichever day is selected so the
+    // day-detail sheet shows everything logged that day, not just the
+    // journal.
+    getCbtHistory().then((entries) => {
+      if (!cancelled) setDayTools(entries.filter((e) => e.createdAt.slice(0, 10) === selectedDate));
     });
     return () => {
       cancelled = true;
@@ -281,6 +300,33 @@ export default function PatternsClient({
                         </div>
                       ))}
                     </div>
+                  )}
+
+                  {dayTools.length > 0 && (
+                    <>
+                      <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-ink/40">
+                        {dict.dayDetailToolsLabel}
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        {dayTools.map((tool) => {
+                          const meta = TYPE_META[tool.type];
+                          return (
+                            <div
+                              key={tool.id}
+                              className="flex items-start gap-2.5 rounded-xl border border-brand-100 bg-brand-50/40 p-3"
+                            >
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-brand-700">
+                                <meta.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-ink/60">{meta.label}</p>
+                                {tool.summary && <p className="mt-0.5 truncate text-sm text-ink/80">&ldquo;{tool.summary}&rdquo;</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
                 </>
               )}
