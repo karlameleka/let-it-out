@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { getCbtHistory, deleteCbtEntry, type CbtHistoryEntry, type CbtExerciseType } from "@/lib/cbt-history";
+import { buildThoughtRecordHistoryPdf } from "@/lib/thought-record-pdf";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+
+const THOUGHT_RECORD_COLUMN_KEYS = [
+  "situation",
+  "automaticThought",
+  "feelingBefore",
+  "distortions",
+  "evidenceFor",
+  "evidenceAgainst",
+  "balanced",
+  "feelingAfter",
+] as const;
 
 function formatDate(iso: string, locale: "en" | "ar"): string {
   return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
@@ -34,6 +46,9 @@ export default function CbtTypeHistory({
   onClose: () => void;
 }) {
   const [entries, setEntries] = useState<CbtHistoryEntry[] | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,12 +60,36 @@ export default function CbtTypeHistory({
     };
   }, [type]);
 
-  async function remove(id: string) {
-    await deleteCbtEntry(id);
-    setEntries((prev) => prev?.filter((e) => e.id !== id) ?? prev);
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    await deleteCbtEntry(pendingDeleteId);
+    setEntries((prev) => prev?.filter((e) => e.id !== pendingDeleteId) ?? prev);
+    setDeleting(false);
+    setPendingDeleteId(null);
+  }
+
+  async function downloadPdf() {
+    if (!entries || entries.length === 0 || downloadingPdf) return;
+    setDownloadingPdf(true);
+    try {
+      const columns = THOUGHT_RECORD_COLUMN_KEYS.map((key) => ({ key, label: thoughtRecordColumnLabel(key, dict) }));
+      const blob = await buildThoughtRecordHistoryPdf({ entries, columns, title: typeLabel, locale });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `thought-record-history-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingPdf(false);
+    }
   }
 
   return (
+    <>
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
       <div className="max-h-[85vh] w-full max-w-3xl animate-pop-in overflow-y-auto rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
         <div className="px-6 py-5 sm:px-8">
@@ -59,14 +98,27 @@ export default function CbtTypeHistory({
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{typeLabel}</p>
               <h2 className="mt-1 font-display text-lg font-semibold text-brand-900">{dict.title}</h2>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={dict.close}
-              className="shrink-0 rounded-full p-1.5 text-ink/40 transition-colors hover:text-ink/70 active:text-ink/70"
-            >
-              <X className="h-4 w-4" strokeWidth={2} />
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              {type === "thought-record" && entries && entries.length > 0 && (
+                <button
+                  type="button"
+                  onClick={downloadPdf}
+                  disabled={downloadingPdf}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+                >
+                  <Download className="h-3.5 w-3.5" strokeWidth={2} />
+                  {dict.downloadPdf}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={dict.close}
+                className="shrink-0 rounded-full p-1.5 text-ink/40 transition-colors hover:text-ink/70 active:text-ink/70"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
           </div>
           <p className="mt-2 text-xs text-ink/40">{dict.privacyNotice}</p>
 
@@ -75,14 +127,58 @@ export default function CbtTypeHistory({
           ) : entries.length === 0 ? (
             <p className="mt-6 text-sm text-ink/50">{dict.empty}</p>
           ) : type === "thought-record" ? (
-            <ThoughtRecordTable entries={entries} dict={dict} locale={locale} onDelete={remove} />
+            <ThoughtRecordTable entries={entries} dict={dict} locale={locale} onDelete={setPendingDeleteId} />
           ) : (
-            <GenericHistoryList entries={entries} dict={dict} locale={locale} onDelete={remove} />
+            <GenericHistoryList entries={entries} dict={dict} locale={locale} onDelete={setPendingDeleteId} />
           )}
         </div>
       </div>
     </div>
+
+    {pendingDeleteId && (
+      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+        <div className="w-full max-w-sm animate-pop-in overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+          <div className="px-6 py-5">
+            <h2 className="font-display text-lg font-semibold text-brand-900">{dict.deleteEntry}</h2>
+            <p className="mt-2 text-sm text-ink/70">{dict.deleteConfirm}</p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setPendingDeleteId(null)}
+                disabled={deleting}
+                className="flex-1 rounded-full border border-brand-200 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+              >
+                {dict.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? dict.deleting : dict.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
+}
+
+function thoughtRecordColumnLabel(key: (typeof THOUGHT_RECORD_COLUMN_KEYS)[number], dict: Dictionary["cbtHistoryModal"]): string {
+  const map: Record<(typeof THOUGHT_RECORD_COLUMN_KEYS)[number], string> = {
+    situation: dict.colSituation,
+    automaticThought: dict.colThought,
+    feelingBefore: dict.colFeelingBefore,
+    distortions: dict.colDistortions,
+    evidenceFor: dict.colEvidenceFor,
+    evidenceAgainst: dict.colEvidenceAgainst,
+    balanced: dict.colBalanced,
+    feelingAfter: dict.colFeelingAfter,
+  };
+  return map[key];
 }
 
 function ThoughtRecordTable({

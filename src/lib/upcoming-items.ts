@@ -360,6 +360,33 @@ export async function hasConfirmedSession(email: string): Promise<boolean> {
   return booking !== null || request !== null;
 }
 
+/** The counselor tied to this client's very first confirmed session
+ * (paid SessionBooking or free BookingRequest, whichever came first) —
+ * used to route the logged-in "My intake form" flow to the right
+ * counselor's inbox, mirroring who the automatic emailed intake link
+ * already goes to when a session is requested. */
+export async function getFirstConfirmedSessionCounselor(
+  email: string,
+): Promise<{ counselorId: string; counselorName: string; counselorEmail: string | null } | null> {
+  const [booking, request] = await Promise.all([
+    prisma.sessionBooking.findFirst({
+      where: { email, status: "CONFIRMED" },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true, counselor: { select: { id: true, name: true, email: true } } },
+    }),
+    prisma.bookingRequest.findFirst({
+      where: { email, status: { in: ["CONFIRMED", "COMPLETED"] } },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true, counselor: { select: { id: true, name: true, email: true } } },
+    }),
+  ]);
+  const candidates = [booking, request].filter((c): c is NonNullable<typeof c> => c !== null);
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const counselor = candidates[0].counselor;
+  return { counselorId: counselor.id, counselorName: counselor.name, counselorEmail: counselor.email };
+}
+
 /** Hard-deletes SessionBooking/BookingRequest rows cancelled more than
  * CANCELLED_RETENTION_DAYS ago — called from api/cron/trash-purge
  * alongside purgeExpiredTrash so there's a single daily cron doing both. */

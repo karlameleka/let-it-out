@@ -1136,6 +1136,8 @@ const en = {
     mostRecent: "Most recent",
     noPast: "No past sessions yet.",
     viewAllSessions: "View all sessions",
+    myIntakeForm: "My intake form",
+    myIntakeFormLocked: "Unlocks once your first session is booked and confirmed.",
     inBetweenSessions: "In-between sessions",
     inBetweenSessionsLocked: "Unlocks once your first session is booked and confirmed.",
     myToolsTitle: "My tools",
@@ -1631,6 +1633,10 @@ const en = {
     flagged: "flagged",
     recentEntriesLabel: "Your recent entries, saved only on this device",
     deleteEntry: "Delete this entry",
+    deleteConfirm: "Delete this entry? This can't be undone.",
+    delete: "Delete",
+    deleting: "Deleting…",
+    cancel: "Cancel",
     today: "Today",
     yesterday: "Yesterday",
     daysAgo: "{n} days ago",
@@ -1641,7 +1647,7 @@ const en = {
     typeThoughtRecord: "Thought Record",
   },
   groundingTool: {
-    backToCbt: "Back to CBT exercises",
+    backToCbt: "Back to Go-to toolkit",
     ribbon: "Interactive exercise",
     title: "Come back to right here, right now.",
     description:
@@ -1668,7 +1674,7 @@ const en = {
     senseTaste: "Name 1 thing you can taste.",
   },
   gratitudeTool: {
-    backToCbt: "Back to CBT exercises",
+    backToCbt: "Back to Go-to toolkit",
     ribbon: "Interactive exercise",
     title: "Notice the good, right now.",
     description:
@@ -1693,7 +1699,7 @@ const en = {
     prompt3: "Name someone in your life you appreciate right now.",
   },
   nextStepTool: {
-    backToCbt: "Back to CBT exercises",
+    backToCbt: "Back to Go-to toolkit",
     ribbon: "Interactive exercise",
     title: "Stuck? Shrink it down.",
     description:
@@ -1727,7 +1733,7 @@ const en = {
     talkToCounselor: "If this feels heavy, talk it through with a counselor",
   },
   reframingTool: {
-    backToCbt: "Back to CBT exercises",
+    backToCbt: "Back to Go-to toolkit",
     backToProfile: "Back to My Profile",
     ribbon: "Interactive exercise",
     title: "Catch the thought. Question it. Reframe it.",
@@ -1847,6 +1853,11 @@ const en = {
     privacyNotice: "Saved privately on this device only, encrypted, and never sent to our servers.",
     empty: "Nothing saved here yet.",
     deleteEntry: "Delete this entry",
+    deleteConfirm: "Delete this entry? This can't be undone.",
+    delete: "Delete",
+    deleting: "Deleting…",
+    cancel: "Cancel",
+    downloadPdf: "Download PDF",
     colDate: "Date",
     colSituation: "Situation",
     colThought: "Automatic thought",
@@ -1919,6 +1930,21 @@ const en = {
     consentText: "I understand this information is shared only with {counselor}, for the purpose of my care, and with no one else.",
     sendingSecurely: "Sending securely…",
     submitIntakeForm: "Submit intake form",
+  },
+  myIntakeForm: {
+    backToProfile: "Back to My Profile",
+    title: "My intake form",
+    formGreeting: "Hi {name}, this helps {counselor} prepare for your first session together.",
+    confidentialLabel: "This is strictly confidential.",
+    confidentialBody:
+      "Your answers are sent directly and only to {counselor}, and saved in their private client records so they have them on hand for your sessions. They are never seen by anyone else at Let It Out, not even our admin team, and never shared with any third party.",
+    consentText: "I understand this information is shared only with {counselor}, for the purpose of my care, and with no one else.",
+    sendingSecurely: "Sending securely…",
+    submitIntakeForm: "Submit intake form",
+    submittedTitle: "Already submitted",
+    submittedBody: "Sent to {counselor} on {date}.",
+    lockedNotice: "This form is locked and can't be edited once it's been sent to your therapist.",
+    yourAnswers: "What you submitted",
   },
   supportChat: {
     greeting: "Hi, I'm Let It Out technical support assistant. How can I help you today?",

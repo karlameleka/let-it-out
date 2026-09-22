@@ -10,7 +10,7 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 const inputClasses =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
 
-function Field({ field, dict }: { field: IntakeField; dict: Dictionary["intake"] }) {
+export function Field({ field, dict }: { field: IntakeField; dict: Pick<Dictionary["intake"], "yes" | "no" | "select" | "selectANumber"> }) {
   if (field.type === "yesno") {
     return (
       <fieldset>

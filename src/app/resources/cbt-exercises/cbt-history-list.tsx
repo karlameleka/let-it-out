@@ -29,19 +29,26 @@ export default function CbtHistoryList({ dict }: { dict: Dictionary["cbtExercise
   };
   const [entries, setEntries] = useState<CbtHistoryEntry[] | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     getCbtHistory().then(setEntries);
   }, []);
 
-  async function remove(id: string) {
-    await deleteCbtEntry(id);
-    setEntries((prev) => prev?.filter((e) => e.id !== id) ?? prev);
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    await deleteCbtEntry(pendingDeleteId);
+    setEntries((prev) => prev?.filter((e) => e.id !== pendingDeleteId) ?? prev);
+    setDeleting(false);
+    setPendingDeleteId(null);
   }
 
   if (!entries || entries.length === 0) return null;
 
   return (
+    <>
     <div className="mt-12">
       <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.recentEntriesLabel}</p>
       <div className="mt-4 space-y-2">
@@ -70,7 +77,7 @@ export default function CbtHistoryList({ dict }: { dict: Dictionary["cbtExercise
                 </button>
                 <button
                   type="button"
-                  onClick={() => remove(entry.id)}
+                  onClick={() => setPendingDeleteId(entry.id)}
                   aria-label={dict.deleteEntry}
                   className="shrink-0 rounded-full p-1 text-ink/25 hover:text-ink/50 active:text-ink/50"
                 >
@@ -92,5 +99,35 @@ export default function CbtHistoryList({ dict }: { dict: Dictionary["cbtExercise
         })}
       </div>
     </div>
+
+    {pendingDeleteId && (
+      <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+        <div className="w-full max-w-sm animate-pop-in overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+          <div className="px-6 py-5">
+            <h2 className="font-display text-lg font-semibold text-brand-900">{dict.deleteEntry}</h2>
+            <p className="mt-2 text-sm text-ink/70">{dict.deleteConfirm}</p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setPendingDeleteId(null)}
+                disabled={deleting}
+                className="flex-1 rounded-full border border-brand-200 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+              >
+                {dict.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? dict.deleting : dict.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

@@ -137,12 +137,25 @@ export default async function ProfilePage() {
             )}
           </div>
         </div>
+        {canUseInBetweenSessions ? (
+          <ButtonLink href="/profile/intake-form" variant="outline" className="mt-4 w-full">
+            {t.myIntakeForm}
+          </ButtonLink>
+        ) : (
+          <>
+            <Button disabled variant="outline" className="mt-4 w-full">
+              <LockKeyhole className="h-4 w-4" strokeWidth={2} />
+              {t.myIntakeForm}
+            </Button>
+            <p className="mt-2 text-center text-xs text-ink/40">{t.myIntakeFormLocked}</p>
+          </>
+        )}
         {nextSession || lastPastSession ? (
-          <ButtonLink href="/upcoming" variant="outline" className="mt-4 w-full">
+          <ButtonLink href="/upcoming" variant="outline" className="mt-3 w-full">
             {t.viewAllSessions}
           </ButtonLink>
         ) : (
-          <ButtonLink href="/counseling" variant="outline" className="mt-4 w-full">
+          <ButtonLink href="/counseling" variant="outline" className="mt-3 w-full">
             {dict.nav.bookASession}
           </ButtonLink>
         )}
