@@ -817,6 +817,28 @@ export async function cancelClientAppointment(formData: FormData) {
   revalidatePath("/upcoming");
 }
 
+/** One-click "the client actually paid me" shortcut for a paid SessionBooking
+ * still sitting at PENDING_PAYMENT (e.g. paid by InstaPay/cash outside the
+ * automatic Paymob flow) — same effect as the admin dashboard's
+ * markSessionBookingPaid, but scoped to this counselor's own bookings only.
+ * Booking requests (bookingKind "request") have no payment step, so this
+ * only ever touches SessionBooking rows. */
+export async function markClientSessionPaid(formData: FormData) {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return;
+
+  const bookingId = String(formData.get("bookingId") ?? "");
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+
+  await prisma.sessionBooking.updateMany({
+    where: { id: bookingId, counselorId: session.counselorId, status: "PENDING_PAYMENT" },
+    data: { status: "CONFIRMED" },
+  });
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/upcoming");
+}
+
 export async function removeAssignedResource(formData: FormData) {
   const session = await requireCounselor().catch(() => null);
   if (!session) return;

@@ -9,7 +9,7 @@ import {
   getAssignedResourcesForClient,
   type IntakeAnswerEntry,
 } from "@/lib/therapist-data";
-import { removeAssignedResource, discontinueMedication, cancelClientAppointment } from "@/lib/therapist-actions";
+import { removeAssignedResource, discontinueMedication, cancelClientAppointment, markClientSessionPaid } from "@/lib/therapist-actions";
 import { logAudit } from "@/lib/audit-log";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
@@ -151,6 +151,18 @@ export default async function TherapistClientProfilePage({
                       </p>
                       <div className="flex items-center gap-2">
                         <StatusBadge status={a.status} />
+                        {a.bookingKind === "paid" && a.status === "PENDING_PAYMENT" && (
+                          <form action={markClientSessionPaid}>
+                            <input type="hidden" name="bookingId" value={a.id} />
+                            <input type="hidden" name="clientEmail" value={client.email} />
+                            <ConfirmSubmitButton
+                              confirmMessage="Mark this session as paid and confirm it? The client will see it as confirmed."
+                              className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                            >
+                              Mark as paid
+                            </ConfirmSubmitButton>
+                          </form>
+                        )}
                         {a.status !== "CANCELLED" && a.status !== "COMPLETED" && (
                           <form action={cancelClientAppointment}>
                             <input type="hidden" name="bookingId" value={a.id} />
