@@ -8,7 +8,7 @@
 const HISTORY_KEY = "lio_cbt_history";
 const MAX_ENTRIES = 50;
 
-export type CbtExerciseType = "reframing" | "grounding" | "next-step" | "gratitude";
+export type CbtExerciseType = "reframing" | "grounding" | "next-step" | "gratitude" | "thought-record";
 
 export type CbtHistoryEntry = {
   id: string;

@@ -4,9 +4,11 @@ import { useState } from "react";
 import { exportEntries } from "@/lib/local-journal";
 import { exportReflectionEntries } from "@/lib/local-reflection";
 import { exportAssessmentResults } from "@/lib/local-assessments";
+import { buildJournalExportPdf } from "@/lib/journal-pdf";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
-export default function ExportDataButton({ dict, userId }: { dict: Dictionary; userId: string }) {
+export default function ExportDataButton({ dict, userId, locale }: { dict: Dictionary; userId: string; locale: Locale }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = dict.account;
@@ -15,14 +17,14 @@ export default function ExportDataButton({ dict, userId }: { dict: Dictionary; u
     setPending(true);
     setError(null);
 
-    let data;
+    let blob: Blob;
     try {
       const [journal, reflections, assessments] = await Promise.all([
         exportEntries(userId),
         exportReflectionEntries(userId),
         exportAssessmentResults(userId),
       ]);
-      data = { ...journal, reflections, assessments };
+      blob = await buildJournalExportPdf({ journal, reflections, assessments, locale });
     } catch {
       setPending(false);
       setError(t.exportError);
@@ -30,11 +32,10 @@ export default function ExportDataButton({ dict, userId }: { dict: Dictionary; u
     }
     setPending(false);
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `let-it-out-journal-export-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `let-it-out-journal-export-${new Date().toISOString().slice(0, 10)}.pdf`;
     document.body.appendChild(link);
     link.click();
     link.remove();

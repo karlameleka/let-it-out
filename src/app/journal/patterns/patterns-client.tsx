@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getMoodCalendarMonth, hasAnyMoodEntries, type MoodCalendarMonth } from "@/lib/local-journal";
+import { getMoodCalendarMonth, hasAnyMoodEntries, getDayDetail, type MoodCalendarMonth, type DayDetail } from "@/lib/local-journal";
 import { CORE_EMOTIONS, moodColor, moodCore, moodLabel } from "@/lib/moods";
 import { Container } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
@@ -26,6 +26,19 @@ export default function PatternsClient({
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [data, setData] = useState<MoodCalendarMonth | undefined>(undefined);
   const [hasAnyData, setHasAnyData] = useState<boolean | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayDetail, setDayDetail] = useState<DayDetail | null>(null);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    let cancelled = false;
+    getDayDetail(userId, selectedDate).then((detail) => {
+      if (!cancelled) setDayDetail(detail);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, selectedDate]);
 
   const DAY_LABELS = [dict.daySun, dict.dayMon, dict.dayTue, dict.dayWed, dict.dayThu, dict.dayFri, dict.daySat];
 
@@ -148,19 +161,29 @@ export default function PatternsClient({
                 if (!cell) return <div key={`blank-${i}`} />;
                 const isToday = cell.date === todayISO;
                 const mainColor = mainCoreColorOf(cell.moods);
+                const hasData = cell.moods.length > 0;
                 return (
-                  <div key={cell.date} className="flex flex-col items-center gap-1 py-1">
+                  <button
+                    key={cell.date}
+                    type="button"
+                    disabled={!hasData}
+                    onClick={() => {
+                      setDayDetail(null);
+                      setSelectedDate(cell.date);
+                    }}
+                    className="flex flex-col items-center gap-1 py-1 disabled:cursor-default"
+                  >
                     <span className={`text-xs font-medium ${isToday ? "text-brand-700" : "text-ink/60"}`}>
                       {cell.day}
                     </span>
                     <span
-                      title={cell.moods.length ? cell.moods.map((m) => moodLabel(m, locale)).join(", ") : undefined}
+                      title={hasData ? cell.moods.map((m) => moodLabel(m, locale)).join(", ") : undefined}
                       className={`h-5 w-5 rounded-full border ${isToday ? "ring-2 ring-brand-400" : ""} ${
                         mainColor ? "border-brand-900/10" : "border-transparent bg-brand-50/60"
                       }`}
                       style={mainColor ? { backgroundColor: mainColor } : undefined}
                     />
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -208,6 +231,68 @@ export default function PatternsClient({
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {selectedDate && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+          <div className="max-h-[85vh] w-full max-w-sm animate-pop-in overflow-y-auto rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+            <div className="px-6 py-5">
+              <h2 className="font-display text-lg font-semibold text-brand-900">
+                {new Intl.DateTimeFormat(intlLocale, { weekday: "long", day: "numeric", month: "long" }).format(
+                  new Date(`${selectedDate}T00:00:00`),
+                )}
+              </h2>
+
+              {!dayDetail ? (
+                <div className="mt-4 h-20 animate-pulse rounded-xl bg-brand-50" />
+              ) : (
+                <>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink/40">
+                    {dict.dayDetailMoodsLabel}
+                  </p>
+                  {dayDetail.moods.length === 0 ? (
+                    <p className="mt-1.5 text-sm text-ink/50">{dict.dayDetailNoMoods}</p>
+                  ) : (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {dayDetail.moods.map((m, i) => (
+                        <span
+                          key={`${m}-${i}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50/60 px-2.5 py-1 text-xs font-medium text-ink/70"
+                        >
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: moodColor(m) }} />
+                          {moodLabel(m, locale)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-ink/40">
+                    {dict.dayDetailEntriesLabel}
+                  </p>
+                  {dayDetail.entries.length === 0 ? (
+                    <p className="mt-1.5 text-sm text-ink/50">{dict.dayDetailNoEntries}</p>
+                  ) : (
+                    <div className="mt-2 space-y-3">
+                      {dayDetail.entries.map((entry) => (
+                        <div key={entry.id} className="rounded-xl border border-brand-100 bg-brand-50/40 p-3.5">
+                          <p className="whitespace-pre-line text-sm text-ink/80">{entry.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setSelectedDate(null)}
+                className="mt-6 w-full rounded-full border border-brand-200 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:bg-brand-50 active:bg-brand-50"
+              >
+                {dict.dayDetailClose}
+              </button>
+            </div>
           </div>
         </div>
       )}

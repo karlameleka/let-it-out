@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -24,6 +24,7 @@ export default function PastItemRow({
   href,
   cta,
   cancelledLabel,
+  cannotDeleteDict,
 }: {
   itemId: string;
   title: string;
@@ -35,10 +36,21 @@ export default function PastItemRow({
   href?: string;
   cta?: string;
   /** Set only for a session cancelled from either side — shows a badge
-   * instead of the reflection prompt/link. */
+   * instead of the reflection prompt/link, and also gates the swipe (see
+   * cannotDeleteDict below). */
   cancelledLabel?: string;
+  /** Cancelled sessions stay in past notifications for 30 days and can't
+   * be individually deleted — swiping one shows this explanation instead
+   * of dismissing it. Only needed (and only passed) when cancelledLabel
+   * is set. */
+  cannotDeleteDict?: {
+    title: Dictionary["upcoming"]["cannotDeleteCancelledTitle"];
+    body: Dictionary["upcoming"]["cannotDeleteCancelledBody"];
+    ok: Dictionary["upcoming"]["cannotDeleteCancelledOk"];
+  };
 }) {
   const [, startTransition] = useTransition();
+  const [showCannotDelete, setShowCannotDelete] = useState(false);
   const router = useRouter();
   const { refetch } = useUpcoming();
 
@@ -48,6 +60,11 @@ export default function PastItemRow({
       router.refresh();
       refetch();
     });
+  }
+
+  function blockDelete(): Promise<boolean> {
+    setShowCannotDelete(true);
+    return Promise.resolve(false);
   }
 
   const content = (
@@ -68,7 +85,12 @@ export default function PastItemRow({
   );
 
   return (
-    <SwipeToDelete onDelete={handleDismiss} deleteLabel={deleteLabel}>
+    <>
+    <SwipeToDelete
+      onDelete={handleDismiss}
+      confirmBeforeDelete={cancelledLabel ? blockDelete : undefined}
+      deleteLabel={deleteLabel}
+    >
       {href ? (
         <Link
           href={href}
@@ -81,5 +103,25 @@ export default function PastItemRow({
         <div className="rounded-2xl border border-brand-100 bg-white p-5">{content}</div>
       )}
     </SwipeToDelete>
+    {showCannotDelete && cannotDeleteDict && (
+      <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+        <div className="w-full max-w-sm animate-pop-in overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+          <div className="px-6 py-5">
+            <h2 className="font-display text-lg font-semibold text-brand-900">{cannotDeleteDict.title}</h2>
+            <p className="mt-2 text-sm text-ink/70">{cannotDeleteDict.body}</p>
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setShowCannotDelete(false)}
+                className="w-full rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 active:bg-brand-600"
+              >
+                {cannotDeleteDict.ok}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

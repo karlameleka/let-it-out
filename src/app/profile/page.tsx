@@ -8,7 +8,9 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { getUpcomingPageData, getPastItems, hasConfirmedSession } from "@/lib/upcoming-items";
 import { getArticles, localizeArticle } from "@/lib/content/articles";
 import { getMyAssignedResources } from "@/lib/client-resources";
+import { getMyOrders } from "@/lib/my-orders";
 import { formatSlotTime } from "@/lib/format-slot";
+import { formatEGP } from "@/lib/format";
 import { Container, Eyebrow, Button, ButtonLink } from "@/components/ui";
 import ProfileClient from "./profile-client";
 import MyToolsItem from "./my-tools-item";
@@ -24,10 +26,15 @@ export default async function ProfilePage() {
   const dict = getDictionary(locale);
   const t = dict.profile;
 
-  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications, myTools, canUseInBetweenSessions] =
+  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications, myTools, canUseInBetweenSessions, orders] =
     await Promise.all([
-      getUpcomingPageData(user.email, user.userId, locale),
-      getPastItems(user.email, user.userId, locale),
+      // excludeDismissed: false — dismissing a notification on /upcoming
+      // is about hiding it from the notification feed, not about whether
+      // the underlying session still happened/is booked; My Profile's
+      // summary shouldn't silently lose a session just because its
+      // notification was swiped away.
+      getUpcomingPageData(user.email, user.userId, locale, { excludeDismissed: false }),
+      getPastItems(user.email, user.userId, locale, { excludeDismissed: false }),
       getArticles(),
       prisma.medication.findMany({
         where: { clientEmail: user.email, active: true },
@@ -36,11 +43,22 @@ export default async function ProfilePage() {
       }),
       getMyAssignedResources(user.email),
       hasConfirmedSession(user.email),
+      getMyOrders(user.userId),
     ]);
   const articles = rawArticles.map((a) => localizeArticle(a, locale));
 
   const nextSession = upcomingSessions.find((s) => s.status !== "CANCELLED") ?? null;
   const lastPastSession = pastSessions[0] ?? null;
+  const latestOrder = orders[0] ?? null;
+
+  const ORDER_STATUS_LABEL: Record<string, string> = {
+    PENDING_PAYMENT: dict.orderStatus.statusPendingPayment,
+    PAYMENT_SUBMITTED: dict.orderStatus.statusPaymentSubmitted,
+    CONFIRMED: dict.orderStatus.statusConfirmed,
+    SHIPPED: dict.orderStatus.statusShipped,
+    COMPLETED: dict.orderStatus.statusCompleted,
+    CANCELLED: dict.orderStatus.statusCancelled,
+  };
 
   const dateFormatter = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
     weekday: "short",
@@ -69,7 +87,7 @@ export default async function ProfilePage() {
         ) : (
           <div className="mt-4 space-y-3">
             {myTools.map((item) => (
-              <MyToolsItem key={item.id} item={item} dict={dict.myTools} reframingDict={dict.reframingTool} locale={locale} />
+              <MyToolsItem key={item.id} item={item} dict={dict.myTools} />
             ))}
           </div>
         )}
@@ -141,6 +159,32 @@ export default async function ProfilePage() {
             </Button>
             <p className="mt-2 text-center text-xs text-ink/40">{t.inBetweenSessionsLocked}</p>
           </>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+        <h2 className="font-display font-semibold text-brand-900">{t.myOrdersTitle}</h2>
+        <div className="mt-4 space-y-3">
+          <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{t.latestOrder}</p>
+            {latestOrder ? (
+              <p className="mt-1 text-sm text-ink/80">
+                {dict.orderStatus.orderNumber.replace("{id}", latestOrder.id.slice(-8).toUpperCase())} ·{" "}
+                {ORDER_STATUS_LABEL[latestOrder.status] ?? latestOrder.status} · {formatEGP(latestOrder.totalEGP)}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-ink/50">{t.noOrders}</p>
+            )}
+          </div>
+        </div>
+        {latestOrder ? (
+          <ButtonLink href="/orders" variant="outline" className="mt-4 w-full">
+            {t.viewAllOrders}
+          </ButtonLink>
+        ) : (
+          <ButtonLink href="/shop" variant="outline" className="mt-4 w-full">
+            {dict.myOrders.browseShop}
+          </ButtonLink>
         )}
       </div>
     </Container>

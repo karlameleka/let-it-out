@@ -46,7 +46,12 @@ export default async function CbtExercisesPage() {
       <section className="relative overflow-hidden bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
         <DoodleField />
         <Container className="relative max-w-2xl">
-          <Ribbon>{t.ribbon}</Ribbon>
+          <Link href="/resources" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
+            <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToResources}
+          </Link>
+          <div className="mt-4">
+            <Ribbon>{t.ribbon}</Ribbon>
+          </div>
           <h1 className="mt-4 font-display text-3xl font-medium leading-[1.1] text-brand-900 sm:text-4xl">
             {t.title}
           </h1>

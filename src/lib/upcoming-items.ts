@@ -158,7 +158,19 @@ async function getUpcomingReflections(userId: string): Promise<UpcomingReflectio
  * broadcast Event with this client's own RSVP, if any, and every pending
  * "fill out your reflection sheet" prompt — each flagged with whether this
  * client has already opened it. */
-export async function getUpcomingPageData(email: string, userId: string, locale: Locale = "en") {
+/** `excludeDismissed` defaults to true (the /upcoming notification feed's
+ * own behavior — a dismissed notification shouldn't reappear there). My
+ * Profile's counseling-sessions summary calls this with it set to false:
+ * dismissing a notification is about hiding it from the notification
+ * feed, not about whether the session itself still happened/is booked —
+ * those are independent facts and shouldn't be coupled. */
+export async function getUpcomingPageData(
+  email: string,
+  userId: string,
+  locale: Locale = "en",
+  options?: { excludeDismissed?: boolean },
+) {
+  const excludeDismissed = options?.excludeDismissed ?? true;
   const [sessions, events, reflections] = await Promise.all([
     getUpcomingSessions(email),
     getUpcomingEvents(userId, locale),
@@ -174,11 +186,12 @@ export async function getUpcomingPageData(email: string, userId: string, locale:
     : [];
   const readIds = new Set(reads.map((r) => r.itemId));
   const dismissedIds = new Set(reads.filter((r) => r.dismissed).map((r) => r.itemId));
+  const keep = (id: string) => !excludeDismissed || !dismissedIds.has(id);
 
   return {
-    sessions: sessions.filter((s) => !dismissedIds.has(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
-    events: events.filter((e) => !dismissedIds.has(e.id)).map((e) => ({ ...e, read: readIds.has(e.id) })),
-    reflections: reflections.filter((r) => !dismissedIds.has(r.id)).map((r) => ({ ...r, read: readIds.has(r.id) })),
+    sessions: sessions.filter((s) => keep(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
+    events: events.filter((e) => keep(e.id)).map((e) => ({ ...e, read: readIds.has(e.id) })),
+    reflections: reflections.filter((r) => keep(r.id)).map((r) => ({ ...r, read: readIds.has(r.id) })),
   };
 }
 
@@ -224,7 +237,13 @@ export type PastEvent = {
  * the trash-purge cron hard-deletes them after that), and workshops the
  * client RSVP'd ATTENDING to that have already happened — never events
  * that were missed or never RSVP'd to. */
-export async function getPastItems(email: string, userId: string, locale: Locale = "en") {
+export async function getPastItems(
+  email: string,
+  userId: string,
+  locale: Locale = "en",
+  options?: { excludeDismissed?: boolean },
+) {
+  const excludeDismissed = options?.excludeDismissed ?? true;
   const today = todayISO();
   const cancelledSince = new Date(Date.now() - CANCELLED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
@@ -314,7 +333,7 @@ export async function getPastItems(email: string, userId: string, locale: Locale
     }));
 
   const allIds = [...pastSessions.map((s) => s.id), ...pastEvents.map((e) => e.id)];
-  const dismissed = allIds.length
+  const dismissed = excludeDismissed && allIds.length
     ? await prisma.notificationRead.findMany({
         where: { userId, itemId: { in: allIds }, dismissed: true },
         select: { itemId: true },

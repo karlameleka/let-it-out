@@ -64,6 +64,15 @@ export default async function PastSessionsPage() {
                   href={isCancelled ? undefined : "/journal/reflection"}
                   cta={isCancelled ? undefined : dict.upcoming.reflectionCta}
                   cancelledLabel={isCancelled ? dict.upcoming.statusCancelled : undefined}
+                  cannotDeleteDict={
+                    isCancelled
+                      ? {
+                          title: dict.upcoming.cannotDeleteCancelledTitle,
+                          body: dict.upcoming.cannotDeleteCancelledBody,
+                          ok: dict.upcoming.cannotDeleteCancelledOk,
+                        }
+                      : undefined
+                  }
                 />
               );
             })}

@@ -1,14 +1,16 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { ImagePlus, PenLine, Shuffle, Sparkles, WifiOff, X } from "lucide-react";
+import { ImagePlus, Music, PenLine, Shuffle, Sparkles, WifiOff, X } from "lucide-react";
 import { useOffline } from "next/offline";
 import { shufflePrompt } from "@/lib/journal-actions";
 import { createEntry, type EntryFormState } from "@/lib/local-journal";
 import { trackJournalEntryCreated } from "@/lib/journal-actions";
 import { compressImage } from "@/lib/compress-image";
+import { parseSpotifyEmbedUrl } from "@/lib/spotify";
 import { Button } from "@/components/ui";
 import MoodPicker from "@/components/mood-picker";
+import SpotifyEmbed from "@/components/spotify-embed";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -72,6 +74,7 @@ export default function EntryForm({
           .split(",")
           .filter(Boolean),
         photoUrl: (String(formData.get("photoUrl") ?? "") || null),
+        songUrl: (String(formData.get("songUrl") ?? "") || null),
         prompt: mode === "prompt" && prompt ? { category: prompt.category, text: prompt.text } : null,
       });
       void trackJournalEntryCreated();
@@ -90,6 +93,9 @@ export default function EntryForm({
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [showPhotoPermission, setShowPhotoPermission] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [songInput, setSongInput] = useState("");
+  const [song, setSong] = useState<string | null>(null);
+  const [songError, setSongError] = useState<string | null>(null);
 
   if (state !== lastHandledState) {
     setLastHandledState(state);
@@ -98,6 +104,9 @@ export default function EntryForm({
       setMoods([]);
       setPhoto(null);
       setPhotoError(null);
+      setSong(null);
+      setSongInput("");
+      setSongError(null);
     }
   }
 
@@ -141,6 +150,22 @@ export default function EntryForm({
     } finally {
       setPhotoProcessing(false);
     }
+  }
+
+  function attachSong() {
+    const embedUrl = parseSpotifyEmbedUrl(songInput);
+    if (!embedUrl) {
+      setSongError(dict.invalidSpotifyLinkError);
+      return;
+    }
+    setSongError(null);
+    setSong(embedUrl);
+  }
+
+  function removeSong() {
+    setSong(null);
+    setSongInput("");
+    setSongError(null);
   }
 
   function handleShuffle() {
@@ -292,6 +317,46 @@ export default function EntryForm({
           />
           {photoError && <p className="mt-1.5 text-xs text-red-600">{photoError}</p>}
           <input type="hidden" name="photoUrl" value={photo ?? ""} />
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.addSongLabel}</p>
+          {song ? (
+            <div className="relative max-w-sm">
+              <SpotifyEmbed embedUrl={song} />
+              <button
+                type="button"
+                onClick={removeSong}
+                aria-label={dict.removeSong}
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex max-w-sm items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-dashed border-brand-200 px-3 py-2.5">
+                <Music className="h-4 w-4 shrink-0 text-ink/40" strokeWidth={2} />
+                <input
+                  type="url"
+                  value={songInput}
+                  onChange={(e) => setSongInput(e.target.value)}
+                  placeholder={dict.songLinkPlaceholder}
+                  className="min-w-0 flex-1 border-0 p-0 text-sm outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={attachSong}
+                disabled={!songInput.trim()}
+                className="shrink-0 rounded-xl border border-brand-200 px-3 py-2.5 text-sm font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+              >
+                {dict.addSongButton}
+              </button>
+            </div>
+          )}
+          {songError && <p className="mt-1.5 text-xs text-red-600">{songError}</p>}
+          <input type="hidden" name="songUrl" value={song ?? ""} />
         </div>
 
         {isOffline && !state?.success && (

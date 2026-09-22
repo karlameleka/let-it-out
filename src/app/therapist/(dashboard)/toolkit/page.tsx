@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Phone, Download, X, EyeOff, Eye, Brain } from "lucide-react";
+import { Phone, Download, X, EyeOff, Eye, Brain, NotebookPen } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import { removeToolkitItem, toggleDefaultTool, updateSessionPrompts } from "@/lib/therapist-actions";
@@ -7,6 +7,7 @@ import { getOwnCounselorWithBookings, deriveClients } from "@/lib/therapist-data
 import { CLIENT_TOOLS, SESSION_PROMPTS, CRISIS_PROTOCOL, type PromptCard } from "@/lib/therapist-toolkit";
 import AddToolkitItemForm from "./add-item-form";
 import SendReframingForm from "./send-reframing-form";
+import SendThoughtRecordForm from "./send-thought-record-form";
 import PdfOpenButton from "@/components/pdf-open-button";
 import SessionPromptsEditor from "@/components/session-prompts-editor";
 
@@ -49,6 +50,22 @@ export default async function TherapistToolkitPage() {
                 they&rsquo;ll play it right on their own My Profile page.
               </p>
               <SendReframingForm clients={clients} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border-2 border-brand-100 bg-brand-50/40 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-brand-700">
+              <NotebookPen className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-semibold text-brand-900">Thought Record</p>
+              <p className="mt-1 text-sm text-ink/60">
+                A fillable CBT worksheet, in the client&rsquo;s own words, situation, automatic thought, evidence, and a
+                more balanced thought. Send it and they&rsquo;ll fill it out right on their own My Profile page.
+              </p>
+              <SendThoughtRecordForm clients={clients} />
             </div>
           </div>
         </div>

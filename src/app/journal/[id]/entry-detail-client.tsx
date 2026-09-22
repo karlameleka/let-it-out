@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Pencil, Star, X } from "lucide-react";
+import { ImagePlus, Music, Pencil, Star, X } from "lucide-react";
 import {
   deleteEntry,
   getEntryDetail,
@@ -12,9 +12,11 @@ import {
   type JournalEntryDetail,
 } from "@/lib/local-journal";
 import { compressImage } from "@/lib/compress-image";
+import { parseSpotifyEmbedUrl } from "@/lib/spotify";
 import { moodColor, moodLabel } from "@/lib/moods";
 import { Container, Button } from "@/components/ui";
 import MoodPicker from "@/components/mood-picker";
+import SpotifyEmbed from "@/components/spotify-embed";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -50,6 +52,9 @@ export default function EntryDetailClient({
   const [editError, setEditError] = useState<string | null>(null);
   const [showPhotoPermission, setShowPhotoPermission] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editSongInput, setEditSongInput] = useState("");
+  const [editSong, setEditSong] = useState<string | null>(null);
+  const [editSongError, setEditSongError] = useState<string | null>(null);
 
   useEffect(() => {
     getEntryDetail(userId, id).then(setEntry);
@@ -78,6 +83,9 @@ export default function EntryDetailClient({
     setEditMoods(entry.moods);
     setEditPhoto(entry.photoUrl);
     setEditPhotoError(null);
+    setEditSong(entry.songUrl);
+    setEditSongInput("");
+    setEditSongError(null);
     setEditError(null);
     setEditing(true);
   }
@@ -85,7 +93,24 @@ export default function EntryDetailClient({
   function cancelEdit() {
     setEditing(false);
     setEditPhotoError(null);
+    setEditSongError(null);
     setEditError(null);
+  }
+
+  function attachEditSong() {
+    const embedUrl = parseSpotifyEmbedUrl(editSongInput);
+    if (!embedUrl) {
+      setEditSongError(entryFormDict.invalidSpotifyLinkError);
+      return;
+    }
+    setEditSongError(null);
+    setEditSong(embedUrl);
+  }
+
+  function removeEditSong() {
+    setEditSong(null);
+    setEditSongInput("");
+    setEditSongError(null);
   }
 
   async function handleSaveEdit() {
@@ -96,7 +121,7 @@ export default function EntryDetailClient({
     }
     setEditSaving(true);
     setEditError(null);
-    const result = await updateEntry(userId, id, { content, moods: editMoods, photoUrl: editPhoto });
+    const result = await updateEntry(userId, id, { content, moods: editMoods, photoUrl: editPhoto, songUrl: editSong });
     if (!result.success) {
       setEditSaving(false);
       setEditError(dict.editSaveError);
@@ -268,6 +293,45 @@ export default function EntryDetailClient({
               {editPhotoError && <p className="mt-1.5 text-xs text-red-600">{editPhotoError}</p>}
             </div>
 
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">{entryFormDict.addSongLabel}</p>
+              {editSong ? (
+                <div className="relative max-w-sm">
+                  <SpotifyEmbed embedUrl={editSong} />
+                  <button
+                    type="button"
+                    onClick={removeEditSong}
+                    aria-label={entryFormDict.removeSong}
+                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-ink/60 shadow-md hover:text-ink active:text-ink"
+                  >
+                    <X className="h-3.5 w-3.5" strokeWidth={2} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex max-w-sm items-center gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-dashed border-brand-200 px-3 py-2.5">
+                    <Music className="h-4 w-4 shrink-0 text-ink/40" strokeWidth={2} />
+                    <input
+                      type="url"
+                      value={editSongInput}
+                      onChange={(e) => setEditSongInput(e.target.value)}
+                      placeholder={entryFormDict.songLinkPlaceholder}
+                      className="min-w-0 flex-1 border-0 p-0 text-sm outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={attachEditSong}
+                    disabled={!editSongInput.trim()}
+                    className="shrink-0 rounded-xl border border-brand-200 px-3 py-2.5 text-sm font-medium text-brand-600 transition-colors hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+                  >
+                    {entryFormDict.addSongButton}
+                  </button>
+                </div>
+              )}
+              {editSongError && <p className="mt-1.5 text-xs text-red-600">{editSongError}</p>}
+            </div>
+
             {editError && <p className="text-sm text-red-600">{editError}</p>}
 
             <div className="flex flex-wrap gap-3">
@@ -323,6 +387,12 @@ export default function EntryDetailClient({
                 alt=""
                 className="mb-6 max-h-96 w-full rounded-2xl border border-brand-100 object-cover"
               />
+            )}
+
+            {entry.songUrl && (
+              <div className="mb-6 max-w-sm">
+                <SpotifyEmbed embedUrl={entry.songUrl} />
+              </div>
             )}
 
             {entry.prompt && (

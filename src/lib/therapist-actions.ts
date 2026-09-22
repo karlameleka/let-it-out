@@ -668,6 +668,32 @@ export async function assignReframingTool(
   return { success: true };
 }
 
+/** Sends the built-in Thought Record worksheet to a client — same pattern
+ * as assignReframingTool: no url/content stored, the client fills out the
+ * actual worksheet on their own My Profile page (see MyToolsItem and
+ * thought-record-tool.tsx), identified purely by kind: THOUGHT_RECORD. */
+export async function assignThoughtRecordTool(
+  _prevState: AssignResourceFormState,
+  formData: FormData,
+): Promise<AssignResourceFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
+
+  if (!clientEmail) return { error: "Please choose a client." };
+
+  await prisma.assignedResource.create({
+    data: { counselorId: session.counselorId, clientEmail, title: "Thought Record", kind: "THOUGHT_RECORD" },
+  });
+  await notifyClientOfAssignedResource(clientEmail, clientName, session.name, "TOOL");
+
+  revalidatePath(`/therapist/clients/${encodeURIComponent(clientEmail)}`);
+  revalidatePath("/therapist/toolkit");
+  return { success: true };
+}
+
 export type MeetingLinkFormState = { error?: string; success?: boolean } | undefined;
 
 /** Sets/updates the video-call link for one confirmed booking and emails

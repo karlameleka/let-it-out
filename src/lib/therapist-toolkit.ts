@@ -6,11 +6,12 @@
 // (keyed by `key`) — they can also add their own links/PDFs on top, stored
 // as ToolkitItem rows (see therapist-actions.ts).
 //
-// Cognitive Reframing isn't here — it's not a plain link a therapist can
-// hand a client. It's featured separately on the Toolkit page with its own
-// "Send to client" action, which assigns it as an AssignedResourceKind of
-// REFRAMING_TOOL — played inline on the client's My Profile page rather
-// than opened as a link. See the toolkit page and MyToolsItem.
+// Cognitive Reframing and Thought Record aren't here — they're not plain
+// links a therapist can hand a client. Each is featured separately on the
+// Toolkit page with its own "Send to client" action, which assigns it as
+// an AssignedResourceKind of REFRAMING_TOOL/THOUGHT_RECORD — opened as its
+// own page on the client's My Profile rather than a link. See the toolkit
+// page and MyToolsItem.
 
 export type ClientTool = {
   /** Stable id — used as the entry in Counselor.hiddenDefaultTools. Never

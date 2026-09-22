@@ -24,6 +24,7 @@ export type JournalFeedEntry = {
   moods: string[];
   bookmarked: boolean;
   photoUrl: string | null;
+  songUrl: string | null;
   createdAt: string;
   prompt: JournalPrompt;
 };
@@ -62,6 +63,7 @@ type StoredEntry = {
   id: string;
   encContent: { iv: string; data: string };
   encPhoto: { iv: string; data: string } | null;
+  encSong: { iv: string; data: string } | null;
   // Legacy entries (written before multi-mood support) stored a single
   // string here; new entries always store an array. Normalized on read via
   // normalizeMoods() so both shapes coexist in the same object store.
@@ -156,9 +158,10 @@ async function decryptString(key: CryptoKey, enc: { iv: string; data: string }):
 }
 
 async function decryptEntry(key: CryptoKey, stored: StoredEntry): Promise<JournalFeedEntry> {
-  const [content, photoUrl] = await Promise.all([
+  const [content, photoUrl, songUrl] = await Promise.all([
     decryptString(key, stored.encContent),
     stored.encPhoto ? decryptString(key, stored.encPhoto) : Promise.resolve(null),
+    stored.encSong ? decryptString(key, stored.encSong) : Promise.resolve(null),
   ]);
   return {
     id: stored.id,
@@ -166,6 +169,7 @@ async function decryptEntry(key: CryptoKey, stored: StoredEntry): Promise<Journa
     moods: normalizeMoods(stored.mood),
     bookmarked: stored.bookmarked,
     photoUrl,
+    songUrl,
     createdAt: stored.createdAt,
     prompt: stored.prompt,
   };
@@ -204,6 +208,24 @@ export async function getFeedData(userId: string): Promise<JournalFeedData> {
   return { entries, stats: computeStats(entries) };
 }
 
+export type DayDetail = { date: string; moods: string[]; entries: JournalFeedEntry[] };
+
+/** Everything logged on one specific day — every mood (from journal
+ * entries and standalone check-ins alike, same source the calendar's dot
+ * color already resolves from) plus the actual journal entries written
+ * that day, if any. Powers the mood-patterns calendar's day-click
+ * breakdown. */
+export async function getDayDetail(userId: string, date: string): Promise<DayDetail> {
+  const db = await openDb(userId);
+  const key = await getKey(db);
+  const dayStored = (await getAllStored(db)).filter((e) => e.createdAt.slice(0, 10) === date);
+  const moods = dayStored.flatMap((e) => normalizeMoods(e.mood));
+  const entryStored = dayStored.filter((e) => e.kind !== "checkIn");
+  entryStored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const entries = await Promise.all(entryStored.map((s) => decryptEntry(key, s)));
+  return { date, moods, entries };
+}
+
 export async function getEntryDetail(userId: string, id: string): Promise<JournalEntryDetail | null> {
   const db = await openDb(userId);
   const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
@@ -214,7 +236,7 @@ export async function getEntryDetail(userId: string, id: string): Promise<Journa
 
 export async function createEntry(
   userId: string,
-  input: { content: string; moods: string[]; photoUrl: string | null; prompt: JournalPrompt },
+  input: { content: string; moods: string[]; photoUrl: string | null; songUrl: string | null; prompt: JournalPrompt },
 ): Promise<void> {
   const db = await openDb(userId);
   const key = await getKey(db);
@@ -223,6 +245,7 @@ export async function createEntry(
     id: crypto.randomUUID(),
     encContent: await encryptString(key, input.content),
     encPhoto: input.photoUrl ? await encryptString(key, input.photoUrl) : null,
+    encSong: input.songUrl ? await encryptString(key, input.songUrl) : null,
     mood: input.moods,
     bookmarked: false,
     createdAt: now,
@@ -249,6 +272,7 @@ export async function logMoodCheckIn(userId: string, moods: string[]): Promise<v
     id: crypto.randomUUID(),
     encContent: await encryptString(key, ""),
     encPhoto: null,
+    encSong: null,
     mood: moods,
     bookmarked: false,
     createdAt: now,
@@ -259,12 +283,12 @@ export async function logMoodCheckIn(userId: string, moods: string[]): Promise<v
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
 }
 
-/** Edits an existing entry's content/moods/photo in place — the original
- * prompt and createdAt stay fixed, only updatedAt moves. */
+/** Edits an existing entry's content/moods/photo/song in place — the
+ * original prompt and createdAt stay fixed, only updatedAt moves. */
 export async function updateEntry(
   userId: string,
   id: string,
-  input: { content: string; moods: string[]; photoUrl: string | null },
+  input: { content: string; moods: string[]; photoUrl: string | null; songUrl: string | null },
 ): Promise<{ success: boolean }> {
   const db = await openDb(userId);
   const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
@@ -273,6 +297,7 @@ export async function updateEntry(
   const key = await getKey(db);
   stored.encContent = await encryptString(key, input.content);
   stored.encPhoto = input.photoUrl ? await encryptString(key, input.photoUrl) : null;
+  stored.encSong = input.songUrl ? await encryptString(key, input.songUrl) : null;
   stored.mood = input.moods;
   stored.updatedAt = new Date().toISOString();
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
@@ -348,6 +373,7 @@ export async function migrateFromServer(
       id: e.id,
       encContent: await encryptString(key, e.content),
       encPhoto: e.photoUrl ? await encryptString(key, e.photoUrl) : null,
+      encSong: null,
       mood: e.mood ? [e.mood] : [],
       bookmarked: e.bookmarked,
       createdAt: e.createdAt,

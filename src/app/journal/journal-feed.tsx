@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { BarChart3, BookOpen, LockKeyhole, PlusCircle, Search, Star } from "lucide-react";
+import { BarChart3, BookOpen, LockKeyhole, Music, PlusCircle, Search, Star } from "lucide-react";
 import { exportJournalEntries } from "@/lib/journal-actions";
 import {
   getFeedData,
@@ -350,6 +350,7 @@ function EntryCard({
                 ))}
               </span>
             )}
+            {entry.songUrl && <Music className="h-3 w-3 shrink-0 text-ink/40" strokeWidth={2} />}
           </div>
           <button
             type="button"
