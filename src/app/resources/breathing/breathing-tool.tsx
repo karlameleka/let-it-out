@@ -15,39 +15,53 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const STORAGE_KEY = "lio_breathing_count";
 
-const TRIANGLE_CLIP_PATH = "polygon(50% 0%, 0% 100%, 100% 100%)";
+// A simplified, rounded lung silhouette — two mirrored lobes off a central
+// trachea/bronchi — drawn to sit comfortably alongside the app's other
+// hand-drawn line-art (see Swash in components/decor.tsx) rather than a
+// literal anatomical icon.
+const LUNGS_LEFT_LOBE =
+  "M36 40C24 36 14 44 12 58C10 72 16 84 26 90C32 93 40 90 42 78C44 66 42 52 40 44C39 42 37 41 36 40Z";
+const LUNGS_RIGHT_LOBE =
+  "M64 40C76 36 86 44 88 58C90 72 84 84 74 90C68 93 60 90 58 78C56 66 58 52 60 44C61 42 63 41 64 40Z";
 
-/** Rounded corners on a clip-path triangle would need an SVG path — a plain
-    triangle reads fine here since it's small and paired with a soft fill. */
-function shapeStyle(shape: BreathingShape): CSSProperties {
-  return shape === "triangle" ? { clipPath: TRIANGLE_CLIP_PATH } : {};
-}
-
-function shapeRounding(shape: BreathingShape): string {
-  if (shape === "circle") return "rounded-full";
-  if (shape === "square") return "rounded-2xl";
-  return "";
+function LungsIcon({ className, style }: { className?: string; style?: CSSProperties }) {
+  return (
+    <svg viewBox="0 0 100 100" fill="none" className={className} style={style} aria-hidden="true">
+      <path d={LUNGS_LEFT_LOBE} className="fill-brand-100" stroke="currentColor" strokeWidth="3.5" strokeLinejoin="round" />
+      <path d={LUNGS_RIGHT_LOBE} className="fill-brand-100" stroke="currentColor" strokeWidth="3.5" strokeLinejoin="round" />
+      <path d="M50 6V26" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M50 26C50 26 40 30 36 40" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M50 26C50 26 60 30 64 40" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 /** Small shape preview shown next to each pattern's name in the setup
-    picker, so the shape difference is visible before starting. Uses its own
-    (smaller) corner rounding than the big paced visual, rounded-2xl on a
-    14px box would round it into a circle. */
+    picker, so the visual difference is recognizable before starting. */
 function ShapeSwatch({ shape }: { shape: BreathingShape }) {
-  const rounding = shape === "circle" ? "rounded-full" : shape === "square" ? "rounded-[3px]" : "";
-  return (
-    <span
-      aria-hidden
-      className={`inline-block h-3.5 w-3.5 shrink-0 bg-brand-500 ${rounding}`}
-      style={shapeStyle(shape)}
-    />
-  );
+  if (shape === "lungs") return <LungsIcon className="h-3.5 w-3.5 shrink-0 text-brand-600" />;
+  const rounding = shape === "circle" ? "rounded-full" : "rounded-[3px]";
+  return <span aria-hidden className={`inline-block h-3.5 w-3.5 shrink-0 bg-brand-500 ${rounding}`} />;
 }
 
 function scaleForPhase(label: BreathingPhaseLabel, current: number): number {
   if (label === "Inhale") return 1.4;
   if (label === "Exhale") return 1;
   return current;
+}
+
+// Corners a box-breathing dot travels between, one edge per phase: up the
+// left side on Inhale, right along the top on Hold, down the right side on
+// Exhale, left along the bottom on the second Hold.
+const BOX_CORNERS: { x: number; y: number }[] = [
+  { x: 0, y: 100 },
+  { x: 0, y: 0 },
+  { x: 100, y: 0 },
+  { x: 100, y: 100 },
+];
+
+function cornerAfterPhase(phaseIndex: number): number {
+  return (phaseIndex + 1) % BOX_CORNERS.length;
 }
 
 type Stage = "setup" | "active" | "done";
@@ -60,6 +74,7 @@ type State = {
   secondsLeft: number;
   cyclesDone: number;
   shapeScale: number;
+  dotCorner: number;
   count: number | null;
   streak: number | null;
 };
@@ -69,6 +84,7 @@ type Action =
   | { type: "SET_PATTERN"; pattern: BreathingPattern }
   | { type: "SET_CYCLES"; cycles: number }
   | { type: "START" }
+  | { type: "ANIMATE_IN" }
   | { type: "RESET" }
   | { type: "TICK" };
 
@@ -80,6 +96,7 @@ const initialState: State = {
   secondsLeft: BREATHING_PATTERNS[0].phases[0].seconds,
   cyclesDone: 0,
   shapeScale: 1,
+  dotCorner: 0,
   count: null,
   streak: null,
 };
@@ -99,16 +116,24 @@ function reducer(state: State, action: Action): State {
     case "SET_CYCLES":
       return state.stage === "setup" ? { ...state, targetCycles: action.cycles } : state;
     case "START":
+      // Mounts the visual at its resting ("exhaled") state — ANIMATE_IN
+      // moves it to phase one's target a frame later, so the very first
+      // inhale actually animates instead of appearing already mid-breath.
       return {
         ...state,
         stage: "active",
         phaseIndex: 0,
         secondsLeft: state.pattern.phases[0].seconds,
         cyclesDone: 0,
-        shapeScale: scaleForPhase(state.pattern.phases[0].label, 1),
+        shapeScale: 1,
+        dotCorner: 0,
       };
+    case "ANIMATE_IN":
+      return state.stage === "active"
+        ? { ...state, shapeScale: scaleForPhase(state.pattern.phases[0].label, 1), dotCorner: cornerAfterPhase(0) }
+        : state;
     case "RESET":
-      return { ...state, stage: "setup", phaseIndex: 0, shapeScale: 1 };
+      return { ...state, stage: "setup", phaseIndex: 0, shapeScale: 1, dotCorner: 0 };
     case "TICK": {
       if (state.stage !== "active") return state;
       if (state.secondsLeft > 1) return { ...state, secondsLeft: state.secondsLeft - 1 };
@@ -129,6 +154,7 @@ function reducer(state: State, action: Action): State {
           phaseIndex: nextIndex,
           secondsLeft: state.pattern.phases[nextIndex].seconds,
           shapeScale: scaleForPhase(state.pattern.phases[nextIndex].label, state.shapeScale),
+          dotCorner: cornerAfterPhase(nextIndex),
         };
       }
       return {
@@ -136,6 +162,7 @@ function reducer(state: State, action: Action): State {
         phaseIndex: nextIndex,
         secondsLeft: state.pattern.phases[nextIndex].seconds,
         shapeScale: scaleForPhase(state.pattern.phases[nextIndex].label, state.shapeScale),
+        dotCorner: cornerAfterPhase(nextIndex),
       };
     }
     default:
@@ -168,6 +195,20 @@ export default function BreathingTool({ dict }: { dict: Dictionary["breathing"] 
     return () => clearInterval(id);
   }, [state.stage]);
 
+  // Lets the browser paint the resting visual first, then nudges it to
+  // phase one's target on the next frame so the transition actually plays.
+  useEffect(() => {
+    if (state.stage !== "active" || state.phaseIndex !== 0 || state.cyclesDone !== 0) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => dispatch({ type: "ANIMATE_IN" }));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [state.stage]);
+
   // The setup card is much taller than the active view — collapsing it
   // otherwise leaves the page scrolled past the exercise, since the browser
   // keeps the same scroll offset while the content above it shrinks.
@@ -178,6 +219,10 @@ export default function BreathingTool({ dict }: { dict: Dictionary["breathing"] 
   }, [state.stage]);
 
   const currentPhase = state.pattern.phases[state.phaseIndex];
+  const dot = BOX_CORNERS[state.dotCorner];
+  // During Hold phases the glow should keep whatever level the preceding
+  // Inhale/Exhale left it at, exactly like shapeScale itself.
+  const glowStrength = state.shapeScale > 1.1 ? 0.85 : 0.2;
 
   return (
     <div ref={containerRef} className="overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-sm">
@@ -246,25 +291,52 @@ export default function BreathingTool({ dict }: { dict: Dictionary["breathing"] 
           </p>
 
           <div className="relative mt-8 flex h-48 w-48 items-center justify-center">
-            <div
-              className={`absolute inset-0 bg-brand-100 transition-transform ease-in-out ${shapeRounding(state.pattern.shape)}`}
-              style={{
-                transform: `scale(${state.shapeScale})`,
-                transitionDuration: `${currentPhase.seconds}s`,
-                ...shapeStyle(state.pattern.shape),
-              }}
-            />
-            {state.pattern.shape === "triangle" ? (
-              <svg
-                viewBox="0 0 100 100"
-                className="absolute left-6 top-6 text-brand-300"
-                style={{ width: "calc(100% - 3rem)", height: "calc(100% - 3rem)" }}
-              >
-                <polygon points="50,4 4,96 96,96" fill="none" stroke="currentColor" strokeWidth="4" strokeLinejoin="round" />
-              </svg>
-            ) : (
-              <div className={`absolute inset-6 border-2 border-brand-300 ${shapeRounding(state.pattern.shape)}`} />
+            {state.pattern.shape === "square" && (
+              <div className="absolute inset-6 rounded-2xl border-2 border-brand-300">
+                <span
+                  aria-hidden
+                  className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-600 ring-4 ring-brand-50"
+                  style={{
+                    left: `${dot.x}%`,
+                    top: `${dot.y}%`,
+                    transitionProperty: "left, top",
+                    transitionTimingFunction: "linear",
+                    transitionDuration: `${currentPhase.seconds}s`,
+                  }}
+                />
+              </div>
             )}
+
+            {state.pattern.shape === "lungs" && (
+              <>
+                <div
+                  aria-hidden
+                  className="absolute h-36 w-36 rounded-full bg-brand-200 blur-2xl transition-opacity ease-in-out"
+                  style={{ opacity: glowStrength, transitionDuration: `${currentPhase.seconds}s` }}
+                />
+                <LungsIcon
+                  className="relative h-28 w-28 text-brand-600 transition-transform ease-in-out"
+                  style={{ transform: `scale(${state.shapeScale})`, transitionDuration: `${currentPhase.seconds}s` }}
+                />
+              </>
+            )}
+
+            {state.pattern.shape === "circle" && (
+              <>
+                <div
+                  aria-hidden
+                  className="absolute h-40 w-40 rounded-full bg-brand-200 blur-2xl transition-opacity ease-in-out"
+                  style={{ opacity: glowStrength * 0.7, transitionDuration: `${currentPhase.seconds}s` }}
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-0 rounded-full bg-brand-100 transition-transform ease-in-out"
+                  style={{ transform: `scale(${state.shapeScale})`, transitionDuration: `${currentPhase.seconds}s` }}
+                />
+                <div className="absolute inset-6 rounded-full border-2 border-brand-300" />
+              </>
+            )}
+
             <div className="relative text-center">
               <p className="font-display text-2xl font-semibold text-brand-900">{phaseLabel(currentPhase.label)}</p>
               <p className="mt-1 text-3xl font-semibold text-brand-700">{state.secondsLeft || currentPhase.seconds}</p>
