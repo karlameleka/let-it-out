@@ -14,6 +14,7 @@ import {
   revokeTherapistPortalAccess,
 } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import AddManualClientForm from "./add-manual-client-form";
 
 const AVAILABILITY_OPTIONS = [
   { value: "AVAILABLE", label: "Available" },
@@ -33,7 +34,12 @@ export default async function AdminCounselorDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [counselor, filters] = await Promise.all([
+  // manualClients is fetched separately, as its own top-level query, not a
+  // nested `include` — the field-encryption extension (see
+  // prisma-field-encryption-extension.ts) only decrypts the model a query
+  // is issued directly against; a relation pulled in via `include` would
+  // come back with referralSource still ciphertext.
+  const [counselor, filters, manualClients] = await Promise.all([
     prisma.counselor.findUnique({
       where: { id },
       include: {
@@ -43,6 +49,7 @@ export default async function AdminCounselorDetailPage({
       },
     }),
     prisma.counselorFilter.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.manualClient.findMany({ where: { counselorId: id }, orderBy: { createdAt: "desc" } }),
   ]);
   if (!counselor) notFound();
   const assignedFilterIds = new Set(counselor.filters.map((f) => f.filterId));
@@ -50,16 +57,29 @@ export default async function AdminCounselorDetailPage({
   const sessionCounts = countByStatus(counselor.sessionBookings);
   const requestCounts = countByStatus(counselor.bookingRequests);
 
-  const clientsByEmail = new Map<string, { name: string; email: string; phone: string; lastContact: Date }>();
+  type AdminClientRow = { name: string; email: string; phone: string; lastContact: Date; referralSource: string | null };
+  const clientsByEmail = new Map<string, AdminClientRow>();
+  // Seeded from ManualClient first so a hand-added client with no bookings
+  // yet still shows up (see ManualClient/addManualClientAdmin) — booking
+  // rows below take over name/phone/lastContact if more recent, same merge
+  // order as deriveClients() in therapist-data.ts.
+  for (const m of manualClients) {
+    clientsByEmail.set(m.clientEmail, {
+      name: m.name,
+      email: m.clientEmail,
+      phone: m.phone ?? "",
+      lastContact: m.createdAt,
+      referralSource: m.referralSource,
+    });
+  }
   for (const row of [...counselor.sessionBookings, ...counselor.bookingRequests]) {
     const existing = clientsByEmail.get(row.email);
-    if (!existing || row.createdAt > existing.lastContact) {
-      clientsByEmail.set(row.email, {
-        name: row.name,
-        email: row.email,
-        phone: row.phone,
-        lastContact: row.createdAt,
-      });
+    if (!existing) {
+      clientsByEmail.set(row.email, { name: row.name, email: row.email, phone: row.phone, lastContact: row.createdAt, referralSource: null });
+    } else if (row.createdAt > existing.lastContact) {
+      existing.name = row.name;
+      existing.phone = row.phone;
+      existing.lastContact = row.createdAt;
     }
   }
   const clients = [...clientsByEmail.values()].sort(
@@ -386,19 +406,25 @@ export default async function AdminCounselorDetailPage({
       </div>
 
       <div>
-        <h2 className="font-display font-semibold text-brand-900">
-          Clients <span className="text-sm font-normal text-ink/40">({clients.length})</span>
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display font-semibold text-brand-900">
+            Clients <span className="text-sm font-normal text-ink/40">({clients.length})</span>
+          </h2>
+        </div>
+        <div className="mt-3">
+          <AddManualClientForm counselorId={counselor.id} />
+        </div>
         {clients.length === 0 ? (
-          <p className="mt-2 text-sm text-ink/60">No clients yet.</p>
+          <p className="mt-4 text-sm text-ink/60">No clients yet.</p>
         ) : (
-          <div className="mt-3 overflow-hidden rounded-2xl border border-brand-100 bg-white">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-brand-100 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-brand-50 text-xs font-semibold uppercase tracking-wide text-brand-700">
                 <tr>
                   <th className="px-5 py-3">Name</th>
                   <th className="px-5 py-3">Email</th>
                   <th className="px-5 py-3">Phone</th>
+                  <th className="px-5 py-3">Referral source</th>
                   <th className="px-5 py-3">Last contact</th>
                   <th className="px-5 py-3"></th>
                 </tr>
@@ -409,6 +435,7 @@ export default async function AdminCounselorDetailPage({
                     <td className="px-5 py-3">{c.name}</td>
                     <td className="px-5 py-3 text-ink/70">{c.email}</td>
                     <td className="px-5 py-3 text-ink/70">{c.phone}</td>
+                    <td className="px-5 py-3 text-ink/60">{c.referralSource || "—"}</td>
                     <td className="px-5 py-3 text-ink/60">{c.lastContact.toLocaleString("en-GB")}</td>
                     <td className="px-5 py-3 text-right">
                       <form action={deleteCounselorClient}>

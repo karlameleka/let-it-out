@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { TherapistClient, TherapistCounselorWithBookings } from "@/lib/therapist-data";
 import { updateOwnBookingRequestStatus } from "@/lib/therapist-actions";
 import StatusBadge from "../../status-badge";
+import AddClientForm from "./add-client-form";
 
 const STATUSES = ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"];
 
@@ -70,6 +71,8 @@ export default function ClientListPane({
           </div>
         </details>
       )}
+
+      <AddClientForm />
 
       <div className="rounded-2xl border border-brand-100 bg-white">
         <div className="border-b border-brand-50 px-4 py-3">

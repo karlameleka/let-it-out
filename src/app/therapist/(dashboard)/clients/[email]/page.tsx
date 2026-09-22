@@ -79,6 +79,12 @@ export default async function TherapistClientProfilePage({
             {client.email}
             {client.phone && ` · ${client.phone}`}
           </p>
+          {client.referralSource && (
+            <p className="mt-1.5 text-xs text-ink/50">
+              <span className="font-semibold uppercase tracking-wide text-ink/40">Referral source</span>{" "}
+              {client.referralSource}
+            </p>
+          )}
         </div>
         <ReferClientForm
           clientEmail={client.email}

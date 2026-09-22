@@ -9,12 +9,16 @@ export type SiteSettingsData = {
   arabicEnabled: boolean;
   hiddenArticleSlugs: string[];
   hideJournalTaglineButton: boolean;
+  therapistAgreementFileData: string | null;
+  therapistAgreementFileName: string | null;
 };
 
 const DEFAULTS: SiteSettingsData = {
   arabicEnabled: true,
   hiddenArticleSlugs: [],
   hideJournalTaglineButton: false,
+  therapistAgreementFileData: null,
+  therapistAgreementFileName: null,
 };
 
 /** Memoized per-request — most pages only need this once, and several call
@@ -26,6 +30,8 @@ export const getSiteSettings = cache(async (): Promise<SiteSettingsData> => {
     arabicEnabled: row.arabicEnabled,
     hiddenArticleSlugs: row.hiddenArticleSlugs,
     hideJournalTaglineButton: row.hideJournalTaglineButton,
+    therapistAgreementFileData: row.therapistAgreementFileData,
+    therapistAgreementFileName: row.therapistAgreementFileName,
   };
 });
 

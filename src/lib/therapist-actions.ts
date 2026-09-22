@@ -216,6 +216,52 @@ export async function deleteClientNote(formData: FormData) {
   revalidatePath("/therapist");
 }
 
+export type ManualClientFormState = { error?: string; success?: boolean } | undefined;
+
+/** Adds a client by hand (someone referred in person, over the phone, or
+ * from another practice, who hasn't booked a session yet) or, if this
+ * email is already a client through a booking, just attaches a
+ * referralSource retroactively — see deriveClients' merge logic. Upsert on
+ * the (counselorId, clientEmail) unique constraint rather than a plain
+ * create so re-submitting the form to update the referral source doesn't
+ * throw a duplicate-key error. */
+export async function addManualClient(
+  _prevState: ManualClientFormState,
+  formData: FormData,
+): Promise<ManualClientFormState> {
+  const session = await requireCounselor().catch(() => null);
+  if (!session) return { error: "Please log in again." };
+
+  const name = String(formData.get("name") ?? "").trim();
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const referralSource = String(formData.get("referralSource") ?? "").trim();
+
+  if (!name) return { error: "Please enter a name." };
+  if (!clientEmail || !clientEmail.includes("@")) return { error: "Please enter a valid email." };
+
+  await prisma.manualClient.upsert({
+    where: { counselorId_clientEmail: { counselorId: session.counselorId, clientEmail } },
+    create: {
+      counselorId: session.counselorId,
+      name,
+      clientEmail,
+      phone: phone || null,
+      referralSource: referralSource || null,
+      addedBy: "THERAPIST",
+    },
+    update: {
+      name,
+      phone: phone || null,
+      referralSource: referralSource || null,
+    },
+  });
+
+  revalidatePath("/therapist/clients");
+  revalidatePath("/therapist");
+  return { success: true };
+}
+
 export type ToolkitItemFormState = { error?: string; success?: boolean } | undefined;
 
 function dataUriByteSize(dataUri: string): number {

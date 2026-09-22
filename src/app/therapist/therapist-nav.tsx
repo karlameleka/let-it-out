@@ -10,6 +10,7 @@ const BASE_TABS = [
   { href: "/therapist/toolkit", label: "Toolkit" },
   { href: "/therapist/referrals", label: "Referrals" },
   { href: "/therapist/profile", label: "Profile & pricing" },
+  { href: "/therapist/legal", label: "Legal" },
   { href: "/therapist/settings", label: "Settings" },
 ];
 

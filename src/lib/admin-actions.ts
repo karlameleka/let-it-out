@@ -478,6 +478,10 @@ export async function deleteCounselorClient(formData: FormData) {
     ),
     prisma.bookingRequest.deleteMany({ where: { counselorId, email } }),
     prisma.sessionBooking.deleteMany({ where: { counselorId, email } }),
+    // Also drop any hand-added ManualClient row for this email — otherwise
+    // it would keep seeding this client right back into the list (see
+    // deriveClients/the merge logic above) even after this "delete".
+    prisma.manualClient.deleteMany({ where: { counselorId, clientEmail: email } }),
   ]);
   const total = bookingRequests.length + sessionBookings.length;
   if (total > 0) {
@@ -492,6 +496,46 @@ export async function deleteCounselorClient(formData: FormData) {
     });
   }
   revalidatePath("/admin/counselors/[id]", "page");
+}
+
+export type ManualClientFormState = { error?: string; success?: boolean } | undefined;
+
+/** Admin equivalent of the therapist portal's addManualClient — lets an
+ * admin add a client on a specific counselor's behalf (e.g. from a phone
+ * inquiry logged outside the app), with the same upsert-on-email behavior
+ * so re-submitting with a referral source just updates the existing row
+ * instead of erroring. */
+export async function addManualClientAdmin(
+  _prevState: ManualClientFormState,
+  formData: FormData,
+): Promise<ManualClientFormState> {
+  const admin = await requireAdmin();
+  const counselorId = String(formData.get("counselorId") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const clientEmail = String(formData.get("clientEmail") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const referralSource = String(formData.get("referralSource") ?? "").trim();
+
+  if (!counselorId) return { error: "Missing counselor." };
+  if (!name) return { error: "Please enter a name." };
+  if (!clientEmail || !clientEmail.includes("@")) return { error: "Please enter a valid email." };
+
+  await prisma.manualClient.upsert({
+    where: { counselorId_clientEmail: { counselorId, clientEmail } },
+    create: { counselorId, name, clientEmail, phone: phone || null, referralSource: referralSource || null, addedBy: "ADMIN" },
+    update: { name, phone: phone || null, referralSource: referralSource || null },
+  });
+  await logAudit({
+    actor: admin,
+    action: "counselor_client.added",
+    summary: `Added ${name} as a client for this counselor`,
+    targetType: "Counselor",
+    targetId: counselorId,
+    metadata: { clientEmail },
+  });
+
+  revalidatePath("/admin/counselors/[id]", "page");
+  return { success: true };
 }
 
 // Same complete-deletion behavior as a client's own "Delete my account" —

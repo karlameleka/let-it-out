@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import TwoFactorSettings from "@/components/two-factor-settings";
 import TextOverrideField from "@/components/text-override-field";
+import TherapistAgreementForm from "@/components/therapist-agreement-form";
 
 const HERO_FIELDS: [key: string, label: string][] = [
   ["heroRibbon", "Ribbon text above the headline"],
@@ -134,6 +135,20 @@ export default async function AdminSettingsPage() {
           Save settings
         </button>
       </form>
+      </div>
+
+      <div className="max-w-xl">
+        <h2 className="font-display text-lg font-semibold text-brand-900">Therapist agreement</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          One PDF, shown to every therapist on their portal&rsquo;s Legal page for them to download. Uploading a new
+          file replaces it for everyone.
+        </p>
+        <div className="mt-3 rounded-2xl border border-brand-100 bg-white p-5">
+          <TherapistAgreementForm
+            currentFileData={settings.therapistAgreementFileData}
+            currentFileName={settings.therapistAgreementFileName}
+          />
+        </div>
       </div>
 
       <div>

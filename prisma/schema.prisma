@@ -248,6 +248,34 @@ model Counselor {
   assignedResources   AssignedResource[]
   availabilityWindows CounselorAvailability[]
   filters             CounselorFilterAssignment[]
+  manualClients       ManualClient[]
+}
+
+// A client a therapist (or an admin, on their behalf) added by hand rather
+// than one who arrived through a booking — e.g. someone referred in
+// person, over the phone, or from another practice, who hasn't booked a
+// session yet. Keyed the same no-FK way every other client record is
+// (clientEmail as a plain string, see ClientNote/Medication/AssignedResource)
+// since there's often no User account behind them. deriveClients() merges
+// this in alongside booking-derived clients; if the same email later books
+// a session, the two just describe the same person, referralSource carries
+// over.
+model ManualClient {
+  id             String    @id @default(cuid())
+  counselor      Counselor @relation(fields: [counselorId], references: [id])
+  counselorId    String
+  name           String
+  clientEmail    String
+  phone          String?
+  // Free text — "how did this client hear about us" — not the same concept
+  // as the Referral model (a counselor-to-counselor case handoff) or
+  // UserReferral (the invite-a-friend promo code system).
+  referralSource String?   @db.Text
+  addedBy        String    // "THERAPIST" | "ADMIN"
+  createdAt      DateTime  @default(now())
+
+  @@unique([counselorId, clientEmail])
+  @@index([counselorId])
 }
 
 // Admin-defined filter chips shown on /counseling (e.g. "Prescribes
@@ -1135,6 +1163,11 @@ model SiteSettings {
   // Hides the "Let it out. One page at a time." teal card / journal-app
   // button on the homepage.
   hideJournalTaglineButton Boolean                @default(false)
+  // A single agreement PDF the admin uploads and every therapist can
+  // download from their portal's Legal page — same base64 data-URI
+  // storage as ToolkitItem/AssignedResource, no per-therapist variants.
+  therapistAgreementFileData String?               @db.Text
+  therapistAgreementFileName String?
   updatedAt               DateTime                @updatedAt
 }
 

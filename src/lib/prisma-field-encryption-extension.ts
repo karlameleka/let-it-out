@@ -21,6 +21,7 @@ const ENCRYPTED_FIELDS: Record<string, Record<string, FieldKind>> = {
   IntakeSubmission: { answers: "json", aiSummary: "string" },
   Referral: { intakeSnapshot: "json", notesSnapshot: "json" },
   AssignedResource: { description: "string", content: "string" },
+  ManualClient: { referralSource: "string" },
   SupportChat: { messages: "json" },
   JournalEntry: { content: "string", photoUrl: "string" },
   TrashedItem: { data: "json" },

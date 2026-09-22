@@ -10,21 +10,14 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-// The build sweeps /resources into the precache manifest as a static
-// build-time HTML snapshot — but precache matches are served straight from
-// that snapshot, bypassing the runtimeCaching NetworkOnly rule below
-// entirely (precache takes priority over runtime routes). For a page whose
-// content is personalized per logged-in client ("My tools"), that snapshot
-// would otherwise permanently mask new content and never clear the unread
-// badge for anyone using the installed app. Stripped out here so the
-// runtimeCaching rule is what actually decides its fetch behavior.
-const PRECACHE_EXCLUDED_URLS = new Set(["/resources"]);
-const precacheEntries = (self.__SW_MANIFEST ?? []).filter(
-  (entry) => !PRECACHE_EXCLUDED_URLS.has(typeof entry === "string" ? entry : entry.url),
-);
-
 const serwist = new Serwist({
-  precacheEntries,
+  // Build assets only now (JS/CSS chunks) — page HTML is no longer swept
+  // into the precache manifest (see serwist/[path]/route.ts) since a
+  // precache match is served straight from a frozen snapshot, bypassing
+  // the runtimeCaching rules below entirely, which used to be able to
+  // leave a page's chrome stuck in a locale the visitor had already
+  // switched away from.
+  precacheEntries: self.__SW_MANIFEST ?? [],
   skipWaiting: true,
   clientsClaim: true,
   // Left off deliberately: navigation preload races the browser's own
