@@ -20,7 +20,7 @@ export default function MyToolsItem({
     <div className={`rounded-2xl border p-5 ${isDone ? "border-brand-100 bg-brand-50/40" : "border-brand-100 bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={`font-display font-semibold ${isDone ? "text-brand-700 line-through" : "text-brand-900"}`}>{item.title}</p>
+          <p className={`font-display font-semibold ${isDone ? "text-brand-700" : "text-brand-900"}`}>{item.title}</p>
           <p className="mt-0.5 text-xs text-ink/40">{dict.from.replace("{name}", item.counselor.name)}</p>
         </div>
         <form action={toggleResourceComplete}>
