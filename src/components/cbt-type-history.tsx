@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 import { getCbtHistory, deleteCbtEntry, type CbtHistoryEntry, type CbtExerciseType } from "@/lib/cbt-history";
 import { buildThoughtRecordHistoryPdf } from "@/lib/thought-record-pdf";
+import { reserveDownloadWindow, deliverBlob } from "@/lib/download-blob";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const THOUGHT_RECORD_COLUMN_KEYS = [
@@ -72,17 +73,14 @@ export default function CbtTypeHistory({
   async function downloadPdf() {
     if (!entries || entries.length === 0 || downloadingPdf) return;
     setDownloadingPdf(true);
+    const reservedWindow = reserveDownloadWindow();
     try {
       const columns = THOUGHT_RECORD_COLUMN_KEYS.map((key) => ({ key, label: thoughtRecordColumnLabel(key, dict) }));
       const blob = await buildThoughtRecordHistoryPdf({ entries, columns, title: typeLabel, locale });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `thought-record-history-${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      deliverBlob(blob, `thought-record-history-${new Date().toISOString().slice(0, 10)}.pdf`, reservedWindow);
+    } catch (err) {
+      reservedWindow?.close();
+      throw err;
     } finally {
       setDownloadingPdf(false);
     }
