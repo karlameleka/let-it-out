@@ -1,21 +1,26 @@
 "use client";
 
-// iOS Safari only allows window.open() to succeed when it's called
-// synchronously inside the click handler that triggered it — once any
-// `await` happens first (fetching data, building a PDF), the browser has
-// already dropped the "user activation" and the call is silently
-// swallowed, with no error and nothing visibly happening. iOS also
-// doesn't honor <a download> on a blob: URL the way desktop browsers do,
-// so even a same-tab anchor click wouldn't trigger a real download there
-// anyway — the expected iOS behavior is to open the file in Safari's own
-// viewer, where the person can share/save it from the toolbar.
-//
-// The fix: call reserveDownloadWindow() synchronously, as the very first
-// thing in the click handler, before any await. On iOS this opens a
-// blank tab while the gesture is still active; everywhere else it's a
-// no-op (desktop's anchor-click download works fine as-is). Once the
-// file is ready, deliverBlob() either points that reserved tab at it
-// (iOS) or triggers the usual anchor-click download (everywhere else).
+// iOS Safari doesn't honor <a download> on a blob: URL — it silently
+// ignores the attribute, so the anchor-click trick that works everywhere
+// else does nothing there (iOS has no "Downloads folder" concept for web
+// content the way desktop browsers do anyway). The two workarounds that
+// look tempting both fail on inspection:
+//   - Pre-opening a blank tab with window.open() and later pointing it at
+//     the blob: URL doesn't work — Safari refuses to load a blob: URL
+//     from any window other than the one that created it, even a
+//     same-origin tab opened via window.open(). The tab just sits on
+//     about:blank forever.
+//   - Converting to a data: URI sidesteps that, but every major browser
+//     (Chrome, Firefox, Safari) blocks a top-level navigation to a
+//     data: URI outright, as an anti-phishing measure — the address bar
+//     would show no real origin. This throws immediately, in every tab.
+// The one thing that reliably works is navigating the SAME window/tab
+// that created the blob directly to it — no popup, no cross-window
+// hand-off. Safari opens the PDF in its own viewer (replacing the app
+// page), and the person taps Share there to save it — the standard way
+// PDFs are "downloaded" on iOS. Everywhere else, the existing
+// anchor-click download (a real file download, not just an inline view)
+// is unchanged.
 
 function isIOS(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -24,15 +29,13 @@ function isIOS(): boolean {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
-export function reserveDownloadWindow(): Window | null {
-  if (typeof window === "undefined" || !isIOS()) return null;
-  return window.open("", "_blank");
-}
-
-export function deliverBlob(blob: Blob, filename: string, reservedWindow: Window | null): void {
+export function deliverBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
-  if (reservedWindow) {
-    reservedWindow.location.href = url;
+  if (isIOS()) {
+    // Don't revoke: the navigation away from this page is async, and
+    // revoking before it completes would break the PDF load. The blob
+    // URL is released automatically once this document is torn down.
+    window.location.href = url;
     return;
   }
   const link = document.createElement("a");

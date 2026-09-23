@@ -5,7 +5,7 @@ import { exportEntries } from "@/lib/local-journal";
 import { exportReflectionEntries } from "@/lib/local-reflection";
 import { exportAssessmentResults } from "@/lib/local-assessments";
 import { buildJournalExportPdf } from "@/lib/journal-pdf";
-import { reserveDownloadWindow, deliverBlob } from "@/lib/download-blob";
+import { deliverBlob } from "@/lib/download-blob";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -17,7 +17,6 @@ export default function ExportDataButton({ dict, userId, locale }: { dict: Dicti
   async function handleExport() {
     setPending(true);
     setError(null);
-    const reservedWindow = reserveDownloadWindow();
 
     let blob: Blob;
     try {
@@ -28,14 +27,13 @@ export default function ExportDataButton({ dict, userId, locale }: { dict: Dicti
       ]);
       blob = await buildJournalExportPdf({ journal, reflections, assessments, locale });
     } catch {
-      reservedWindow?.close();
       setPending(false);
       setError(t.exportError);
       return;
     }
     setPending(false);
 
-    deliverBlob(blob, `let-it-out-journal-export-${new Date().toISOString().slice(0, 10)}.pdf`, reservedWindow);
+    deliverBlob(blob, `let-it-out-journal-export-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
   return (
