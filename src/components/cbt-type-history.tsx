@@ -5,7 +5,10 @@ import { Download, X } from "lucide-react";
 import { getCbtHistory, deleteCbtEntry, type CbtHistoryEntry, type CbtExerciseType } from "@/lib/cbt-history";
 import { buildThoughtRecordHistoryPdf } from "@/lib/thought-record-pdf";
 import { deliverBlob } from "@/lib/download-blob";
+import { withTimeout } from "@/lib/with-timeout";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+
+const PDF_BUILD_TIMEOUT_MS = 25_000;
 
 const THOUGHT_RECORD_COLUMN_KEYS = [
   "situation",
@@ -50,6 +53,7 @@ export default function CbtTypeHistory({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,10 +77,17 @@ export default function CbtTypeHistory({
   async function downloadPdf() {
     if (!entries || entries.length === 0 || downloadingPdf) return;
     setDownloadingPdf(true);
+    setDownloadError(null);
     try {
       const columns = THOUGHT_RECORD_COLUMN_KEYS.map((key) => ({ key, label: thoughtRecordColumnLabel(key, dict) }));
-      const blob = await buildThoughtRecordHistoryPdf({ entries, columns, title: typeLabel, locale });
+      const blob = await withTimeout(
+        buildThoughtRecordHistoryPdf({ entries, columns, title: typeLabel, locale }),
+        PDF_BUILD_TIMEOUT_MS,
+        "PDF build timed out",
+      );
       deliverBlob(blob, `thought-record-history-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch {
+      setDownloadError(dict.downloadPdfError);
     } finally {
       setDownloadingPdf(false);
     }
@@ -101,7 +112,7 @@ export default function CbtTypeHistory({
                   className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
                 >
                   <Download className="h-3.5 w-3.5" strokeWidth={2} />
-                  {dict.downloadPdf}
+                  {downloadingPdf ? dict.downloadingPdf : dict.downloadPdf}
                 </button>
               )}
               <button
@@ -115,6 +126,7 @@ export default function CbtTypeHistory({
             </div>
           </div>
           <p className="mt-2 text-xs text-ink/40">{dict.privacyNotice}</p>
+          {downloadError && <p className="mt-2 text-xs text-red-600">{downloadError}</p>}
 
           {entries === null ? (
             <div className="mt-6 h-20 animate-pulse rounded-xl bg-brand-50" />

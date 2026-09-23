@@ -1858,6 +1858,8 @@ const en = {
     deleting: "Deleting…",
     cancel: "Cancel",
     downloadPdf: "Download PDF",
+    downloadingPdf: "Preparing PDF…",
+    downloadPdfError: "Couldn't build the PDF, please try again.",
     colDate: "Date",
     colSituation: "Situation",
     colThought: "Automatic thought",

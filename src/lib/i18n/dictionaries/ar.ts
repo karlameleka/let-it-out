@@ -1824,6 +1824,8 @@ const ar: Dictionary = {
     deleting: "جارٍ الحذف…",
     cancel: "إلغاء",
     downloadPdf: "تحميل PDF",
+    downloadingPdf: "جارٍ تجهيز الـ PDF…",
+    downloadPdfError: "مقدرناش نجهز الـ PDF، حاول تاني.",
     colDate: "التاريخ",
     colSituation: "الموقف",
     colThought: "الفكرة التلقائية",

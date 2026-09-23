@@ -6,8 +6,11 @@ import { exportReflectionEntries } from "@/lib/local-reflection";
 import { exportAssessmentResults } from "@/lib/local-assessments";
 import { buildJournalExportPdf } from "@/lib/journal-pdf";
 import { deliverBlob } from "@/lib/download-blob";
+import { withTimeout } from "@/lib/with-timeout";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
+
+const PDF_BUILD_TIMEOUT_MS = 25_000;
 
 export default function ExportDataButton({ dict, userId, locale }: { dict: Dictionary; userId: string; locale: Locale }) {
   const [pending, setPending] = useState(false);
@@ -25,7 +28,11 @@ export default function ExportDataButton({ dict, userId, locale }: { dict: Dicti
         exportReflectionEntries(userId),
         exportAssessmentResults(userId),
       ]);
-      blob = await buildJournalExportPdf({ journal, reflections, assessments, locale });
+      blob = await withTimeout(
+        buildJournalExportPdf({ journal, reflections, assessments, locale }),
+        PDF_BUILD_TIMEOUT_MS,
+        "PDF build timed out",
+      );
     } catch {
       setPending(false);
       setError(t.exportError);
