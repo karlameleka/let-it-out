@@ -106,8 +106,6 @@ export default async function SessionBookingPage({
                 accessToken={token}
                 amountEGP={booking.priceEGP - booking.discountEGP}
                 dict={fullDict.paymentSelector}
-                counselorProfileDict={fullDict.counselorProfile}
-                locale={locale}
               />
             </div>
           </div>

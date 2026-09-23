@@ -40,18 +40,18 @@ export default function PaymentSelector({
   disabled?: boolean;
   dict: Dictionary["paymentSelector"];
 }) {
-  const [loading, setLoading] = useState<"card" | "wallet" | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { formatConverted } = useCurrency();
   const displayAmount = formatConverted(amountEGP) ?? formatEGP(amountEGP);
 
-  async function handlePay(paymentMethod: "card" | "wallet") {
-    setLoading(paymentMethod);
+  async function handlePay() {
+    setLoading(true);
     setError(null);
 
     const resolved = await getOrderId();
     if (!resolved) {
-      setLoading(null);
+      setLoading(false);
       return;
     }
 
@@ -59,7 +59,7 @@ export default function PaymentSelector({
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [idField]: resolved.id, accessToken: resolved.accessToken, paymentMethod }),
+        body: JSON.stringify({ [idField]: resolved.id, accessToken: resolved.accessToken }),
       });
       const data = await res.json();
 
@@ -68,11 +68,11 @@ export default function PaymentSelector({
         window.location.href = data.url;
       } else {
         setError(data.error || dict.cardUnavailable);
-        setLoading(null);
+        setLoading(false);
       }
     } catch {
       setError(dict.networkError);
-      setLoading(null);
+      setLoading(false);
     }
   }
 
@@ -80,19 +80,11 @@ export default function PaymentSelector({
     <div className="space-y-3">
       <button
         type="button"
-        onClick={() => handlePay("card")}
-        disabled={loading !== null || disabled}
+        onClick={handlePay}
+        disabled={loading || disabled}
         className="w-full rounded bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-brand-600 active:bg-brand-600 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.16)] disabled:opacity-60"
       >
-        {loading === "card" ? dict.connecting : dict.payWithCard.replace("{amount}", displayAmount)}
-      </button>
-      <button
-        type="button"
-        onClick={() => handlePay("wallet")}
-        disabled={loading !== null || disabled}
-        className="w-full rounded border-2 border-brand-700 px-5 py-3 text-sm font-semibold text-brand-700 transition-all duration-300 hover:bg-brand-50 active:bg-brand-50 hover:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] active:shadow-[0_0_0_6px_rgba(30,91,115,0.08)] disabled:opacity-60"
-      >
-        {loading === "wallet" ? dict.connecting : dict.payWithWallet.replace("{amount}", displayAmount)}
+        {loading ? dict.connecting : dict.checkoutNow.replace("{amount}", displayAmount)}
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>

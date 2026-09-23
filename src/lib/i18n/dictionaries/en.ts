@@ -520,8 +520,7 @@ const en = {
     orderNotFound: "Order not found.",
   },
   paymentSelector: {
-    payWithCard: "Pay {amount} with Card",
-    payWithWallet: "Pay {amount} with Mobile Wallet",
+    checkoutNow: "Checkout Now — {amount}",
     connecting: "Connecting to gateway…",
     cardUnavailable: "Card payment isn't available right now.",
     networkError: "Network error reaching the payment gateway.",

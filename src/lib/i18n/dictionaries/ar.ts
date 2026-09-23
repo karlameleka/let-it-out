@@ -511,8 +511,7 @@ const ar: Dictionary = {
     orderNotFound: "الطلب مش موجود.",
   },
   paymentSelector: {
-    payWithCard: "ادفع {amount} بالبطاقة",
-    payWithWallet: "ادفع {amount} بالمحفظة الإلكترونية",
+    checkoutNow: "إتمام الدفع — {amount}",
     connecting: "جارٍ الاتصال بالبوابة…",
     cardUnavailable: "الدفع بالبطاقة مش متاح دلوقتي.",
     networkError: "في مشكلة في الاتصال ببوابة الدفع.",

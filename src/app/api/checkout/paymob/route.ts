@@ -3,15 +3,12 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { verifyOrderAccessToken } from "@/lib/order-access";
 
-const requestSchema = (
-  body: unknown,
-): { orderId: string; paymentMethod: "card" | "wallet"; accessToken?: string } | null => {
+const requestSchema = (body: unknown): { orderId: string; accessToken?: string } | null => {
   if (typeof body !== "object" || body === null) return null;
-  const { orderId, paymentMethod, accessToken } = body as Record<string, unknown>;
+  const { orderId, accessToken } = body as Record<string, unknown>;
   if (typeof orderId !== "string" || !orderId) return null;
-  if (paymentMethod !== "card" && paymentMethod !== "wallet") return null;
   if (accessToken !== undefined && typeof accessToken !== "string") return null;
-  return { orderId, paymentMethod, accessToken };
+  return { orderId, accessToken };
 };
 
 export async function POST(req: Request) {
@@ -24,7 +21,7 @@ export async function POST(req: Request) {
   if (!parsed) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
-  const { orderId, paymentMethod, accessToken } = parsed;
+  const { orderId, accessToken } = parsed;
 
   // The order (and its server-computed total) must already exist — we never
   // accept a client-submitted amount for a payment gateway charge.
@@ -49,10 +46,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This order has already been processed." }, { status: 409 });
   }
 
-  const integrationId =
-    paymentMethod === "wallet" ? process.env.PAYMOB_INTEGRATION_ID_WALLET : process.env.PAYMOB_INTEGRATION_ID_CARD;
+  // Every configured integration is offered on Paymob's own unified
+  // checkout page — the customer picks card vs. wallet there instead of on
+  // this site, so there's a single "Checkout Now" button instead of one
+  // button per method.
+  const integrationIds = [process.env.PAYMOB_INTEGRATION_ID_CARD, process.env.PAYMOB_INTEGRATION_ID_WALLET].filter(
+    (id): id is string => Boolean(id),
+  );
 
-  if (!process.env.PAYMOB_SECRET_KEY || !process.env.PAYMOB_PUBLIC_KEY || !integrationId) {
+  if (!process.env.PAYMOB_SECRET_KEY || !process.env.PAYMOB_PUBLIC_KEY || integrationIds.length === 0) {
     console.error("[paymob] Missing PAYMOB_SECRET_KEY / PAYMOB_PUBLIC_KEY / integration ID env vars.");
     return NextResponse.json({ error: "Card payment is not available right now." }, { status: 503 });
   }
@@ -71,7 +73,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         amount: amountInPiastres,
         currency: "EGP",
-        payment_methods: [parseInt(integrationId, 10)],
+        payment_methods: integrationIds.map((id) => parseInt(id, 10)),
         // Echoed back on the transaction webhook as order.merchant_order_id,
         // so we can reconcile the callback with this exact Order record.
         special_reference: order.id,
@@ -100,7 +102,7 @@ export async function POST(req: Request) {
       // full key) lets us catch a test/live key vs. integration ID mismatch
       // from the response alone, without exposing any Vercel env values.
       console.error("[paymob] Intention creation failed:", data, {
-        integrationId,
+        integrationIds,
         secretKeyPrefix: process.env.PAYMOB_SECRET_KEY?.slice(0, 12),
       });
       return NextResponse.json({ error: "Could not start the payment. Please try again." }, { status: 502 });
