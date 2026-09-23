@@ -5,7 +5,14 @@
 // IndexedDB store (see cbt-history.ts) and is never sent to our servers.
 // Same html2canvas + jsPDF approach as journal-pdf.ts, needed for the same
 // reason: jsPDF's built-in fonts can't shape Arabic on their own, so each
-// entry is rendered as real HTML and rasterized into the PDF.
+// entry is rendered as real HTML and rasterized into the PDF. Rendered as
+// a traditional thought-record table (one row per entry, a fixed column
+// per field), matching the in-app history view (see cbt-type-history.tsx's
+// ThoughtRecordTable) rather than a card per entry — landscape, since nine
+// columns need the extra width. Entries are chunked into fixed-size groups,
+// each its own table (header repeated) and its own rasterized block, so a
+// long history still paginates correctly instead of one giant image
+// getting clipped at the page edge.
 //
 // Rendered inside a purpose-built blank <iframe>, not a <div> in the main
 // document — see journal-pdf.ts's header comment for why: html2canvas
@@ -38,33 +45,57 @@ export interface ThoughtRecordPdfEntry {
   data: Record<string, string>;
 }
 
-function entryHtml(entry: ThoughtRecordPdfEntry, columns: { key: string; label: string }[], locale: "en" | "ar"): string {
-  const rows = columns
-    .filter((c) => entry.data[c.key]?.trim())
-    .map(
-      (c) =>
-        `<div style="margin-top:10px;">
-          <p style="margin:0; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:#6b8086;">${escapeHtml(c.label)}</p>
-          <p style="margin:2px 0 0; font-size:13px; white-space:pre-wrap; line-height:1.6;">${escapeHtml(entry.data[c.key])}</p>
-        </div>`,
-    )
+// One page's worth of rows — conservative enough that even a few
+// multi-sentence cells across a row rarely push a chunk past a landscape
+// page's height.
+const ROWS_PER_TABLE = 6;
+
+function tableHtml(
+  entries: ThoughtRecordPdfEntry[],
+  columns: { key: string; label: string; widthPct: number }[],
+  dateLabel: string,
+  locale: "en" | "ar",
+): string {
+  const headerCells = [
+    `<th style="width:${8}%; text-align:${locale === "ar" ? "right" : "left"};">${escapeHtml(dateLabel)}</th>`,
+    ...columns.map(
+      (c) => `<th style="width:${c.widthPct}%; text-align:${locale === "ar" ? "right" : "left"};">${escapeHtml(c.label)}</th>`,
+    ),
+  ].join("");
+
+  const bodyRows = entries
+    .map((entry) => {
+      const cells = [
+        `<td style="white-space:nowrap;">${escapeHtml(formatDate(entry.createdAt, locale))}</td>`,
+        ...columns.map((c) => `<td>${escapeHtml(entry.data[c.key]?.trim() || "—")}</td>`),
+      ].join("");
+      return `<tr>${cells}</tr>`;
+    })
     .join("");
-  return `<div style="${BLOCK_STYLE} border:1px solid #e3edf0; border-radius:14px; margin-top:12px;">
-    <p style="margin:0; font-size:12px; color:#6b8086; font-weight:600;">${formatDate(entry.createdAt, locale)}</p>
-    ${rows}
+
+  return `<div style="${BLOCK_STYLE} margin-top:12px;">
+    <table dir="${locale === "ar" ? "rtl" : "ltr"}" style="width:100%; border-collapse:collapse; font-size:10px; table-layout:fixed;">
+      <thead>
+        <tr style="background:#f2f7f8; border-bottom:2px solid #d8e6e9;">${headerCells}</tr>
+      </thead>
+      <tbody>
+        ${bodyRows.replace(/<tr>/g, '<tr style="border-bottom:1px solid #e3edf0; vertical-align:top;">')}
+      </tbody>
+    </table>
   </div>`;
 }
 
 export async function buildThoughtRecordHistoryPdf(options: {
   entries: ThoughtRecordPdfEntry[];
   columns: { key: string; label: string }[];
+  dateLabel: string;
   title: string;
   locale?: "en" | "ar";
 }): Promise<Blob> {
   const locale = options.locale ?? "en";
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import("jspdf"), import("html2canvas")]);
 
-  const CONTAINER_WIDTH = 700;
+  const CONTAINER_WIDTH = 1400;
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
   iframe.style.cssText = `position:fixed; left:-9999px; top:0; width:${CONTAINER_WIDTH}px; height:3000px; border:0;`;
@@ -76,15 +107,22 @@ export async function buildThoughtRecordHistoryPdf(options: {
   }
   idoc.body.style.margin = "0";
 
+  // Remaining width split across the 8 data columns, evenly — good enough
+  // given every field is free text of roughly comparable length.
+  const columns = options.columns.map((c) => ({ ...c, widthPct: 92 / options.columns.length }));
+
   const blocksHtml: string[] = [
     `<div style="${BLOCK_STYLE}"><h1 style="margin:0; font-size:26px;">${escapeHtml(options.title)}</h1><p style="margin:6px 0 0; font-size:12px; color:#6b8086;">${formatDate(new Date().toISOString(), locale)}</p></div>`,
   ];
-  for (const entry of options.entries) blocksHtml.push(entryHtml(entry, options.columns, locale));
+  for (let i = 0; i < options.entries.length; i += ROWS_PER_TABLE) {
+    const chunk = options.entries.slice(i, i + ROWS_PER_TABLE);
+    blocksHtml.push(tableHtml(chunk, columns, options.dateLabel, locale));
+  }
 
   idoc.body.innerHTML = blocksHtml.join("");
 
   try {
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "landscape" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 36;

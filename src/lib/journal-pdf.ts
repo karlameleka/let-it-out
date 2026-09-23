@@ -49,16 +49,22 @@ function sectionHeaderHtml(title: string): string {
 
 function moodChipsHtml(moods: string[], locale: "en" | "ar"): string {
   if (moods.length === 0) return "";
+  // Explicit flex-wrap on the row, margin-based spacing (not `gap`), and
+  // flex-shrink:0 on each chip — html2canvas re-implements CSS layout
+  // itself rather than using the browser's engine, and its support for
+  // wrapping `inline-flex` children by natural inline flow (the original
+  // approach here) has been observed to fail, running chips off the edge
+  // of the page instead of onto a new line.
   const chips = moods
     .map(
       (m) =>
-        `<span style="display:inline-flex; align-items:center; gap:5px; border:1px solid #d8e6e9; border-radius:999px; padding:3px 10px; font-size:11px; margin-inline-end:6px;">
-          <span style="display:inline-block; width:8px; height:8px; border-radius:999px; background:${moodColor(m)};"></span>
+        `<span style="display:flex; align-items:center; flex-shrink:0; box-sizing:border-box; border:1px solid #d8e6e9; border-radius:999px; padding:3px 10px 3px 8px; font-size:11px; margin:0 6px 6px 0;">
+          <span style="display:block; width:8px; height:8px; border-radius:999px; background:${moodColor(m)}; margin-inline-end:5px; flex-shrink:0;"></span>
           ${escapeHtml(moodLabel(m, locale))}
         </span>`,
     )
     .join("");
-  return `<div style="margin-top:8px;">${chips}</div>`;
+  return `<div style="display:flex; flex-wrap:wrap; margin-top:8px; width:100%;">${chips}</div>`;
 }
 
 function journalEntryHtml(entry: JournalExportEntry, locale: "en" | "ar"): string {

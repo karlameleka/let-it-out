@@ -81,7 +81,7 @@ export default function CbtTypeHistory({
     try {
       const columns = THOUGHT_RECORD_COLUMN_KEYS.map((key) => ({ key, label: thoughtRecordColumnLabel(key, dict) }));
       const blob = await withTimeout(
-        buildThoughtRecordHistoryPdf({ entries, columns, title: typeLabel, locale }),
+        buildThoughtRecordHistoryPdf({ entries, columns, dateLabel: dict.colDate, title: typeLabel, locale }),
         PDF_BUILD_TIMEOUT_MS,
         "PDF build timed out",
       );
