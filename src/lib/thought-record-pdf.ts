@@ -6,6 +6,12 @@
 // Same html2canvas + jsPDF approach as journal-pdf.ts, needed for the same
 // reason: jsPDF's built-in fonts can't shape Arabic on their own, so each
 // entry is rendered as real HTML and rasterized into the PDF.
+//
+// Rendered inside a purpose-built blank <iframe>, not a <div> in the main
+// document — see journal-pdf.ts's header comment for why: html2canvas
+// clones the whole owning document and waits (no timeout) on its
+// `fonts.ready`, which on real iOS/Safari has been observed to hang
+// forever because of this app's own web fonts. A blank iframe has none.
 
 function escapeHtml(s: string): string {
   return s
@@ -59,16 +65,23 @@ export async function buildThoughtRecordHistoryPdf(options: {
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import("jspdf"), import("html2canvas")]);
 
   const CONTAINER_WIDTH = 700;
-  const container = document.createElement("div");
-  container.style.cssText = `position:fixed; left:-9999px; top:0; width:${CONTAINER_WIDTH}px;`;
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = `position:fixed; left:-9999px; top:0; width:${CONTAINER_WIDTH}px; height:3000px; border:0;`;
+  document.body.appendChild(iframe);
+  const idoc = iframe.contentDocument;
+  if (!idoc) {
+    document.body.removeChild(iframe);
+    throw new Error("Could not access export iframe document");
+  }
+  idoc.body.style.margin = "0";
 
   const blocksHtml: string[] = [
     `<div style="${BLOCK_STYLE}"><h1 style="margin:0; font-size:26px;">${escapeHtml(options.title)}</h1><p style="margin:6px 0 0; font-size:12px; color:#6b8086;">${formatDate(new Date().toISOString(), locale)}</p></div>`,
   ];
   for (const entry of options.entries) blocksHtml.push(entryHtml(entry, options.columns, locale));
 
-  container.innerHTML = blocksHtml.join("");
-  document.body.appendChild(container);
+  idoc.body.innerHTML = blocksHtml.join("");
 
   try {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -81,7 +94,7 @@ export async function buildThoughtRecordHistoryPdf(options: {
     let cursorY = margin;
     let firstBlock = true;
 
-    for (const block of Array.from(container.children) as HTMLElement[]) {
+    for (const block of Array.from(idoc.body.children) as HTMLElement[]) {
       const canvas = await html2canvas(block, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
       const imgHeight = (canvas.height * usableWidth) / canvas.width;
 
@@ -96,6 +109,6 @@ export async function buildThoughtRecordHistoryPdf(options: {
 
     return doc.output("blob");
   } finally {
-    document.body.removeChild(container);
+    document.body.removeChild(iframe);
   }
 }

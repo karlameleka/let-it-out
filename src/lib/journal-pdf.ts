@@ -10,6 +10,17 @@
 // correctly everywhere else in the app) and rasterized into the PDF via
 // html2canvas — one canvas per block, stacked with simple page-break math,
 // so an entry never gets sliced across a page boundary.
+//
+// The off-screen content lives in a purpose-built blank <iframe>, not a
+// <div> in the main document. html2canvas clones the ENTIRE document that
+// owns the element it's rasterizing (to carry over every stylesheet) and
+// waits — with no timeout — for that cloned document's `fonts.ready`
+// before rendering. In the main document, that set includes this app's
+// own web fonts (Inter/Fraunces), and on real iOS/Safari that wait has
+// been observed to simply never resolve, hanging the export forever. A
+// blank iframe has no stylesheets and no @font-face rules at all (every
+// block here is styled with inline `style=""` only), so there's nothing
+// for that wait to hang on.
 
 import type { JournalExportEntry } from "@/lib/local-journal";
 import type { ReflectionEntry } from "@/lib/local-reflection";
@@ -117,8 +128,16 @@ export async function buildJournalExportPdf(data: {
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import("jspdf"), import("html2canvas")]);
 
   const CONTAINER_WIDTH = 700;
-  const container = document.createElement("div");
-  container.style.cssText = `position:fixed; left:-9999px; top:0; width:${CONTAINER_WIDTH}px;`;
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = `position:fixed; left:-9999px; top:0; width:${CONTAINER_WIDTH}px; height:3000px; border:0;`;
+  document.body.appendChild(iframe);
+  const idoc = iframe.contentDocument;
+  if (!idoc) {
+    document.body.removeChild(iframe);
+    throw new Error("Could not access export iframe document");
+  }
+  idoc.body.style.margin = "0";
 
   const blocksHtml: string[] = [];
   blocksHtml.push(
@@ -138,13 +157,12 @@ export async function buildJournalExportPdf(data: {
     for (const entry of data.assessments) blocksHtml.push(assessmentEntryHtml(entry));
   }
 
-  container.innerHTML = blocksHtml.join("");
-  document.body.appendChild(container);
+  idoc.body.innerHTML = blocksHtml.join("");
 
   // Data-URI images (the only kind stored here) render without a network
   // fetch, but the browser still decodes them asynchronously — wait for
   // each one so html2canvas never captures a blank image box.
-  const images = Array.from(container.querySelectorAll("img"));
+  const images = Array.from(idoc.body.querySelectorAll("img"));
   await Promise.all(
     images.map((img) =>
       img.complete ? Promise.resolve() : new Promise<void>((resolve) => {
@@ -165,7 +183,7 @@ export async function buildJournalExportPdf(data: {
     let cursorY = margin;
     let firstBlock = true;
 
-    for (const block of Array.from(container.children) as HTMLElement[]) {
+    for (const block of Array.from(idoc.body.children) as HTMLElement[]) {
       const canvas = await html2canvas(block, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
       const imgHeight = (canvas.height * usableWidth) / canvas.width;
 
@@ -180,6 +198,6 @@ export async function buildJournalExportPdf(data: {
 
     return doc.output("blob");
   } finally {
-    document.body.removeChild(container);
+    document.body.removeChild(iframe);
   }
 }
