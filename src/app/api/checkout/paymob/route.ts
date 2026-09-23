@@ -95,7 +95,14 @@ export async function POST(req: Request) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("[paymob] Intention creation failed:", data);
+      // The secret key's own mode prefix (e.g. egy_sk_test_ / egy_sk_live_)
+      // is not sensitive on its own — logging just that prefix (never the
+      // full key) lets us catch a test/live key vs. integration ID mismatch
+      // from the response alone, without exposing any Vercel env values.
+      console.error("[paymob] Intention creation failed:", data, {
+        integrationId,
+        secretKeyPrefix: process.env.PAYMOB_SECRET_KEY?.slice(0, 12),
+      });
       return NextResponse.json({ error: "Could not start the payment. Please try again." }, { status: 502 });
     }
 
