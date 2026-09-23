@@ -35,7 +35,15 @@ export function deliverBlob(blob: Blob, filename: string): void {
     // Don't revoke: the navigation away from this page is async, and
     // revoking before it completes would break the PDF load. The blob
     // URL is released automatically once this document is torn down.
-    window.location.href = url;
+    //
+    // The #view=FitH fragment is a standard PDF "open parameter" (Adobe
+    // Acrobat spec) that Safari's PDFKit-based viewer honors, hinting it
+    // to fit the page to the viewport's width on open. Without it, the
+    // inline viewer has been observed opening at 100% (actual point
+    // size) on iPhone, which is wider than the screen for a normal A4
+    // page — the content isn't cut off or lost, but it looks that way
+    // until the person manually pinches out.
+    window.location.href = `${url}#view=FitH`;
     return;
   }
   const link = document.createElement("a");
