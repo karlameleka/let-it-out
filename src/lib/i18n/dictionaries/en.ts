@@ -1193,6 +1193,12 @@ const en = {
           "Yes. Browse profiles on the Counseling page and book directly with the counselor whose background and specialties feel like the right fit for you.",
       },
       {
+        category: "counseling",
+        question: "What if I want to cancel/reschedule my session?",
+        answer:
+          "Sessions are non-refundable once booked and paid for, but we're happy to move you to a different time. Just reach out to us as early as possible and we'll help you reschedule instead.",
+      },
+      {
         category: "shop",
         question: "How long does delivery take?",
         answer:
