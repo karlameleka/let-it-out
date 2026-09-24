@@ -802,6 +802,7 @@ const en = {
     s4Item2: "Your preferred date and time on the booking form are a request, not a guarantee. We will reach out by email or phone to confirm actual availability as soon as possible.",
     s4Item3: "If you need to reschedule or cancel, please let us know as early as you can so we can offer the slot to someone else.",
     s4Item4: "Counseling is a collaborative process; outcomes depend on many factors and we cannot guarantee specific results.",
+    s4Item5: "Sessions are non-refundable once booked and paid for. If you need to cancel, please let us know as early as possible so we can help you reschedule instead.",
     s5Title: "5. Corporate & community workshops",
     s5Body: "Workshop scope, pricing, and scheduling are agreed individually with each organization after you submit an inquiry. A quote is not a confirmed booking until both parties agree in writing (including by email).",
     s6Title: "6. Orders for guided journals",

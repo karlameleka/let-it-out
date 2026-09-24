@@ -82,6 +82,7 @@ export default async function TermsPage() {
               <li>{t.s4Item2}</li>
               <li>{t.s4Item3}</li>
               <li>{t.s4Item4}</li>
+              <li>{t.s4Item5}</li>
             </ul>
           </Section>
 
