@@ -1,9 +1,10 @@
 "use client";
 
 import type { ComponentType } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, UserCircle, HelpCircle, Info, Lock, Settings, LogOut, ChevronDown } from "lucide-react";
 import { CartIcon } from "@/components/lio-icons";
 import { LogoLink } from "@/components/logo";
 import { logoutAction } from "@/lib/auth-actions";
@@ -13,6 +14,87 @@ import type { Locale } from "@/lib/i18n/locale";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import LanguageSwitcher from "@/components/language-switcher";
 import NotificationBell from "@/components/notification-bell";
+
+function useClickOutside<T extends HTMLElement>(onOutside: () => void) {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onOutside();
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [onOutside]);
+  return ref;
+}
+
+/** Desktop's version of the same set of links the mobile bottom-nav's Menu
+ * tab shows (see /menu) — a dropdown off the account name instead of a
+ * full page, since desktop already has room for the marketing nav and
+ * doesn't need its own dedicated page for this. */
+function AccountMenu({ name, dict }: { name: string; dict: Dictionary["nav"] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
+
+  const links = [
+    { href: "/profile", label: dict.myProfile, icon: UserCircle },
+    { href: "/help-center", label: dict.helpCenter, icon: HelpCircle },
+    { href: "/about", label: dict.about, icon: Info },
+    { href: "/legal", label: dict.legal, icon: Lock },
+  ];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="flex items-center gap-1 text-sm font-medium text-ink/70 hover:text-brand-600 active:text-brand-600"
+      >
+        {name}
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute end-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-lg"
+        >
+          {links.map(({ href, label, icon: Icon }, i) => (
+            <Link
+              key={href}
+              href={href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50 ${i > 0 ? "border-t border-brand-50" : ""}`}
+            >
+              <Icon className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={1.9} />
+              {label}
+            </Link>
+          ))}
+          <Link
+            href="/account"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 border-t border-brand-100 px-4 py-2.5 text-sm font-medium text-ink/80 hover:bg-brand-50 active:bg-brand-50"
+          >
+            <Settings className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={1.9} />
+            {dict.settings}
+          </Link>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              role="menuitem"
+              className="flex w-full items-center gap-2.5 border-t border-brand-50 px-4 py-2.5 text-left text-sm font-medium text-ink/60 hover:bg-brand-50 active:bg-brand-50"
+            >
+              <LogOut className="h-4 w-4 shrink-0 text-brand-600" strokeWidth={1.9} />
+              {dict.logOut}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CartIconLink({
   count,
@@ -88,25 +170,7 @@ export default function SiteHeader({
 
         <div className="hidden items-center gap-3 lg:flex xl:gap-4">
           {user ? (
-            <div className="flex items-center gap-2.5 xl:gap-3">
-              <Link
-                href={user.role === "ADMIN" ? "/admin" : "/journal"}
-                className="text-sm font-medium text-ink/70 hover:text-brand-600 active:text-brand-600"
-              >
-                {user.name.split(" ")[0]}
-              </Link>
-              <Link href="/account" className="text-sm font-medium text-ink/50 hover:text-brand-600 active:text-brand-600">
-                {dict.nav.settings}
-              </Link>
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  className="text-sm font-medium text-ink/50 hover:text-brand-600 active:text-brand-600"
-                >
-                  {dict.nav.logOut}
-                </button>
-              </form>
-            </div>
+            <AccountMenu name={user.name.split(" ")[0]} dict={dict.nav} />
           ) : (
             <div className="flex items-center gap-2.5 xl:gap-3">
               <Link href="/login" className="text-sm font-medium text-ink/70 hover:text-brand-600 active:text-brand-600">
