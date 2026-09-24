@@ -134,6 +134,7 @@ function buildCompleteSignupSchema(v: Dictionary["validation"], a: Dictionary["a
       consentDataProcessing: z.string().nullable().refine((v) => v === "on", { message: a.consentDataProcessingRequired }),
       consentTelehealth: z.string().nullable().refine((v) => v === "on", { message: a.consentTelehealthRequired }),
       consentTermsOfCare: z.string().nullable().refine((v) => v === "on", { message: a.consentTermsOfCareRequired }),
+      pilotAcknowledged: z.string().nullable().refine((v) => v === "on", { message: a.pilotAcknowledgeRequired }),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: a.confirmPasswordMismatch,
@@ -361,6 +362,7 @@ export async function completeSignup(
     consentDataProcessing: formData.get("consentDataProcessing"),
     consentTelehealth: formData.get("consentTelehealth"),
     consentTermsOfCare: formData.get("consentTermsOfCare"),
+    pilotAcknowledged: formData.get("pilotAcknowledged"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
@@ -414,6 +416,7 @@ export async function completeSignup(
       consentDataProcessingAt: consentedAt,
       consentTelehealthAt: consentedAt,
       consentTermsOfCareAt: consentedAt,
+      pilotAcknowledgedAt: consentedAt,
     },
   });
 
@@ -467,6 +470,7 @@ function buildSocialSignupSchema(a: Dictionary["auth"]) {
     consentDataProcessing: z.string().nullable().refine((v) => v === "on", { message: a.consentDataProcessingRequired }),
     consentTelehealth: z.string().nullable().refine((v) => v === "on", { message: a.consentTelehealthRequired }),
     consentTermsOfCare: z.string().nullable().refine((v) => v === "on", { message: a.consentTermsOfCareRequired }),
+    pilotAcknowledged: z.string().nullable().refine((v) => v === "on", { message: a.pilotAcknowledgeRequired }),
   });
 }
 
@@ -507,6 +511,7 @@ export async function completeSocialSignup(
     consentDataProcessing: formData.get("consentDataProcessing"),
     consentTelehealth: formData.get("consentTelehealth"),
     consentTermsOfCare: formData.get("consentTermsOfCare"),
+    pilotAcknowledged: formData.get("pilotAcknowledged"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
@@ -577,6 +582,7 @@ export async function completeSocialSignup(
       consentDataProcessingAt: socialConsentedAt,
       consentTelehealthAt: socialConsentedAt,
       consentTermsOfCareAt: socialConsentedAt,
+      pilotAcknowledgedAt: socialConsentedAt,
     },
   });
 

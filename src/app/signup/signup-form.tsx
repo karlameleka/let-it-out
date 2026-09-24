@@ -288,7 +288,7 @@ function MultiSelectDropdown({
   );
 }
 
-type StepId = "name" | "birthday" | "email" | "password" | "country" | "referral" | "interests" | "agree";
+type StepId = "pilot" | "name" | "birthday" | "email" | "password" | "country" | "referral" | "interests" | "agree";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -318,8 +318,8 @@ export default function SignupForm({
   // signup already knows the name and email (verified by Google), and
   // never sets a password, so those pages are skipped entirely.
   const steps: StepId[] = pendingSocial
-    ? ["birthday", "country", "referral", "interests", "agree"]
-    : ["name", "birthday", "email", "password", "country", "referral", "interests", "agree"];
+    ? ["pilot", "birthday", "country", "referral", "interests", "agree"]
+    : ["pilot", "name", "birthday", "email", "password", "country", "referral", "interests", "agree"];
 
   const [step, setStep] = useState(0);
   const [stepError, setStepError] = useState<string | null>(null);
@@ -344,6 +344,7 @@ export default function SignupForm({
   const [consentDataProcessing, setConsentDataProcessing] = useState(false);
   const [consentTelehealth, setConsentTelehealth] = useState(false);
   const [consentTermsOfCare, setConsentTermsOfCare] = useState(false);
+  const [pilotAcknowledged, setPilotAcknowledged] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [cancelingSocial, setCancelingSocial] = useState(false);
 
@@ -396,6 +397,9 @@ export default function SignupForm({
 
   function validateStep(id: StepId): string | null {
     switch (id) {
+      case "pilot":
+        if (!pilotAcknowledged) return t.pilotAcknowledgeRequired;
+        return null;
       case "name":
         if (!firstName.trim()) return v.firstNameRequired;
         if (!lastName.trim()) return v.lastNameRequired;
@@ -608,7 +612,10 @@ export default function SignupForm({
       <form
         action={formAction}
         onSubmit={(e) => {
-          if (!agreedToPolicy) {
+          if (!pilotAcknowledged) {
+            e.preventDefault();
+            setStepError(t.pilotAcknowledgeRequired);
+          } else if (!agreedToPolicy) {
             e.preventDefault();
             setStepError(t.agreeToPolicyRequired);
           } else if (!consentDataProcessing) {
@@ -625,6 +632,33 @@ export default function SignupForm({
         className="space-y-4"
       >
         {!pendingSocial && <input type="hidden" name="pendingSignupId" value={pendingSignupId ?? ""} />}
+
+        <div hidden={stepId !== "pilot"} className="space-y-4">
+          <div>
+            <h2 className="font-display text-xl font-medium text-brand-900">{t.pilotStepHeading}</h2>
+            <p className="mt-1 text-sm text-ink/55">
+              {t.pilotBodyPrefix}{" "}
+              <Link href="/support" target="_blank" className="font-medium text-brand-600 link-grow">
+                {t.pilotBodyLinkText}
+              </Link>{" "}
+              {t.pilotBodySuffix}
+            </p>
+          </div>
+          <label className="flex items-start gap-2.5 text-sm text-ink/70">
+            <input
+              type="checkbox"
+              name="pilotAcknowledged"
+              checked={pilotAcknowledged}
+              onChange={(e) => {
+                setPilotAcknowledged(e.target.checked);
+                if (e.target.checked) setStepError(null);
+              }}
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span>{t.pilotCheckboxLabel}</span>
+          </label>
+        </div>
+
         {!pendingSocial && (
           <div hidden={stepId !== "name"} className="space-y-4">
             <h2 className="font-display text-xl font-medium text-brand-900">{t.nameStepHeading}</h2>

@@ -91,6 +91,11 @@ model User {
   consentTelehealthAt     DateTime?
   consentTermsOfCareAt    DateTime?
 
+  // Acknowledged on the signup wizard's first step — that the product is
+  // in a pilot phase, glitches can happen, and they're expected to report
+  // them. Nullable for accounts created before this was required.
+  pilotAcknowledgedAt DateTime?
+
   // Off by default, matching Apple Journal — opt-in from account settings.
   journalLockEnabled Boolean @default(false)
 
