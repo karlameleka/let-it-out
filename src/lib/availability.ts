@@ -13,17 +13,23 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
+/** Slots need at least this much lead time to show up as bookable — also
+ * means "today" never has any slots on offer, since every same-day time is
+ * necessarily under 24 hours out. */
+const MIN_LEAD_MINUTES = 24 * 60;
+
 /**
  * Slices a counselor's availability windows (CounselorAvailability) —
  * recurring weekly windows (dayOfWeek set) and one-off single-date windows
  * (date set) alike — into concrete 50-minute slots for the next month,
  * greedily packed from each window's start time, excluding times already
- * taken by a non-cancelled BookingRequest or a SessionBooking. Returns []
- * for a counselor with no windows set up yet — callers fall back to a
- * free-text request/day-only picker in that case. A counselor only ever
- * uses one of BookingRequest or SessionBooking depending on which flow
- * applies to them, but checking both is cheap and keeps this correct
- * regardless of how a counselor's config has changed over time.
+ * taken by a non-cancelled BookingRequest or a SessionBooking, and anything
+ * under MIN_LEAD_MINUTES away. Returns [] for a counselor with no windows
+ * set up yet — callers fall back to a free-text request/day-only picker in
+ * that case. A counselor only ever uses one of BookingRequest or
+ * SessionBooking depending on which flow applies to them, but checking
+ * both is cheap and keeps this correct regardless of how a counselor's
+ * config has changed over time.
  *
  * Like the rest of this app, dates/times are plain Cairo-local values with
  * no timezone conversion (see todayISO() in therapist-data.ts) — "now" is
@@ -63,7 +69,7 @@ export async function getAvailableSlots(counselorId: string): Promise<AvailableS
       const windowEnd = endH * 60 + endM;
 
       for (let cursor = startH * 60 + startM; cursor + SESSION_MINUTES <= windowEnd; cursor += SESSION_MINUTES) {
-        if (dayOffset === 0 && cursor <= nowMinutes) continue;
+        if (dayOffset * 24 * 60 + cursor - nowMinutes < MIN_LEAD_MINUTES) continue;
 
         const timeStr = `${pad(Math.floor(cursor / 60))}:${pad(cursor % 60)}`;
         if (taken.has(`${dateStr}T${timeStr}`)) continue;
