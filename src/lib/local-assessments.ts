@@ -33,8 +33,18 @@ function dbName(userId: string) {
   return `lio-assessments-${userId}`;
 }
 
+// Cached per user rather than opened fresh on every call — see the same
+// fix (and the full explanation) in local-journal.ts's openDb. Without
+// this, every page visit leaked another open IndexedDB connection, and
+// WebKit in particular starts hanging on indexedDB.open() once enough of
+// them pile up in one tab.
+const dbConnections = new Map<string, Promise<IDBDatabase>>();
+
 function openDb(userId: string): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  const cached = dbConnections.get(userId);
+  if (cached) return cached;
+
+  const promise = new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(dbName(userId), DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -45,9 +55,21 @@ function openDb(userId: string): Promise<IDBDatabase> {
         db.createObjectStore(META_STORE, { keyPath: "id" });
       }
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => {
+        db.close();
+        dbConnections.delete(userId);
+      };
+      resolve(db);
+    };
+    req.onerror = () => {
+      dbConnections.delete(userId);
+      reject(req.error);
+    };
   });
+  dbConnections.set(userId, promise);
+  return promise;
 }
 
 function tx<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
@@ -59,13 +81,22 @@ function tx<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, run: (s
   });
 }
 
-async function getKey(db: IDBDatabase): Promise<CryptoKey> {
-  const existing = await tx<{ id: string; key: CryptoKey } | undefined>(db, META_STORE, "readonly", (s) => s.get(KEY_RECORD_ID));
-  if (existing) return existing.key;
+const keyCache = new WeakMap<IDBDatabase, Promise<CryptoKey>>();
 
-  const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
-  await tx(db, META_STORE, "readwrite", (s) => s.put({ id: KEY_RECORD_ID, key }));
-  return key;
+function getKey(db: IDBDatabase): Promise<CryptoKey> {
+  const cached = keyCache.get(db);
+  if (cached) return cached;
+
+  const promise = (async () => {
+    const existing = await tx<{ id: string; key: CryptoKey } | undefined>(db, META_STORE, "readonly", (s) => s.get(KEY_RECORD_ID));
+    if (existing) return existing.key;
+
+    const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    await tx(db, META_STORE, "readwrite", (s) => s.put({ id: KEY_RECORD_ID, key }));
+    return key;
+  })();
+  keyCache.set(db, promise);
+  return promise;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -143,6 +174,16 @@ export async function exportAssessmentResults(userId: string): Promise<Assessmen
 }
 
 export async function clearAllAssessmentResults(userId: string): Promise<void> {
+  // Close the cached connection first — see the same fix in
+  // local-journal.ts's clearAllEntries for why deleteDatabase() would
+  // otherwise hang behind it indefinitely.
+  const cached = dbConnections.get(userId);
+  dbConnections.delete(userId);
+  if (cached) {
+    const db = await cached.catch(() => null);
+    db?.close();
+  }
+
   await new Promise<void>((resolve, reject) => {
     const req = indexedDB.deleteDatabase(dbName(userId));
     req.onsuccess = () => resolve();

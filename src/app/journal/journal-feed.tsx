@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BarChart3, BookOpen, LockKeyhole, Music, PlusCircle, Search, Star } from "lucide-react";
@@ -256,7 +256,11 @@ const LONG_PRESS_MS = 550;
 // otherwise a scroll gesture starting on a card would trigger a delete.
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
-function EntryCard({
+// The list can hold many entries, each with its own long-press timer and
+// (for entries with a photo) an <img> — memoized so typing in the search
+// box or toggling a different entry's bookmark doesn't re-run every
+// card's render, just the ones whose own props actually changed.
+const EntryCard = memo(function EntryCard({
   entry,
   onToggleBookmark,
   onLongPressDelete,
@@ -323,11 +327,13 @@ function EntryCard({
       style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", touchAction: "manipulation" }}
       className="group flex cursor-pointer gap-4 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 active:-translate-y-0.5 hover:border-brand-300 active:border-brand-300 hover:shadow-md active:shadow-md"
     >
-      {entry.photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer
+      {entry.thumbUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- small pre-shrunk thumbnail data URI, no benefit from next/image's optimizer
         <img
-          src={entry.photoUrl}
+          src={entry.thumbUrl}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="h-16 w-16 shrink-0 rounded-xl object-cover"
         />
       )}
@@ -377,4 +383,4 @@ function EntryCard({
       </div>
     </li>
   );
-}
+});

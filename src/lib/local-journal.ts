@@ -4,6 +4,7 @@ import { MOODS } from "@/lib/moods";
 import type { Locale } from "@/lib/i18n/locale";
 import { markOnboardingJournalStepDone } from "@/lib/onboarding";
 import { localDayKey, localDayKeyFromIso } from "@/lib/local-day";
+import { makeThumbnail } from "@/lib/compress-image";
 
 // Device-only journal storage. Entries never leave the browser: content and
 // any attached photo are encrypted with AES-256-GCM using a key that is
@@ -25,6 +26,10 @@ export type JournalFeedEntry = {
   moods: string[];
   bookmarked: boolean;
   photoUrl: string | null;
+  // A small, low-quality preview — see makeThumbnail in compress-image.ts.
+  // What list views (the feed) should render; full-size photoUrl is only
+  // for the one-at-a-time detail/PDF-export views.
+  thumbUrl: string | null;
   songUrl: string | null;
   // A user-typed display label for a non-Spotify song link (Spotify links
   // are embedded via SpotifyEmbed instead and don't need one). Null for
@@ -68,6 +73,10 @@ type StoredEntry = {
   id: string;
   encContent: { iv: string; data: string };
   encPhoto: { iv: string; data: string } | null;
+  // Absent on entries written before thumbnails existed (or migrated from
+  // the server) — decryptEntry falls back to photoUrl for those, and the
+  // feed backfills+persists a thumbnail for them the first time it loads.
+  encThumb: { iv: string; data: string } | null;
   encSong: { iv: string; data: string } | null;
   encSongName: { iv: string; data: string } | null;
   // Legacy entries (written before multi-mood support) stored a single
@@ -100,8 +109,24 @@ function dbName(userId: string) {
   return `lio-journal-${userId}`;
 }
 
+// Every exported function in this module used to call indexedDB.open() on
+// every single call and never close the result — each journal page visit
+// (feed, stats, patterns, calendar) left another connection dangling.
+// WebKit in particular has a low tolerance for that: accumulate enough
+// open IndexedDB connections in one tab and further indexedDB.open() calls
+// start hanging or timing out outright, which is what "the app just stops
+// working after a few entries" actually was — not a data problem, a
+// leaked-connections-per-page-visit problem. Caching one shared, reused
+// connection per user (closed and evicted if the browser itself force-
+// closes it, e.g. from another tab's version-change request) fixes that
+// at the root and, as a side effect, makes every call here cheaper too.
+const dbConnections = new Map<string, Promise<IDBDatabase>>();
+
 function openDb(userId: string): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  const cached = dbConnections.get(userId);
+  if (cached) return cached;
+
+  const promise = new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(dbName(userId), DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -112,9 +137,24 @@ function openDb(userId: string): Promise<IDBDatabase> {
         db.createObjectStore(META_STORE, { keyPath: "id" });
       }
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      // Another tab (or this one, on a future schema bump) asking to
+      // upgrade the database needs every other open connection closed
+      // first — without this, that tab hangs waiting on us forever.
+      db.onversionchange = () => {
+        db.close();
+        dbConnections.delete(userId);
+      };
+      resolve(db);
+    };
+    req.onerror = () => {
+      dbConnections.delete(userId);
+      reject(req.error);
+    };
   });
+  dbConnections.set(userId, promise);
+  return promise;
 }
 
 function tx<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
@@ -126,13 +166,25 @@ function tx<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, run: (s
   });
 }
 
-async function getKey(db: IDBDatabase): Promise<CryptoKey> {
-  const existing = await tx<{ id: string; key: CryptoKey } | undefined>(db, META_STORE, "readonly", (s) => s.get(KEY_RECORD_ID));
-  if (existing) return existing.key;
+// Keyed by db (one per userId, and openDb() itself already caches by
+// userId) rather than userId directly, so switching accounts in the same
+// tab can't ever read a stale key cached under the wrong id.
+const keyCache = new WeakMap<IDBDatabase, Promise<CryptoKey>>();
 
-  const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
-  await tx(db, META_STORE, "readwrite", (s) => s.put({ id: KEY_RECORD_ID, key }));
-  return key;
+function getKey(db: IDBDatabase): Promise<CryptoKey> {
+  const cached = keyCache.get(db);
+  if (cached) return cached;
+
+  const promise = (async () => {
+    const existing = await tx<{ id: string; key: CryptoKey } | undefined>(db, META_STORE, "readonly", (s) => s.get(KEY_RECORD_ID));
+    if (existing) return existing.key;
+
+    const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    await tx(db, META_STORE, "readwrite", (s) => s.put({ id: KEY_RECORD_ID, key }));
+    return key;
+  })();
+  keyCache.set(db, promise);
+  return promise;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -164,23 +216,37 @@ async function decryptString(key: CryptoKey, enc: { iv: string; data: string }):
 }
 
 async function decryptEntry(key: CryptoKey, stored: StoredEntry): Promise<JournalFeedEntry> {
-  const [content, photoUrl, songUrl, songName] = await Promise.all([
+  const [content, photoUrl, thumbFromStore, songUrl, songName] = await Promise.all([
     decryptString(key, stored.encContent),
     stored.encPhoto ? decryptString(key, stored.encPhoto) : Promise.resolve(null),
+    stored.encThumb ? decryptString(key, stored.encThumb) : Promise.resolve(null),
     stored.encSong ? decryptString(key, stored.encSong) : Promise.resolve(null),
     stored.encSongName ? decryptString(key, stored.encSongName) : Promise.resolve(null),
   ]);
+  // Legacy entries (written before thumbnails existed) have a photo but no
+  // stored thumbnail yet — fall back to the full photo rather than show
+  // nothing; getFeedData backfills a real thumbnail for these in place.
+  const thumbUrl = thumbFromStore ?? photoUrl;
   return {
     id: stored.id,
     content,
     moods: normalizeMoods(stored.mood),
     bookmarked: stored.bookmarked,
     photoUrl,
+    thumbUrl,
     songUrl,
     songName,
     createdAt: stored.createdAt,
     prompt: stored.prompt,
   };
+}
+
+/** Builds the encThumb field for a stored row from a plaintext photo data
+ * URI — null when there's no photo to thumbnail. Shared by every write
+ * path (create/update/migrate/backfill) so they can't drift out of sync. */
+async function encryptThumb(key: CryptoKey, photoUrl: string | null): Promise<{ iv: string; data: string } | null> {
+  if (!photoUrl) return null;
+  return encryptString(key, await makeThumbnail(photoUrl));
 }
 
 async function getAllStored(db: IDBDatabase): Promise<StoredEntry[]> {
@@ -213,7 +279,30 @@ export async function getFeedData(userId: string): Promise<JournalFeedData> {
   const stored = (await getAllStored(db)).filter((e) => e.kind !== "checkIn");
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(stored.map((s) => decryptEntry(key, s)));
+
+  // Backfill a real thumbnail for any legacy entry (written before
+  // thumbnails existed, or migrated from the old server-side journal) that
+  // has a photo but no encThumb yet — one-time per entry, persisted so
+  // every later feed load skips straight to the cheap thumbnail. Doesn't
+  // block the render the user is waiting on.
+  const legacyPhotoOnly = stored.filter((s) => s.encPhoto && !s.encThumb);
+  if (legacyPhotoOnly.length > 0) {
+    void backfillThumbnails(db, key, legacyPhotoOnly);
+  }
+
   return { entries, stats: computeStats(entries) };
+}
+
+async function backfillThumbnails(db: IDBDatabase, key: CryptoKey, rows: StoredEntry[]): Promise<void> {
+  for (const row of rows) {
+    try {
+      const photoUrl = await decryptString(key, row.encPhoto!);
+      row.encThumb = await encryptThumb(key, photoUrl);
+      await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(row));
+    } catch {
+      // Best-effort — worst case this entry's thumbnail is retried next load.
+    }
+  }
 }
 
 export type DayDetail = { date: string; moods: string[]; entries: JournalFeedEntry[] };
@@ -260,6 +349,7 @@ export async function createEntry(
     id: crypto.randomUUID(),
     encContent: await encryptString(key, input.content),
     encPhoto: input.photoUrl ? await encryptString(key, input.photoUrl) : null,
+    encThumb: await encryptThumb(key, input.photoUrl),
     encSong: input.songUrl ? await encryptString(key, input.songUrl) : null,
     encSongName: input.songName ? await encryptString(key, input.songName) : null,
     mood: input.moods,
@@ -288,6 +378,7 @@ export async function logMoodCheckIn(userId: string, moods: string[]): Promise<v
     id: crypto.randomUUID(),
     encContent: await encryptString(key, ""),
     encPhoto: null,
+    encThumb: null,
     encSong: null,
     encSongName: null,
     mood: moods,
@@ -320,6 +411,7 @@ export async function updateEntry(
   const key = await getKey(db);
   stored.encContent = await encryptString(key, input.content);
   stored.encPhoto = input.photoUrl ? await encryptString(key, input.photoUrl) : null;
+  stored.encThumb = await encryptThumb(key, input.photoUrl);
   stored.encSong = input.songUrl ? await encryptString(key, input.songUrl) : null;
   stored.encSongName = input.songName ? await encryptString(key, input.songName) : null;
   stored.mood = input.moods;
@@ -356,6 +448,21 @@ export async function exportEntries(userId: string): Promise<JournalExportData> 
 }
 
 export async function clearAllEntries(userId: string): Promise<void> {
+  // deleteDatabase() blocks forever behind any connection this tab still
+  // holds open — and since openDb() now caches one persistent connection
+  // per user instead of opening/closing a fresh one per call, that
+  // connection is guaranteed to still be open here unless it's explicitly
+  // closed first. Without this, the delete below would silently never
+  // finish (onblocked resolving anyway made that failure invisible) and
+  // "delete my account" would leave every journal entry sitting in
+  // IndexedDB despite telling the user it was gone.
+  const cached = dbConnections.get(userId);
+  dbConnections.delete(userId);
+  if (cached) {
+    const db = await cached.catch(() => null);
+    db?.close();
+  }
+
   await new Promise<void>((resolve, reject) => {
     const req = indexedDB.deleteDatabase(dbName(userId));
     req.onsuccess = () => resolve();
@@ -397,6 +504,11 @@ export async function migrateFromServer(
       id: e.id,
       encContent: await encryptString(key, e.content),
       encPhoto: e.photoUrl ? await encryptString(key, e.photoUrl) : null,
+      // Backfilled lazily by getFeedData the first time it loads this
+      // entry (see legacyPhotoOnly there) rather than generated here,
+      // since this loop can be migrating many entries at once and
+      // shouldn't pay a canvas round-trip per photo up front.
+      encThumb: null,
       encSong: null,
       encSongName: null,
       mood: e.mood ? [e.mood] : [],
