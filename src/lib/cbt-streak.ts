@@ -4,13 +4,11 @@
  * versa. Mirrors the journal's day-set streak algorithm in local-journal.ts
  * for consistent "day streak" semantics across the app. */
 
+import { localDayKey, todayLocalDayKey } from "@/lib/local-day";
+
 const STREAK_KEY = "lio_cbt_streak_dates";
 
 export type CbtStreakStats = { streak: number; total: number };
-
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function readDays(): Set<string> {
   try {
@@ -24,10 +22,10 @@ function readDays(): Set<string> {
 function computeFromDays(days: Set<string>): CbtStreakStats {
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
-  if (!days.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
+  if (!days.has(localDayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  while (days.has(cursor.toISOString().slice(0, 10))) {
+  while (days.has(localDayKey(cursor))) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -42,7 +40,7 @@ export function getCbtStreak(): CbtStreakStats {
  * day — only distinct days count toward the streak. */
 export function recordCbtCompletion(): CbtStreakStats {
   const days = readDays();
-  days.add(todayKey());
+  days.add(todayLocalDayKey());
   window.localStorage.setItem(STREAK_KEY, JSON.stringify(Array.from(days)));
   return computeFromDays(days);
 }

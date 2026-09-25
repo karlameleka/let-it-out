@@ -10,6 +10,7 @@ import { SerwistProvider } from "@serwist/turbopack/react";
 import OfflineBanner from "@/components/offline-banner";
 import InitialSplash from "@/components/initial-splash";
 import NativeAppInit from "@/components/native-app-init";
+import TimezoneCookieSync from "@/components/timezone-cookie-sync";
 import MotionProvider from "@/components/motion/motion-provider";
 import HelpButton from "@/components/help-button";
 import BottomTabBar from "@/components/bottom-tab-bar";
@@ -120,6 +121,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-white text-ink pb-24 lg:pb-0">
         <NativeAppInit />
+        <TimezoneCookieSync />
         <InitialSplash />
         <OfflineBanner message={dict.offline.bannerMessage} />
         <MotionProvider>

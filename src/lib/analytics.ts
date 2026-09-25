@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { GENDERS, REFERRAL_SOURCES } from "@/lib/content/geo";
+import { getUserTimeZone, todayInTimeZone } from "@/lib/timezone";
 
 // A single-pageview session (or several logged in the same instant) has a
 // zero measured span even though the person was actually reading that
@@ -30,13 +31,19 @@ export function featureForPath(path: string): string {
   return "Other";
 }
 
-function bucketAge(birthDate: Date | null): string {
+// `todayStr` (YYYY-MM-DD, in the viewing admin's own local timezone — see
+// getUserTimeZone()) is threaded in by the caller rather than computed per
+// call, both to avoid re-reading the timezone cookie for every user in a
+// loop and because one consistent "today" should apply across the whole
+// report rather than each user landing on a different reference date if
+// this happened to straddle midnight mid-computation.
+function bucketAge(birthDate: Date | null, todayStr: string): string {
   if (!birthDate) return "Not provided";
-  const today = new Date();
-  const hadBirthdayThisYear =
-    today.getUTCMonth() > birthDate.getUTCMonth() ||
-    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() >= birthDate.getUTCDate());
-  const age = today.getUTCFullYear() - birthDate.getUTCFullYear() - (hadBirthdayThisYear ? 0 : 1);
+  const [todayYear, todayMonth, todayDay] = todayStr.split("-").map(Number);
+  const birthMonth = birthDate.getUTCMonth() + 1;
+  const birthDay = birthDate.getUTCDate();
+  const hadBirthdayThisYear = todayMonth > birthMonth || (todayMonth === birthMonth && todayDay >= birthDay);
+  const age = todayYear - birthDate.getUTCFullYear() - (hadBirthdayThisYear ? 0 : 1);
   if (age < 18) return "Under 18";
   if (age <= 24) return "18–24";
   if (age <= 34) return "25–34";
@@ -78,6 +85,7 @@ export async function getDemographics() {
     select: { gender: true, birthDate: true, country: true, referralSource: true, serviceInterests: true },
   });
   const total = users.length;
+  const todayStr = todayInTimeZone(await getUserTimeZone());
 
   const gender = new Map<string, number>();
   const age = new Map<string, number>();
@@ -89,7 +97,7 @@ export async function getDemographics() {
     const g = bucketGender(u.gender);
     gender.set(g, (gender.get(g) ?? 0) + 1);
 
-    const a = bucketAge(u.birthDate);
+    const a = bucketAge(u.birthDate, todayStr);
     age.set(a, (age.get(a) ?? 0) + 1);
 
     const c = u.country || "Not provided";
@@ -187,6 +195,7 @@ export async function getTimeSpentByGroup() {
   if (views.length === 0) {
     return { trackedUsers: 0, gender: [] as TimeSpentRow[], age: [] as TimeSpentRow[], referral: [] as TimeSpentRow[] };
   }
+  const todayStr = todayInTimeZone(await getUserTimeZone());
 
   const byUser = new Map<string, Date[]>();
   for (const v of views) {
@@ -218,7 +227,7 @@ export async function getTimeSpentByGroup() {
   return {
     trackedUsers: byUser.size,
     gender: accumulate((u) => bucketGender(u.gender)),
-    age: accumulate((u) => bucketAge(u.birthDate)),
+    age: accumulate((u) => bucketAge(u.birthDate, todayStr)),
     referral: accumulate((u) =>
       u.referralSource && (REFERRAL_SOURCES as readonly string[]).includes(u.referralSource) ? u.referralSource : "Not provided",
     ),

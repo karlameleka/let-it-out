@@ -3,6 +3,7 @@
 import { MOODS } from "@/lib/moods";
 import type { Locale } from "@/lib/i18n/locale";
 import { markOnboardingJournalStepDone } from "@/lib/onboarding";
+import { localDayKey, localDayKeyFromIso } from "@/lib/local-day";
 
 // Device-only journal storage. Entries never leave the browser: content and
 // any attached photo are encrypted with AES-256-GCM using a key that is
@@ -192,13 +193,13 @@ function wordCount(text: string): number {
 }
 
 function computeStats(entries: { createdAt: string; content: string }[]): JournalStats {
-  const days = new Set(entries.map((e) => e.createdAt.slice(0, 10)));
+  const days = new Set(entries.map((e) => localDayKeyFromIso(e.createdAt)));
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
-  if (!days.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
+  if (!days.has(localDayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  while (days.has(cursor.toISOString().slice(0, 10))) {
+  while (days.has(localDayKey(cursor))) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -225,7 +226,7 @@ export type DayDetail = { date: string; moods: string[]; entries: JournalFeedEnt
 export async function getDayDetail(userId: string, date: string): Promise<DayDetail> {
   const db = await openDb(userId);
   const key = await getKey(db);
-  const dayStored = (await getAllStored(db)).filter((e) => e.createdAt.slice(0, 10) === date);
+  const dayStored = (await getAllStored(db)).filter((e) => localDayKeyFromIso(e.createdAt) === date);
   const moods = dayStored.flatMap((e) => normalizeMoods(e.mood));
   const entryStored = dayStored.filter((e) => e.kind !== "checkIn");
   entryStored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -429,7 +430,7 @@ export async function getMoodPatterns(userId: string, locale: Locale = "en"): Pr
   for (const e of inRange) {
     const moods = normalizeMoods(e.mood);
     if (moods.length === 0) continue;
-    const key = e.createdAt.slice(0, 10);
+    const key = localDayKeyFromIso(e.createdAt);
     const existing = moodsByDate.get(key);
     if (existing) existing.push(...moods);
     else moodsByDate.set(key, [...moods]);
@@ -454,7 +455,7 @@ export async function getMoodPatterns(userId: string, locale: Locale = "en"): Pr
   const heatmap: MoodPatterns["heatmap"] = [];
   const cursor = new Date(start);
   while (cursor <= today) {
-    const key = cursor.toISOString().slice(0, 10);
+    const key = localDayKey(cursor);
     heatmap.push({ date: key, moods: moodsByDate.get(key) ?? [] });
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -481,7 +482,7 @@ export async function getMoodCalendarMonth(
   const moodsByDate = new Map<string, string[]>();
   const counts = new Map<string, number>();
   for (const e of stored) {
-    const key = e.createdAt.slice(0, 10);
+    const key = localDayKeyFromIso(e.createdAt);
     const [y, m] = key.split("-").map(Number);
     if (y !== year || m !== month + 1) continue;
     const moods = normalizeMoods(e.mood);

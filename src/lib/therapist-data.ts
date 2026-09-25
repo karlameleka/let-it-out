@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { CAIRO_TIME_ZONE, addDaysToDateStr, todayInTimeZone } from "@/lib/timezone";
 
 export async function getOwnCounselorWithBookings(counselorId: string) {
   // manualClients is fetched separately, as its own top-level query, not a
@@ -136,16 +137,16 @@ export function deriveAppointments(counselor: BookingsSource): TherapistAppointm
   return [...paid, ...requests].sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** "Today" on the booking calendar's own clock (Cairo) — not the server's,
+ * since Vercel runs in UTC and Cairo is 2-3 hours ahead of it. */
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInTimeZone(CAIRO_TIME_ZONE);
 }
 
 /** Tomorrow's date as "YYYY-MM-DD" — used by the session-reminders cron to
  * find bookings happening the day after it runs. */
 export function tomorrowISO(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return addDaysToDateStr(todayISO(), 1);
 }
 
 export type IntakeAnswerEntry = { section: string; label: string; value: string };

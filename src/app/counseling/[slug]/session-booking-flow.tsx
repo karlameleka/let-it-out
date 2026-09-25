@@ -21,7 +21,14 @@ const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
 const labelClass = "mb-1 block text-sm font-medium text-ink/80";
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// Local (not UTC) components — toISOString() always reads the UTC date,
+// which for a visitor ahead of UTC (e.g. Cairo, UTC+2/+3) lags a day behind
+// their real "today" for the first few hours after their local midnight,
+// letting the date input's min allow an already-past day or block "today".
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 export type SessionSlot = { date: string; time: string };
 

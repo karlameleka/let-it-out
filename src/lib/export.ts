@@ -1,6 +1,7 @@
 import "server-only";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
+import { getUserTimeZone } from "@/lib/timezone";
 
 export type ExportColumn<T> = {
   header: string;
@@ -49,6 +50,11 @@ export async function toPdfBuffer<T>(
   columns: ExportColumn<T>[],
   title: string,
 ): Promise<Buffer> {
+  // The admin downloading this export is a real person at a real device —
+  // render the timestamp in their own local timezone rather than the
+  // server's UTC clock, which for an Egypt-based admin reads 2-3 hours
+  // behind their actual wall-clock time.
+  const timeZone = await getUserTimeZone();
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 40, size: "A4" });
     const chunks: Buffer[] = [];
@@ -61,7 +67,9 @@ export async function toPdfBuffer<T>(
       .fontSize(9)
       .font("Helvetica")
       .fillColor("#666666")
-      .text(`Generated ${new Date().toLocaleString("en-GB")} · ${rows.length} row${rows.length === 1 ? "" : "s"}`);
+      .text(
+        `Generated ${new Date().toLocaleString("en-GB", { timeZone })} · ${rows.length} row${rows.length === 1 ? "" : "s"}`,
+      );
     doc.moveDown(1);
     doc.fillColor("#123543"); // brand-900 — dark teal, never plain black.
 

@@ -6,6 +6,7 @@ import { getCbtHistory, deleteCbtEntry, type CbtHistoryEntry, type CbtExerciseTy
 import { buildThoughtRecordHistoryPdf } from "@/lib/thought-record-pdf";
 import { deliverBlob } from "@/lib/download-blob";
 import { withTimeout } from "@/lib/with-timeout";
+import { todayLocalDayKey } from "@/lib/local-day";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const PDF_BUILD_TIMEOUT_MS = 25_000;
@@ -85,7 +86,7 @@ export default function CbtTypeHistory({
         PDF_BUILD_TIMEOUT_MS,
         "PDF build timed out",
       );
-      deliverBlob(blob, `thought-record-history-${new Date().toISOString().slice(0, 10)}.pdf`);
+      deliverBlob(blob, `thought-record-history-${todayLocalDayKey()}.pdf`);
     } catch {
       setDownloadError(dict.downloadPdfError);
     } finally {

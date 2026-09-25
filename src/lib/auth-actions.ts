@@ -27,6 +27,7 @@ import { GENDER_CUSTOM, COUNTRY_CALLING_CODES } from "@/lib/content/geo";
 import { logAudit } from "@/lib/audit-log";
 import { trackEvent } from "@/lib/analytics-events";
 import { isValidPhoneNumber } from "libphonenumber-js/mobile";
+import { getUserTimeZone, todayInTimeZone } from "@/lib/timezone";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -42,12 +43,12 @@ const PENDING_SIGNUP_MAX_AGE_MS = 30 * 60 * 1000; // time to finish the rest of 
  * date, the same way Google's own birthday picker works — including
  * rejecting combinations that don't exist (e.g. Feb 30) and enforcing the
  * same minimum age the old birth-year-only dropdown used to. */
-function parseBirthDate(
+async function parseBirthDate(
   a: Dictionary["auth"],
   birthMonth: string,
   birthDay: string,
   birthYear: string,
-): { birthDate: Date } | { error: string } {
+): Promise<{ birthDate: Date } | { error: string }> {
   const month = Number(birthMonth);
   const day = Number(birthDay);
   const year = Number(birthYear);
@@ -58,10 +59,15 @@ function parseBirthDate(
     return { error: a.birthDateInvalid };
   }
 
-  const today = new Date();
-  const hadBirthdayThisYear =
-    today.getUTCMonth() > month - 1 || (today.getUTCMonth() === month - 1 && today.getUTCDate() >= day);
-  const age = today.getUTCFullYear() - year - (hadBirthdayThisYear ? 0 : 1);
+  // Age is computed against the visitor's own local calendar day (falling
+  // back to Cairo before their device timezone is known), not the server's
+  // UTC clock — otherwise someone whose 13th birthday is today, locally,
+  // could be wrongly blocked (or someone not yet 13 locally wrongly let
+  // through) for the few hours the server's UTC date disagrees with theirs.
+  const todayStr = todayInTimeZone(await getUserTimeZone());
+  const [todayYear, todayMonth, todayDay] = todayStr.split("-").map(Number);
+  const hadBirthdayThisYear = todayMonth > month || (todayMonth === month && todayDay >= day);
+  const age = todayYear - year - (hadBirthdayThisYear ? 0 : 1);
   if (age < 13) return { error: a.birthDateTooYoung };
 
   return { birthDate: date };
@@ -229,7 +235,7 @@ export async function requestEmailVerification(
     parsed.data;
   const name = `${firstName} ${lastName}`.trim();
 
-  const birthDateResult = parseBirthDate(a, birthMonth, birthDay, birthYear);
+  const birthDateResult = await parseBirthDate(a, birthMonth, birthDay, birthYear);
   if ("error" in birthDateResult) {
     return { error: birthDateResult.error };
   }
@@ -529,7 +535,7 @@ export async function completeSocialSignup(
     serviceInterests,
   } = parsed.data;
 
-  const birthDateResult = parseBirthDate(a, birthMonth, birthDay, birthYear);
+  const birthDateResult = await parseBirthDate(a, birthMonth, birthDay, birthYear);
   if ("error" in birthDateResult) {
     return { error: birthDateResult.error };
   }

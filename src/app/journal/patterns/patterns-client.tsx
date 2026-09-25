@@ -6,6 +6,7 @@ import { Brain, ChevronLeft, ChevronRight, Compass, Footprints, NotebookPen, Smi
 import { getMoodCalendarMonth, hasAnyMoodEntries, getDayDetail, type MoodCalendarMonth, type DayDetail } from "@/lib/local-journal";
 import { getCbtHistory, type CbtHistoryEntry, type CbtExerciseType } from "@/lib/cbt-history";
 import { CORE_EMOTIONS, moodColor, moodCore, moodLabel } from "@/lib/moods";
+import { localDayKeyFromIso } from "@/lib/local-day";
 import { Container } from "@/components/ui";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
@@ -52,7 +53,7 @@ export default function PatternsClient({
     // day-detail sheet shows everything logged that day, not just the
     // journal.
     getCbtHistory().then((entries) => {
-      if (!cancelled) setDayTools(entries.filter((e) => e.createdAt.slice(0, 10) === selectedDate));
+      if (!cancelled) setDayTools(entries.filter((e) => localDayKeyFromIso(e.createdAt) === selectedDate));
     });
     return () => {
       cancelled = true;

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { CAIRO_TIME_ZONE, zonedParts } from "@/lib/timezone";
 
 export const SESSION_MINUTES = 50;
 // Covers the farthest-out one-off date window a therapist can open (see
@@ -32,8 +33,10 @@ const MIN_LEAD_MINUTES = 24 * 60;
  * config has changed over time.
  *
  * Like the rest of this app, dates/times are plain Cairo-local values with
- * no timezone conversion (see todayISO() in therapist-data.ts) — "now" is
- * whatever the server's clock says.
+ * no further timezone conversion (see todayISO() in therapist-data.ts) —
+ * "now" is read via CAIRO_TIME_ZONE (src/lib/timezone.ts), not the server's
+ * own clock, since Vercel runs the server in UTC and Cairo is 2-3 hours
+ * ahead of it.
  */
 export async function getAvailableSlots(counselorId: string): Promise<AvailableSlot[]> {
   const windows = await prisma.counselorAvailability.findMany({ where: { counselorId } });
@@ -53,12 +56,15 @@ export async function getAvailableSlots(counselorId: string): Promise<AvailableS
     [...bookingRequests, ...sessionBookings].map((b) => `${b.preferredDate}T${b.preferredTime}`),
   );
 
-  const now = new Date();
-  const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const now = zonedParts(new Date(), CAIRO_TIME_ZONE);
+  const nowMinutes = now.hour * 60 + now.minute;
+  const [todayYear, todayMonth, todayDay] = now.dateStr.split("-").map(Number);
 
   const slots: AvailableSlot[] = [];
   for (let dayOffset = 0; dayOffset < DAYS_AHEAD; dayOffset++) {
-    const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + dayOffset));
+    // Pure calendar-day arithmetic on Cairo's own Y-M-D triple — Date.UTC is
+    // just a neutral integer-math space here, not a timezone conversion.
+    const day = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay + dayOffset));
     const dateStr = day.toISOString().slice(0, 10);
     const dayOfWeek = day.getUTCDay();
 

@@ -7,6 +7,7 @@ import { exportAssessmentResults } from "@/lib/local-assessments";
 import { buildJournalExportPdf } from "@/lib/journal-pdf";
 import { deliverBlob } from "@/lib/download-blob";
 import { withTimeout } from "@/lib/with-timeout";
+import { todayLocalDayKey } from "@/lib/local-day";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -40,7 +41,7 @@ export default function ExportDataButton({ dict, userId, locale }: { dict: Dicti
     }
     setPending(false);
 
-    deliverBlob(blob, `let-it-out-journal-export-${new Date().toISOString().slice(0, 10)}.pdf`);
+    deliverBlob(blob, `let-it-out-journal-export-${todayLocalDayKey()}.pdf`);
   }
 
   return (

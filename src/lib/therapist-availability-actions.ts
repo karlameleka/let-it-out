@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
 import { todayISO } from "@/lib/therapist-data";
+import { addDaysToDateStr } from "@/lib/timezone";
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -63,9 +64,7 @@ export async function addDateAvailabilityWindow(
     return { error: "Please choose a day." };
   }
   const today = todayISO();
-  const maxDate = new Date();
-  maxDate.setUTCDate(maxDate.getUTCDate() + MAX_DATE_DAYS_AHEAD);
-  const maxDateStr = maxDate.toISOString().slice(0, 10);
+  const maxDateStr = addDaysToDateStr(today, MAX_DATE_DAYS_AHEAD);
   if (date < today || date > maxDateStr) {
     return { error: "Please pick a day between today and a month from now." };
   }

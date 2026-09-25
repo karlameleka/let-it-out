@@ -15,13 +15,19 @@ const MAX_DATE_DAYS_AHEAD = 30;
 const inputClass =
   "w-full rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500";
 
+// Local (not UTC) components — toISOString() always reads the UTC date,
+// which for a therapist ahead of UTC (e.g. Cairo, UTC+2/+3) lags a day
+// behind their real "today" for the first few hours after local midnight.
+function localISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localISODate(new Date());
 }
 function maxDateISO(): string {
   const d = new Date();
-  d.setUTCDate(d.getUTCDate() + MAX_DATE_DAYS_AHEAD);
-  return d.toISOString().slice(0, 10);
+  d.setDate(d.getDate() + MAX_DATE_DAYS_AHEAD);
+  return localISODate(d);
 }
 
 export type AvailabilityWindow = {
