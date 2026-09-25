@@ -35,6 +35,20 @@ const serwist = new Serwist({
   // missing a tool a therapist just sent (and not clearing the unread
   // badge) is worse than the honest /offline fallback below — these must
   // always hit the network, never a cache.
+  //
+  // Every other authenticated, PII/clinical-content page is carved out
+  // here too, for a different reason than staleness: defaultCache's
+  // NetworkFirst rules persist a matched page's rendered HTML/RSC into
+  // Cache Storage for up to 24h regardless of this list, and nothing ever
+  // purges that cache on logout (see LogoutForm in
+  // src/components/logout-form.tsx, which clears it client-side instead —
+  // this list is the server-side half of that fix, so a page never lands
+  // in Cache Storage in the first place). Without both halves, a signed-out
+  // session on a shared device would leave the next person able to read
+  // the previous user's account details, journal entries, orders, upcoming
+  // sessions, intake answers, support chat transcript, or (for a
+  // counselor) a client's clinical notes — straight out of Cache Storage,
+  // no active session required.
   runtimeCaching: [
     {
       matcher({ url: { pathname } }) {
@@ -46,7 +60,16 @@ const serwist = new Serwist({
           pathname.startsWith("/api/webhooks/") ||
           pathname.startsWith("/admin") ||
           pathname === "/resources" ||
-          pathname.startsWith("/api/my-tools/")
+          pathname.startsWith("/api/my-tools/") ||
+          pathname.startsWith("/account") ||
+          pathname.startsWith("/journal") ||
+          pathname.startsWith("/orders") ||
+          pathname.startsWith("/profile") ||
+          pathname.startsWith("/therapist") ||
+          pathname.startsWith("/upcoming") ||
+          pathname.startsWith("/intake") ||
+          pathname.startsWith("/support") ||
+          pathname.startsWith("/email-preferences")
         );
       },
       handler: new NetworkOnly(),

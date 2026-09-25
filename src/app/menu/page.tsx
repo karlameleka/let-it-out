@@ -11,6 +11,7 @@ import { getSiteTextOverrides, applyOverrides } from "@/lib/site-text";
 import { prisma } from "@/lib/db";
 import LanguageSwitcher from "@/components/language-switcher";
 import DeleteAccountForm from "@/app/account/delete-account-form";
+import { LogoutForm } from "@/components/logout-form";
 
 export const metadata: Metadata = { title: "Menu" };
 
@@ -76,7 +77,7 @@ export default async function MenuPage() {
         {user ? (
           <>
             <MenuLink href="/account" label={t.settings} icon={Settings} />
-            <form action={logoutAction} className="border-t border-brand-100">
+            <LogoutForm action={logoutAction} className="border-t border-brand-100">
               <button
                 type="submit"
                 className="flex w-full items-center gap-3 px-5 py-4 text-left text-base font-medium text-ink/60 hover:bg-brand-50 active:bg-brand-50"
@@ -84,7 +85,7 @@ export default async function MenuPage() {
                 <LogOut className="h-5 w-5 shrink-0 text-brand-600" strokeWidth={1.9} />
                 {t.logOut}
               </button>
-            </form>
+            </LogoutForm>
           </>
         ) : (
           <>

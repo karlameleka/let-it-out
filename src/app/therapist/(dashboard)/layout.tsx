@@ -4,6 +4,7 @@ import { getCurrentCounselor } from "@/lib/therapist-session";
 import { logoutCounselorAction } from "@/lib/therapist-auth-actions";
 import { prisma } from "@/lib/db";
 import { Container, Button } from "@/components/ui";
+import { LogoutForm } from "@/components/logout-form";
 import TherapistNav from "../therapist-nav";
 
 export default async function TherapistDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -32,11 +33,11 @@ export default async function TherapistDashboardLayout({ children }: { children:
               <h1 className="font-display text-xl font-semibold text-brand-900">Hi {counselor.name.split(" ")[0]}</h1>
             </div>
           </div>
-          <form action={logoutCounselorAction}>
+          <LogoutForm action={logoutCounselorAction}>
             <Button type="submit" variant="outline" className="!px-4 !py-2 text-xs">
               Log out
             </Button>
-          </form>
+          </LogoutForm>
         </div>
 
         <TherapistNav canEditFormsConfig={counselor.canEditFormsConfig} />

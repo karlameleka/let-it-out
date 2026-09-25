@@ -14,14 +14,33 @@ type FieldKind = "string" | "json";
  * that can itself contain any of the above (see the admin "Recently
  * Deleted" undo flow in trash.ts, which would otherwise stash a plaintext
  * copy of e.g. a support chat transcript for its 24h undo window).
+ *
+ * A field is only ever added here if it's never used on the *read* side of
+ * a `where` clause: this extension only encrypts args.data (create/update/
+ * upsert/createMany/updateMany), never args.where, and AES-256-GCM's
+ * random IV means the same plaintext never encrypts to the same ciphertext
+ * twice — so an encrypted column can no longer be equality-matched against
+ * a plaintext filter, and can't back a unique constraint either. That's
+ * why each model below still leaves its own lookup-key email column
+ * (Referral has none; AssignedResource.clientEmail and
+ * ManualClient.clientEmail are both real `where`/`@@unique` lookup keys —
+ * see client-resources.ts and the counselorId_clientEmail compound key)
+ * out of this map even where a sibling column holding the same kind of
+ * PII is encrypted.
  */
 const ENCRYPTED_FIELDS: Record<string, Record<string, FieldKind>> = {
   ClientNote: { notes: "string", nextSteps: "string" },
   Medication: { name: "string", dosage: "string", instructions: "string" },
   IntakeSubmission: { answers: "json", aiSummary: "string" },
-  Referral: { intakeSnapshot: "json", notesSnapshot: "json" },
-  AssignedResource: { description: "string", content: "string" },
-  ManualClient: { referralSource: "string" },
+  Referral: {
+    clientName: "string",
+    clientEmail: "string",
+    clientPhone: "string",
+    intakeSnapshot: "json",
+    notesSnapshot: "json",
+  },
+  AssignedResource: { url: "string", fileData: "string", description: "string", content: "string" },
+  ManualClient: { name: "string", phone: "string", referralSource: "string" },
   SupportChat: { messages: "json" },
   JournalEntry: { content: "string", photoUrl: "string" },
   TrashedItem: { data: "json" },

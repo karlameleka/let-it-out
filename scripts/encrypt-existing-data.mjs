@@ -2,8 +2,10 @@
 // One-time migration: encrypts every plaintext row in the clinical/PII
 // columns that src/lib/prisma-field-encryption-extension.ts now encrypts
 // transparently going forward (ClientNote, Medication, IntakeSubmission,
-// Referral snapshots, AssignedResource, SupportChat, the legacy
-// pre-local-storage JournalEntry rows, and TrashedItem snapshots).
+// Referral's client identity fields + snapshots, AssignedResource
+// (including assigned PDF/link payloads), ManualClient's client identity
+// fields, SupportChat, the legacy pre-local-storage JournalEntry rows, and
+// TrashedItem snapshots).
 //
 // Idempotent and safe to re-run: any value that already starts with the
 // "enc:v1:" marker (see src/lib/field-encryption.ts) is left untouched, so
@@ -68,8 +70,26 @@ const TABLES = [
     ],
   },
   { table: "IntakeSubmission", fields: [{ name: "answers", kind: "json" }, { name: "aiSummary", kind: "text" }] },
-  { table: "Referral", fields: [{ name: "intakeSnapshot", kind: "json" }, { name: "notesSnapshot", kind: "json" }] },
-  { table: "AssignedResource", fields: [{ name: "description", kind: "text" }, { name: "content", kind: "text" }] },
+  {
+    table: "Referral",
+    fields: [
+      { name: "clientName", kind: "text" },
+      { name: "clientEmail", kind: "text" },
+      { name: "clientPhone", kind: "text" },
+      { name: "intakeSnapshot", kind: "json" },
+      { name: "notesSnapshot", kind: "json" },
+    ],
+  },
+  {
+    table: "AssignedResource",
+    fields: [
+      { name: "url", kind: "text" },
+      { name: "fileData", kind: "text" },
+      { name: "description", kind: "text" },
+      { name: "content", kind: "text" },
+    ],
+  },
+  { table: "ManualClient", fields: [{ name: "name", kind: "text" }, { name: "phone", kind: "text" }, { name: "referralSource", kind: "text" }] },
   { table: "SupportChat", fields: [{ name: "messages", kind: "json" }] },
   { table: "JournalEntry", fields: [{ name: "content", kind: "text" }, { name: "photoUrl", kind: "text" }] },
   { table: "TrashedItem", fields: [{ name: "data", kind: "json" }] },
