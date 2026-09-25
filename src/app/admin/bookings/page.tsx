@@ -5,6 +5,7 @@ import SessionBookingEditForm from "./session-booking-edit-form";
 import BookingRequestEditForm from "./booking-request-edit-form";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 export default async function AdminBookingsPage({
   searchParams,
@@ -60,7 +61,7 @@ export default async function AdminBookingsPage({
                     {b.meetingLink}
                   </a>
                 )}
-                <p className="mt-1 text-xs text-ink/40">{b.createdAt.toLocaleString("en-GB")}</p>
+                <p className="mt-1 text-xs text-ink/40">{b.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</p>
                 <div className="mt-3 flex flex-wrap items-start gap-2">
                   {b.status === "PENDING_PAYMENT" && (
                     <form action={markSessionBookingPaid}>
@@ -135,7 +136,7 @@ export default async function AdminBookingsPage({
                       {b.meetingLink}
                     </a>
                   )}
-                  <p className="mt-1 text-xs text-ink/40">{b.createdAt.toLocaleString("en-GB")}</p>
+                  <p className="mt-1 text-xs text-ink/40">{b.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</p>
                 </div>
                 <form action={deleteBookingRequest}>
                   <input type="hidden" name="bookingId" value={b.id} />

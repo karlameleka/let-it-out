@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { deleteClientAccount } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-50 text-amber-700",
@@ -61,7 +62,7 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
           <p className="mt-1 text-sm text-ink/60">{client.email}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink/50">
             <span className="rounded-full bg-brand-50 px-2.5 py-0.5 font-semibold text-brand-700">{client.accountCode}</span>
-            <span>Joined {client.createdAt.toLocaleDateString("en-GB")}</span>
+            <span>Joined {client.createdAt.toLocaleDateString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</span>
           </div>
         </div>
         <form action={deleteClientAccount}>
@@ -86,7 +87,7 @@ export default async function AdminClientDetailPage({ params }: { params: Promis
             {orders.map((o) => (
               <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
                 <span className="font-medium text-ink/80">#{o.id.slice(-8).toUpperCase()}</span>
-                <span className="text-ink/50">{o.createdAt.toLocaleDateString("en-GB")}</span>
+                <span className="text-ink/50">{o.createdAt.toLocaleDateString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</span>
                 <span className="font-medium text-ink/80">{formatEGP(o.totalEGP)}</span>
                 <StatusPill status={o.status} />
               </li>

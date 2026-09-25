@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { TherapistClient, TherapistCounselorWithBookings } from "@/lib/therapist-data";
 import { updateOwnBookingRequestStatus } from "@/lib/therapist-actions";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone-constants";
 import StatusBadge from "../../status-badge";
 import AddClientForm from "./add-client-form";
 
@@ -99,7 +100,7 @@ export default function ClientListPane({
                     <p className="mt-0.5 truncate text-xs text-ink/50">{c.email}</p>
                     <p className="mt-0.5 text-xs text-ink/40">
                       {c.totalBookings} booking{c.totalBookings === 1 ? "" : "s"} · last{" "}
-                      {c.lastContact.toLocaleDateString("en-GB")}
+                      {c.lastContact.toLocaleDateString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
                     </p>
                   </Link>
                 </li>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { createPromoCode, togglePromoCodeActive, deletePromoCode } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 export default async function AdminPromoCodesPage() {
   const [codes, products, counselors, orderStats, sessionStats] = await Promise.all([
@@ -184,7 +185,7 @@ export default async function AdminPromoCodesPage() {
                 <p className="mt-1 text-sm text-ink/60">
                   {c.discountType === "PERCENT" ? `${c.discountValue}% off` : `${formatEGP(c.discountValue)} off`}
                   {c.minOrderEGP ? ` · min. order ${formatEGP(c.minOrderEGP)}` : ""}
-                  {c.expiresAt ? ` · expires ${c.expiresAt.toLocaleDateString("en-GB")}` : ""}
+                  {c.expiresAt ? ` · expires ${c.expiresAt.toLocaleDateString("en-GB", { timeZone: CAIRO_TIME_ZONE })}` : ""}
                 </p>
                 <p className="mt-0.5 text-xs text-ink/40">
                   Used {c.redemptionCount}{c.maxRedemptions ? ` / ${c.maxRedemptions}` : ""} time{c.redemptionCount === 1 ? "" : "s"}

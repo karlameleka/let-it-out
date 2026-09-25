@@ -3,6 +3,7 @@ import { deleteContactMessage, deleteRecentContactMessages } from "@/lib/admin-a
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const RECENT_WINDOWS = [
   { hours: 48, label: "48h" },
@@ -75,7 +76,7 @@ export default async function AdminMessagesPage({
             </form>
           </div>
           <p className="mt-2 text-sm text-ink/70">{m.message}</p>
-          <p className="mt-1 text-xs text-ink/40">{m.createdAt.toLocaleString("en-GB")}</p>
+          <p className="mt-1 text-xs text-ink/40">{m.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</p>
         </div>
       ))}
       <AdminPagination page={page} totalPages={totalPages} basePath="/admin/messages" />

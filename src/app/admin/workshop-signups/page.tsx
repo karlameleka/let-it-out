@@ -3,6 +3,7 @@ import { deleteWorkshopSignup } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 export default async function AdminWorkshopSignupsPage({
   searchParams,
@@ -46,7 +47,7 @@ export default async function AdminWorkshopSignupsPage({
                 <tr key={s.id} className="border-t border-brand-50">
                   <td className="px-5 py-3">{s.email}</td>
                   <td className="px-5 py-3 text-ink/60">
-                    {s.createdAt.toLocaleString("en-GB")}
+                    {s.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
                   </td>
                   <td className="px-5 py-3 text-right">
                     <form action={deleteWorkshopSignup}>

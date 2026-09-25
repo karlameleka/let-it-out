@@ -8,6 +8,7 @@ import {
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import { SUPPORT_EMAIL } from "@/lib/email";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 import { Star } from "lucide-react";
 
 function gmailComposeUrl(toEmail: string) {
@@ -88,7 +89,8 @@ export default async function AdminSupportPage() {
                   {chat.user.name} <span className="font-normal text-ink/50">· {chat.user.email}</span>
                 </p>
                 <p className="mt-0.5 text-xs text-ink/40">
-                  {chat.user.accountCode} · Updated {chat.updatedAt.toLocaleString("en-GB")}
+                  {chat.user.accountCode} · Updated{" "}
+                  {chat.updatedAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

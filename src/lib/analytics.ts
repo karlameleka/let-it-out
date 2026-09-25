@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { GENDERS, REFERRAL_SOURCES } from "@/lib/content/geo";
-import { getUserTimeZone, todayInTimeZone } from "@/lib/timezone";
+import { CAIRO_TIME_ZONE, todayInTimeZone } from "@/lib/timezone";
 
 // A single-pageview session (or several logged in the same instant) has a
 // zero measured span even though the person was actually reading that
@@ -31,10 +31,11 @@ export function featureForPath(path: string): string {
   return "Other";
 }
 
-// `todayStr` (YYYY-MM-DD, in the viewing admin's own local timezone — see
-// getUserTimeZone()) is threaded in by the caller rather than computed per
-// call, both to avoid re-reading the timezone cookie for every user in a
-// loop and because one consistent "today" should apply across the whole
+// `todayStr` (YYYY-MM-DD, in CAIRO_TIME_ZONE — the admin dashboard's own
+// fixed timezone, deliberately not tied to whichever device is viewing it)
+// is threaded in by the caller rather than computed per call, both to
+// avoid redundant work for every user in a loop and because one consistent
+// "today" should apply across the whole
 // report rather than each user landing on a different reference date if
 // this happened to straddle midnight mid-computation.
 function bucketAge(birthDate: Date | null, todayStr: string): string {
@@ -85,7 +86,7 @@ export async function getDemographics() {
     select: { gender: true, birthDate: true, country: true, referralSource: true, serviceInterests: true },
   });
   const total = users.length;
-  const todayStr = todayInTimeZone(await getUserTimeZone());
+  const todayStr = todayInTimeZone(CAIRO_TIME_ZONE);
 
   const gender = new Map<string, number>();
   const age = new Map<string, number>();
@@ -195,7 +196,7 @@ export async function getTimeSpentByGroup() {
   if (views.length === 0) {
     return { trackedUsers: 0, gender: [] as TimeSpentRow[], age: [] as TimeSpentRow[], referral: [] as TimeSpentRow[] };
   }
-  const todayStr = todayInTimeZone(await getUserTimeZone());
+  const todayStr = todayInTimeZone(CAIRO_TIME_ZONE);
 
   const byUser = new Map<string, Date[]>();
   for (const v of views) {

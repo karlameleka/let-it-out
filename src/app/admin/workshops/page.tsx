@@ -3,6 +3,7 @@ import { updateWorkshopInquiryStatus, deleteWorkshopInquiry } from "@/lib/admin-
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const STATUSES = ["NEW", "IN_DISCUSSION", "SCHEDULED", "CLOSED"];
 
@@ -49,7 +50,7 @@ export default async function AdminWorkshopsPage({
             </p>
           )}
           {i.message && <p className="mt-2 text-sm text-ink/60">&ldquo;{i.message}&rdquo;</p>}
-          <p className="mt-1 text-xs text-ink/40">{i.createdAt.toLocaleString("en-GB")}</p>
+          <p className="mt-1 text-xs text-ink/40">{i.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</p>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <form action={updateWorkshopInquiryStatus} className="flex items-center gap-2">

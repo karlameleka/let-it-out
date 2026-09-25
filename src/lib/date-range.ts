@@ -1,11 +1,18 @@
+// Imports from timezone-constants.ts, not timezone.ts — this file is
+// reached from date-range-picker.tsx, a client component, and timezone.ts
+// pulls in next/headers (via getUserTimeZone()), which can't be bundled
+// for the client. See timezone-constants.ts's own comment for the split.
+import { CAIRO_TIME_ZONE, addDaysToDateStr, todayInTimeZone, zonedTimeToUtc } from "@/lib/timezone-constants";
+
 // Shared date-range resolution for every dashboard page that reads a
 // ?from=&to= pair from the URL (see components/date-range-picker.tsx) —
 // keeps "what does an empty/partial range default to" and "what counts as
 // the prior comparable period for a trend indicator" identical everywhere
-// instead of each page inventing its own rules. Dates are plain UTC
-// "YYYY-MM-DD" strings/boundaries throughout, the same convention already
-// used for booking dates elsewhere in this app (see todayISO/tomorrowISO
-// in therapist-data.ts) — no per-timezone shifting.
+// instead of each page inventing its own rules. Every boundary here is
+// anchored to Cairo's calendar day (CAIRO_TIME_ZONE) — the admin
+// dashboard's own fixed timezone, deliberately not tied to whichever
+// device happens to be viewing it, same as the booking calendar and the
+// therapist portal (see src/lib/timezone.ts).
 
 export type DateRange = { from: Date; to: Date };
 
@@ -20,49 +27,64 @@ export const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "ytd", label: "Year to date" },
 ];
 
-function startOfDayUTC(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
+function cairoDateStr(d: Date): string {
+  return todayInTimeZone(CAIRO_TIME_ZONE, d);
 }
 
-function endOfDayUTC(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59, 999));
+function startOfDayCairo(d: Date): Date {
+  return zonedTimeToUtc(cairoDateStr(d), "00:00", CAIRO_TIME_ZONE);
+}
+
+function endOfDayCairo(d: Date): Date {
+  const nextDay = addDaysToDateStr(cairoDateStr(d), 1);
+  return new Date(zonedTimeToUtc(nextDay, "00:00", CAIRO_TIME_ZONE).getTime() - 1);
 }
 
 export function rangeForPreset(preset: PresetKey, now: Date = new Date()): DateRange {
-  const today = startOfDayUTC(now);
+  const todayStr = cairoDateStr(now);
+  const [year, month] = todayStr.split("-").map(Number);
+  const today = startOfDayCairo(now);
   switch (preset) {
     case "today":
-      return { from: today, to: endOfDayUTC(now) };
+      return { from: today, to: endOfDayCairo(now) };
     case "7d": {
-      const from = new Date(today);
-      from.setUTCDate(from.getUTCDate() - 6);
-      return { from, to: endOfDayUTC(now) };
+      const from = zonedTimeToUtc(addDaysToDateStr(todayStr, -6), "00:00", CAIRO_TIME_ZONE);
+      return { from, to: endOfDayCairo(now) };
     }
     case "this_month": {
-      const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
-      return { from, to: endOfDayUTC(now) };
+      const from = zonedTimeToUtc(`${year}-${String(month).padStart(2, "0")}-01`, "00:00", CAIRO_TIME_ZONE);
+      return { from, to: endOfDayCairo(now) };
     }
     case "last_month": {
-      const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1));
-      const to = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0, 23, 59, 59, 999));
+      // Day 0 of the current Cairo month is the last day of the previous
+      // one — computed via plain UTC integer math on the Y-M-D triple (not
+      // a timezone conversion, see addDaysToDateStr), then re-anchored to
+      // Cairo below.
+      const firstOfThisMonth = new Date(Date.UTC(year, month - 1, 1));
+      const lastDayOfPrevMonth = new Date(Date.UTC(year, month - 1, 0));
+      const from = zonedTimeToUtc(
+        `${lastDayOfPrevMonth.getUTCFullYear()}-${String(lastDayOfPrevMonth.getUTCMonth() + 1).padStart(2, "0")}-01`,
+        "00:00",
+        CAIRO_TIME_ZONE,
+      );
+      const to = new Date(zonedTimeToUtc(`${firstOfThisMonth.getUTCFullYear()}-${String(firstOfThisMonth.getUTCMonth() + 1).padStart(2, "0")}-01`, "00:00", CAIRO_TIME_ZONE).getTime() - 1);
       return { from, to };
     }
     case "ytd": {
-      const from = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
-      return { from, to: endOfDayUTC(now) };
+      const from = zonedTimeToUtc(`${year}-01-01`, "00:00", CAIRO_TIME_ZONE);
+      return { from, to: endOfDayCairo(now) };
     }
     case "30d":
     default: {
-      const from = new Date(today);
-      from.setUTCDate(from.getUTCDate() - 29);
-      return { from, to: endOfDayUTC(now) };
+      const from = zonedTimeToUtc(addDaysToDateStr(todayStr, -29), "00:00", CAIRO_TIME_ZONE);
+      return { from, to: endOfDayCairo(now) };
     }
   }
 }
 
 function parseDateParam(raw: string | undefined): Date | null {
-  if (!raw) return null;
-  const d = new Date(`${raw}T00:00:00.000Z`);
+  if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  const d = zonedTimeToUtc(raw, "00:00", CAIRO_TIME_ZONE);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -74,7 +96,7 @@ export function resolveDateRange(searchParams: { from?: string; to?: string }): 
   const from = parseDateParam(searchParams.from);
   const to = parseDateParam(searchParams.to);
   if (!from || !to || from > to) return rangeForPreset("30d");
-  return { from: startOfDayUTC(from), to: endOfDayUTC(to) };
+  return { from: startOfDayCairo(from), to: endOfDayCairo(to) };
 }
 
 /** The immediately-preceding period of the same length — what a trend
@@ -88,7 +110,7 @@ export function priorPeriod(range: DateRange): DateRange {
 }
 
 export function toDateParam(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return cairoDateStr(d);
 }
 
 /** Percent change from `prev` to `current`, rounded to the nearest whole

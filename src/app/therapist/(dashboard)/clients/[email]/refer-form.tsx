@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { sendReferral } from "@/lib/therapist-actions";
 import { Button } from "@/components/ui";
 import type { TherapistClientNote } from "@/lib/therapist-data";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone-constants";
 
 const fieldClass =
   "w-full rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500";
@@ -96,7 +97,12 @@ function ReferralFormBody({
                   <label key={n.id} className="flex items-start gap-2 text-sm text-ink/80">
                     <input type="checkbox" name="noteIds" value={n.id} className="mt-0.5" />
                     <span>
-                      {n.sessionDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      {n.sessionDate.toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        timeZone: CAIRO_TIME_ZONE,
+                      })}
                       {", "}
                       <span className="text-ink/50">{n.notes.slice(0, 60)}{n.notes.length > 60 ? "…" : ""}</span>
                     </span>

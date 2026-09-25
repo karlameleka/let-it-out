@@ -4,6 +4,7 @@ import AdminPagination from "@/components/admin-pagination";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import { clearAllFeedback } from "@/lib/admin-actions";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const SERVICE_LABELS: Record<string, string> = {
   COUNSELING: "Counseling",
@@ -65,7 +66,7 @@ export default async function AdminFeedbackPage({
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-ink/40">{f.createdAt.toLocaleString("en-GB")}</span>
+                  <span className="text-xs text-ink/40">{f.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</span>
                 </div>
               </div>
               {f.comment && <p className="mt-3 whitespace-pre-line text-sm text-ink/70">{f.comment}</p>}

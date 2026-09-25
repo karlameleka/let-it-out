@@ -1,7 +1,7 @@
 import "server-only";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
-import { getUserTimeZone } from "@/lib/timezone";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 export type ExportColumn<T> = {
   header: string;
@@ -50,11 +50,11 @@ export async function toPdfBuffer<T>(
   columns: ExportColumn<T>[],
   title: string,
 ): Promise<Buffer> {
-  // The admin downloading this export is a real person at a real device —
-  // render the timestamp in their own local timezone rather than the
-  // server's UTC clock, which for an Egypt-based admin reads 2-3 hours
-  // behind their actual wall-clock time.
-  const timeZone = await getUserTimeZone();
+  // The admin dashboard always renders in Cairo time (see CAIRO_TIME_ZONE),
+  // deliberately not tied to whichever device is downloading this export —
+  // the server's own UTC clock would otherwise read 2-3 hours behind the
+  // admin's actual wall-clock time.
+  const timeZone = CAIRO_TIME_ZONE;
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 40, size: "A4" });
     const chunks: Buffer[] = [];

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { deleteClientAccount } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 export default async function AdminClientsPage() {
   const clients = await prisma.user.findMany({
@@ -42,7 +43,7 @@ export default async function AdminClientsPage() {
                   </span>
                 </td>
                 <td className="px-5 py-3 text-ink/70">{c.email}</td>
-                <td className="px-5 py-3 text-ink/60">{c.createdAt.toLocaleDateString("en-GB")}</td>
+                <td className="px-5 py-3 text-ink/60">{c.createdAt.toLocaleDateString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</td>
                 <td className="px-5 py-3 text-right">
                   <form action={deleteClientAccount}>
                     <input type="hidden" name="userId" value={c.id} />

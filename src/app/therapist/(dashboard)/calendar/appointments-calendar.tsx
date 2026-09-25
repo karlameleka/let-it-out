@@ -6,6 +6,21 @@ import MonthCalendar from "@/components/month-calendar";
 import StatusBadge from "../../status-badge";
 import type { TherapistAppointment } from "@/lib/therapist-data";
 
+/** Formats a plain Cairo-local "YYYY-MM-DD" (no time component) as a long
+ * date. Anchored via Date.UTC and formatted with timeZone: "UTC" so the
+ * calendar day shown always matches those digits exactly, regardless of the
+ * viewer's own device timezone — parsing it as browser-local instead could
+ * shift it a day either way. */
+function formatDateLabel(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+}
+
 /** Calendar-grid overview of a therapist's upcoming appointments — click a
  * highlighted day to filter the agenda list below to just that day. */
 export default function AppointmentsCalendar({ upcoming }: { upcoming: TherapistAppointment[] }) {
@@ -48,13 +63,7 @@ export default function AppointmentsCalendar({ upcoming }: { upcoming: Therapist
           <div className="space-y-5">
             {datesToShow.map((date) => (
               <div key={date}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
-                  {new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{formatDateLabel(date)}</p>
                 <div className="mt-2 space-y-2">
                   {(byDate.get(date) ?? []).map((a) => (
                     <Link

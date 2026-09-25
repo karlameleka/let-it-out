@@ -6,6 +6,7 @@ import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 import { resolveDateRange } from "@/lib/date-range";
 import ExportButtons from "@/components/export-buttons";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const SEVERITIES = ["INFO", "WARNING", "SECURITY"] as const;
 
@@ -114,7 +115,7 @@ export default async function AdminAuditLogPage({
             <tbody className="divide-y divide-brand-50">
               {entries.map((e) => (
                 <tr key={e.id}>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink/60">{e.createdAt.toLocaleString("en-GB")}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink/60">{e.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-ink/70">{e.actorEmail ?? "System"}</td>
                   <td className="px-4 py-3">
                     <p className="text-ink/80">{e.summary}</p>

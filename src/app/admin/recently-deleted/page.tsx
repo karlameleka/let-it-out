@@ -3,6 +3,7 @@ import { TRASH_RETENTION_MS } from "@/lib/trash";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
 import RestoreButton from "./restore-button";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const MODEL_LABEL: Record<string, string> = {
   Order: "Order",
@@ -81,7 +82,7 @@ export default async function AdminRecentlyDeletedPage({
             <tbody className="divide-y divide-brand-50">
               {items.map((item) => (
                 <tr key={item.id}>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink/60">{item.deletedAt.toLocaleString("en-GB")}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-ink/60">{item.deletedAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
                       {MODEL_LABEL[item.modelName] ?? item.modelName}

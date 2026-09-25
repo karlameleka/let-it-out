@@ -4,6 +4,7 @@ import { updateOrderStatus, deleteOrder } from "@/lib/admin-actions";
 import { formatEGP } from "@/lib/format";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import ExportButtons from "@/components/export-buttons";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const STATUSES = ["PENDING_PAYMENT", "PAYMENT_SUBMITTED", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED"];
 
@@ -54,7 +55,7 @@ export default async function AdminOrdersPage({
                       : "InstaPay"}
                 </span>
                 <p className="text-xs text-ink/40">
-                  {order.createdAt.toLocaleString("en-GB")}
+                  {order.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
                 </p>
               </div>
             </div>

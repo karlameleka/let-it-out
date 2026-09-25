@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createEvent, deleteEvent } from "@/lib/event-actions";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const RSVP_LABELS: Record<string, string> = {
   ATTENDING: "Attending",
@@ -150,7 +151,14 @@ export default async function AdminEventsPage() {
                 <div>
                   <p className="font-medium text-brand-900">{e.title}</p>
                   <p className="text-xs text-ink/50">
-                    {e.startAt.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {e.startAt.toLocaleString("en-GB", {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: CAIRO_TIME_ZONE,
+                    })}
                     {e.location ? ` · ${e.location}` : ""}
                   </p>
                   {e.description && <p className="mt-1 text-xs text-ink/60">{e.description}</p>}
@@ -190,7 +198,12 @@ export default async function AdminEventsPage() {
                 <div>
                   <p className="font-medium text-brand-900">{e.title}</p>
                   <p className="text-xs text-ink/50">
-                    {e.startAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    {e.startAt.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      timeZone: CAIRO_TIME_ZONE,
+                    })}
                     {e.location ? ` · ${e.location}` : ""}
                   </p>
                 </div>

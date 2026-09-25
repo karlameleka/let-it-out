@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { OrderStatus } from "@/generated/prisma/enums";
 import { priorPeriod, percentChange, type DateRange } from "@/lib/date-range";
+import { CAIRO_TIME_ZONE, addDaysToDateStr, zonedParts } from "@/lib/timezone";
 
 // Orders/bookings only count toward revenue once payment is actually
 // confirmed — PENDING_PAYMENT/PAYMENT_SUBMITTED/CANCELLED never happened
@@ -115,18 +116,22 @@ export async function getRevenueSeries(range: DateRange): Promise<RevenuePoint[]
     }),
   ]);
 
+  // Bucketed by Cairo calendar day (not UTC) — the admin dashboard's own
+  // fixed timezone, so "today"'s bar actually means the admin's today, and
+  // a payment made late at night Cairo time lands on the day it happened
+  // for them, not the following UTC day.
   const byDate = new Map<string, { shop: number; sessions: number }>();
-  const dayMs = 24 * 60 * 60 * 1000;
-  for (let t = range.from.getTime(); t <= range.to.getTime(); t += dayMs) {
-    byDate.set(new Date(t).toISOString().slice(0, 10), { shop: 0, sessions: 0 });
+  const lastDateStr = zonedParts(range.to, CAIRO_TIME_ZONE).dateStr;
+  for (let dateStr = zonedParts(range.from, CAIRO_TIME_ZONE).dateStr; dateStr <= lastDateStr; dateStr = addDaysToDateStr(dateStr, 1)) {
+    byDate.set(dateStr, { shop: 0, sessions: 0 });
   }
   for (const o of orders) {
-    const key = o.createdAt.toISOString().slice(0, 10);
+    const key = zonedParts(o.createdAt, CAIRO_TIME_ZONE).dateStr;
     const entry = byDate.get(key);
     if (entry) entry.shop += o.totalEGP;
   }
   for (const s of sessions) {
-    const key = s.createdAt.toISOString().slice(0, 10);
+    const key = zonedParts(s.createdAt, CAIRO_TIME_ZONE).dateStr;
     const entry = byDate.get(key);
     if (entry) entry.sessions += s.priceEGP - s.discountEGP;
   }
@@ -157,9 +162,10 @@ export async function getOrdersByStatus(range: DateRange): Promise<StatusCount[]
 export type ActivityHeatmapCell = { day: number; hour: number; count: number };
 
 /** Page-view activity by day-of-week × hour — the "when are people
- * actually using the app" heatmap. Day 0 = Sunday, hour in UTC (this app
- * doesn't track a per-request timezone; see date-range.ts for the same
- * UTC-everywhere convention used across the dashboard). */
+ * actually using the app" heatmap. Day 0 = Sunday, hour in Cairo time (the
+ * admin dashboard's own fixed timezone — see date-range.ts), so this
+ * actually reflects when Egypt-based visitors use the app, not the
+ * server's UTC clock. */
 export async function getActivityHeatmap(range: DateRange): Promise<ActivityHeatmapCell[]> {
   const views = await prisma.pageView.findMany({
     where: { createdAt: { gte: range.from, lte: range.to } },
@@ -168,8 +174,9 @@ export async function getActivityHeatmap(range: DateRange): Promise<ActivityHeat
 
   const counts = new Map<string, number>();
   for (const v of views) {
-    const day = v.createdAt.getUTCDay();
-    const hour = v.createdAt.getUTCHours();
+    const { dateStr, hour } = zonedParts(v.createdAt, CAIRO_TIME_ZONE);
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
     const key = `${day}-${hour}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }

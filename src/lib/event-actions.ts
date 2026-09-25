@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { sendPushToAllSubscribers } from "@/lib/web-push";
 import { captureRow, trashedItemCreateArgs } from "@/lib/trash";
+import { CAIRO_TIME_ZONE, zonedTimeToUtc } from "@/lib/timezone";
 
 export async function createEvent(formData: FormData) {
   await requireAdmin();
@@ -20,7 +21,12 @@ export async function createEvent(formData: FormData) {
 
   if (!title || !date) return;
 
-  const startAt = new Date(`${date}T${time || "00:00"}:00`);
+  // The admin-entered date/time is Cairo-local wall-clock (the event's real
+  // location) — zonedTimeToUtc converts it to the correct absolute instant,
+  // rather than the server's own local clock (UTC on Vercel) silently
+  // reinterpreting it as UTC, which used to store every event 2-3 hours
+  // later than the admin actually meant.
+  const startAt = zonedTimeToUtc(date, time || "00:00", CAIRO_TIME_ZONE);
   if (Number.isNaN(startAt.getTime())) return;
 
   let meetingLink: string | null = null;
@@ -50,8 +56,18 @@ export async function createEvent(formData: FormData) {
   // event itself from being posted. Every subscribed browser (Android
   // Chrome, desktop, or an installed iOS PWA) gets this the same way, in
   // whichever language it's subscribed under.
-  const dateLabel = startAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-  const dateLabelAr = startAt.toLocaleDateString("ar-EG", { weekday: "short", day: "numeric", month: "short" });
+  const dateLabel = startAt.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: CAIRO_TIME_ZONE,
+  });
+  const dateLabelAr = startAt.toLocaleDateString("ar-EG", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: CAIRO_TIME_ZONE,
+  });
   // The OS/browser already shows the app as the notification's source, so
   // the event's own headline is the title instead of repeating the brand
   // name — the specific details go in the body.

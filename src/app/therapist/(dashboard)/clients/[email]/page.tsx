@@ -11,6 +11,7 @@ import {
 } from "@/lib/therapist-data";
 import { removeAssignedResource, discontinueMedication, cancelClientAppointment, markClientSessionPaid } from "@/lib/therapist-actions";
 import { logAudit } from "@/lib/audit-log";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
 import ClientNoteForm from "./note-form";
@@ -112,7 +113,13 @@ export default async function TherapistClientProfilePage({
             ) : (
               <div className="mt-3 rounded-2xl border border-brand-100 bg-white p-5">
                 <p className="text-xs text-ink/40">
-                  Submitted {latestIntake.submittedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  Submitted{" "}
+                  {latestIntake.submittedAt.toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    timeZone: CAIRO_TIME_ZONE,
+                  })}
                 </p>
                 {latestIntake.aiSummary && (
                   <div className="mt-3 rounded-xl bg-brand-50 p-4">

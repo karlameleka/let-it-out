@@ -4,6 +4,7 @@ import { updateLeadStatus, deleteLead, deleteRecentLeads } from "@/lib/admin-act
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import AdminPagination from "@/components/admin-pagination";
 import { ADMIN_PAGE_SIZE, parseAdminPage } from "@/lib/admin-pagination";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const RECENT_WINDOWS = [
   { hours: 48, label: "48h" },
@@ -145,7 +146,7 @@ export default async function AdminCrmPage({
                         )}
                         <p className="mt-2 text-xs text-ink/40">
                           {lead.source && `${lead.source} · `}
-                          {lead.createdAt.toLocaleString("en-GB")}
+                          {lead.createdAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
                         </p>
                       </div>
 

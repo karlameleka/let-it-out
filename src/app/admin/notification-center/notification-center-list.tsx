@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { ShieldAlert, Settings2, Cog, Bell, X, type LucideIcon } from "lucide-react";
 import { markNotificationRead, dismissNotification } from "@/lib/notification-read-actions";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone-constants";
 import type { FeedCategory } from "./page";
 
 type Item = {
@@ -61,7 +62,7 @@ function NotificationRow({ item, onDismiss }: { item: Item; onDismiss: (itemId: 
       <div className="min-w-0 flex-1">
         <p className={`text-sm ${read ? "text-ink/70" : "font-medium text-ink/90"}`}>{item.summary}</p>
         <p className="mt-0.5 text-xs text-ink/40">
-          {new Date(item.createdAt).toLocaleString("en-GB")}
+          {new Date(item.createdAt).toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
           {item.actorEmail && ` · ${item.actorEmail}`}
         </p>
       </div>

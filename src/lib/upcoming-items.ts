@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { todayISO } from "@/lib/therapist-data";
 import { pastCancelWindow } from "@/lib/cancel-window";
+import { CAIRO_TIME_ZONE, zonedParts, zonedTimeToUtc } from "@/lib/timezone";
 import type { RSVPStatus } from "@/generated/prisma/enums";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -121,19 +122,20 @@ async function getUpcomingEvents(userId: string, locale: Locale): Promise<Upcomi
   const today = todayISO();
 
   const events = await prisma.event.findMany({
-    where: { startAt: { gte: new Date(`${today}T00:00:00`) } },
+    where: { startAt: { gte: zonedTimeToUtc(today, "00:00", CAIRO_TIME_ZONE) } },
     include: { rsvps: { where: { userId } } },
     orderBy: { startAt: "asc" },
   });
 
   return events.map((e) => {
     const myRsvp = e.rsvps[0]?.status ?? null;
+    const startAtCairo = zonedParts(e.startAt, CAIRO_TIME_ZONE);
     return {
       id: e.id,
       title: locale === "ar" && e.titleAr ? e.titleAr : e.title,
       description: locale === "ar" && e.descriptionAr ? e.descriptionAr : e.description,
-      date: e.startAt.toISOString().slice(0, 10),
-      time: e.startAt.toISOString().slice(11, 16),
+      date: startAtCairo.dateStr,
+      time: `${String(startAtCairo.hour).padStart(2, "0")}:${String(startAtCairo.minute).padStart(2, "0")}`,
       location: e.location,
       myRsvp,
       read: false,
@@ -277,7 +279,7 @@ export async function getPastItems(
       orderBy: { cancelledAt: "desc" },
     }),
     prisma.event.findMany({
-      where: { startAt: { lt: new Date(`${today}T00:00:00`) } },
+      where: { startAt: { lt: zonedTimeToUtc(today, "00:00", CAIRO_TIME_ZONE) } },
       include: { rsvps: { where: { userId, status: "ATTENDING" } } },
       orderBy: { startAt: "desc" },
     }),
@@ -324,13 +326,16 @@ export async function getPastItems(
 
   const pastEvents: PastEvent[] = events
     .filter((e) => e.rsvps.length > 0)
-    .map((e) => ({
-      id: e.id,
-      title: locale === "ar" && e.titleAr ? e.titleAr : e.title,
-      date: e.startAt.toISOString().slice(0, 10),
-      time: e.startAt.toISOString().slice(11, 16),
-      location: e.location,
-    }));
+    .map((e) => {
+      const startAtCairo = zonedParts(e.startAt, CAIRO_TIME_ZONE);
+      return {
+        id: e.id,
+        title: locale === "ar" && e.titleAr ? e.titleAr : e.title,
+        date: startAtCairo.dateStr,
+        time: `${String(startAtCairo.hour).padStart(2, "0")}:${String(startAtCairo.minute).padStart(2, "0")}`,
+        location: e.location,
+      };
+    });
 
   const allIds = [...pastSessions.map((s) => s.id), ...pastEvents.map((e) => e.id)];
   const dismissed = excludeDismissed && allIds.length

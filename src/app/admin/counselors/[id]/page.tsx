@@ -14,6 +14,7 @@ import {
   revokeTherapistPortalAccess,
 } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 import AddManualClientForm from "./add-manual-client-form";
 
 const AVAILABILITY_OPTIONS = [
@@ -231,7 +232,10 @@ export default async function AdminCounselorDetailPage({
             <span className="font-medium text-ink/50">Not set up</span>
           )}
           {counselor.lastLoginAt && (
-            <span className="text-ink/50"> · Last login {counselor.lastLoginAt.toLocaleString("en-GB")}</span>
+            <span className="text-ink/50">
+              {" "}
+              · Last login {counselor.lastLoginAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
+            </span>
           )}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -436,7 +440,7 @@ export default async function AdminCounselorDetailPage({
                     <td className="px-5 py-3 text-ink/70">{c.email}</td>
                     <td className="px-5 py-3 text-ink/70">{c.phone}</td>
                     <td className="px-5 py-3 text-ink/60">{c.referralSource || "—"}</td>
-                    <td className="px-5 py-3 text-ink/60">{c.lastContact.toLocaleString("en-GB")}</td>
+                    <td className="px-5 py-3 text-ink/60">{c.lastContact.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</td>
                     <td className="px-5 py-3 text-right">
                       <form action={deleteCounselorClient}>
                         <input type="hidden" name="counselorId" value={counselor.id} />
