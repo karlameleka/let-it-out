@@ -26,6 +26,8 @@
     "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "^7.9.1",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@serwist/turbopack": "^9.5.12",
@@ -50,6 +52,7 @@
     "recharts": "^3.10.1",
     "serwist": "^9.5.12",
     "web-push": "^3.6.7",
+    "ws": "^8.21.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -63,6 +66,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "@types/ws": "^8.18.1",
     "dotenv": "^17.4.2",
     "esbuild": "^0.28.2",
     "eslint": "^9",
