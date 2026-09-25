@@ -699,6 +699,14 @@ export async function loginAction(
 
   const { email, password } = parsed.data;
 
+  // Per-account lockout (below) only throttles guessing against one known
+  // email — this catches credential stuffing across many different
+  // accounts from the same IP, which the lockout alone never sees.
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("login", ip, { windowMs: 10 * 60 * 1000, max: 10 }))) {
+    return { error: a.tooManyFailedAttempts };
+  }
+
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
     return { error: a.incorrectLogin };
@@ -1033,6 +1041,15 @@ export async function verifyTwoFactorAction(
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
+    return { error: a.tooManyFailedAttempts };
+  }
+
+  // Same reasoning as loginAction's IP throttle: the per-account lockout
+  // above only kicks in after MAX_FAILED_LOGIN_ATTEMPTS on this one admin
+  // account, so it alone wouldn't stop a 6-digit TOTP code (a 1-in-a-million
+  // space) from being brute-forced within that budget.
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("admin-2fa", ip, { windowMs: 10 * 60 * 1000, max: 10 }))) {
     return { error: a.tooManyFailedAttempts };
   }
 

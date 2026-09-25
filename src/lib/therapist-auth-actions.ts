@@ -40,6 +40,15 @@ export async function loginCounselorAction(
   }
   const { email, password } = parsed.data;
 
+  // Same reasoning as the client-facing loginAction's IP throttle (see
+  // auth-actions.ts): the per-account lockout below only throttles
+  // guessing against one known counselor email, not credential stuffing
+  // across many different ones from the same IP.
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("counselor-login", ip, { windowMs: 10 * 60 * 1000, max: 10 }))) {
+    return { error: "Too many attempts. Please try again in a few minutes." };
+  }
+
   const counselor = await prisma.counselor.findFirst({ where: { email } });
   if (!counselor) {
     return { error: "Incorrect email or password." };

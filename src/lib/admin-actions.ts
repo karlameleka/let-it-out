@@ -10,18 +10,48 @@ import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
 import { sendPushToAllSubscribers } from "@/lib/web-push";
 import { logAudit } from "@/lib/audit-log";
-import { OrderStatus } from "@/generated/prisma/enums";
+import {
+  OrderStatus,
+  BookingStatus,
+  SessionBookingStatus,
+  SessionType,
+  InquiryStatus,
+  LeadStatus,
+  PromoDiscountType,
+  AvailabilityStatus,
+} from "@/generated/prisma/enums";
 import { captureRow, serializeRow, trashedItemCreateArgs } from "@/lib/trash";
 
 const PORTAL_SETUP_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const LOGIN_LINK_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
+// The admin page's own preset buttons only ever send 48 or 24*7 (see
+// RECENT_WINDOWS in admin/messages and admin/crm), but the server action
+// reads this off a plain form field — clamp so a stray/huge value can't
+// turn a "delete recent spam" click into a full-table wipe.
+const RECENT_WINDOW_MAX_HOURS = 24 * 30; // 30 days
+function clampRecentWindowHours(raw: FormDataEntryValue | null): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return 48;
+  return Math.min(Math.max(Math.trunc(n), 1), RECENT_WINDOW_MAX_HOURS);
+}
+
+/** These status/type dropdowns only ever submit one of a fixed set of
+ * values through the admin UI's own <select> — but the server action reads
+ * a plain form field, so this guards against a hand-crafted request
+ * sending something else, which Postgres's enum column would otherwise
+ * reject with an unhandled 500 instead of a clean "invalid" no-op. */
+function isEnumValue<T extends Record<string, string>>(value: string, enumObj: T): value is T[keyof T] {
+  return (Object.values(enumObj) as string[]).includes(value);
+}
+
 export async function updateOrderStatus(formData: FormData) {
   const admin = await requireAdmin();
   const orderId = String(formData.get("orderId"));
   const status = String(formData.get("status"));
+  if (!isEnumValue(status, OrderStatus)) return;
   const before = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
-  await prisma.order.update({ where: { id: orderId }, data: { status: status as never } });
+  await prisma.order.update({ where: { id: orderId }, data: { status } });
   await logAudit({
     actor: admin,
     action: "order.status_changed",
@@ -37,8 +67,9 @@ export async function updateBookingStatus(formData: FormData) {
   const admin = await requireAdmin();
   const bookingId = String(formData.get("bookingId"));
   const status = String(formData.get("status"));
+  if (!isEnumValue(status, BookingStatus)) return;
   const before = await prisma.bookingRequest.findUnique({ where: { id: bookingId }, select: { status: true } });
-  await prisma.bookingRequest.update({ where: { id: bookingId }, data: { status: status as never } });
+  await prisma.bookingRequest.update({ where: { id: bookingId }, data: { status } });
   await logAudit({
     actor: admin,
     action: "booking_request.status_changed",
@@ -111,6 +142,7 @@ export async function updateSessionBooking(
 
   const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
   if (!meetingLink.ok) return { error: "That meeting link doesn't look valid, include https://" };
+  if (!isEnumValue(status, SessionBookingStatus)) return { error: "Please choose a valid status." };
 
   await prisma.sessionBooking.update({
     where: { id: bookingId },
@@ -121,7 +153,7 @@ export async function updateSessionBooking(
       counselorId,
       preferredDate,
       preferredTime: preferredTime || null,
-      status: status as never,
+      status,
       meetingLink: meetingLink.value,
     },
   });
@@ -160,6 +192,8 @@ export async function updateBookingRequestFull(
 
   const meetingLink = parseOptionalMeetingLink(meetingLinkRaw);
   if (!meetingLink.ok) return { error: "That meeting link doesn't look valid, include https://" };
+  if (!isEnumValue(sessionType, SessionType)) return { error: "Please choose a valid session type." };
+  if (!isEnumValue(status, BookingStatus)) return { error: "Please choose a valid status." };
 
   await prisma.bookingRequest.update({
     where: { id: bookingId },
@@ -170,8 +204,8 @@ export async function updateBookingRequestFull(
       counselorId,
       preferredDate,
       preferredTime,
-      sessionType: sessionType as never,
-      status: status as never,
+      sessionType,
+      status,
       message: message || null,
       meetingLink: meetingLink.value,
     },
@@ -186,7 +220,8 @@ export async function updateWorkshopInquiryStatus(formData: FormData) {
   await requireAdmin();
   const inquiryId = String(formData.get("inquiryId"));
   const status = String(formData.get("status"));
-  await prisma.workshopInquiry.update({ where: { id: inquiryId }, data: { status: status as never } });
+  if (!isEnumValue(status, InquiryStatus)) return;
+  await prisma.workshopInquiry.update({ where: { id: inquiryId }, data: { status } });
   revalidatePath("/admin/workshops");
 }
 
@@ -194,7 +229,8 @@ export async function updateLeadStatus(formData: FormData) {
   await requireAdmin();
   const leadId = String(formData.get("leadId"));
   const status = String(formData.get("status"));
-  await prisma.lead.update({ where: { id: leadId }, data: { status: status as never } });
+  if (!isEnumValue(status, LeadStatus)) return;
+  await prisma.lead.update({ where: { id: leadId }, data: { status } });
   revalidatePath("/admin/crm");
 }
 
@@ -362,7 +398,13 @@ export async function deleteContactMessage(formData: FormData) {
  * scripts/cleanup-lead-spam.mjs is the safer tool. */
 export async function deleteRecentContactMessages(formData: FormData) {
   const admin = await requireAdmin();
-  const hours = Number(formData.get("hours")) || 48;
+  // Clamped to [1, RECENT_WINDOW_MAX_HOURS] — the admin page's own preset
+  // buttons only ever send 48 or 24*7, but this reads a plain form field,
+  // so an unbounded value here would let a single bad request turn "clean
+  // up last 48h" into "delete every contact message ever received" (a huge
+  // hours value pushes the cutoff far enough into the past that every row
+  // matches `createdAt: { gte: cutoff }`).
+  const hours = clampRecentWindowHours(formData.get("hours"));
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
   const rows = await prisma.contactMessage.findMany({ where: { createdAt: { gte: cutoff } } });
 
@@ -411,7 +453,7 @@ export async function deleteLead(formData: FormData) {
  * the CRM's Lead table. */
 export async function deleteRecentLeads(formData: FormData) {
   const admin = await requireAdmin();
-  const hours = Number(formData.get("hours")) || 48;
+  const hours = clampRecentWindowHours(formData.get("hours"));
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
   const rows = await prisma.lead.findMany({ where: { createdAt: { gte: cutoff } } });
 
@@ -601,11 +643,12 @@ export async function createPromoCode(formData: FormData) {
   const counselorIds = formData.getAll("counselorIds").map(String).filter(Boolean);
 
   if (!code || !discountValue || discountValue <= 0) return;
+  if (!isEnumValue(discountType, PromoDiscountType)) return;
 
   await prisma.promoCode.create({
     data: {
       code,
-      discountType: discountType as never,
+      discountType,
       discountValue,
       expiresAt: expiresAtRaw ? new Date(expiresAtRaw) : null,
       maxRedemptions: maxRedemptionsRaw ? Number(maxRedemptionsRaw) : null,
@@ -773,12 +816,14 @@ export async function updateCounselorDetails(formData: FormData) {
   await requireAdmin();
   const counselorId = String(formData.get("counselorId"));
   const priceRaw = String(formData.get("priceEGP") ?? "").trim();
+  const parsedPrice = Number(priceRaw);
   const availabilityStatus = String(formData.get("availabilityStatus") ?? "AVAILABLE");
+  if (!isEnumValue(availabilityStatus, AvailabilityStatus)) return;
   await prisma.counselor.update({
     where: { id: counselorId },
     data: {
-      priceEGP: priceRaw === "" ? null : Math.max(0, Number(priceRaw)),
-      availabilityStatus: availabilityStatus as never,
+      priceEGP: priceRaw === "" || !Number.isFinite(parsedPrice) ? null : Math.max(0, parsedPrice),
+      availabilityStatus,
     },
   });
   revalidatePath("/admin/counselors");
@@ -879,6 +924,8 @@ export async function updateCounselorProfileFromAdmin(formData: FormData) {
   const photoUrlRaw = String(formData.get("photoUrl") ?? "").trim();
 
   if (!name || !credentials || !bio) return;
+  const photoUrl = parseOptionalMeetingLink(photoUrlRaw);
+  if (!photoUrl.ok) return;
 
   await prisma.counselor.update({
     where: { id: counselorId },
@@ -888,7 +935,7 @@ export async function updateCounselorProfileFromAdmin(formData: FormData) {
       bio,
       specialties,
       languages,
-      ...(photoUrlRaw ? { photoUrl: photoUrlRaw } : {}),
+      ...(photoUrl.value ? { photoUrl: photoUrl.value } : {}),
     },
   });
   revalidatePath("/admin/counselors");

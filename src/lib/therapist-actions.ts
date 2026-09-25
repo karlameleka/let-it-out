@@ -1,6 +1,8 @@
 "use server";
 
+import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { BookingStatus } from "@/generated/prisma/enums";
 import { requireCounselor } from "@/lib/therapist-session";
 import { revalidatePath } from "next/cache";
 import { CLIENT_TOOLS, MAX_TOOLKIT_PDF_BYTES, type PromptCard } from "@/lib/therapist-toolkit";
@@ -19,6 +21,20 @@ import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/t
 
 export type TherapistProfileFormState = { error?: string; success?: boolean } | undefined;
 
+const notificationEmailSchema = z.string().trim().min(1).email();
+
+/** Same shape as parseOptionalMeetingLink in admin-actions.ts — an empty
+ * value is fine (photo stays whatever it already is), but a non-empty one
+ * has to actually be a URL, not just any string landing in an <img src>. */
+function isValidUrl(raw: string): boolean {
+  try {
+    new URL(raw);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function updateTherapistProfile(
   _prevState: TherapistProfileFormState,
   formData: FormData,
@@ -28,7 +44,7 @@ export async function updateTherapistProfile(
 
   const credentials = String(formData.get("credentials") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const emailRaw = String(formData.get("email") ?? "").trim();
   const specialties = String(formData.get("specialties") ?? "")
     .split(",")
     .map((s) => s.trim())
@@ -40,7 +56,10 @@ export async function updateTherapistProfile(
   const photoUrlRaw = String(formData.get("photoUrl") ?? "").trim();
 
   if (!credentials || !bio) return { error: "Credentials and bio can't be empty." };
-  if (!email) return { error: "Please enter a notification email." };
+  const emailParsed = notificationEmailSchema.safeParse(emailRaw);
+  if (!emailParsed.success) return { error: "Please enter a valid notification email." };
+  const email = emailParsed.data;
+  if (photoUrlRaw && !isValidUrl(photoUrlRaw)) return { error: "That photo link doesn't look valid, include https://" };
 
   // Own row only — counselorId always comes from the verified session, never
   // from the form, so one therapist can't edit another's profile by
@@ -104,12 +123,13 @@ export async function updateOwnBookingRequestStatus(formData: FormData) {
 
   const bookingId = String(formData.get("bookingId"));
   const status = String(formData.get("status"));
+  if (!(Object.values(BookingStatus) as string[]).includes(status)) return;
 
   // Scoped to this counselor's own booking, so a tampered bookingId from
   // another therapist's client is a silent no-op, not a leak.
   await prisma.bookingRequest.updateMany({
     where: { id: bookingId, counselorId: session.counselorId },
-    data: { status: status as never },
+    data: { status: status as BookingStatus },
   });
 
   revalidatePath("/therapist/clients");
