@@ -10,6 +10,7 @@ import { SerwistProvider } from "@serwist/turbopack/react";
 import OfflineBanner from "@/components/offline-banner";
 import InitialSplash from "@/components/initial-splash";
 import NativeAppInit from "@/components/native-app-init";
+import ChunkErrorRecovery from "@/components/chunk-error-recovery";
 import TimezoneCookieSync from "@/components/timezone-cookie-sync";
 import MotionProvider from "@/components/motion/motion-provider";
 import HelpButton from "@/components/help-button";
@@ -121,6 +122,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-white text-ink pb-24 lg:pb-0">
         <NativeAppInit />
+        <ChunkErrorRecovery />
         <TimezoneCookieSync />
         <InitialSplash />
         <OfflineBanner message={dict.offline.bannerMessage} />
@@ -147,7 +149,24 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   </main>
                   <SiteFooter locale={locale} dict={dict} />
                   <EntryGates />
-                  <SerwistProvider swUrl="/serwist/sw.js" />
+                  {/* reloadOnOnline defaults to true in @serwist/turbopack/react,
+                      which does an unconditional `location.reload()` on every
+                      native "online" event — and iOS Safari/WKWebView is well
+                      known for firing "online" spuriously (network interface
+                      renegotiation, cell/WiFi handoff, resuming a standalone
+                      PWA from the background) even with no real connectivity
+                      change. A forced reload that lands during a flaky moment
+                      (or races the new service worker's skipWaiting/
+                      clientsClaim activation right after a deploy) can leave
+                      a chromeless standalone window on a blank, interrupted
+                      navigation with no address bar or reload button to
+                      recover — this is the recurring "blank white page after
+                      installing on the iOS home screen" report. Disabled:
+                      NetworkFirst/NetworkOnly (see sw.ts) already refetch
+                      fresh content on the next real navigation once back
+                      online, so this reload was a jarring, unguarded
+                      nice-to-have, not a requirement. */}
+                  <SerwistProvider swUrl="/serwist/sw.js" reloadOnOnline={false} />
                   <HelpButton dict={dict.helpButton} />
                   <BottomTabBar dict={dict.nav} />
                   <AppBadgeSync />
