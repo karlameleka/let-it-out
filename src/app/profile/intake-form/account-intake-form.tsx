@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
-import { ShieldCheck, CheckCircle2 } from "lucide-react";
+import { useActionState, useRef } from "react";
+import { ShieldCheck, CheckCircle2, PencilLine } from "lucide-react";
 import { Container, Button } from "@/components/ui";
 import { submitAccountIntakeFormAction } from "@/lib/intake-actions";
 import { Field } from "@/app/intake/intake-form";
 import { INTAKE_CONSENT_FIELD_NAME, type IntakeSection } from "@/lib/intake-form-schema";
+import { useIntakeFormDraft } from "@/lib/intake-form-draft";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 
 export default function AccountIntakeForm({
@@ -23,6 +24,8 @@ export default function AccountIntakeForm({
 }) {
   const [state, formAction, pending] = useActionState(submitAccountIntakeFormAction, undefined);
   const firstName = clientName.split(" ")[0];
+  const formRef = useRef<HTMLFormElement>(null);
+  const { handleFormChange, draftRestored } = useIntakeFormDraft("lio_account_intake_draft", formRef, Boolean(state?.success));
 
   if (state?.success) {
     return (
@@ -50,7 +53,14 @@ export default function AccountIntakeForm({
         </p>
       </div>
 
-      <form action={formAction} className="mt-8 space-y-8">
+      {draftRestored && (
+        <p className="mt-6 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm text-brand-700">
+          <PencilLine className="h-4 w-4 shrink-0" strokeWidth={2} />
+          {fieldDict.draftRestored}
+        </p>
+      )}
+
+      <form ref={formRef} action={formAction} onChange={handleFormChange} className="mt-8 space-y-8">
         {sections.map((section) => (
           <div key={section.id} className="rounded-2xl border border-brand-100 bg-white p-5 sm:p-6">
             <h2 className="font-display text-lg font-semibold text-brand-900">{section.title}</h2>

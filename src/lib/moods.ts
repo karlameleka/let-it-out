@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n/locale";
 
-export type CoreEmotionId = "happy" | "sad" | "angry" | "fearful" | "surprised" | "disgusted";
+export type CoreEmotionId = "happy" | "sad" | "angry" | "fearful" | "surprised" | "disgusted" | "numb";
 
 export type Mood = {
   id: string;
@@ -10,7 +10,7 @@ export type Mood = {
   color: string;
 };
 
-/** The 6 starting options. Colors are drawn from the app's dedicated mood
+/** The 7 starting options. Colors are drawn from the app's dedicated mood
  * accent palette — used only for mood dots/tags, never for chrome. */
 export const CORE_EMOTIONS: { id: CoreEmotionId; label: string; labelAr: string; color: string }[] = [
   { id: "happy", label: "Happy", labelAr: "مبسوط", color: "#3388A4" },
@@ -19,6 +19,10 @@ export const CORE_EMOTIONS: { id: CoreEmotionId; label: string; labelAr: string;
   { id: "fearful", label: "Fearful", labelAr: "خايف", color: "#D8E4FB" },
   { id: "surprised", label: "Surprised", labelAr: "متفاجئ", color: "#F5EFFA" },
   { id: "disgusted", label: "Disgusted", labelAr: "مشمئز", color: "#DDE7EA" },
+  // A muted, deliberately achromatic gray — every other core here has its
+  // own hue, so "nothing in particular" reads correctly at a glance
+  // instead of looking like a missing/uncategorized color.
+  { id: "numb", label: "Numb / Neutral", labelAr: "مخدر / محايد", color: "#9297A0" },
 ];
 
 /** More specific feelings revealed when a core emotion is picked — a small
@@ -70,6 +74,13 @@ const SECONDARY_LABELS: Record<CoreEmotionId, { label: string; labelAr: string; 
   disgusted: [
     { label: "Guilty", labelAr: "حاسس بالذنب", color: "#C6D7DC" },
     { label: "Ashamed", labelAr: "خجلان", color: "#ECF2F3" },
+  ],
+  numb: [
+    { label: "Detached", labelAr: "منفصل عن مشاعري", color: "#585C63" },
+    { label: "Empty", labelAr: "فاضي من جوه", color: "#767B82" },
+    { label: "Unmoved", labelAr: "بلا شعور", color: "#9297A0" },
+    { label: "Foggy", labelAr: "مشوش", color: "#B4B8BF" },
+    { label: "Flat", labelAr: "بلا إحساس", color: "#D4D6DA" },
   ],
 };
 

@@ -90,7 +90,7 @@ export async function sendSupportNotification({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to: recipients,
-      subject: `Let It Out — ${subject}`,
+      subject: `LIO — ${subject}`,
       text,
       html,
     });
@@ -175,7 +175,7 @@ export async function sendCustomerConfirmation({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: `Let It Out — ${subject}`,
+      subject: `LIO — ${subject}`,
       text,
       html,
     });
@@ -279,7 +279,7 @@ export async function sendWelcomeEmail({
       await transport.sendMail({
         from: `"Let It Out" <${process.env.EMAIL_USER}>`,
         to,
-        subject: "أهلاً بيك في Let It Out — وكلمة سريعة عن الخصوصية",
+        subject: "أهلاً بيك في LIO — وكلمة سريعة عن الخصوصية",
         text,
         html,
       });
@@ -358,7 +358,7 @@ export async function sendWelcomeEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: "Welcome to Let It Out — and a quick word on privacy",
+      subject: "Welcome to LIO — and a quick word on privacy",
       text,
       html,
     });
@@ -432,7 +432,7 @@ export async function sendOtpEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: isAr ? `${code} هو كود التحقق الخاص بك في Let It Out` : `${code} is your Let It Out verification code`,
+      subject: isAr ? `${code} هو كود التحقق الخاص بك في LIO` : `${code} is your LIO verification code`,
       text,
       html,
     });
@@ -522,7 +522,7 @@ export async function sendPasswordResetEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: isAr ? "Let It Out — إعادة تعيين كلمة السر" : "Let It Out — Reset your password",
+      subject: isAr ? "LIO — إعادة تعيين كلمة السر" : "LIO — Reset your password",
       text,
       html,
     });
@@ -581,7 +581,7 @@ export async function sendTherapistLoginLinkEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: "Let It Out — Your therapist portal login link",
+      subject: "LIO — Your therapist portal login link",
       text,
       html,
     });
@@ -684,7 +684,7 @@ export async function sendIntakeFormRequestEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: isAr ? "Let It Out — استمارة التعارف الخاصة بيك" : "Let It Out — Your intake form",
+      subject: isAr ? "LIO — استمارة التعارف الخاصة بيك" : "LIO — Your intake form",
       text,
       html,
     });
@@ -767,7 +767,7 @@ export async function sendIntakeSubmissionEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: `Let It Out — Intake form: ${clientName}`,
+      subject: `LIO — Intake form: ${clientName}`,
       text,
       html,
     });
@@ -841,7 +841,7 @@ export async function sendReferralNotificationEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: `Let It Out — ${fromName} shared a client with you`,
+      subject: `LIO — ${fromName} shared a client with you`,
       text,
       html,
     });
@@ -947,7 +947,7 @@ export async function sendAssignedResourceNotificationEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: isAr ? `Let It Out — ${counselorName} بعتلك حاجة جديدة` : `Let It Out — ${counselorName} sent you something new`,
+      subject: isAr ? `LIO — ${counselorName} بعتلك حاجة جديدة` : `LIO — ${counselorName} sent you something new`,
       text,
       html,
     });
@@ -1041,7 +1041,7 @@ export async function sendMeetingLinkEmail({
     await transport.sendMail({
       from: `"Let It Out" <${process.env.EMAIL_USER}>`,
       to,
-      subject: isAr ? `Let It Out — رابط جلستك من ${counselorName}` : `Let It Out — Your session link from ${counselorName}`,
+      subject: isAr ? `LIO — رابط جلستك من ${counselorName}` : `LIO — Your session link from ${counselorName}`,
       text,
       html,
     });

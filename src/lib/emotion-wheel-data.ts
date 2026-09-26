@@ -16,15 +16,15 @@ export type WheelCore = {
 };
 
 /**
- * The full 3-tier feelings wheel (5 core → 5 secondary each → 2 tertiary
- * each = 80 leaf feelings) shown on /journal/mood-wheel. A distinct data
+ * The full 3-tier feelings wheel (6 core → 5 secondary each → 2 tertiary
+ * each = 96 leaf feelings) shown on /journal/mood-wheel. A distinct data
  * set from moods.ts's flatter CORE_EMOTIONS/SECONDARY_LABELS (used by
  * MoodPicker's chip list and mood-patterns/calendar) — every wedge here
  * still logs under one of moods.ts's existing core ids (see
  * EmotionsWheel's log() call), so calendar coloring and legacy entries
  * stay fully compatible without this file touching that one.
  *
- * Colors reuse the exact 5 core hues already established (and previously
+ * Colors reuse the exact core hues already established (and previously
  * approved) for CORE_EMOTIONS in moods.ts — not the reference wheel's own
  * bright saturated hues, and not a newly-invented palette either. Each
  * core's secondary/tertiary shade is a tint or shade of that same exact
@@ -34,8 +34,11 @@ export type WheelCore = {
  * read at a glance, the same exception moods.ts's existing palette
  * already made). Order within each ring (clockwise) matches the source
  * wheel's layout, so adjacent wedges across ring/core boundaries line up.
+ * Numb/Neutral was added after the original 5-core (Plutchik-derived)
+ * wheel shipped — deliberately last in the array so it takes the final
+ * slice rather than reordering the wedges people are already used to.
  */
-export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCore] = [
+export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCore, WheelCore] = [
   {
     id: "fearful",
     label: "Fearful",
@@ -183,6 +186,36 @@ export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCo
       { label: "Distant", labelAr: "بعيد", tertiary: [
         { label: "Withdrawn", labelAr: "منسحب" },
         { label: "Numb", labelAr: "مخدر المشاعر" },
+      ] },
+    ],
+  },
+  {
+    id: "numb",
+    label: "Numb / Neutral",
+    labelAr: "مخدر / محايد",
+    colorCore: "#9297A0",
+    colorSecondary: "#B4B8BF",
+    colorTertiary: "#D4D6DA",
+    secondaries: [
+      { label: "Detached", labelAr: "منفصل عن مشاعري", tertiary: [
+        { label: "Disconnected", labelAr: "مقطوع الإحساس" },
+        { label: "Unfeeling", labelAr: "بلا مشاعر" },
+      ] },
+      { label: "Empty", labelAr: "فاضي من جوه", tertiary: [
+        { label: "Hollow", labelAr: "خاوي" },
+        { label: "Void", labelAr: "عدم" },
+      ] },
+      { label: "Indifferent", labelAr: "غير مبالي", tertiary: [
+        { label: "Apathetic", labelAr: "بلا اهتمام" },
+        { label: "Unmoved", labelAr: "غير متأثر" },
+      ] },
+      { label: "Foggy", labelAr: "مشوش", tertiary: [
+        { label: "Dazed", labelAr: "تايه" },
+        { label: "Blank", labelAr: "فاضي الذهن" },
+      ] },
+      { label: "Flat", labelAr: "بلا إحساس", tertiary: [
+        { label: "Muted", labelAr: "مكتوم" },
+        { label: "Dull", labelAr: "خامل" },
       ] },
     ],
   },

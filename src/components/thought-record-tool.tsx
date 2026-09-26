@@ -32,7 +32,7 @@ export default function ThoughtRecordTool({
   const [step, setStep] = useState<Step>(0);
   const [situation, setSituation] = useState("");
   const [automaticThought, setAutomaticThought] = useState("");
-  const [feeling, setFeeling] = useState<string | null>(null);
+  const [feelings, setFeelings] = useState<Set<string>>(new Set());
   const [intensityBefore, setIntensityBefore] = useState<number | null>(null);
   const [intensityAfter, setIntensityAfter] = useState<number | null>(null);
   const [distortions, setDistortions] = useState<Set<string>>(new Set());
@@ -46,7 +46,7 @@ export default function ThoughtRecordTool({
     setStep(0);
     setSituation("");
     setAutomaticThought("");
-    setFeeling(null);
+    setFeelings(new Set());
     setIntensityBefore(null);
     setIntensityAfter(null);
     setDistortions(new Set());
@@ -64,13 +64,24 @@ export default function ThoughtRecordTool({
     });
   }
 
+  function toggleFeeling(id: string) {
+    setFeelings((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   async function finish() {
     const prevCount = count ?? Number(window.localStorage.getItem(STORAGE_KEY) ?? "0");
     const next = prevCount + 1;
     setCount(next);
     window.localStorage.setItem(STORAGE_KEY, String(next));
     setStreak(recordCbtCompletion().streak);
-    const feelingLabelEn = EMOTIONS.find((e) => e.id === feeling)?.label ?? "";
+    const feelingLabelEn = EMOTIONS.filter((e) => feelings.has(e.id))
+      .map((e) => e.label)
+      .join(", ");
     await saveCbtEntry({
       type: "thought-record",
       summary: balanced.trim(),
@@ -91,9 +102,9 @@ export default function ThoughtRecordTool({
     onComplete?.();
   }
 
-  const feelingLabel = isAr
-    ? EMOTIONS.find((e) => e.id === feeling)?.labelAr
-    : EMOTIONS.find((e) => e.id === feeling)?.label;
+  const feelingLabel = EMOTIONS.filter((e) => feelings.has(e.id))
+    .map((e) => (isAr ? e.labelAr : e.label))
+    .join(isAr ? "، " : ", ");
 
   return (
     <div>
@@ -150,9 +161,9 @@ export default function ThoughtRecordTool({
                     <button
                       key={e.id}
                       type="button"
-                      onClick={() => setFeeling(e.id)}
+                      onClick={() => toggleFeeling(e.id)}
                       className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                        feeling === e.id
+                        feelings.has(e.id)
                           ? "border-brand-600 bg-brand-600 text-white"
                           : "border-brand-200 text-ink/70 hover:border-brand-400 active:border-brand-400 hover:bg-brand-50 active:bg-brand-50"
                       }`}
@@ -161,7 +172,7 @@ export default function ThoughtRecordTool({
                     </button>
                   ))}
                 </div>
-                {feeling && (
+                {feelings.size > 0 && (
                   <div className="mt-4">
                     <p className="text-xs font-semibold text-ink/60">{dict.howStrong}</p>
                     <IntensityPicker value={intensityBefore} onChange={setIntensityBefore} labels={intensityLabels} />
@@ -171,7 +182,7 @@ export default function ThoughtRecordTool({
 
               <Button
                 onClick={() => setStep(1)}
-                disabled={!situation.trim() || !automaticThought.trim() || !feeling || intensityBefore === null}
+                disabled={!situation.trim() || !automaticThought.trim() || feelings.size === 0 || intensityBefore === null}
                 className="mt-6"
               >
                 {dict.continue}
@@ -265,10 +276,10 @@ export default function ThoughtRecordTool({
                 className="mt-4 w-full rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500"
               />
 
-              {balanced.trim() && feeling && (
+              {balanced.trim() && feelings.size > 0 && (
                 <div className="mt-5 border-t border-brand-100 pt-5">
                   <p className="text-sm font-medium text-ink/80">
-                    {dict.afterFeelingQuestion.replace("{feeling}", (feelingLabel ?? "").toLowerCase())}
+                    {dict.afterFeelingQuestion.replace("{feeling}", feelingLabel.toLowerCase())}
                   </p>
                   <IntensityPicker value={intensityAfter} onChange={setIntensityAfter} labels={intensityLabels} />
                 </div>
@@ -314,7 +325,7 @@ export default function ThoughtRecordTool({
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.originalThoughtLabel}</p>
                   <p className="mt-1 italic text-ink/80">&ldquo;{automaticThought}&rdquo;</p>
                 </div>
-                {feeling && intensityBefore !== null && (
+                {feelings.size > 0 && intensityBefore !== null && (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">{dict.howItFeltLabel}</p>
                     <p className="mt-1 text-ink/80">

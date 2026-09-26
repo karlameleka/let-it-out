@@ -10,12 +10,16 @@ type Prompt = { id: string; category: string; text: string } | null;
 export default function NewEntryClient({
   userId,
   initialPrompt,
+  initialMode,
+  initialMoods,
   dict,
   moodPickerDict,
   locale,
 }: {
   userId: string;
   initialPrompt: Prompt;
+  initialMode?: "prompt" | "free";
+  initialMoods?: string[];
   dict: Dictionary["entryForm"];
   moodPickerDict: Dictionary["moodPicker"];
   locale: Locale;
@@ -26,6 +30,8 @@ export default function NewEntryClient({
     <EntryForm
       userId={userId}
       initialPrompt={initialPrompt}
+      initialMode={initialMode}
+      initialMoods={initialMoods}
       dict={dict}
       moodPickerDict={moodPickerDict}
       locale={locale}

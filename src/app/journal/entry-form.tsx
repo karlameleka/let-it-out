@@ -23,6 +23,8 @@ type Mode = "prompt" | "free";
 export default function EntryForm({
   userId,
   initialPrompt,
+  initialMode,
+  initialMoods,
   dict,
   moodPickerDict,
   locale = "en",
@@ -30,6 +32,13 @@ export default function EntryForm({
 }: {
   userId: string;
   initialPrompt: Prompt;
+  /** Forces the composer open in this mode (and skips the remembered-mode
+   * localStorage restore below) — used when arriving here already knowing
+   * what the person wants to write about, e.g. from the mood wheel's
+   * "Journal about it" link. */
+  initialMode?: Mode;
+  /** Pre-selected mood ids, from the same deep link. */
+  initialMoods?: string[];
   dict: Dictionary["entryForm"];
   moodPickerDict: Dictionary["moodPicker"];
   locale?: Locale;
@@ -46,17 +55,21 @@ export default function EntryForm({
   // regardless — this is only read to relabel the network-dependent prompt
   // shuffle and reassure the user their entry isn't blocked on a connection.
   const isOffline = useOffline();
-  const [moods, setMoods] = useState<string[]>([]);
+  const [moods, setMoods] = useState<string[]>(initialMoods ?? []);
   const [key, setKey] = useState(0);
   const [prompt, setPrompt] = useState(initialPrompt);
   // Remembered across sessions so the composer opens the way the person
   // left it last time — defaults to "prompt" (the pre-existing behavior)
   // rather than "free" so nothing changes for people who never touch it.
-  const [mode, setMode] = useState<Mode>("prompt");
+  // An explicit initialMode (a deep link that already knows what mode it
+  // wants) always wins over that remembered preference.
+  const [mode, setMode] = useState<Mode>(initialMode ?? "prompt");
   useEffect(() => {
+    if (initialMode) return;
     const saved = window.localStorage.getItem(MODE_KEY);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved === "free" || saved === "prompt") setMode(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function changeMode(next: Mode) {

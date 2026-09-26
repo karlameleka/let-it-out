@@ -1821,7 +1821,7 @@ const en = {
     situationPlaceholder: "Describe the situation, just the facts.",
     automaticThoughtLabel: "What went through your mind?",
     automaticThoughtPlaceholder: "The automatic thought, in your own words.",
-    feelingQuestion: "What would you feel, and how strongly?",
+    feelingQuestion: "How did you feel, and how strongly?",
     howStrong: "How strong is it?",
     continue: "Continue",
     step2Label: "Step 2 · Spot the trap",
@@ -1929,6 +1929,7 @@ const en = {
   intake: {
     invalidLinkTitle: "This link is no longer valid",
     invalidLinkBody: "It may have expired or already been used. Please contact us and we'll send you a new one.",
+    draftRestored: "We've restored your progress from where you left off.",
     thankYouTitle: "Thank you, {name}",
     thankYouBody:
       "Your intake form has been sent directly and only to {counselor}, and saved to your private profile in their client records. They'll review it before your session, no need to do anything else.",
@@ -1966,7 +1967,7 @@ const en = {
     headerTitle: "Technical support chat",
     headerSubtitle: "For app/technical issues only, not for how you're feeling.",
     resolvedBanner: "Marked as resolved. Keep chatting if you need anything else, or head back whenever you're ready.",
-    escalatedBanner: "This has been flagged for our team, they'll follow up by email if needed.",
+    escalatedBanner: "This has been flagged for our team, they'll get back to you within 24 hours.",
     inputPlaceholder: "Describe the issue…",
     beforeYouGoTitle: "Before you go",
     beforeYouGoSubtitle: "Do you want to end this chat, or keep it open?",

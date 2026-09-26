@@ -1787,7 +1787,7 @@ const ar: Dictionary = {
     situationPlaceholder: "اوصف الموقف، الحقائق بس.",
     automaticThoughtLabel: "إيه اللي جالك في دماغك؟",
     automaticThoughtPlaceholder: "الفكرة التلقائية، بكلماتك أنت.",
-    feelingQuestion: "هتحس بإيه، وبقد إيه؟",
+    feelingQuestion: "حسيت بإيه، وبقد إيه؟",
     howStrong: "بقد إيه قوي؟",
     continue: "استمر",
     step2Label: "الخطوة 2 · ارصد الفخ",
@@ -1894,6 +1894,7 @@ const ar: Dictionary = {
   intake: {
     invalidLinkTitle: "الرابط ده مش صالح دلوقتي",
     invalidLinkBody: "يمكن يكون انتهت صلاحيته أو تم استخدامه بالفعل. تواصل معنا وهنبعتلك رابط جديد.",
+    draftRestored: "رجّعنالك البيانات اللي كنت كاتبها من قبل.",
     thankYouTitle: "شكرًا يا {name}",
     thankYouBody:
       "استمارتك اتبعتت مباشرة وبس لـ{counselor}، واتحفظت في ملفك الخاص في سجلاته. هيراجعها قبل جلستك، مفيش حاجة تانية تعملها.",
@@ -1931,7 +1932,7 @@ const ar: Dictionary = {
     headerTitle: "شات الدعم الفني",
     headerSubtitle: "للمشاكل التقنية بس، مش لمشاعرك أو حالتك النفسية.",
     resolvedBanner: "اتحل. كمّل الشات لو محتاج حاجة تانية، أو ارجع في أي وقت يريحك.",
-    escalatedBanner: "ده اتبعت لفريقنا، هيتابعوا معاك بالإيميل لو محتاج.",
+    escalatedBanner: "ده اتبعت لفريقنا، هيردوا عليك خلال 24 ساعة.",
     inputPlaceholder: "اكتب المشكلة…",
     beforeYouGoTitle: "قبل ما تمشي",
     beforeYouGoSubtitle: "عايز تقفل الشات، ولا تسيبه مفتوح؟",

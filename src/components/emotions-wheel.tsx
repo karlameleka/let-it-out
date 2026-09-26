@@ -133,7 +133,7 @@ function ArcLabel({
 
 const CORE_SLICE = 360 / EMOTION_WHEEL.length;
 
-/** The 5-core selector wheel — Fearful/Disgusted/Happy/Sad/Angry, tap one
+/** The core selector wheel — Fearful/Disgusted/Happy/Sad/Angry/Numb, tap one
  * to open its own full feelings wheel (see ExpandedWheel below). */
 function CoreSelectorWheel({
   locale,
@@ -196,8 +196,8 @@ function CoreSelectorWheel({
 
 /** One core's own full feelings wheel — its 5 secondary feelings and their
  * 10 tertiary feelings, each ring using the full 360° (not squeezed into a
- * slice of the 5-core wheel), so every wedge gets as much room as the
- * 5-core wheel's own wedges do. Tap the center to go back. */
+ * slice of the core wheel), so every wedge gets as much room as the
+ * core wheel's own wedges do. Tap the center to go back. */
 function ExpandedWheel({
   core,
   locale,
@@ -321,7 +321,7 @@ function ExpandedWheel({
   );
 }
 
-/** Interactive 3-tier feelings wheel — Fearful/Disgusted/Happy/Sad/Angry at
+/** Interactive 3-tier feelings wheel — Fearful/Disgusted/Happy/Sad/Angry/Numb at
  * the center, tap one to open its own full feelings wheel (5 secondary
  * feelings, each with 2 tertiary feelings), using the full circle rather
  * than a cramped slice so every word has room to read. Tap any wedge on
@@ -348,7 +348,10 @@ export default function EmotionsWheel({
     wheelLogged: string;
     wheelBack: string;
   };
-  onLogged?: () => void;
+  /** Called with the core emotion id every time a wedge (or the "just log
+   * the core feeling" button) is logged — e.g. so a "Journal about it"
+   * link elsewhere on the page can carry it into the entry composer. */
+  onLogged?: (coreId: CoreEmotionId) => void;
 }) {
   const [expandedId, setExpandedId] = useState<CoreEmotionId | null>(null);
   const [logged, setLogged] = useState<{ label: string; color: string } | null>(null);
@@ -358,7 +361,7 @@ export default function EmotionsWheel({
   async function log(coreId: CoreEmotionId, flashLabel: string, flashColor: string) {
     await logMoodCheckIn(userId, [coreId]);
     setLogged({ label: flashLabel, color: flashColor });
-    onLogged?.();
+    onLogged?.(coreId);
     window.setTimeout(() => {
       setLogged(null);
       setExpandedId(null);
