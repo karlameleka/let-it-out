@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, Download, X } from "lucide-react";
+import { BookOpen, Download, Pill, X } from "lucide-react";
+import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
 import {
   getClientProfile,
@@ -8,7 +9,9 @@ import {
   getAssignedResourcesForClient,
   type IntakeAnswerEntry,
 } from "@/lib/therapist-data";
-import { removeAssignedResource } from "@/lib/therapist-actions";
+import { removeAssignedResource, discontinueMedication, cancelClientAppointment, markClientSessionPaid } from "@/lib/therapist-actions";
+import { logAudit } from "@/lib/audit-log";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 import StatusBadge from "../../../status-badge";
 import ToolkitSidebar from "../../../toolkit-sidebar";
 import ClientNoteForm from "./note-form";
@@ -16,7 +19,9 @@ import ClientNoteItem from "./note-item";
 import ReferClientForm from "./refer-form";
 import AssignResourceForm from "./assign-resource-form";
 import MeetingLinkForm from "./meeting-link-form";
+import MedicationForm from "./medication-form";
 import PdfOpenButton from "@/components/pdf-open-button";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 export default async function TherapistClientProfilePage({
   params,
@@ -27,19 +32,44 @@ export default async function TherapistClientProfilePage({
   const { email: encodedEmail } = await params;
   const email = decodeURIComponent(encodedEmail);
 
-  const [client, colleagues, assignedResources] = await Promise.all([
+  const [client, colleagues, assignedResources, counselor] = await Promise.all([
     getClientProfile(session.counselorId, email),
     getOtherActiveCounselors(session.counselorId),
     getAssignedResourcesForClient(session.counselorId, email),
+    prisma.counselor.findUnique({ where: { id: session.counselorId }, select: { canPrescribeMedication: true } }),
   ]);
   if (!client) notFound();
+  const canPrescribe = counselor?.canPrescribeMedication ?? false;
+
+  // Counselor access to a client's notes/medications/intake is itself
+  // sensitive — this is the one place in the app that surfaces all three
+  // together, so it's the natural point to leave an audit trail of who
+  // looked at whose records and when. Placed after the 404 check above so
+  // an email typo doesn't create a misleading "viewed" entry for a client
+  // that was never actually shown.
+  await logAudit({
+    // No userId: a counselor isn't a User row, and AuditLog.actorId is FK'd
+    // to User — see the comment on logAudit's actor type. counselorId goes
+    // in metadata instead, so the entry is still traceable back to them.
+    actor: { email: session.email },
+    action: "therapist.view_client_records",
+    summary: `${session.name} viewed ${client.name}'s records`,
+    targetType: "ClientProfile",
+    targetId: client.email,
+    metadata: {
+      counselorId: session.counselorId,
+      notes: client.notes.length,
+      medications: client.medications.length,
+      intakeSubmissions: client.intakeSubmissions.length,
+    },
+  });
 
   const currentNextSteps = client.notes.find((n) => n.nextSteps)?.nextSteps ?? null;
   const latestIntake = client.intakeSubmissions[0];
 
   return (
     <div className="space-y-6">
-      <Link href="/therapist/clients" className="text-sm font-medium text-brand-600 link-grow">
+      <Link href="/therapist/clients" className="text-sm font-medium text-brand-600 link-grow lg:hidden">
         ← Back to clients
       </Link>
 
@@ -50,6 +80,12 @@ export default async function TherapistClientProfilePage({
             {client.email}
             {client.phone && ` · ${client.phone}`}
           </p>
+          {client.referralSource && (
+            <p className="mt-1.5 text-xs text-ink/50">
+              <span className="font-semibold uppercase tracking-wide text-ink/40">Referral source</span>{" "}
+              {client.referralSource}
+            </p>
+          )}
         </div>
         <ReferClientForm
           clientEmail={client.email}
@@ -68,7 +104,7 @@ export default async function TherapistClientProfilePage({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_260px]">
         <div className="space-y-8">
           <div>
             <h2 className="font-display font-semibold text-brand-900">Intake form</h2>
@@ -77,7 +113,13 @@ export default async function TherapistClientProfilePage({
             ) : (
               <div className="mt-3 rounded-2xl border border-brand-100 bg-white p-5">
                 <p className="text-xs text-ink/40">
-                  Submitted {latestIntake.submittedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  Submitted{" "}
+                  {latestIntake.submittedAt.toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    timeZone: CAIRO_TIME_ZONE,
+                  })}
                 </p>
                 {latestIntake.aiSummary && (
                   <div className="mt-3 rounded-xl bg-brand-50 p-4">
@@ -114,7 +156,34 @@ export default async function TherapistClientProfilePage({
                         {a.kind} · {a.date}
                         {a.time ? ` at ${a.time}` : ""}
                       </p>
-                      <StatusBadge status={a.status} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={a.status} />
+                        {a.bookingKind === "paid" && a.status === "PENDING_PAYMENT" && (
+                          <form action={markClientSessionPaid}>
+                            <input type="hidden" name="bookingId" value={a.id} />
+                            <input type="hidden" name="clientEmail" value={client.email} />
+                            <ConfirmSubmitButton
+                              confirmMessage="Mark this session as paid and confirm it? The client will see it as confirmed."
+                              className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                            >
+                              Mark as paid
+                            </ConfirmSubmitButton>
+                          </form>
+                        )}
+                        {a.status !== "CANCELLED" && a.status !== "COMPLETED" && (
+                          <form action={cancelClientAppointment}>
+                            <input type="hidden" name="bookingId" value={a.id} />
+                            <input type="hidden" name="bookingKind" value={a.bookingKind} />
+                            <input type="hidden" name="clientEmail" value={client.email} />
+                            <ConfirmSubmitButton
+                              confirmMessage="Cancel this session? The client will see it move to their past sessions."
+                              className="text-xs font-medium text-ink/40 hover:text-red-600"
+                            >
+                              Cancel
+                            </ConfirmSubmitButton>
+                          </form>
+                        )}
+                      </div>
                     </div>
                     {a.status === "CONFIRMED" && (
                       <MeetingLinkForm
@@ -137,7 +206,7 @@ export default async function TherapistClientProfilePage({
                 <h2 className="font-display font-semibold text-brand-900">{client.name.split(" ")[0]}&rsquo;s session book</h2>
               </div>
               <p className="mt-1 text-sm text-ink/60">
-                One page per session — private to you, never visible to the client or anyone else at Let It Out.
+                One page per session, private to you, never visible to the client or anyone else at Let It Out.
                 {client.notes.length > 0 && ` ${client.notes.length} session${client.notes.length === 1 ? "" : "s"} logged.`}
               </p>
               <div className="mt-4">
@@ -152,6 +221,58 @@ export default async function TherapistClientProfilePage({
               )}
             </div>
           </div>
+
+          {(canPrescribe || client.medications.length > 0) && (
+            <div>
+              <div className="flex items-center gap-2">
+                <Pill className="h-4 w-4 text-brand-600" strokeWidth={2} />
+                <h2 className="font-display font-semibold text-brand-900">Medications</h2>
+              </div>
+              <p className="mt-1 text-sm text-ink/60">
+                Visible to every counselor treating {client.name.split(" ")[0]}, and to {client.name.split(" ")[0]} themselves on their profile.
+              </p>
+              {client.medications.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {client.medications.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`rounded-2xl border p-4 ${m.active ? "border-brand-100 bg-white" : "border-brand-50 bg-brand-50/40"}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-medium ${m.active ? "text-brand-900" : "text-ink/50 line-through"}`}>
+                            {m.name}
+                            {m.dosage && <span className="font-normal text-ink/60"> · {m.dosage}</span>}
+                          </p>
+                          {m.instructions && <p className="mt-1 text-sm text-ink/60">{m.instructions}</p>}
+                          <p className="mt-1 text-xs text-ink/40">
+                            {m.active ? "Active" : "Discontinued"} · added by {m.counselor.name}
+                          </p>
+                        </div>
+                        {m.active && m.counselorId === session.counselorId && (
+                          <form action={discontinueMedication}>
+                            <input type="hidden" name="medicationId" value={m.id} />
+                            <input type="hidden" name="clientEmail" value={client.email} />
+                            <ConfirmSubmitButton
+                              confirmMessage={`Mark ${m.name} as discontinued?`}
+                              className="shrink-0 rounded-lg p-1.5 text-ink/40 hover:bg-red-50 hover:text-red-600"
+                            >
+                              <X className="h-4 w-4" strokeWidth={2} />
+                            </ConfirmSubmitButton>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {canPrescribe && (
+                <div className="mt-3">
+                  <MedicationForm clientEmail={client.email} clientName={client.name} />
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <AssignResourceForm clientEmail={client.email} clientName={client.name} />

@@ -12,13 +12,22 @@ import {
   createPendingTwoFactorSession,
   getPendingTwoFactorUserId,
   clearPendingTwoFactorSession,
+  getPendingSocialSignup,
+  clearPendingSocialSignup,
 } from "@/lib/session";
 import { verifyTotpCode, decryptTotpSecret, hashBackupCode } from "@/lib/totp";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendOtpEmail } from "@/lib/email";
-import { sendSms, isSmsOtpEnabled } from "@/lib/sms";
 import { createLead } from "@/lib/leads";
 import { getBaseUrl } from "@/lib/base-url";
 import { deleteUserAccountCompletely } from "@/lib/account-deletion";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { checkRateLimit, getClientIp } from "@/lib/anti-spam";
+import { GENDER_CUSTOM, COUNTRY_CALLING_CODES } from "@/lib/content/geo";
+import { logAudit } from "@/lib/audit-log";
+import { trackEvent } from "@/lib/analytics-events";
+import { isValidPhoneNumber } from "libphonenumber-js/mobile";
+import { getUserTimeZone, todayInTimeZone } from "@/lib/timezone";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -28,26 +37,123 @@ const BCRYPT_COST = 12;
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const OTP_RESEND_COOLDOWN_MS = 45 * 1000;
 const MAX_OTP_ATTEMPTS = 5;
+const PENDING_SIGNUP_MAX_AGE_MS = 30 * 60 * 1000; // time to finish the rest of the wizard after verifying email
 
-const signupSchema = z.object({
-  name: z.string().trim().min(2, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
-  birthYear: z.string().trim().min(1, "Please select your birth year."),
-  gender: z.string().trim().min(1, "Please select your gender."),
-  country: z.string().trim().min(1, "Please select your country."),
-  referralSource: z.string().trim().min(1, "Please tell us how you heard about us."),
-  serviceInterests: z
-    .array(z.string())
-    .min(1, "Please select at least one service you're interested in."),
-  otpChannel: z.enum(["EMAIL", "PHONE"]),
-});
+/** Combines the signup wizard's separate Month/Day/Year fields into a real
+ * date, the same way Google's own birthday picker works — including
+ * rejecting combinations that don't exist (e.g. Feb 30) and enforcing the
+ * same minimum age the old birth-year-only dropdown used to. */
+async function parseBirthDate(
+  a: Dictionary["auth"],
+  birthMonth: string,
+  birthDay: string,
+  birthYear: string,
+): Promise<{ birthDate: Date } | { error: string }> {
+  const month = Number(birthMonth);
+  const day = Number(birthDay);
+  const year = Number(birthYear);
+  if (!month || !day || !year) return { error: a.birthDateRequired };
 
-const loginSchema = z.object({
-  identifier: z.string().trim().min(1, "Please enter your email or phone number."),
-  password: z.string().min(1, "Please enter your password."),
-});
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return { error: a.birthDateInvalid };
+  }
+
+  // Age is computed against the visitor's own local calendar day (falling
+  // back to Cairo before their device timezone is known), not the server's
+  // UTC clock — otherwise someone whose 13th birthday is today, locally,
+  // could be wrongly blocked (or someone not yet 13 locally wrongly let
+  // through) for the few hours the server's UTC date disagrees with theirs.
+  const todayStr = todayInTimeZone(await getUserTimeZone());
+  const [todayYear, todayMonth, todayDay] = todayStr.split("-").map(Number);
+  const hadBirthdayThisYear = todayMonth > month || (todayMonth === month && todayDay >= day);
+  const age = todayYear - year - (hadBirthdayThisYear ? 0 : 1);
+  if (age < 13) return { error: a.birthDateTooYoung };
+
+  return { birthDate: date };
+}
+
+/** Google's gender dropdown has a "Custom" option that reveals a free-text
+ * field instead of being a value on its own — this resolves the pair down
+ * to the string that actually gets stored. */
+function resolveGender(
+  a: Dictionary["auth"],
+  gender: string,
+  customGender: string | null,
+): { gender: string } | { error: string } {
+  if (gender !== GENDER_CUSTOM) return { gender };
+  const trimmed = customGender?.trim();
+  if (!trimmed) return { error: a.customGenderRequired };
+  return { gender: trimmed };
+}
+
+const CALLING_CODES = new Set(Object.values(COUNTRY_CALLING_CODES));
+
+/** Combines the country page's calling-code select and phone number field
+ * into one E.164-ish string ("+201001234567") for storage — validates the
+ * code is one this app actually offers and, using libphonenumber-js's
+ * per-country mobile-number metadata (correct digit count and prefix for
+ * that specific country, not just "some digits"), that the result is a
+ * real mobile number. */
+function resolvePhone(
+  a: Dictionary["auth"],
+  phoneCountryCode: string,
+  phoneNumber: string,
+): { phone: string } | { error: string } {
+  if (!CALLING_CODES.has(phoneCountryCode)) return { error: a.phoneInvalid };
+  const digits = phoneNumber.replace(/\D/g, "");
+  const phone = `${phoneCountryCode}${digits}`;
+  if (!isValidPhoneNumber(phone)) return { error: a.phoneInvalid };
+  return { phone };
+}
+
+function buildEmailVerificationSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+  return z.object({
+    firstName: z.string().trim().min(1, v.firstNameRequired),
+    lastName: z.string().trim().min(1, v.lastNameRequired),
+    email: z.string().trim().email(v.emailInvalid),
+    birthMonth: z.string().trim().min(1, a.birthDateRequired),
+    birthDay: z.string().trim().min(1, a.birthDateRequired),
+    birthYear: z.string().trim().min(1, a.birthDateRequired),
+    gender: z.string().trim().min(1, a.genderRequired),
+    customGender: z.string().trim().nullable(),
+  });
+}
+
+function buildCompleteSignupSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+  return z
+    .object({
+      pendingSignupId: z.string().min(1),
+      password: z
+        .string()
+        .min(8, v.passwordMin8)
+        .regex(/[A-Z]/, a.passwordNeedsUppercase)
+        .regex(/[0-9]/, a.passwordNeedsNumber)
+        .regex(/[^A-Za-z0-9]/, a.passwordNeedsSpecialChar),
+      confirmPassword: z.string(),
+      country: z.string().trim().min(1, a.countryRequired),
+      phoneCountryCode: z.string().trim().min(1, a.phoneRequired),
+      phoneNumber: z.string().trim().min(1, a.phoneRequired),
+      referralSource: z.string().trim().min(1, a.referralSourceRequired),
+      serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
+      agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
+      consentDataProcessing: z.string().nullable().refine((v) => v === "on", { message: a.consentDataProcessingRequired }),
+      consentTelehealth: z.string().nullable().refine((v) => v === "on", { message: a.consentTelehealthRequired }),
+      consentTermsOfCare: z.string().nullable().refine((v) => v === "on", { message: a.consentTermsOfCareRequired }),
+      pilotAcknowledged: z.string().nullable().refine((v) => v === "on", { message: a.pilotAcknowledgeRequired }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: a.confirmPasswordMismatch,
+      path: ["confirmPassword"],
+    });
+}
+
+function buildLoginSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+  return z.object({
+    email: z.string().trim().email(v.emailInvalid),
+    password: z.string().min(1, a.passwordRequired),
+  });
+}
 
 export type AuthFormState = { error?: string } | undefined;
 
@@ -65,181 +171,270 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 1)}${"*".repeat(Math.max(local.length - 1, 1))}@${domain}`;
 }
 
-function maskPhone(phone: string): string {
-  const last4 = phone.slice(-4);
-  return `${"•".repeat(Math.max(phone.length - 4, 0))}${last4}`;
-}
+/** A quick, no-email-sent check the email page runs before requesting a
+ * verification code, so a taken address gets a fast "already exists"
+ * message instead of waiting on an OTP request that would fail for the
+ * same reason. requestEmailVerification re-checks this itself regardless —
+ * this is purely an earlier, friendlier warning, not the source of truth. */
+export async function checkSignupEmailAvailable(email: string): Promise<{ error?: string }> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
 
-async function sendOtpCode(
-  channel: "EMAIL" | "PHONE",
-  { email, phone, name, code }: { email: string; phone: string; name: string; code: string },
-): Promise<boolean> {
-  if (channel === "EMAIL") {
-    return sendOtpEmail({ to: email, name, code });
+  const trimmed = email.trim();
+  if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { error: dict.validation.emailInvalid };
   }
-  return sendSms({ to: phone, body: `Your Let It Out verification code is ${code}. It expires in 10 minutes.` });
+
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-email-check", ip, { windowMs: 10 * 60 * 1000, max: 20 });
+  if (!rateLimitOk) {
+    // Fail open: don't block someone legitimately filling out the wizard
+    // over a rate limit meant for abuse — the final submit re-checks anyway.
+    return {};
+  }
+
+  const existingUser = await prisma.user.findUnique({ where: { email: trimmed } });
+  return existingUser ? { error: dict.auth.accountEmailExists } : {};
 }
 
-export type SignupFormState =
+export type EmailVerificationState =
   | { error: string }
-  | { pendingSignupId: string; channel: "EMAIL" | "PHONE"; destination: string }
+  | { pendingSignupId: string; destination: string }
   | undefined;
 
-/** Step 1 of signup: validates the form, stashes it as a PendingSignup (no
- * User row yet — the email/phone aren't "claimed" until verified), and
- * sends a 6-digit code to the chosen channel. */
-export async function requestSignupOtp(
-  _prevState: SignupFormState,
+/** First step of signup now: as soon as the wizard's email page checks out
+ * (valid, available), send a 6-digit code to prove the person owns it —
+ * before they spend time on password/country/referral/interests, not
+ * after. No User row yet; this PendingSignup only holds what's known at
+ * this point (name/email/birthday/gender). See verifyEmailVerification and
+ * completeSignup for the rest. */
+export async function requestEmailVerification(
+  _prevState: EmailVerificationState,
   formData: FormData,
-): Promise<SignupFormState> {
-  const parsed = signupSchema.safeParse({
-    name: formData.get("name"),
+): Promise<EmailVerificationState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildEmailVerificationSchema(dict.validation, a).safeParse({
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
     email: formData.get("email"),
-    phone: formData.get("phone"),
-    password: formData.get("password"),
+    birthMonth: formData.get("birthMonth"),
+    birthDay: formData.get("birthDay"),
     birthYear: formData.get("birthYear"),
     gender: formData.get("gender"),
-    country: formData.get("country"),
-    referralSource: formData.get("referralSource"),
-    serviceInterests: formData.getAll("serviceInterests"),
-    otpChannel: formData.get("otpChannel") || "EMAIL",
+    customGender: formData.get("customGender"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
-  const { name, email, phone, password, birthYear, gender, country, referralSource, serviceInterests, otpChannel } =
+  const { firstName, lastName, email, birthMonth, birthDay, birthYear, gender: genderChoice, customGender } =
     parsed.data;
+  const name = `${firstName} ${lastName}`.trim();
 
-  if (otpChannel === "PHONE" && !isSmsOtpEnabled()) {
-    return { error: "SMS verification isn't available right now — please use email instead." };
+  const birthDateResult = await parseBirthDate(a, birthMonth, birthDay, birthYear);
+  if ("error" in birthDateResult) {
+    return { error: birthDateResult.error };
+  }
+  const genderResult = resolveGender(a, genderChoice, customGender);
+  if ("error" in genderResult) {
+    return { error: genderResult.error };
+  }
+  const { birthDate } = birthDateResult;
+  const { gender } = genderResult;
+
+  // Every OTP request sends a real email — without this, requestEmailVerification
+  // is an open OTP-bombing primitive against any address, not just the
+  // caller's own.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-otp", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { error: a.couldNotSendCode };
   }
 
-  const existingUser = await prisma.user.findFirst({ where: { OR: [{ email }, { phone }] } });
+  const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    return {
-      error:
-        existingUser.email === email
-          ? "An account with this email already exists."
-          : "An account with this phone number already exists.",
-    };
+    return { error: a.accountEmailExists };
   }
 
-  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
   const code = generateOtpCode();
 
   // Replace, don't update — any previous unfinished attempt for this
-  // email/phone is superseded by this one.
-  await prisma.pendingSignup.deleteMany({ where: { OR: [{ email }, { phone }] } });
+  // email is superseded by this one.
+  await prisma.pendingSignup.deleteMany({ where: { email } });
 
   const pending = await prisma.pendingSignup.create({
     data: {
       name,
       email,
-      phone,
-      passwordHash,
-      birthYear: Number(birthYear),
+      birthDate,
       gender,
-      country,
-      referralSource,
-      serviceInterests,
-      otpChannel,
       otpCodeHash: hashOtpCode(code),
       otpExpiresAt: new Date(Date.now() + OTP_TTL_MS),
     },
   });
 
-  const sent = await sendOtpCode(otpChannel, { email, phone, name, code });
+  const sent = await sendOtpEmail({ to: email, name, code, locale });
   if (!sent) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return { error: "We couldn't send your verification code. Please try again." };
+    return { error: a.couldNotSendCode };
   }
 
-  return {
-    pendingSignupId: pending.id,
-    channel: otpChannel,
-    destination: otpChannel === "EMAIL" ? maskEmail(email) : maskPhone(phone),
-  };
+  return { pendingSignupId: pending.id, destination: maskEmail(email) };
 }
 
-const otpVerifySchema = z.object({
-  pendingSignupId: z.string().min(1),
-  code: z.string().trim().min(1, "Please enter the verification code."),
-});
+function buildOtpCodeSchema(a: Dictionary["auth"]) {
+  return z.object({
+    pendingSignupId: z.string().min(1),
+    code: z.string().trim().min(1, a.codeRequired),
+  });
+}
 
-export type OtpVerifyState = { error?: string } | undefined;
+export type VerifyEmailState = { error?: string } | { verified: true } | undefined;
 
-/** Step 2 of signup: checks the code against the PendingSignup, and only on
- * success creates the real User (and its welcome email, CRM lead, session). */
-export async function verifySignupOtp(
-  _prevState: OtpVerifyState,
+/** Checks the code against the PendingSignup from requestEmailVerification
+ * and, on success, marks it email-verified. It does NOT create the User —
+ * password/country/referral/interests haven't been collected yet, that's
+ * completeSignup's job once the rest of the wizard is filled in. */
+export async function verifyEmailVerification(
+  _prevState: VerifyEmailState,
   formData: FormData,
-): Promise<OtpVerifyState> {
-  const parsed = otpVerifySchema.safeParse({
+): Promise<VerifyEmailState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildOtpCodeSchema(a).safeParse({
     pendingSignupId: formData.get("pendingSignupId"),
     code: formData.get("code"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const { pendingSignupId, code } = parsed.data;
   const pending = await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } });
   if (!pending) {
-    return { error: "This signup session has expired. Please start over." };
+    return { error: a.signupExpired };
   }
   if (pending.otpExpiresAt < new Date()) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return { error: "This code has expired. Please start over to get a new one." };
+    return { error: a.codeExpired };
   }
   if (pending.attempts >= MAX_OTP_ATTEMPTS) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return { error: "Too many incorrect attempts. Please start over." };
+    return { error: a.tooManyOtpAttempts };
   }
 
   if (hashOtpCode(code) !== pending.otpCodeHash) {
     await prisma.pendingSignup.update({ where: { id: pending.id }, data: { attempts: { increment: 1 } } });
-    return { error: "That code isn't right. Please try again." };
+    return { error: a.codeIncorrect };
   }
 
-  // Re-check uniqueness in case the email/phone got claimed by someone else
-  // while this signup sat unverified.
-  const existingUser = await prisma.user.findFirst({
-    where: { OR: [{ email: pending.email }, { phone: pending.phone }] },
+  await prisma.pendingSignup.update({ where: { id: pending.id }, data: { emailVerifiedAt: new Date() } });
+
+  return { verified: true };
+}
+
+export type SignupFormState = { error: string } | undefined;
+
+/** Final step: the email was already verified back in
+ * requestEmailVerification / verifyEmailVerification — this just fills in
+ * the rest (password, country, referral source, interests) and creates the
+ * real User. pendingSignupId is the only thing trusted about identity
+ * here; name/email/birthday/gender come from that already-verified row,
+ * never from anything the client resubmits. */
+export async function completeSignup(
+  _prevState: SignupFormState,
+  formData: FormData,
+): Promise<SignupFormState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildCompleteSignupSchema(dict.validation, a).safeParse({
+    pendingSignupId: formData.get("pendingSignupId"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+    country: formData.get("country"),
+    phoneCountryCode: formData.get("phoneCountryCode"),
+    phoneNumber: formData.get("phoneNumber"),
+    referralSource: formData.get("referralSource"),
+    serviceInterests: formData.getAll("serviceInterests"),
+    agreedToPolicy: formData.get("agreedToPolicy"),
+    consentDataProcessing: formData.get("consentDataProcessing"),
+    consentTelehealth: formData.get("consentTelehealth"),
+    consentTermsOfCare: formData.get("consentTermsOfCare"),
+    pilotAcknowledged: formData.get("pilotAcknowledged"),
   });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+
+  const { pendingSignupId, password, country, phoneCountryCode, phoneNumber, referralSource, serviceInterests } =
+    parsed.data;
+
+  const phoneResult = resolvePhone(a, phoneCountryCode, phoneNumber);
+  if ("error" in phoneResult) {
+    return { error: phoneResult.error };
+  }
+  const { phone } = phoneResult;
+
+  const pending = await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } });
+  if (!pending || !pending.emailVerifiedAt) {
+    return { error: a.signupExpired };
+  }
+  if (Date.now() - pending.createdAt.getTime() > PENDING_SIGNUP_MAX_AGE_MS) {
+    await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+    return { error: a.signupExpired };
+  }
+
+  // Re-check uniqueness in case the email got claimed by someone else while
+  // this signup sat verified-but-unfinished.
+  const existingUser = await prisma.user.findUnique({ where: { email: pending.email } });
   if (existingUser) {
     await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
-    return {
-      error:
-        existingUser.email === pending.email
-          ? "An account with this email already exists."
-          : "An account with this phone number already exists.",
-    };
+    return { error: a.accountEmailExists };
   }
+  const existingPhone = await prisma.user.findUnique({ where: { phone } });
+  if (existingPhone) {
+    return { error: a.phoneAlreadyExists };
+  }
+
+  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+  const consentedAt = new Date();
 
   const user = await prisma.user.create({
     data: {
       name: pending.name,
       email: pending.email,
-      phone: pending.phone,
-      passwordHash: pending.passwordHash,
-      birthYear: pending.birthYear,
+      passwordHash,
+      birthDate: pending.birthDate,
       gender: pending.gender,
-      country: pending.country,
-      referralSource: pending.referralSource,
-      serviceInterests: pending.serviceInterests,
+      country,
+      phone,
+      referralSource,
+      serviceInterests,
+      locale,
+      consentDataProcessingAt: consentedAt,
+      consentTelehealthAt: consentedAt,
+      consentTermsOfCareAt: consentedAt,
+      pilotAcknowledgedAt: consentedAt,
     },
   });
 
   await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {});
+  void trackEvent(user.id, "User", "signed_up", { referralSource });
 
   const demographicNotes = [
-    `Birth year: ${pending.birthYear}`,
+    `Birth date: ${pending.birthDate.toISOString().slice(0, 10)}`,
     `Gender: ${pending.gender}`,
-    `Country: ${pending.country}`,
-    `Heard about us via: ${pending.referralSource}`,
-    `Interested in: ${pending.serviceInterests.join(", ")}`,
+    `Country: ${country}`,
+    `Heard about us via: ${referralSource}`,
+    `Interested in: ${serviceInterests.join(", ")}`,
   ].join("\n");
 
   await createLead({
@@ -252,7 +447,7 @@ export async function verifySignupOtp(
   });
 
   const baseUrl = await getBaseUrl();
-  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
+  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy`, locale });
 
   await createSession({
     userId: user.id,
@@ -265,33 +460,216 @@ export async function verifySignupOtp(
   redirect("/");
 }
 
+function buildSocialSignupSchema(a: Dictionary["auth"]) {
+  return z.object({
+    birthMonth: z.string().trim().min(1, a.birthDateRequired),
+    birthDay: z.string().trim().min(1, a.birthDateRequired),
+    birthYear: z.string().trim().min(1, a.birthDateRequired),
+    gender: z.string().trim().min(1, a.genderRequired),
+    customGender: z.string().trim().nullable(),
+    country: z.string().trim().min(1, a.countryRequired),
+    phoneCountryCode: z.string().trim().min(1, a.phoneRequired),
+    phoneNumber: z.string().trim().min(1, a.phoneRequired),
+    referralSource: z.string().trim().min(1, a.referralSourceRequired),
+    serviceInterests: z.array(z.string()).min(1, a.serviceInterestsRequired),
+    agreedToPolicy: z.string().nullable().refine((v) => v === "on", { message: a.agreeToPolicyRequired }),
+    consentDataProcessing: z.string().nullable().refine((v) => v === "on", { message: a.consentDataProcessingRequired }),
+    consentTelehealth: z.string().nullable().refine((v) => v === "on", { message: a.consentTelehealthRequired }),
+    consentTermsOfCare: z.string().nullable().refine((v) => v === "on", { message: a.consentTermsOfCareRequired }),
+    pilotAcknowledged: z.string().nullable().refine((v) => v === "on", { message: a.pilotAcknowledgeRequired }),
+  });
+}
+
+export type CompleteSocialSignupState = { error?: string } | undefined;
+
+/** Finishes a Google/Apple signup once the person answers the same
+ * demographic questions an email signup does. The identity itself was
+ * already verified by the provider back in its OAuth callback — that's
+ * why this reads it from the pending-social cookie (see
+ * createPendingSocialSignup in session.ts) rather than trusting anything
+ * the client submits directly; nothing about who's signing up comes from
+ * this form. */
+export async function completeSocialSignup(
+  _prevState: CompleteSocialSignupState,
+  formData: FormData,
+): Promise<CompleteSocialSignupState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const pending = await getPendingSocialSignup();
+  if (!pending) {
+    return { error: a.signupExpired };
+  }
+
+  const parsed = buildSocialSignupSchema(a).safeParse({
+    birthMonth: formData.get("birthMonth"),
+    birthDay: formData.get("birthDay"),
+    birthYear: formData.get("birthYear"),
+    gender: formData.get("gender"),
+    customGender: formData.get("customGender"),
+    country: formData.get("country"),
+    phoneCountryCode: formData.get("phoneCountryCode"),
+    phoneNumber: formData.get("phoneNumber"),
+    referralSource: formData.get("referralSource"),
+    serviceInterests: formData.getAll("serviceInterests"),
+    agreedToPolicy: formData.get("agreedToPolicy"),
+    consentDataProcessing: formData.get("consentDataProcessing"),
+    consentTelehealth: formData.get("consentTelehealth"),
+    consentTermsOfCare: formData.get("consentTermsOfCare"),
+    pilotAcknowledged: formData.get("pilotAcknowledged"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+  const {
+    birthMonth,
+    birthDay,
+    birthYear,
+    gender: genderChoice,
+    customGender,
+    country,
+    phoneCountryCode,
+    phoneNumber,
+    referralSource,
+    serviceInterests,
+  } = parsed.data;
+
+  const birthDateResult = await parseBirthDate(a, birthMonth, birthDay, birthYear);
+  if ("error" in birthDateResult) {
+    return { error: birthDateResult.error };
+  }
+  const genderResult = resolveGender(a, genderChoice, customGender);
+  if ("error" in genderResult) {
+    return { error: genderResult.error };
+  }
+  const phoneResult = resolvePhone(a, phoneCountryCode, phoneNumber);
+  if ("error" in phoneResult) {
+    return { error: phoneResult.error };
+  }
+  const { birthDate } = birthDateResult;
+  const { gender } = genderResult;
+  const { phone } = phoneResult;
+
+  // Re-check in case the email got claimed, or this provider identity got
+  // linked some other way, while this sat unfinished.
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: pending.email },
+        pending.provider === "google" ? { googleId: pending.providerId } : { appleId: pending.providerId },
+      ],
+    },
+  });
+  if (existingUser) {
+    await clearPendingSocialSignup();
+    return { error: a.accountEmailExists };
+  }
+  const existingPhone = await prisma.user.findUnique({ where: { phone } });
+  if (existingPhone) {
+    return { error: a.phoneAlreadyExists };
+  }
+
+  const socialConsentedAt = new Date();
+
+  const user = await prisma.user.create({
+    data: {
+      name: pending.name,
+      email: pending.email,
+      googleId: pending.provider === "google" ? pending.providerId : undefined,
+      appleId: pending.provider === "apple" ? pending.providerId : undefined,
+      birthDate,
+      gender,
+      country,
+      phone,
+      referralSource,
+      serviceInterests,
+      locale,
+      consentDataProcessingAt: socialConsentedAt,
+      consentTelehealthAt: socialConsentedAt,
+      consentTermsOfCareAt: socialConsentedAt,
+      pilotAcknowledgedAt: socialConsentedAt,
+    },
+  });
+
+  await clearPendingSocialSignup();
+  void trackEvent(user.id, "User", "signed_up", { referralSource });
+
+  const demographicNotes = [
+    `Birth date: ${birthDate.toISOString().slice(0, 10)}`,
+    `Gender: ${gender}`,
+    `Country: ${country}`,
+    `Heard about us via: ${referralSource}`,
+    `Interested in: ${serviceInterests.join(", ")}`,
+  ].join("\n");
+
+  await createLead({
+    name: user.name,
+    type: "ACCOUNT_SIGNUP",
+    email: user.email,
+    phone: user.phone ?? undefined,
+    source: "Website",
+    notes: `Signed up via ${pending.provider === "google" ? "Google" : "Apple"}.\n${demographicNotes}`,
+  });
+
+  const baseUrl = await getBaseUrl();
+  await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy`, locale });
+
+  await createSession({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    phone: user.phone,
+    role: user.role,
+  });
+
+  redirect(user.role === "ADMIN" ? "/admin" : "/");
+}
+
+/** Lets someone back out of a Google/Apple signup that's mid-wizard — e.g.
+ * they picked the wrong account, or want to sign up with email/password
+ * instead. Clears the pending identity cookie without creating anything,
+ * so /signup renders its normal (non-social) form again. */
+export async function cancelSocialSignup(): Promise<never> {
+  await clearPendingSocialSignup();
+  redirect("/signup");
+}
+
 export type OtpResendState = { error?: string; success?: boolean } | undefined;
 
-export async function resendSignupOtp(
+export async function resendEmailVerificationOtp(
   _prevState: OtpResendState,
   formData: FormData,
 ): Promise<OtpResendState> {
+  const locale = await getLocale();
+  const a = getDictionary(locale).auth;
+
   const pendingSignupId = String(formData.get("pendingSignupId") || "");
   const pending = pendingSignupId
     ? await prisma.pendingSignup.findUnique({ where: { id: pendingSignupId } })
     : null;
   if (!pending) {
-    return { error: "This signup session has expired. Please start over." };
+    return { error: a.signupExpired };
   }
 
   if (Date.now() - pending.otpSentAt.getTime() < OTP_RESEND_COOLDOWN_MS) {
-    return { error: "Please wait a moment before requesting another code." };
+    return { error: a.resendCooldown };
+  }
+
+  // Same reasoning as requestEmailVerification: this sends a real email, and the
+  // per-record cooldown above only throttles resends against one specific
+  // pending signup — an IP could still cycle through many different pending
+  // signups without it.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("signup-otp-resend", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { error: a.couldNotResendCode };
   }
 
   const code = generateOtpCode();
-  const sent = await sendOtpCode(pending.otpChannel, {
-    email: pending.email,
-    phone: pending.phone,
-    name: pending.name,
-    code,
-  });
+  const sent = await sendOtpEmail({ to: pending.email, name: pending.name, code, locale });
   if (!sent) {
-    return { error: "We couldn't resend your verification code. Please try again." };
+    return { error: a.couldNotResendCode };
   }
 
   await prisma.pendingSignup.update({
@@ -306,41 +684,67 @@ export async function loginAction(
   _prevState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const parsed = loginSchema.safeParse({
-    identifier: formData.get("identifier"),
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildLoginSchema(dict.validation, a).safeParse({
+    email: formData.get("email"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
-  const { identifier, password } = parsed.data;
+  const { email, password } = parsed.data;
 
-  const user = await prisma.user.findFirst({ where: { OR: [{ email: identifier }, { phone: identifier }] } });
+  // Per-account lockout (below) only throttles guessing against one known
+  // email — this catches credential stuffing across many different
+  // accounts from the same IP, which the lockout alone never sees.
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("login", ip, { windowMs: 10 * 60 * 1000, max: 10 }))) {
+    return { error: a.tooManyFailedAttempts };
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    return { error: "Incorrect email/phone or password." };
+    return { error: a.incorrectLogin };
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    return { error: "Too many failed attempts. Please try again in a few minutes." };
+    return { error: a.tooManyFailedAttempts };
   }
 
   if (!user.passwordHash) {
-    return { error: "This account signed up with Google. Please continue with Google below." };
+    return { error: user.appleId ? a.appleOnlyAccount : a.googleOnlyAccount };
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     const attempts = user.failedLoginAttempts + 1;
+    const nowLocked = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
     await prisma.user.update({
       where: { id: user.id },
       data: {
         failedLoginAttempts: attempts,
-        lockedUntil: attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
+        lockedUntil: nowLocked ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
       },
     });
-    return { error: "Incorrect email/phone or password." };
+    // Only admin accounts feed the dashboard's audit trail here — logging
+    // every client's failed login would bloat the table with routine
+    // typos and isn't what the admin-facing security log is for.
+    if (user.role === "ADMIN") {
+      await logAudit({
+        actor: { userId: user.id, email: user.email },
+        action: nowLocked ? "admin.account_locked" : "admin.login_failed",
+        summary: nowLocked
+          ? `${user.email} was locked out after ${attempts} failed login attempts`
+          : `Failed login attempt for ${user.email}`,
+        severity: nowLocked ? "SECURITY" : "WARNING",
+      });
+    }
+    return { error: a.incorrectLogin };
   }
 
   if (user.failedLoginAttempts > 0 || user.lockedUntil) {
@@ -353,6 +757,19 @@ export async function loginAction(
   if (user.role === "ADMIN" && user.totpEnabled) {
     await createPendingTwoFactorSession(user.id);
     redirect("/login/verify");
+  }
+
+  if (user.role === "ADMIN") {
+    await logAudit({
+      actor: { userId: user.id, email: user.email },
+      action: "admin.login_success",
+      summary: `${user.email} logged in`,
+    });
+  } else {
+    // Staff accounts are deliberately excluded from behavioral analytics —
+    // AARRR/HEART/stickiness describe real customer usage, and the one or
+    // two admin accounts logging in daily would otherwise skew DAU/MAU.
+    void trackEvent(user.id, "User", "logged_in");
   }
 
   await createSession({
@@ -371,16 +788,22 @@ export async function logoutAction() {
   redirect("/");
 }
 
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().optional(),
-    newPassword: z.string().min(8, "New password must be at least 8 characters."),
-    confirmPassword: z.string().min(1, "Please confirm your new password."),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "New passwords don't match.",
-    path: ["confirmPassword"],
-  });
+function buildChangePasswordSchema(v: Dictionary["validation"], a: Dictionary["auth"]) {
+  return z
+    .object({
+      // Nullish, not just optional — see deleteAccountSchema's comment
+      // below. This field isn't rendered at all for accounts with no
+      // password yet (Google/Apple sign-in), so formData.get() returns
+      // null rather than undefined for them.
+      currentPassword: z.string().nullish(),
+      newPassword: z.string().min(8, a.newPasswordMin8),
+      confirmPassword: z.string().min(1, a.confirmPasswordRequired),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: a.passwordsDontMatch,
+      path: ["confirmPassword"],
+    });
+}
 
 export type ChangePasswordFormState = { error?: string; success?: boolean } | undefined;
 
@@ -388,30 +811,34 @@ export async function changePasswordAction(
   _prevState: ChangePasswordFormState,
   formData: FormData,
 ): Promise<ChangePasswordFormState> {
-  const session = await requireUser().catch(() => null);
-  if (!session) return { error: "Please log in to change your password." };
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
 
-  const parsed = changePasswordSchema.safeParse({
+  const session = await requireUser().catch(() => null);
+  if (!session) return { error: a.pleaseLogInToChangePassword };
+
+  const parsed = buildChangePasswordSchema(dict.validation, a).safeParse({
     currentPassword: formData.get("currentPassword"),
     newPassword: formData.get("newPassword"),
     confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) return { error: "Account not found." };
+  if (!user) return { error: a.accountNotFound };
 
-  // Accounts created via Google sign-in have no password yet — this becomes
-  // a "set a password" flow instead of "change password" for them.
+  // Accounts created via Google/Apple sign-in have no password yet — this
+  // becomes a "set a password" flow instead of "change password" for them.
   if (user.passwordHash) {
     if (!parsed.data.currentPassword) {
-      return { error: "Please enter your current password." };
+      return { error: a.currentPasswordRequired };
     }
     const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
-    if (!valid) return { error: "Current password is incorrect." };
+    if (!valid) return { error: a.currentPasswordIncorrect };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, BCRYPT_COST);
@@ -421,7 +848,13 @@ export async function changePasswordAction(
 }
 
 const deleteAccountSchema = z.object({
-  password: z.string().optional(),
+  // Nullish, not just optional: the password field isn't rendered at all
+  // for accounts with no password (Google/Apple sign-in — see
+  // delete-account-form.tsx), so formData.get("password") is null, not
+  // undefined. z.string().optional() rejects null and surfaced as a raw
+  // "Invalid input: expected string, received null" to those users,
+  // blocking them from ever deleting their account.
+  password: z.string().nullish(),
 });
 
 export type DeleteAccountFormState = { error?: string; success?: boolean } | undefined;
@@ -430,25 +863,29 @@ export async function deleteAccountAction(
   _prevState: DeleteAccountFormState,
   formData: FormData,
 ): Promise<DeleteAccountFormState> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
   const session = await requireUser().catch(() => null);
-  if (!session) return { error: "Please log in again." };
+  if (!session) return { error: a.pleaseLogInAgain };
 
   const parsed = deleteAccountSchema.safeParse({ password: formData.get("password") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) return { error: "Account not found." };
+  if (!user) return { error: a.accountNotFound };
 
-  // Accounts created via Google sign-in have no password to confirm with —
-  // the session cookie is already the authorization for this request.
+  // Accounts created via Google/Apple sign-in have no password to confirm
+  // with — the session cookie is already the authorization for this request.
   if (user.passwordHash) {
     if (!parsed.data.password) {
-      return { error: "Please enter your password." };
+      return { error: a.passwordRequired };
     }
     const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
-    if (!valid) return { error: "Incorrect password." };
+    if (!valid) return { error: a.incorrectPassword };
   }
 
   await deleteUserAccountCompletely(user.id, "self");
@@ -460,9 +897,11 @@ export async function deleteAccountAction(
   return { success: true };
 }
 
-const forgotPasswordSchema = z.object({
-  email: z.string().trim().email("Please enter a valid email."),
-});
+function buildForgotPasswordSchema(v: Dictionary["validation"]) {
+  return z.object({
+    email: z.string().trim().email(v.emailInvalid),
+  });
+}
 
 export type ForgotPasswordFormState = { error?: string; success?: boolean } | undefined;
 
@@ -470,9 +909,22 @@ export async function forgotPasswordAction(
   _prevState: ForgotPasswordFormState,
   formData: FormData,
 ): Promise<ForgotPasswordFormState> {
-  const parsed = forgotPasswordSchema.safeParse({ email: formData.get("email") });
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildForgotPasswordSchema(dict.validation).safeParse({ email: formData.get("email") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
+  }
+
+  // Per-IP throttle, on top of the per-account cooldown below — that cooldown
+  // alone doesn't stop one IP from cycling through many different emails.
+  // Rate-limited the same way regardless of whether the email exists, so
+  // this can't be used to infer an account's existence either.
+  const ip = await getClientIp();
+  const rateLimitOk = await checkRateLimit("forgot-password", ip, { windowMs: 10 * 60 * 1000, max: 5 });
+  if (!rateLimitOk) {
+    return { success: true };
   }
 
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
@@ -500,22 +952,24 @@ export async function forgotPasswordAction(
 
     const baseUrl = await getBaseUrl();
     const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
-    await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+    await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl, locale });
   }
 
   return { success: true };
 }
 
-const resetPasswordSchema = z
-  .object({
-    token: z.string().min(1, "This reset link is invalid."),
-    newPassword: z.string().min(8, "New password must be at least 8 characters."),
-    confirmPassword: z.string().min(1, "Please confirm your new password."),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "New passwords don't match.",
-    path: ["confirmPassword"],
-  });
+function buildResetPasswordSchema(a: Dictionary["auth"]) {
+  return z
+    .object({
+      token: z.string().min(1, a.resetLinkInvalid),
+      newPassword: z.string().min(8, a.newPasswordMin8),
+      confirmPassword: z.string().min(1, a.confirmPasswordRequired),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: a.passwordsDontMatch,
+      path: ["confirmPassword"],
+    });
+}
 
 export type ResetPasswordFormState = { error?: string; success?: boolean } | undefined;
 
@@ -523,21 +977,25 @@ export async function resetPasswordAction(
   _prevState: ResetPasswordFormState,
   formData: FormData,
 ): Promise<ResetPasswordFormState> {
-  const parsed = resetPasswordSchema.safeParse({
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildResetPasswordSchema(a).safeParse({
     token: formData.get("token"),
     newPassword: formData.get("newPassword"),
     confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const resetTokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
   const user = await prisma.user.findUnique({ where: { resetTokenHash } });
 
   if (!user || !user.resetTokenExpiresAt || user.resetTokenExpiresAt < new Date()) {
-    return { error: "This reset link is invalid or has expired. Please request a new one." };
+    return { error: a.resetLinkInvalidOrExpired };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, BCRYPT_COST);
@@ -549,9 +1007,11 @@ export async function resetPasswordAction(
   return { success: true };
 }
 
-const verifyTwoFactorSchema = z.object({
-  code: z.string().trim().min(6, "Please enter your 6-digit code or a backup code."),
-});
+function buildVerifyTwoFactorSchema(a: Dictionary["auth"]) {
+  return z.object({
+    code: z.string().trim().min(6, a.twoFactorCodeRequired),
+  });
+}
 
 export type VerifyTwoFactorFormState = { error?: string } | undefined;
 
@@ -560,24 +1020,37 @@ export async function verifyTwoFactorAction(
   _prevState: VerifyTwoFactorFormState,
   formData: FormData,
 ): Promise<VerifyTwoFactorFormState> {
-  const parsed = verifyTwoFactorSchema.safeParse({ code: formData.get("code") });
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const a = dict.auth;
+
+  const parsed = buildVerifyTwoFactorSchema(a).safeParse({ code: formData.get("code") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const userId = await getPendingTwoFactorUserId();
   if (!userId) {
-    return { error: "Your login session expired. Please log in again." };
+    return { error: a.loginSessionExpired };
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || !user.totpEnabled || !user.totpSecret) {
     await clearPendingTwoFactorSession();
-    return { error: "Your login session expired. Please log in again." };
+    return { error: a.loginSessionExpired };
   }
 
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    return { error: "Too many failed attempts. Please try again in a few minutes." };
+    return { error: a.tooManyFailedAttempts };
+  }
+
+  // Same reasoning as loginAction's IP throttle: the per-account lockout
+  // above only kicks in after MAX_FAILED_LOGIN_ATTEMPTS on this one admin
+  // account, so it alone wouldn't stop a 6-digit TOTP code (a 1-in-a-million
+  // space) from being brute-forced within that budget.
+  const ip = await getClientIp();
+  if (!(await checkRateLimit("admin-2fa", ip, { windowMs: 10 * 60 * 1000, max: 10 }))) {
+    return { error: a.tooManyFailedAttempts };
   }
 
   const submitted = parsed.data.code.trim();
@@ -587,14 +1060,23 @@ export async function verifyTwoFactorAction(
 
   if (!isTotpValid && !matchedBackupCode) {
     const attempts = user.failedLoginAttempts + 1;
+    const nowLocked = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
     await prisma.user.update({
       where: { id: user.id },
       data: {
         failedLoginAttempts: attempts,
-        lockedUntil: attempts >= MAX_FAILED_LOGIN_ATTEMPTS ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
+        lockedUntil: nowLocked ? new Date(Date.now() + LOGIN_LOCKOUT_MS) : null,
       },
     });
-    return { error: "That code didn't work. Please try again." };
+    await logAudit({
+      actor: { userId: user.id, email: user.email },
+      action: nowLocked ? "admin.account_locked" : "admin.login_2fa_failed",
+      summary: nowLocked
+        ? `${user.email} was locked out after ${attempts} failed 2FA attempts`
+        : `Incorrect 2FA code for ${user.email} (password already correct)`,
+      severity: "SECURITY",
+    });
+    return { error: a.twoFactorCodeIncorrect };
   }
 
   await prisma.user.update({
@@ -610,6 +1092,11 @@ export async function verifyTwoFactorAction(
   });
 
   await clearPendingTwoFactorSession();
+  await logAudit({
+    actor: { userId: user.id, email: user.email },
+    action: "admin.login_success",
+    summary: `${user.email} logged in (2FA)`,
+  });
   await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });
   redirect("/admin");
 }

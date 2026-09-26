@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bell, BellOff, BellRing, Share } from "lucide-react";
-import { unsubscribeFromPush } from "@/lib/push-actions";
+import { Bell, BellOff, BellRing, Settings, Share } from "lucide-react";
 import { subscribeBrowserToPush } from "@/lib/push-subscribe";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 type Status = "checking" | "unsupported" | "off" | "on" | "denied";
 
-export default function JournalReminderToggle() {
+export default function JournalReminderToggle({ dict }: { dict: Dictionary["account"] }) {
+  const router = useRouter();
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDisableHelp, setShowDisableHelp] = useState(false);
   // iOS Safari only exposes the Push/Notification APIs at all once the
   // site has been added to the Home Screen (iOS 16.4+) — there is no way
   // to enable push notifications in a regular Safari tab, so that state is
@@ -34,8 +37,17 @@ export default function JournalReminderToggle() {
       return;
     }
 
-    navigator.serviceWorker
-      .register("/serwist/sw.js")
+    // .ready (not .register()) — the same registration source
+    // subscribeBrowserToPush() subscribes through below. SerwistProvider in
+    // the root layout already registers the worker on every page, so
+    // re-registering it here was redundant and, on a slow/flaky mobile
+    // connection, could itself fail or hang; .ready just waits on the
+    // worker that's already active, with no network request of its own.
+    // Checking against a *different* registration than the one actually
+    // subscribed through is exactly the kind of mismatch that could make
+    // an already-enabled subscription look "off" again after navigating
+    // back to this page.
+    navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setStatus(sub ? "on" : "off"))
       .catch((err) => {
@@ -47,8 +59,11 @@ export default function JournalReminderToggle() {
         // the actual error instead, so it's recoverable and debuggable.
         console.error("[push] checking existing subscription failed:", err);
         setStatus("off");
-        setError(err instanceof Error ? err.message : "Couldn't check your notification status.");
+        setError(err instanceof Error ? err.message : dict.remindersCouldNotCheck);
       });
+    // Runs once on mount to check existing subscription state — dict is
+    // only read inside a rarely-hit error path, not worth re-running for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function enable() {
@@ -67,31 +82,35 @@ export default function JournalReminderToggle() {
         return;
       }
       setStatus("on");
+      // The onboarding checklist's "reminders" step is computed server-side
+      // (from whether a push subscription row exists) and lives in the
+      // root layout, which this page alone won't re-fetch on its own —
+      // without this it keeps showing unchecked until some unrelated
+      // navigation happens to force a refresh.
+      router.refresh();
     } catch (err) {
       // Surfaced on-screen (not just console) since this most often runs on
       // a phone with no attached debugger — the failure needs to be visible
       // without remote-debugging tools.
       console.error("[push] enable failed:", err);
       setStatus("off");
-      setError(err instanceof Error ? err.message : "Something went wrong enabling reminders.");
+      setError(err instanceof Error ? err.message : dict.remindersEnableError);
     } finally {
       setBusy(false);
     }
   }
 
-  async function disable() {
-    setBusy(true);
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      if (subscription) {
-        await unsubscribeFromPush(subscription.endpoint);
-        await subscription.unsubscribe();
-      }
-      setStatus("off");
-    } finally {
-      setBusy(false);
-    }
+  // Unsubscribing the push registration from here used to be enough to flip
+  // this back to "off" — but it left Notification.permission itself still
+  // "granted", so the OS/browser still considers this site allowed to send
+  // notifications. Anything that resubscribes later (this button, the
+  // one-time auto-prompt on a future reinstall, etc.) would then silently
+  // re-enable them without ever asking again, since permission was never
+  // actually revoked. The only way to truly turn them off is at the
+  // phone/browser level, so this now points there instead of pretending a
+  // JS-only unsubscribe is a real "off" switch.
+  function showDisableInstructions() {
+    setShowDisableHelp((v) => !v);
   }
 
   if (status === "checking" || !installReady) return null;
@@ -102,11 +121,11 @@ export default function JournalReminderToggle() {
         <p className="flex items-start gap-1.5">
           <Share className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" strokeWidth={2} />
           <span>
-            On iPhone, push notifications only work once Let It Out is added to your Home Screen.{" "}
+            {dict.remindersIosInstallPrefix}{" "}
             <Link href="/install" className="font-medium text-brand-600 underline-offset-2 hover:underline">
-              Install the app
+              {dict.remindersIosInstallLink}
             </Link>{" "}
-            to enable reminders.
+            {dict.remindersIosInstallSuffix}
           </span>
         </p>
       </div>
@@ -119,7 +138,7 @@ export default function JournalReminderToggle() {
     return (
       <span className="inline-flex items-center gap-2 rounded-full border border-brand-100 px-4 py-2 text-xs text-ink/40">
         <BellOff className="h-3.5 w-3.5" strokeWidth={2} />
-        Reminders blocked in browser settings
+        {dict.remindersBlocked}
       </span>
     );
   }
@@ -128,7 +147,8 @@ export default function JournalReminderToggle() {
     <div>
       <button
         type="button"
-        onClick={status === "on" ? disable : enable}
+        data-onboarding="reminders-toggle"
+        onClick={status === "on" ? showDisableInstructions : enable}
         disabled={busy}
         className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
           status === "on"
@@ -141,9 +161,24 @@ export default function JournalReminderToggle() {
         ) : (
           <Bell className="h-4 w-4" strokeWidth={2} />
         )}
-        {status === "on" ? "Daily reminders on" : "Enable daily reminders"}
+        {status === "on" ? dict.remindersOn : dict.remindersEnable}
       </button>
       {error && <p className="mt-2 max-w-xs text-xs text-red-600">{error}</p>}
+      {status === "on" && showDisableHelp && (
+        <div className="mt-2 max-w-xs rounded-xl border border-brand-100 bg-brand-50/50 px-4 py-3 text-xs text-ink/60">
+          <p className="flex items-start gap-1.5">
+            <Settings className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" strokeWidth={2} />
+            <span>{iOS ? dict.remindersDisableInstructionsIos : dict.remindersDisableInstructions}</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowDisableHelp(false)}
+            className="mt-2 font-medium text-brand-600 link-grow"
+          >
+            {dict.remindersDisableInstructionsClose}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

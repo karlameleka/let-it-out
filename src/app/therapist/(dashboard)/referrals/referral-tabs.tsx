@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { acknowledgeReferral } from "@/lib/therapist-actions";
 import type { ReferralIntakeSnapshot, ReferralNotesSnapshotEntry } from "@/lib/therapist-data";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone-constants";
 
 type ReferralRow = {
   id: string;
@@ -59,7 +60,12 @@ function ReferralCard({
 
       <p className="mt-3 whitespace-pre-line text-sm text-ink/80">{referral.reason}</p>
       <p className="mt-2 text-xs text-ink/40">
-        {referral.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+        {referral.createdAt.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+          timeZone: CAIRO_TIME_ZONE,
+        })}
       </p>
 
       {(intake || (notes && notes.length > 0)) && (
@@ -99,7 +105,12 @@ function ReferralCard({
                     {notes.map((n, i) => (
                       <div key={i} className="border-t border-brand-100 pt-2 first:border-t-0 first:pt-0">
                         <p className="text-xs text-ink/40">
-                          {new Date(n.sessionDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                          {new Date(n.sessionDate).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            timeZone: CAIRO_TIME_ZONE,
+                          })}
                         </p>
                         <p className="mt-0.5 whitespace-pre-line text-sm text-ink/80">{n.notes}</p>
                         {n.nextSteps && <p className="mt-1 text-sm text-ink/60">Next steps: {n.nextSteps}</p>}

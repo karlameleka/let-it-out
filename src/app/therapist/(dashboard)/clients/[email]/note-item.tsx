@@ -5,6 +5,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { updateClientNote, deleteClientNote } from "@/lib/therapist-actions";
 import type { TherapistClientNote } from "@/lib/therapist-data";
 import { moodColor, moodLabel } from "@/lib/moods";
+import { formatLongDate } from "@/lib/format";
 import { Button } from "@/components/ui";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import MoodPicker from "@/components/mood-picker";
@@ -82,9 +83,7 @@ export default function ClientNoteItem({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-display text-sm font-semibold text-brand-900">Session {sessionNumber}</p>
-          <p className="text-xs text-ink/40">
-            {note.sessionDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
-          </p>
+          <p className="text-xs text-ink/40">{formatLongDate(note.sessionDate)}</p>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -115,7 +114,7 @@ export default function ClientNoteItem({
               key={m}
               className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 bg-brand-50/60 px-2.5 py-1 text-xs font-medium text-ink/70"
             >
-              <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: moodColor(m) }} />
+              <span className="h-2 w-2 rounded-full border border-brand-900/10" style={{ backgroundColor: moodColor(m) }} />
               {moodLabel(m)}
             </span>
           ))}

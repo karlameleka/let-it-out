@@ -2,7 +2,15 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { todayISO } from "@/lib/therapist-data";
 import { pastCancelWindow } from "@/lib/cancel-window";
+import { CAIRO_TIME_ZONE, zonedParts, zonedTimeToUtc } from "@/lib/timezone";
 import type { RSVPStatus } from "@/generated/prisma/enums";
+import type { Locale } from "@/lib/i18n/locale";
+
+/** How long a cancelled session/request stays visible on /upcoming/past
+ * before the trash-purge cron hard-deletes it — shared with that cron so
+ * the display window here and the actual deletion window can't drift
+ * apart. */
+export const CANCELLED_RETENTION_DAYS = 30;
 
 export type UpcomingSession = {
   id: string;
@@ -47,6 +55,20 @@ export type UpcomingEvent = {
   meetingLink: string | null;
 };
 
+export type UpcomingReflection = {
+  /** Composite bell/read-tracking key ("reflection-<ReflectionPrompt.id>"). */
+  id: string;
+  createdAt: string;
+  read: boolean;
+};
+
+export type UpcomingStressCheckIn = {
+  /** Composite bell/read-tracking key ("stress-checkin-<StressCheckInPrompt.id>"). */
+  id: string;
+  createdAt: string;
+  read: boolean;
+};
+
 function sessionCanCancel(status: string, date: string, time: string | null): boolean {
   if (status === "CANCELLED" || status === "COMPLETED") return false;
   if (status === "CONFIRMED") return !pastCancelWindow(date, time);
@@ -58,12 +80,16 @@ async function getUpcomingSessions(email: string): Promise<UpcomingSession[]> {
 
   const [sessions, requests] = await Promise.all([
     prisma.sessionBooking.findMany({
-      where: { email, preferredDate: { gte: today } },
+      // Cancelled bookings move to /upcoming/past instead (see
+      // getPastItems) regardless of preferredDate, so they don't linger
+      // here indefinitely — a "cancelled but still upcoming" row would
+      // just be confusing.
+      where: { email, status: { not: "CANCELLED" }, preferredDate: { gte: today }, joinedAt: null },
       include: { counselor: true },
       orderBy: { preferredDate: "asc" },
     }),
     prisma.bookingRequest.findMany({
-      where: { email, status: { not: "COMPLETED" }, preferredDate: { gte: today } },
+      where: { email, status: { notIn: ["COMPLETED", "CANCELLED"] }, preferredDate: { gte: today }, joinedAt: null },
       include: { counselor: true },
       orderBy: { preferredDate: "asc" },
     }),
@@ -99,23 +125,24 @@ async function getUpcomingSessions(email: string): Promise<UpcomingSession[]> {
   return items.map((i) => ({ ...i, read: false }));
 }
 
-async function getUpcomingEvents(userId: string): Promise<UpcomingEvent[]> {
+async function getUpcomingEvents(userId: string, locale: Locale): Promise<UpcomingEvent[]> {
   const today = todayISO();
 
   const events = await prisma.event.findMany({
-    where: { startAt: { gte: new Date(`${today}T00:00:00`) } },
+    where: { startAt: { gte: zonedTimeToUtc(today, "00:00", CAIRO_TIME_ZONE) } },
     include: { rsvps: { where: { userId } } },
     orderBy: { startAt: "asc" },
   });
 
   return events.map((e) => {
     const myRsvp = e.rsvps[0]?.status ?? null;
+    const startAtCairo = zonedParts(e.startAt, CAIRO_TIME_ZONE);
     return {
       id: e.id,
-      title: e.title,
-      description: e.description,
-      date: e.startAt.toISOString().slice(0, 10),
-      time: e.startAt.toISOString().slice(11, 16),
+      title: locale === "ar" && e.titleAr ? e.titleAr : e.title,
+      description: locale === "ar" && e.descriptionAr ? e.descriptionAr : e.description,
+      date: startAtCairo.dateStr,
+      time: `${String(startAtCairo.hour).padStart(2, "0")}:${String(startAtCairo.minute).padStart(2, "0")}`,
       location: e.location,
       myRsvp,
       read: false,
@@ -126,14 +153,55 @@ async function getUpcomingEvents(userId: string): Promise<UpcomingEvent[]> {
   });
 }
 
-/** Full data for the /upcoming page: every upcoming counseling
- * session/request for this client (whatever its status) plus every
- * upcoming broadcast Event with this client's own RSVP, if any — each
- * flagged with whether this client has already opened it. */
-export async function getUpcomingPageData(email: string, userId: string) {
-  const [sessions, events] = await Promise.all([getUpcomingSessions(email), getUpcomingEvents(userId)]);
+async function getUpcomingReflections(userId: string): Promise<UpcomingReflection[]> {
+  const prompts = await prisma.reflectionPrompt.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, createdAt: true },
+  });
+  return prompts.map((p) => ({ id: `reflection-${p.id}`, createdAt: p.createdAt.toISOString(), read: false }));
+}
 
-  const allIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id)];
+async function getUpcomingStressCheckIns(userId: string): Promise<UpcomingStressCheckIn[]> {
+  const prompts = await prisma.stressCheckInPrompt.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, createdAt: true },
+  });
+  return prompts.map((p) => ({ id: `stress-checkin-${p.id}`, createdAt: p.createdAt.toISOString(), read: false }));
+}
+
+/** Full data for the /upcoming page: every upcoming counseling
+ * session/request for this client (whatever its status), every upcoming
+ * broadcast Event with this client's own RSVP, if any, and every pending
+ * "fill out your reflection sheet" prompt — each flagged with whether this
+ * client has already opened it. */
+/** `excludeDismissed` defaults to true (the /upcoming notification feed's
+ * own behavior — a dismissed notification shouldn't reappear there). My
+ * Profile's counseling-sessions summary calls this with it set to false:
+ * dismissing a notification is about hiding it from the notification
+ * feed, not about whether the session itself still happened/is booked —
+ * those are independent facts and shouldn't be coupled. */
+export async function getUpcomingPageData(
+  email: string,
+  userId: string,
+  locale: Locale = "en",
+  options?: { excludeDismissed?: boolean },
+) {
+  const excludeDismissed = options?.excludeDismissed ?? true;
+  const [sessions, events, reflections, stressCheckIns] = await Promise.all([
+    getUpcomingSessions(email),
+    getUpcomingEvents(userId, locale),
+    getUpcomingReflections(userId),
+    getUpcomingStressCheckIns(userId),
+  ]);
+
+  const allIds = [
+    ...sessions.map((s) => s.id),
+    ...events.map((e) => e.id),
+    ...reflections.map((r) => r.id),
+    ...stressCheckIns.map((s) => s.id),
+  ];
   const reads = allIds.length
     ? await prisma.notificationRead.findMany({
         where: { userId, itemId: { in: allIds } },
@@ -142,16 +210,220 @@ export async function getUpcomingPageData(email: string, userId: string) {
     : [];
   const readIds = new Set(reads.map((r) => r.itemId));
   const dismissedIds = new Set(reads.filter((r) => r.dismissed).map((r) => r.itemId));
+  const keep = (id: string) => !excludeDismissed || !dismissedIds.has(id);
 
   return {
-    sessions: sessions.filter((s) => !dismissedIds.has(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
-    events: events.filter((e) => !dismissedIds.has(e.id)).map((e) => ({ ...e, read: readIds.has(e.id) })),
+    sessions: sessions.filter((s) => keep(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
+    events: events.filter((e) => keep(e.id)).map((e) => ({ ...e, read: readIds.has(e.id) })),
+    reflections: reflections.filter((r) => keep(r.id)).map((r) => ({ ...r, read: readIds.has(r.id) })),
+    stressCheckIns: stressCheckIns.filter((s) => keep(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
   };
 }
 
 /** Unread total — everything on /upcoming this client hasn't opened yet —
  * used to drive the header bell badge and the installed-app icon badge. */
 export async function getUpcomingCount(email: string, userId: string): Promise<number> {
-  const { sessions, events } = await getUpcomingPageData(email, userId);
-  return sessions.filter((s) => !s.read).length + events.filter((e) => !e.read).length;
+  const { sessions, events, reflections, stressCheckIns } = await getUpcomingPageData(email, userId);
+  return (
+    sessions.filter((s) => !s.read).length +
+    events.filter((e) => !e.read).length +
+    reflections.filter((r) => !r.read).length +
+    stressCheckIns.filter((s) => !s.read).length
+  );
+}
+
+export type PastSession = {
+  /** Composite bell/dismiss-tracking key — same "session-<id>"/"request-<id>"
+   * scheme as UpcomingSession, safely reused since a booking's date having
+   * passed already removes it from the live /upcoming query above. */
+  id: string;
+  bookingId: string;
+  kind: "paid" | "request";
+  counselorName: string;
+  date: string;
+  time?: string | null;
+  /** "CONFIRMED"/"COMPLETED" for a session that actually happened, or
+   * "CANCELLED" — cancelled from either side, shown here (regardless of
+   * preferredDate) for a month before the trash-purge cron hard-deletes
+   * it, see cancelSessionBooking/cancelBookingRequest/cancelClientAppointment. */
+  status: string;
+};
+
+export type PastEvent = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string | null;
+};
+
+/** History for the /upcoming/past subpage: counseling sessions that
+ * actually happened (confirmed, date already past), sessions cancelled
+ * from either side within the last month (see CANCELLED_RETENTION_DAYS —
+ * the trash-purge cron hard-deletes them after that), and workshops the
+ * client RSVP'd ATTENDING to that have already happened — never events
+ * that were missed or never RSVP'd to. */
+export async function getPastItems(
+  email: string,
+  userId: string,
+  locale: Locale = "en",
+  options?: { excludeDismissed?: boolean },
+) {
+  const excludeDismissed = options?.excludeDismissed ?? true;
+  const today = todayISO();
+  const cancelledSince = new Date(Date.now() - CANCELLED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+
+  const [sessions, cancelledSessions, requests, cancelledRequests, events] = await Promise.all([
+    prisma.sessionBooking.findMany({
+      where: {
+        email,
+        status: "CONFIRMED",
+        OR: [{ preferredDate: { lt: today } }, { joinedAt: { not: null } }],
+      },
+      include: { counselor: true },
+      orderBy: { preferredDate: "desc" },
+    }),
+    prisma.sessionBooking.findMany({
+      where: { email, status: "CANCELLED", cancelledAt: { gte: cancelledSince } },
+      include: { counselor: true },
+      orderBy: { cancelledAt: "desc" },
+    }),
+    prisma.bookingRequest.findMany({
+      where: {
+        email,
+        status: { in: ["CONFIRMED", "COMPLETED"] },
+        OR: [{ preferredDate: { lt: today } }, { joinedAt: { not: null } }],
+      },
+      include: { counselor: true },
+      orderBy: { preferredDate: "desc" },
+    }),
+    prisma.bookingRequest.findMany({
+      where: { email, status: "CANCELLED", cancelledAt: { gte: cancelledSince } },
+      include: { counselor: true },
+      orderBy: { cancelledAt: "desc" },
+    }),
+    prisma.event.findMany({
+      where: { startAt: { lt: zonedTimeToUtc(today, "00:00", CAIRO_TIME_ZONE) } },
+      include: { rsvps: { where: { userId, status: "ATTENDING" } } },
+      orderBy: { startAt: "desc" },
+    }),
+  ]);
+
+  const pastSessions: PastSession[] = [
+    ...sessions.map((s) => ({
+      id: `session-${s.id}`,
+      bookingId: s.id,
+      kind: "paid" as const,
+      counselorName: s.counselor.name,
+      date: s.preferredDate,
+      time: s.preferredTime,
+      status: s.status as string,
+    })),
+    ...cancelledSessions.map((s) => ({
+      id: `session-${s.id}`,
+      bookingId: s.id,
+      kind: "paid" as const,
+      counselorName: s.counselor.name,
+      date: s.preferredDate,
+      time: s.preferredTime,
+      status: s.status as string,
+    })),
+    ...requests.map((r) => ({
+      id: `request-${r.id}`,
+      bookingId: r.id,
+      kind: "request" as const,
+      counselorName: r.counselor.name,
+      date: r.preferredDate,
+      time: r.preferredTime,
+      status: r.status as string,
+    })),
+    ...cancelledRequests.map((r) => ({
+      id: `request-${r.id}`,
+      bookingId: r.id,
+      kind: "request" as const,
+      counselorName: r.counselor.name,
+      date: r.preferredDate,
+      time: r.preferredTime,
+      status: r.status as string,
+    })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
+  const pastEvents: PastEvent[] = events
+    .filter((e) => e.rsvps.length > 0)
+    .map((e) => {
+      const startAtCairo = zonedParts(e.startAt, CAIRO_TIME_ZONE);
+      return {
+        id: e.id,
+        title: locale === "ar" && e.titleAr ? e.titleAr : e.title,
+        date: startAtCairo.dateStr,
+        time: `${String(startAtCairo.hour).padStart(2, "0")}:${String(startAtCairo.minute).padStart(2, "0")}`,
+        location: e.location,
+      };
+    });
+
+  const allIds = [...pastSessions.map((s) => s.id), ...pastEvents.map((e) => e.id)];
+  const dismissed = excludeDismissed && allIds.length
+    ? await prisma.notificationRead.findMany({
+        where: { userId, itemId: { in: allIds }, dismissed: true },
+        select: { itemId: true },
+      })
+    : [];
+  const dismissedIds = new Set(dismissed.map((d) => d.itemId));
+
+  return {
+    sessions: pastSessions.filter((s) => !dismissedIds.has(s.id)),
+    events: pastEvents.filter((e) => !dismissedIds.has(e.id)),
+  };
+}
+
+/** Whether this client has ever had a counseling session actually
+ * confirmed (paid SessionBooking or free BookingRequest) — regardless of
+ * whether it's still upcoming or already happened. Used to gate the
+ * "In-between sessions" reflection tool on My Profile, which only makes
+ * sense once a therapeutic relationship has actually started. */
+export async function hasConfirmedSession(email: string): Promise<boolean> {
+  const [booking, request] = await Promise.all([
+    prisma.sessionBooking.findFirst({ where: { email, status: "CONFIRMED" }, select: { id: true } }),
+    prisma.bookingRequest.findFirst({ where: { email, status: { in: ["CONFIRMED", "COMPLETED"] } }, select: { id: true } }),
+  ]);
+  return booking !== null || request !== null;
+}
+
+/** The counselor tied to this client's very first confirmed session
+ * (paid SessionBooking or free BookingRequest, whichever came first) —
+ * used to route the logged-in "My intake form" flow to the right
+ * counselor's inbox, mirroring who the automatic emailed intake link
+ * already goes to when a session is requested. */
+export async function getFirstConfirmedSessionCounselor(
+  email: string,
+): Promise<{ counselorId: string; counselorName: string; counselorEmail: string | null } | null> {
+  const [booking, request] = await Promise.all([
+    prisma.sessionBooking.findFirst({
+      where: { email, status: "CONFIRMED" },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true, counselor: { select: { id: true, name: true, email: true } } },
+    }),
+    prisma.bookingRequest.findFirst({
+      where: { email, status: { in: ["CONFIRMED", "COMPLETED"] } },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true, counselor: { select: { id: true, name: true, email: true } } },
+    }),
+  ]);
+  const candidates = [booking, request].filter((c): c is NonNullable<typeof c> => c !== null);
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  const counselor = candidates[0].counselor;
+  return { counselorId: counselor.id, counselorName: counselor.name, counselorEmail: counselor.email };
+}
+
+/** Hard-deletes SessionBooking/BookingRequest rows cancelled more than
+ * CANCELLED_RETENTION_DAYS ago — called from api/cron/trash-purge
+ * alongside purgeExpiredTrash so there's a single daily cron doing both. */
+export async function purgeExpiredCancelledSessions(): Promise<number> {
+  const cutoff = new Date(Date.now() - CANCELLED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const [sessions, requests] = await Promise.all([
+    prisma.sessionBooking.deleteMany({ where: { status: "CANCELLED", cancelledAt: { lt: cutoff } } }),
+    prisma.bookingRequest.deleteMany({ where: { status: "CANCELLED", cancelledAt: { lt: cutoff } } }),
+  ]);
+  return sessions.count + requests.count;
 }

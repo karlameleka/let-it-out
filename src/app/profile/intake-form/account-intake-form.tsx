@@ -1,0 +1,99 @@
+"use client";
+
+import { useActionState, useRef } from "react";
+import { ShieldCheck, CheckCircle2, PencilLine } from "lucide-react";
+import { Container, Button } from "@/components/ui";
+import { submitAccountIntakeFormAction } from "@/lib/intake-actions";
+import { Field } from "@/app/intake/intake-form";
+import { INTAKE_CONSENT_FIELD_NAME, type IntakeSection } from "@/lib/intake-form-schema";
+import { useIntakeFormDraft } from "@/lib/intake-form-draft";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+
+export default function AccountIntakeForm({
+  clientName,
+  counselorName,
+  sections,
+  dict,
+  fieldDict,
+}: {
+  clientName: string;
+  counselorName: string;
+  sections: IntakeSection[];
+  dict: Dictionary["myIntakeForm"];
+  fieldDict: Dictionary["intake"];
+}) {
+  const [state, formAction, pending] = useActionState(submitAccountIntakeFormAction, undefined);
+  const firstName = clientName.split(" ")[0];
+  const formRef = useRef<HTMLFormElement>(null);
+  const { handleFormChange, draftRestored } = useIntakeFormDraft("lio_account_intake_draft", formRef, Boolean(state?.success));
+
+  if (state?.success) {
+    return (
+      <Container className="max-w-lg py-20 text-center">
+        <CheckCircle2 className="mx-auto h-12 w-12 text-brand-600" strokeWidth={1.5} />
+        <h1 className="mt-4 font-display text-2xl font-semibold text-brand-900">
+          {fieldDict.thankYouTitle.replace("{name}", firstName)}
+        </h1>
+        <p className="mt-3 text-sm text-ink/60">{fieldDict.thankYouBody.replace(/\{counselor\}/g, counselorName)}</p>
+      </Container>
+    );
+  }
+
+  return (
+    <Container className="max-w-2xl py-10 sm:py-14">
+      <h1 className="font-display text-2xl font-semibold text-brand-900 sm:text-3xl">{dict.title}</h1>
+      <p className="mt-2 text-sm text-ink/60">
+        {dict.formGreeting.replace("{name}", firstName).replace("{counselor}", counselorName)}
+      </p>
+
+      <div className="mt-6 flex gap-3 rounded-2xl border border-brand-200 bg-brand-50 p-4">
+        <ShieldCheck className="h-5 w-5 shrink-0 text-brand-600" strokeWidth={2} />
+        <p className="text-sm text-ink/70">
+          <strong className="text-ink/90">{dict.confidentialLabel}</strong> {dict.confidentialBody.replace("{counselor}", counselorName)}
+        </p>
+      </div>
+
+      {draftRestored && (
+        <p className="mt-6 flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm text-brand-700">
+          <PencilLine className="h-4 w-4 shrink-0" strokeWidth={2} />
+          {fieldDict.draftRestored}
+        </p>
+      )}
+
+      <form ref={formRef} action={formAction} onChange={handleFormChange} className="mt-8 space-y-8">
+        {sections.map((section) => (
+          <div key={section.id} className="rounded-2xl border border-brand-100 bg-white p-5 sm:p-6">
+            <h2 className="font-display text-lg font-semibold text-brand-900">{section.title}</h2>
+            {section.description && <p className="mt-1 text-sm text-ink/60">{section.description}</p>}
+            {section.note && (
+              <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{section.note}</p>
+            )}
+            <div className="mt-4 space-y-4">
+              {section.fields.map((field) => (
+                <Field key={field.name} field={field} dict={fieldDict} />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div className="rounded-2xl border border-brand-100 bg-white p-5 sm:p-6">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              name={INTAKE_CONSENT_FIELD_NAME}
+              required
+              className="mt-0.5 h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            <span className="text-sm text-ink/80">{dict.consentText.replace("{counselor}", counselorName)}</span>
+          </label>
+        </div>
+
+        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+
+        <Button type="submit" disabled={pending} className="w-full">
+          {pending ? dict.sendingSecurely : dict.submitIntakeForm}
+        </Button>
+      </form>
+    </Container>
+  );
+}

@@ -7,22 +7,37 @@ import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { sendIntakeFormLink } from "@/lib/intake-actions";
 import { formatEGP } from "@/lib/format";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission, HONEYPOT_FIELD } from "@/lib/anti-spam";
+import { generateOrderAccessToken } from "@/lib/order-access";
+import { trackEvent } from "@/lib/analytics-events";
 
-const createSessionBookingSchema = z.object({
-  counselorId: z.string().min(1),
-  name: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  preferredDate: z.string().trim().min(1, "Please choose a preferred day."),
-  // Set when picked from the in-app slot picker (counselor has
-  // CounselorAvailability windows configured) — empty/omitted for the
-  // day-only fallback, where the counselor follows up to confirm a time.
-  preferredTime: z.string().trim().optional(),
-  promoCode: z.string().trim().optional(),
-});
+function buildCreateSessionBookingSchema(v: Dictionary["validation"], c: Dictionary["counselorProfile"]) {
+  return z.object({
+    counselorId: z.string().min(1),
+    name: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    phone: z.string().trim().min(5, v.phoneInvalid).max(30),
+    preferredDate: z.string().trim().min(1, c.dayRequired),
+    // Set when picked from the in-app slot picker (counselor has
+    // CounselorAvailability windows configured) — empty/omitted for the
+    // day-only fallback, where the counselor follows up to confirm a time.
+    preferredTime: z.string().trim().optional(),
+    promoCode: z.string().trim().optional(),
+  });
+}
 
-export type CreateSessionBookingInput = z.infer<typeof createSessionBookingSchema>;
-export type CreateSessionBookingResult = { error: string } | { sessionBookingId: string };
+export type CreateSessionBookingInput = z.infer<ReturnType<typeof buildCreateSessionBookingSchema>> & {
+  // Not real booking data — read only by screenSubmission() below. See
+  // HoneypotField/SimpleCaptcha in session-booking-flow.tsx, which this
+  // action calls directly (not as a <form action>), so those values have to
+  // be threaded through explicitly instead of read off a submitted FormData.
+  honeypot?: string;
+  captchaAnswer?: string;
+  captchaExpected?: string;
+};
+export type CreateSessionBookingResult = { error: string } | { sessionBookingId: string; accessToken: string };
 
 export type CounselingPromoCheckResult =
   | { valid: true; code: string; discountEGP: number; label: string }
@@ -36,24 +51,27 @@ export async function checkCounselingPromoCode(
   counselorId: string,
   priceEGP: number,
 ): Promise<CounselingPromoCheckResult> {
+  const locale = await getLocale();
+  const c = getDictionary(locale).counselorProfile;
+
   const code = rawCode.trim().toUpperCase();
-  if (!code) return { valid: false, error: "Enter a code." };
+  if (!code) return { valid: false, error: c.promoEnterCode };
 
   const promo = await prisma.promoCode.findUnique({
     where: { code },
     include: { counselors: true },
   });
-  if (!promo || !promo.active) return { valid: false, error: "That code isn't valid." };
-  if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: "That code has expired." };
+  if (!promo || !promo.active) return { valid: false, error: c.promoInvalid };
+  if (promo.expiresAt && promo.expiresAt < new Date()) return { valid: false, error: c.promoExpired };
   if (promo.maxRedemptions !== null && promo.redemptionCount >= promo.maxRedemptions) {
-    return { valid: false, error: "That code has already been fully redeemed." };
+    return { valid: false, error: c.promoFullyRedeemed };
   }
   if (promo.minOrderEGP !== null && priceEGP < promo.minOrderEGP) {
-    return { valid: false, error: `This code needs a minimum session price of ${formatEGP(promo.minOrderEGP)}.` };
+    return { valid: false, error: c.promoMinOrder.replace("{amount}", formatEGP(promo.minOrderEGP)) };
   }
-  const scopedCounselorIds = promo.counselors.map((c) => c.counselorId);
+  const scopedCounselorIds = promo.counselors.map((pc) => pc.counselorId);
   if (scopedCounselorIds.length > 0 && !scopedCounselorIds.includes(counselorId)) {
-    return { valid: false, error: "This code doesn't apply to this therapist." };
+    return { valid: false, error: c.promoNotApplicable };
   }
 
   const discountEGP =
@@ -66,14 +84,25 @@ export async function checkCounselingPromoCode(
 export async function createSessionBooking(
   input: CreateSessionBookingInput,
 ): Promise<CreateSessionBookingResult> {
-  const parsed = createSessionBookingSchema.safeParse(input);
+  const screenData = new FormData();
+  screenData.set(HONEYPOT_FIELD, input.honeypot ?? "");
+  screenData.set("captchaAnswer", input.captchaAnswer ?? "");
+  screenData.set("captchaExpected", input.captchaExpected ?? "");
+  const blocked = await screenSubmission(screenData, "session-booking", { simpleCaptcha: true });
+  if (blocked) return { error: blocked.error ?? "Something went wrong. Please try again." };
+
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const c = dict.counselorProfile;
+
+  const parsed = buildCreateSessionBookingSchema(dict.validation, c).safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const counselor = await prisma.counselor.findUnique({ where: { id: parsed.data.counselorId } });
   if (!counselor || !counselor.active || !counselor.priceEGP) {
-    return { error: "This counselor isn't available for online booking right now." };
+    return { error: c.counselorUnavailable };
   }
 
   // A real slot from the in-app picker is a commitment being paid for —
@@ -89,7 +118,7 @@ export async function createSessionBooking(
         status: { not: "CANCELLED" },
       },
     });
-    if (clash) return { error: "That time was just taken — please pick another slot." };
+    if (clash) return { error: c.timeJustTaken };
   }
 
   let discountEGP = 0;
@@ -100,6 +129,8 @@ export async function createSessionBooking(
     discountEGP = check.discountEGP;
     promoCodeId = (await prisma.promoCode.findUnique({ where: { code: check.code } }))!.id;
   }
+
+  const { rawToken: accessToken, tokenHash: accessTokenHash } = generateOrderAccessToken();
 
   const booking = await prisma.$transaction(async (tx) => {
     const created = await tx.sessionBooking.create({
@@ -113,6 +144,8 @@ export async function createSessionBooking(
         priceEGP: counselor.priceEGP!,
         promoCodeId,
         discountEGP,
+        locale,
+        accessTokenHash,
       },
     });
     if (promoCodeId) {
@@ -120,6 +153,17 @@ export async function createSessionBooking(
     }
     return created;
   });
+
+  // SessionBooking has no userId FK (guest checkout is the norm here, and
+  // logged-in ownership is matched by email elsewhere — see order-access.ts)
+  // so attribution to a specific user for behavioral analytics is a
+  // best-effort lookup, not a join. Guest bookings still count toward
+  // Acquisition/Revenue funnel totals via the userId: null branch.
+  void prisma.user
+    .findUnique({ where: { email: booking.email }, select: { id: true } })
+    .then((matchedUser) =>
+      trackEvent(matchedUser?.id ?? null, "SessionBooking", "created", { counselorId: counselor.id }),
+    );
 
   const finalPriceEGP = counselor.priceEGP - discountEGP;
   const dateTimeLine = booking.preferredTime
@@ -164,18 +208,24 @@ export async function createSessionBooking(
     extraRecipients: [counselor.email],
   });
 
+  const isAr = locale === "ar";
   await sendCustomerConfirmation({
     to: booking.email,
     name: booking.name,
-    subject: "Complete your payment to book your session",
+    locale,
+    subject: isAr ? "أكمل الدفع لحجز جلستك" : "Complete your payment to book your session",
     intro: booking.preferredTime
-      ? `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
-      : `Thanks for choosing ${counselor.name}! Complete your payment of ${formatEGP(finalPriceEGP)} — we'll confirm your exact session time with you afterward.`,
+      ? isAr
+        ? `شكرًا لاختيارك Let It Out! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} لتأكيد جلستك.`
+        : `Thanks for choosing Let It Out! Complete your payment of ${formatEGP(finalPriceEGP)} to confirm your session.`
+      : isAr
+        ? `شكرًا لاختيارك Let It Out! أكمل عملية الدفع بقيمة ${formatEGP(finalPriceEGP)} — هنأكد ميعاد جلستك بالظبط بعد كده.`
+        : `Thanks for choosing Let It Out! Complete your payment of ${formatEGP(finalPriceEGP)} — we'll confirm your exact session time with you afterward.`,
     lines: [
-      { label: "Counselor", value: counselor.name },
-      { label: "Preferred day", value: booking.preferredDate },
-      ...(booking.preferredTime ? [{ label: "Time", value: booking.preferredTime }] : []),
-      { label: "Price", value: formatEGP(finalPriceEGP) },
+      { label: isAr ? "المعالج" : "Counselor", value: counselor.name },
+      { label: isAr ? "اليوم المفضل" : "Preferred day", value: booking.preferredDate },
+      ...(booking.preferredTime ? [{ label: isAr ? "الوقت" : "Time", value: booking.preferredTime }] : []),
+      { label: isAr ? "السعر" : "Price", value: formatEGP(finalPriceEGP) },
     ],
   });
 
@@ -185,7 +235,8 @@ export async function createSessionBooking(
     counselorId: counselor.id,
     counselorName: counselor.name,
     counselorEmail: counselor.email,
+    locale,
   });
 
-  return { sessionBookingId: booking.id };
+  return { sessionBookingId: booking.id, accessToken };
 }

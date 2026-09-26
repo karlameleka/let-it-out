@@ -10,21 +10,14 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-// The build sweeps /resources into the precache manifest as a static
-// build-time HTML snapshot — but precache matches are served straight from
-// that snapshot, bypassing the runtimeCaching NetworkOnly rule below
-// entirely (precache takes priority over runtime routes). For a page whose
-// content is personalized per logged-in client ("My tools"), that snapshot
-// would otherwise permanently mask new content and never clear the unread
-// badge for anyone using the installed app. Stripped out here so the
-// runtimeCaching rule is what actually decides its fetch behavior.
-const PRECACHE_EXCLUDED_URLS = new Set(["/resources"]);
-const precacheEntries = (self.__SW_MANIFEST ?? []).filter(
-  (entry) => !PRECACHE_EXCLUDED_URLS.has(typeof entry === "string" ? entry : entry.url),
-);
-
 const serwist = new Serwist({
-  precacheEntries,
+  // Build assets only now (JS/CSS chunks) — page HTML is no longer swept
+  // into the precache manifest (see serwist/[path]/route.ts) since a
+  // precache match is served straight from a frozen snapshot, bypassing
+  // the runtimeCaching rules below entirely, which used to be able to
+  // leave a page's chrome stuck in a locale the visitor had already
+  // switched away from.
+  precacheEntries: self.__SW_MANIFEST ?? [],
   skipWaiting: true,
   clientsClaim: true,
   // Left off deliberately: navigation preload races the browser's own
@@ -42,6 +35,20 @@ const serwist = new Serwist({
   // missing a tool a therapist just sent (and not clearing the unread
   // badge) is worse than the honest /offline fallback below — these must
   // always hit the network, never a cache.
+  //
+  // Every other authenticated, PII/clinical-content page is carved out
+  // here too, for a different reason than staleness: defaultCache's
+  // NetworkFirst rules persist a matched page's rendered HTML/RSC into
+  // Cache Storage for up to 24h regardless of this list, and nothing ever
+  // purges that cache on logout (see LogoutForm in
+  // src/components/logout-form.tsx, which clears it client-side instead —
+  // this list is the server-side half of that fix, so a page never lands
+  // in Cache Storage in the first place). Without both halves, a signed-out
+  // session on a shared device would leave the next person able to read
+  // the previous user's account details, journal entries, orders, upcoming
+  // sessions, intake answers, support chat transcript, or (for a
+  // counselor) a client's clinical notes — straight out of Cache Storage,
+  // no active session required.
   runtimeCaching: [
     {
       matcher({ url: { pathname } }) {
@@ -53,7 +60,16 @@ const serwist = new Serwist({
           pathname.startsWith("/api/webhooks/") ||
           pathname.startsWith("/admin") ||
           pathname === "/resources" ||
-          pathname.startsWith("/api/my-tools/")
+          pathname.startsWith("/api/my-tools/") ||
+          pathname.startsWith("/account") ||
+          pathname.startsWith("/journal") ||
+          pathname.startsWith("/orders") ||
+          pathname.startsWith("/profile") ||
+          pathname.startsWith("/therapist") ||
+          pathname.startsWith("/upcoming") ||
+          pathname.startsWith("/intake") ||
+          pathname.startsWith("/support") ||
+          pathname.startsWith("/email-preferences")
         );
       },
       handler: new NetworkOnly(),
@@ -80,7 +96,7 @@ serwist.addEventListeners();
 self.addEventListener("push", (event) => {
   let data = {
     title: "Let It Out",
-    body: "A new prompt is waiting for you — take a few minutes to write.",
+    body: "A new prompt is waiting for you, take a few minutes to write.",
     url: "/journal",
   };
 

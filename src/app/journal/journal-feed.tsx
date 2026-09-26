@@ -1,29 +1,49 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { BarChart3, BookOpen, LockKeyhole, PlusCircle, Search, Star } from "lucide-react";
+import { BarChart3, BookOpen, LockKeyhole, Music, PlusCircle, Search, Star } from "lucide-react";
 import { exportJournalEntries } from "@/lib/journal-actions";
-import { getFeedData, toggleBookmark, migrateFromServer, type JournalFeedEntry, type JournalStats } from "@/lib/local-journal";
+import {
+  getFeedData,
+  toggleBookmark,
+  deleteEntry,
+  migrateFromServer,
+  type JournalFeedEntry,
+  type JournalStats,
+} from "@/lib/local-journal";
 import { relockJournal } from "@/components/journal-lock-gate";
 import { moodColor, moodLabel } from "@/lib/moods";
+import { hapticWarning } from "@/lib/haptics";
 import { ButtonLink } from "@/components/ui";
 import JournalDataNotice from "@/components/journal-data-notice";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
 export default function JournalFeed({
   userId,
   firstName,
   lockEnabled,
+  dict,
+  dataNoticeDict,
+  deleteDict,
+  locale,
 }: {
   userId: string;
   firstName: string;
   lockEnabled: boolean;
+  dict: Dictionary["journalFeed"];
+  dataNoticeDict: Dictionary["journalDataNotice"];
+  deleteDict: Dictionary["entryDetail"];
+  locale: Locale;
 }) {
   const [entries, setEntries] = useState<JournalFeedEntry[] | null>(null);
   const [stats, setStats] = useState<JournalStats | null>(null);
   const [query, setQuery] = useState("");
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -35,15 +55,28 @@ export default function JournalFeed({
     load();
   }, [userId]);
 
+  async function handleConfirmDelete() {
+    if (!pendingDeleteId) return;
+    setDeleting(true);
+    const result = await deleteEntry(userId, pendingDeleteId);
+    if (result.success) {
+      const data = await getFeedData(userId);
+      setEntries(data.entries);
+      setStats(data.stats);
+      setPendingDeleteId(null);
+    }
+    setDeleting(false);
+  }
+
   const filtered = useMemo(() => {
     if (!entries) return [];
     const q = query.trim().toLowerCase();
     return entries.filter((e) => {
       if (bookmarkedOnly && !e.bookmarked) return false;
       if (!q) return true;
-      return e.content.toLowerCase().includes(q) || e.moods.some((m) => moodLabel(m).toLowerCase().includes(q));
+      return e.content.toLowerCase().includes(q) || e.moods.some((m) => moodLabel(m, locale).toLowerCase().includes(q));
     });
-  }, [entries, query, bookmarkedOnly]);
+  }, [entries, query, bookmarkedOnly, locale]);
 
   async function handleToggleBookmark(id: string) {
     setEntries((prev) => prev?.map((e) => (e.id === id ? { ...e, bookmarked: !e.bookmarked } : e)) ?? prev);
@@ -58,11 +91,14 @@ export default function JournalFeed({
     <>
       <section className="relative overflow-hidden bg-brand-50">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <Link href="/resources" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
+            <span className="inline-block rtl:-scale-x-100">&larr;</span> {dict.backToResources}
+          </Link>
+          <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">A self-exploration journey</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{dict.eyebrow}</p>
               <h1 className="mt-2 font-display text-3xl font-medium text-brand-900 sm:text-4xl">
-                Hi {firstName}, welcome back
+                {dict.welcomeBack.replace("{name}", firstName)}
               </h1>
             </div>
             {lockEnabled && (
@@ -72,7 +108,7 @@ export default function JournalFeed({
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3.5 py-2 text-xs font-medium text-ink/50 transition-colors hover:border-brand-300 active:border-brand-300 hover:text-ink/70 active:text-ink/70"
               >
                 <LockKeyhole className="h-3.5 w-3.5" strokeWidth={2} />
-                Lock
+                {dict.lock}
               </button>
             )}
           </div>
@@ -90,7 +126,7 @@ export default function JournalFeed({
                   {stats?.total ?? 0}
                 </p>
                 <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
-                  {stats?.total === 1 ? "Entry" : "Entries"}
+                  {stats?.total === 1 ? dict.entry : dict.entries}
                 </p>
               </div>
               <div className="px-6 py-3.5">
@@ -98,29 +134,29 @@ export default function JournalFeed({
                   {stats?.totalWords ?? 0}
                 </p>
                 <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/40">
-                  {stats?.totalWords === 1 ? "word written" : "words written"}
+                  {stats?.totalWords === 1 ? dict.wordWritten : dict.wordsWritten}
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <ButtonLink href="/journal/new">
+              <ButtonLink href="/journal/new" data-onboarding="journal-new-entry">
                 <PlusCircle className="h-4 w-4" strokeWidth={2} />
-                New entry
+                {dict.newEntry}
               </ButtonLink>
               <Link
                 href="/journal/patterns"
                 className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-100 active:bg-brand-100"
               >
                 <BarChart3 className="h-4 w-4" strokeWidth={2} />
-                Mood patterns
+                {dict.moodPatterns}
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <JournalDataNotice />
+      <JournalDataNotice dict={dataNoticeDict} />
 
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-12">
         <div className="flex flex-wrap items-center gap-3">
@@ -130,7 +166,7 @@ export default function JournalFeed({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search your entries..."
+              placeholder={dict.searchPlaceholder}
               className="w-full rounded-full border border-brand-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-500"
             />
           </div>
@@ -144,7 +180,7 @@ export default function JournalFeed({
             }`}
           >
             <Star className="h-4 w-4" strokeWidth={2} fill={bookmarkedOnly ? "currentColor" : "none"} />
-            Bookmarked
+            {dict.bookmarked}
           </button>
         </div>
 
@@ -160,41 +196,144 @@ export default function JournalFeed({
               <BookOpen className="h-5 w-5" strokeWidth={1.75} />
             </span>
             <p className="mt-4 text-ink/60">
-              {entries.length === 0
-                ? "Your entries will show up here once you save your first one."
-                : "No entries match that search."}
+              {entries.length === 0 ? dict.emptyNoEntries : dict.emptyNoMatches}
             </p>
             {entries.length === 0 && (
-              <ButtonLink href="/journal/new" className="mt-6">
-                Write your first entry
+              <ButtonLink href="/journal/new" className="mt-6" data-onboarding="journal-new-entry">
+                {dict.writeFirstEntry}
               </ButtonLink>
             )}
           </div>
         ) : (
           <ul className="mt-6 space-y-3">
             {filtered.map((e) => (
-              <EntryCard key={e.id} entry={e} onToggleBookmark={() => handleToggleBookmark(e.id)} />
+              <EntryCard
+                key={e.id}
+                entry={e}
+                onToggleBookmark={() => handleToggleBookmark(e.id)}
+                onLongPressDelete={() => setPendingDeleteId(e.id)}
+                dict={dict}
+              />
             ))}
           </ul>
         )}
       </div>
+
+      {pendingDeleteId && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-sm animate-pop-in overflow-hidden rounded-3xl border-2 border-brand-100 bg-white shadow-2xl">
+            <div className="px-6 py-5">
+              <h2 className="font-display text-lg font-semibold text-brand-900">{deleteDict.deleteEntry}</h2>
+              <p className="mt-2 text-sm text-ink/70">{deleteDict.deleteConfirm}</p>
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPendingDeleteId(null)}
+                  disabled={deleting}
+                  className="flex-1 rounded-full border border-brand-200 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:bg-brand-50 active:bg-brand-50 disabled:opacity-50"
+                >
+                  {deleteDict.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? deleteDict.deleting : deleteDict.delete}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
-function EntryCard({ entry, onToggleBookmark }: { entry: JournalFeedEntry; onToggleBookmark: () => void }) {
+const LONG_PRESS_MS = 550;
+// Cancels the pending long-press if the finger has moved this far —
+// otherwise a scroll gesture starting on a card would trigger a delete.
+const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
+
+// The list can hold many entries, each with its own long-press timer and
+// (for entries with a photo) an <img> — memoized so typing in the search
+// box or toggling a different entry's bookmark doesn't re-run every
+// card's render, just the ones whose own props actually changed.
+const EntryCard = memo(function EntryCard({
+  entry,
+  onToggleBookmark,
+  onLongPressDelete,
+  dict,
+}: {
+  entry: JournalFeedEntry;
+  onToggleBookmark: () => void;
+  onLongPressDelete: () => void;
+  dict: Dictionary["journalFeed"];
+}) {
   const router = useRouter();
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
+
+  function clearPressTimer() {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
+  function handlePointerDown(e: React.PointerEvent) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    longPressFired.current = false;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    clearPressTimer();
+    pressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      hapticWarning();
+      onLongPressDelete();
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!pressStart.current) return;
+    const dx = e.clientX - pressStart.current.x;
+    const dy = e.clientY - pressStart.current.y;
+    if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE_PX) clearPressTimer();
+  }
+
+  function handlePointerEnd() {
+    clearPressTimer();
+  }
+
+  function handleClick() {
+    // A long-press release also fires a click — swallow it so it doesn't
+    // navigate into the entry right after opening the delete confirm.
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      return;
+    }
+    router.push(`/journal/${entry.id}`);
+  }
 
   return (
     <li
-      onClick={() => router.push(`/journal/${entry.id}`)}
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onPointerLeave={handlePointerEnd}
+      style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", touchAction: "manipulation" }}
       className="group flex cursor-pointer gap-4 rounded-2xl border-2 border-brand-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 active:-translate-y-0.5 hover:border-brand-300 active:border-brand-300 hover:shadow-md active:shadow-md"
     >
-      {entry.photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element -- already-compressed data URI, no benefit from next/image's optimizer
+      {entry.thumbUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- small pre-shrunk thumbnail data URI, no benefit from next/image's optimizer
         <img
-          src={entry.photoUrl}
+          src={entry.thumbUrl}
           alt=""
+          loading="lazy"
+          decoding="async"
           className="h-16 w-16 shrink-0 rounded-xl object-cover"
         />
       )}
@@ -214,20 +353,22 @@ function EntryCard({ entry, onToggleBookmark }: { entry: JournalFeedEntry; onTog
                   <span
                     key={m}
                     title={moodLabel(m)}
-                    className="h-2.5 w-2.5 rounded-full border border-black/10"
+                    className="h-2.5 w-2.5 rounded-full border border-brand-900/10"
                     style={{ backgroundColor: moodColor(m) }}
                   />
                 ))}
               </span>
             )}
+            {entry.songUrl && <Music className="h-3 w-3 shrink-0 text-ink/40" strokeWidth={2} />}
           </div>
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onToggleBookmark();
             }}
-            aria-label={entry.bookmarked ? "Remove bookmark" : "Bookmark this entry"}
+            aria-label={entry.bookmarked ? dict.removeBookmark : dict.bookmarkThis}
             className={`shrink-0 rounded-full p-1 transition-colors ${
               entry.bookmarked ? "text-brand-600" : "text-ink/25 hover:text-ink/50 active:text-ink/50"
             }`}
@@ -242,4 +383,4 @@ function EntryCard({ entry, onToggleBookmark }: { entry: JournalFeedEntry; onTog
       </div>
     </li>
   );
-}
+});

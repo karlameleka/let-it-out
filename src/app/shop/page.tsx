@@ -6,10 +6,12 @@ import { Container, SectionHeading } from "@/components/ui";
 import { PRODUCT_PHOTOS } from "@/components/product-cover";
 import { Ribbon, Swash, WaveDivider } from "@/components/decor";
 import PriceDisplay from "@/components/price-display";
-import { FaqList } from "@/components/faq";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { localizeProduct } from "@/lib/content/products";
+import { SHOP_TESTIMONIALS } from "@/lib/testimonials";
+import TestimonialCarousel from "@/components/testimonial-carousel";
 
 export const metadata: Metadata = {
   title: "Guided Journals",
@@ -26,12 +28,6 @@ export default async function ShopPage() {
     getLocale(),
   ]);
   const t = getDictionary(locale).shop;
-
-  const SHOP_FAQ = [
-    { question: t.faq1Q, answer: t.faq1A },
-    { question: t.faq2Q, answer: t.faq2A },
-    { question: t.faq3Q, answer: t.faq3A },
-  ];
 
   return (
     <>
@@ -58,8 +54,9 @@ export default async function ShopPage() {
         <Reveal>
           <Container>
           <SectionHeading eyebrow={t.ourJournalsEyebrow} title={t.ourJournalsTitle} />
-          <div className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
-            {products.map((p) => {
+          <div data-onboarding="shop-journals" className="mt-12 grid gap-x-8 gap-y-16 sm:grid-cols-2">
+            {products.map((rawProduct) => {
+              const p = localizeProduct(rawProduct, locale);
               const price = Math.min(...p.variants.map((v) => v.priceEGP));
               const photo = PRODUCT_PHOTOS[p.slug];
               const stockCount = p.variants[0]?.stockCount ?? null;
@@ -78,12 +75,12 @@ export default async function ShopPage() {
                       />
                       {outOfStock && (
                         <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-ink/60">
-                          Out of stock
+                          {t.outOfStock}
                         </span>
                       )}
                       {lowStock && (
                         <span className="absolute left-3 top-3 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-                          Only {stockCount} left
+                          {t.onlyLeft.replace("{count}", String(stockCount))}
                         </span>
                       )}
                     </div>
@@ -107,10 +104,10 @@ export default async function ShopPage() {
 
       <section className="bg-brand-50 py-16 sm:py-20">
         <Reveal>
-          <Container className="max-w-2xl">
-            <SectionHeading eyebrow={t.faqEyebrow} title={t.faqTitle} />
-            <div className="mt-8">
-              <FaqList items={SHOP_FAQ} />
+          <Container>
+            <SectionHeading eyebrow={t.testimonialsEyebrow} title={t.testimonialsTitle} />
+            <div className="mt-10">
+              <TestimonialCarousel quotes={SHOP_TESTIMONIALS} />
             </div>
           </Container>
         </Reveal>

@@ -7,6 +7,9 @@ import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
 import { sendIntakeFormLink } from "@/lib/intake-actions";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission } from "@/lib/anti-spam";
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   INDIVIDUAL_COUNSELING: "Individual",
@@ -15,16 +18,31 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-const bookingSchema = z.object({
-  counselorId: z.string().min(1),
-  name: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  phone: z.string().trim().min(5, "Please enter a valid phone number."),
-  sessionType: z.enum(["INDIVIDUAL_COUNSELING", "COUPLES_COUNSELING", "FOLLOW_UP", "OTHER"]),
-  preferredDate: z.string().trim().min(1, "Please choose a preferred date."),
-  preferredTime: z.string().trim().min(1, "Please choose a preferred time."),
-  message: z.string().trim().optional(),
-});
+function sessionTypeLabelFor(sessionType: string, b: Dictionary["bookingForm"]): string {
+  switch (sessionType) {
+    case "INDIVIDUAL_COUNSELING":
+      return b.typeIndividual;
+    case "COUPLES_COUNSELING":
+      return b.typeCouples;
+    case "FOLLOW_UP":
+      return b.typeFollowUp;
+    default:
+      return b.typeOther;
+  }
+}
+
+function buildBookingSchema(v: Dictionary["validation"], b: Dictionary["bookingForm"]) {
+  return z.object({
+    counselorId: z.string().min(1),
+    name: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    phone: z.string().trim().min(5, v.phoneInvalid).max(30),
+    sessionType: z.enum(["INDIVIDUAL_COUNSELING", "COUPLES_COUNSELING", "FOLLOW_UP", "OTHER"]),
+    preferredDate: z.string().trim().min(1, b.dateRequired).max(50),
+    preferredTime: z.string().trim().min(1, b.timeRequired).max(50),
+    message: z.string().trim().max(5000).optional(),
+  });
+}
 
 export type BookingFormState = { error?: string; success?: boolean } | undefined;
 
@@ -32,7 +50,13 @@ export async function submitBookingRequest(
   _prevState: BookingFormState,
   formData: FormData,
 ): Promise<BookingFormState> {
-  const parsed = bookingSchema.safeParse({
+  const blocked = await screenSubmission(formData, "booking-request", { simpleCaptcha: true });
+  if (blocked) return blocked;
+
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildBookingSchema(dict.validation, dict.bookingForm).safeParse({
     counselorId: formData.get("counselorId"),
     name: formData.get("name"),
     email: formData.get("email"),
@@ -44,7 +68,7 @@ export async function submitBookingRequest(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const user = await getCurrentUser();
@@ -103,16 +127,20 @@ export async function submitBookingRequest(
     extraRecipients: [booking.counselor.email],
   });
 
+  const isAr = locale === "ar";
   await sendCustomerConfirmation({
     to: booking.email,
     name: booking.name,
-    subject: "We've received your session request",
-    intro: `Thank you for requesting a session with ${booking.counselor.name}. Your preferred date and time aren't guaranteed yet — we'll reach out to confirm your appointment as soon as possible.`,
+    locale,
+    subject: isAr ? "استلمنا طلب جلستك" : "We've received your session request",
+    intro: isAr
+      ? `شكرًا لطلبك جلسة مع ${booking.counselor.name}. الموعد المفضل مش مؤكد لسه — هنتواصل معاك لتأكيد موعدك في أقرب وقت.`
+      : `Thank you for requesting a session with ${booking.counselor.name}. Your preferred date and time aren't guaranteed yet — we'll reach out to confirm your appointment as soon as possible.`,
     lines: [
-      { label: "Counselor", value: booking.counselor.name },
-      { label: "Session type", value: booking.sessionType.replaceAll("_", " ") },
-      { label: "Preferred date", value: booking.preferredDate },
-      { label: "Preferred time", value: booking.preferredTime },
+      { label: isAr ? "المعالج" : "Counselor", value: booking.counselor.name },
+      { label: isAr ? "نوع الجلسة" : "Session type", value: sessionTypeLabelFor(booking.sessionType, dict.bookingForm) },
+      { label: isAr ? "التاريخ المفضل" : "Preferred date", value: booking.preferredDate },
+      { label: isAr ? "الوقت المفضل" : "Preferred time", value: booking.preferredTime },
     ],
   });
 
@@ -122,6 +150,7 @@ export async function submitBookingRequest(
     counselorId: booking.counselor.id,
     counselorName: booking.counselor.name,
     counselorEmail: booking.counselor.email,
+    locale,
   });
 
   return { success: true };

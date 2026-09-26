@@ -2,9 +2,11 @@ export type BreathingPhaseLabel = "Inhale" | "Hold" | "Exhale";
 
 export type BreathingPhase = { label: BreathingPhaseLabel; seconds: number };
 
-/** Drives which shape the paced visual renders as — chosen to match each
-    pattern: a literal box for box breathing, a triangle for 4-7-8's three
-    phases, a circle for coherent breathing's smooth in/out. */
+/** Drives which paced visual a pattern renders as — a dot tracing a
+    square's four edges for box breathing, the same dot tracing a
+    triangle's three edges for 4-7-8 (one edge per phase, same as the
+    square), a smooth pulsing circle for coherent breathing's even
+    in/out. */
 export type BreathingShape = "square" | "triangle" | "circle";
 
 export type BreathingPattern = {
@@ -34,7 +36,7 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
     id: "4-7-8",
     name: "4-7-8 Breathing",
     tagline: "4-7-8",
-    description: "A longer exhale than inhale, designed to wind you down — often used before sleep.",
+    description: "A longer exhale than inhale, designed to wind you down, often used before sleep.",
     shape: "triangle",
     phases: [
       { label: "Inhale", seconds: 4 },
@@ -46,7 +48,7 @@ export const BREATHING_PATTERNS: BreathingPattern[] = [
     id: "coherent",
     name: "Coherent Breathing",
     tagline: "5-5",
-    description: "Smooth, equal in-and-out breathing at about six breaths a minute — shown to improve heart-rate variability.",
+    description: "Smooth, equal in-and-out breathing at about six breaths a minute, shown to improve heart-rate variability.",
     shape: "circle",
     phases: [
       { label: "Inhale", seconds: 5 },

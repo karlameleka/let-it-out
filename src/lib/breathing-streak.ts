@@ -3,14 +3,12 @@
  * one doesn't inflate the others. Same day-set algorithm as the other two
  * for consistent "day streak" semantics across the app. */
 
+import { localDayKey, todayLocalDayKey } from "@/lib/local-day";
+
 const STREAK_KEY = "lio_breathing_streak_dates";
 const TOTAL_SECONDS_KEY = "lio_breathing_total_seconds";
 
 export type BreathingStreakStats = { streak: number; total: number; totalMinutes: number };
-
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function readDays(): Set<string> {
   try {
@@ -30,10 +28,10 @@ function readTotalSeconds(): number {
 function computeFromDays(days: Set<string>, totalSeconds: number): BreathingStreakStats {
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
-  if (!days.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
+  if (!days.has(localDayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  while (days.has(cursor.toISOString().slice(0, 10))) {
+  while (days.has(localDayKey(cursor))) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -50,7 +48,7 @@ export function getBreathingStreak(): BreathingStreakStats {
  * but every session's duration adds to the running total. */
 export function recordBreathingCompletion(durationSeconds: number): BreathingStreakStats {
   const days = readDays();
-  days.add(todayKey());
+  days.add(todayLocalDayKey());
   window.localStorage.setItem(STREAK_KEY, JSON.stringify(Array.from(days)));
 
   const totalSeconds = readTotalSeconds() + durationSeconds;

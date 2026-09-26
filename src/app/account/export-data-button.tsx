@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 import { exportEntries } from "@/lib/local-journal";
+import { exportReflectionEntries } from "@/lib/local-reflection";
+import { exportAssessmentResults } from "@/lib/local-assessments";
+import { buildJournalExportPdf } from "@/lib/journal-pdf";
+import { deliverBlob } from "@/lib/download-blob";
+import { withTimeout } from "@/lib/with-timeout";
+import { todayLocalDayKey } from "@/lib/local-day";
 import type { Dictionary } from "@/lib/i18n/dictionary";
+import type { Locale } from "@/lib/i18n/locale";
 
-export default function ExportDataButton({ dict, userId }: { dict: Dictionary; userId: string }) {
+const PDF_BUILD_TIMEOUT_MS = 25_000;
+
+export default function ExportDataButton({ dict, userId, locale }: { dict: Dictionary; userId: string; locale: Locale }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = dict.account;
@@ -13,9 +22,18 @@ export default function ExportDataButton({ dict, userId }: { dict: Dictionary; u
     setPending(true);
     setError(null);
 
-    let data;
+    let blob: Blob;
     try {
-      data = await exportEntries(userId);
+      const [journal, reflections, assessments] = await Promise.all([
+        exportEntries(userId),
+        exportReflectionEntries(userId),
+        exportAssessmentResults(userId),
+      ]);
+      blob = await withTimeout(
+        buildJournalExportPdf({ journal, reflections, assessments, locale }),
+        PDF_BUILD_TIMEOUT_MS,
+        "PDF build timed out",
+      );
     } catch {
       setPending(false);
       setError(t.exportError);
@@ -23,15 +41,7 @@ export default function ExportDataButton({ dict, userId }: { dict: Dictionary; u
     }
     setPending(false);
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `let-it-out-journal-export-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    deliverBlob(blob, `let-it-out-journal-export-${todayLocalDayKey()}.pdf`);
   }
 
   return (

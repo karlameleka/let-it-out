@@ -20,6 +20,16 @@ fi
 # Start the Next.js dev server (in the background) if it isn't already
 # serving requests, so any existing preview link comes back to life
 # without needing manual intervention.
+#
+# Once running, treat this port-3000 process as the user's live preview,
+# not a disposable test server: don't `pkill`/restart it mid-task. A
+# schema change does need a restart before the running server's in-memory
+# module cache reflects a freshly `prisma generate`-d client (Turbopack
+# doesn't hot-reload src/generated/prisma) — for that, start a throwaway
+# instance on another port (e.g. `PORT=3011 npm run dev`) for your own
+# verification instead, and leave this one alone until the very end of
+# the task (if at all), so the preview doesn't drop out from under the
+# user repeatedly while you're iterating.
 if ! curl -sf -o /dev/null http://localhost:3000 2>/dev/null; then
   cd "$CLAUDE_PROJECT_DIR"
   nohup npm run dev > /tmp/next-dev.log 2>&1 &

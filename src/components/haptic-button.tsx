@@ -1,8 +1,32 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import type { ComponentProps } from "react";
 import { hapticTap } from "@/lib/haptics";
+
+const MotionLink = motion.create(Link);
+
+// framer-motion's HTMLMotionProps redefines onDrag/onDragStart/onDragEnd/
+// onAnimationStart/onAnimationEnd with its own (event, info) signature,
+// which collides with React's plain DOM event handler types of the same
+// name — Button/ButtonLink never use any of these, so the clean fix is
+// just excluding them from the accepted prop type rather than fighting
+// the two libraries' incompatible signatures.
+type ConflictingMotionProps =
+  | "onDrag"
+  | "onDragStart"
+  | "onDragEnd"
+  | "onAnimationStart"
+  | "onAnimationEnd"
+  | "onAnimationIteration";
+
+// A quick, slightly-damped settle rather than a bouncy spring — calm,
+// not playful, to match the app's tone. MotionProvider's
+// reducedMotion="user" (see motion-provider.tsx) disables this
+// transform automatically when the OS-level reduce-motion setting is on.
+const TAP_SCALE = { scale: 0.96 };
+const TAP_TRANSITION = { type: "spring" as const, stiffness: 500, damping: 30 };
 
 const buttonBase =
   "inline-flex items-center justify-center gap-2 rounded px-6 py-3 text-sm font-semibold tracking-tight transition-all duration-300 ease-out disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2";
@@ -30,9 +54,11 @@ export function Button({
   className = "",
   onClick,
   ...props
-}: ComponentProps<"button"> & { variant?: keyof typeof variants }) {
+}: Omit<ComponentProps<"button">, ConflictingMotionProps> & { variant?: keyof typeof variants }) {
   return (
-    <button
+    <motion.button
+      whileTap={TAP_SCALE}
+      transition={TAP_TRANSITION}
       className={`${buttonBase} ${variants[variant]} ${className}`}
       onClick={(e) => {
         hapticTap();
@@ -49,10 +75,12 @@ export function ButtonLink({
   href,
   onClick,
   ...props
-}: ComponentProps<typeof Link> & { variant?: keyof typeof variants }) {
+}: Omit<ComponentProps<typeof Link>, ConflictingMotionProps> & { variant?: keyof typeof variants }) {
   return (
-    <Link
+    <MotionLink
       href={href}
+      whileTap={TAP_SCALE}
+      transition={TAP_TRANSITION}
       className={`${buttonBase} ${variants[variant]} ${className}`}
       onClick={(e) => {
         hapticTap();

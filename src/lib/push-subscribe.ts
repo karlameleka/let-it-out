@@ -29,7 +29,7 @@ export async function subscribeBrowserToPush(): Promise<PushSubscribeResult> {
       error:
         permission === "denied"
           ? ""
-          : "Permission wasn't granted — try again and allow notifications when prompted.",
+          : "Permission wasn't granted, try again and allow notifications when prompted.",
     };
   }
 

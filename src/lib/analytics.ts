@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { GENDERS, REFERRAL_SOURCES } from "@/lib/content/geo";
+import { CAIRO_TIME_ZONE, todayInTimeZone } from "@/lib/timezone";
 
 // A single-pageview session (or several logged in the same instant) has a
 // zero measured span even though the person was actually reading that
@@ -9,7 +10,11 @@ import { GENDERS, REFERRAL_SOURCES } from "@/lib/content/geo";
 const MIN_DWELL_MS = 20_000;
 const SESSION_GAP_MS = 30 * 60 * 1000;
 
-function featureForPath(path: string): string {
+/** Exported for reuse by behavioral-metrics.ts (Feature Adoption Depth) —
+ * the same path→feature bucketing the admin analytics page already uses
+ * for "most/least used features", so a feature's adoption count means the
+ * same thing in both places. */
+export function featureForPath(path: string): string {
   if (path === "/") return "Home";
   if (path.startsWith("/journal")) return "Journal";
   if (path.startsWith("/counseling")) return "Counseling";
@@ -26,15 +31,31 @@ function featureForPath(path: string): string {
   return "Other";
 }
 
-function bucketAge(birthYear: number | null): string {
-  if (!birthYear) return "Not provided";
-  const age = new Date().getFullYear() - birthYear;
+// `todayStr` (YYYY-MM-DD, in CAIRO_TIME_ZONE — the admin dashboard's own
+// fixed timezone, deliberately not tied to whichever device is viewing it)
+// is threaded in by the caller rather than computed per call, both to
+// avoid redundant work for every user in a loop and because one consistent
+// "today" should apply across the whole
+// report rather than each user landing on a different reference date if
+// this happened to straddle midnight mid-computation.
+function bucketAge(birthDate: Date | null, todayStr: string): string {
+  if (!birthDate) return "Not provided";
+  const [todayYear, todayMonth, todayDay] = todayStr.split("-").map(Number);
+  const birthMonth = birthDate.getUTCMonth() + 1;
+  const birthDay = birthDate.getUTCDate();
+  const hadBirthdayThisYear = todayMonth > birthMonth || (todayMonth === birthMonth && todayDay >= birthDay);
+  const age = todayYear - birthDate.getUTCFullYear() - (hadBirthdayThisYear ? 0 : 1);
   if (age < 18) return "Under 18";
   if (age <= 24) return "18–24";
   if (age <= 34) return "25–34";
   if (age <= 44) return "35–44";
   if (age <= 54) return "45–54";
   return "55+";
+}
+
+function bucketGender(gender: string | null): string {
+  if (!gender) return "Not provided";
+  return (GENDERS as readonly string[]).includes(gender) ? gender : "Other";
 }
 
 export type BreakdownRow = { label: string; count: number; pct: number };
@@ -62,9 +83,10 @@ export async function getUserCountStats() {
  * are share-of-users, not share-of-total-selections. */
 export async function getDemographics() {
   const users = await prisma.user.findMany({
-    select: { gender: true, birthYear: true, country: true, referralSource: true, serviceInterests: true },
+    select: { gender: true, birthDate: true, country: true, referralSource: true, serviceInterests: true },
   });
   const total = users.length;
+  const todayStr = todayInTimeZone(CAIRO_TIME_ZONE);
 
   const gender = new Map<string, number>();
   const age = new Map<string, number>();
@@ -73,10 +95,10 @@ export async function getDemographics() {
   const interests = new Map<string, number>();
 
   for (const u of users) {
-    const g = u.gender && (GENDERS as readonly string[]).includes(u.gender) ? u.gender : "Not provided";
+    const g = bucketGender(u.gender);
     gender.set(g, (gender.get(g) ?? 0) + 1);
 
-    const a = bucketAge(u.birthYear);
+    const a = bucketAge(u.birthDate, todayStr);
     age.set(a, (age.get(a) ?? 0) + 1);
 
     const c = u.country || "Not provided";
@@ -168,12 +190,13 @@ export type TimeSpentRow = { label: string; avgMinutes: number; sessions: number
 export async function getTimeSpentByGroup() {
   const [views, users] = await Promise.all([
     prisma.pageView.findMany({ select: { userId: true, createdAt: true } }),
-    prisma.user.findMany({ select: { id: true, gender: true, birthYear: true, referralSource: true } }),
+    prisma.user.findMany({ select: { id: true, gender: true, birthDate: true, referralSource: true } }),
   ]);
 
   if (views.length === 0) {
     return { trackedUsers: 0, gender: [] as TimeSpentRow[], age: [] as TimeSpentRow[], referral: [] as TimeSpentRow[] };
   }
+  const todayStr = todayInTimeZone(CAIRO_TIME_ZONE);
 
   const byUser = new Map<string, Date[]>();
   for (const v of views) {
@@ -204,8 +227,8 @@ export async function getTimeSpentByGroup() {
 
   return {
     trackedUsers: byUser.size,
-    gender: accumulate((u) => (u.gender && (GENDERS as readonly string[]).includes(u.gender) ? u.gender : "Not provided")),
-    age: accumulate((u) => bucketAge(u.birthYear)),
+    gender: accumulate((u) => bucketGender(u.gender)),
+    age: accumulate((u) => bucketAge(u.birthDate, todayStr)),
     referral: accumulate((u) =>
       u.referralSource && (REFERRAL_SOURCES as readonly string[]).includes(u.referralSource) ? u.referralSource : "Not provided",
     ),

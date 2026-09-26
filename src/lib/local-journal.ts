@@ -1,6 +1,10 @@
 "use client";
 
 import { MOODS } from "@/lib/moods";
+import type { Locale } from "@/lib/i18n/locale";
+import { markOnboardingJournalStepDone } from "@/lib/onboarding";
+import { localDayKey, localDayKeyFromIso } from "@/lib/local-day";
+import { makeThumbnail } from "@/lib/compress-image";
 
 // Device-only journal storage. Entries never leave the browser: content and
 // any attached photo are encrypted with AES-256-GCM using a key that is
@@ -22,6 +26,15 @@ export type JournalFeedEntry = {
   moods: string[];
   bookmarked: boolean;
   photoUrl: string | null;
+  // A small, low-quality preview — see makeThumbnail in compress-image.ts.
+  // What list views (the feed) should render; full-size photoUrl is only
+  // for the one-at-a-time detail/PDF-export views.
+  thumbUrl: string | null;
+  songUrl: string | null;
+  // A user-typed display label for a non-Spotify song link (Spotify links
+  // are embedded via SpotifyEmbed instead and don't need one). Null for
+  // Spotify links or when left blank.
+  songName: string | null;
   createdAt: string;
   prompt: JournalPrompt;
 };
@@ -30,7 +43,7 @@ export type JournalStats = { total: number; streak: number; totalWords: number }
 
 export type JournalFeedData = { entries: JournalFeedEntry[]; stats: JournalStats };
 
-export type JournalEntryDetail = JournalFeedEntry;
+export type JournalEntryDetail = JournalFeedEntry & { updatedAt: string };
 
 export type JournalExportEntry = JournalFeedEntry & { updatedAt: string };
 
@@ -45,10 +58,27 @@ export type MoodPatterns = {
   heatmap: { date: string; moods: string[] }[];
 };
 
+export type MoodCalendarDay = { date: string; day: number; moods: string[] };
+
+export type MoodCalendarMonth = {
+  year: number;
+  month: number; // 0-11
+  leadingBlanks: number;
+  days: MoodCalendarDay[];
+  frequency: { id: string; label: string; color: string; count: number; percent: number }[];
+  totalEntries: number;
+};
+
 type StoredEntry = {
   id: string;
   encContent: { iv: string; data: string };
   encPhoto: { iv: string; data: string } | null;
+  // Absent on entries written before thumbnails existed (or migrated from
+  // the server) — decryptEntry falls back to photoUrl for those, and the
+  // feed backfills+persists a thumbnail for them the first time it loads.
+  encThumb: { iv: string; data: string } | null;
+  encSong: { iv: string; data: string } | null;
+  encSongName: { iv: string; data: string } | null;
   // Legacy entries (written before multi-mood support) stored a single
   // string here; new entries always store an array. Normalized on read via
   // normalizeMoods() so both shapes coexist in the same object store.
@@ -57,6 +87,11 @@ type StoredEntry = {
   createdAt: string;
   updatedAt: string;
   prompt: JournalPrompt;
+  // Quick mood check-ins (see logMoodCheckIn) reuse this same store so they
+  // benefit from the same encryption and feed into the same mood-pattern
+  // aggregation, but are tagged so they can be excluded from the journal
+  // feed/streak/word-count — they're moods logged on their own, not entries.
+  kind?: "checkIn";
 };
 
 function normalizeMoods(raw: string[] | string | null | undefined): string[] {
@@ -74,8 +109,24 @@ function dbName(userId: string) {
   return `lio-journal-${userId}`;
 }
 
+// Every exported function in this module used to call indexedDB.open() on
+// every single call and never close the result — each journal page visit
+// (feed, stats, patterns, calendar) left another connection dangling.
+// WebKit in particular has a low tolerance for that: accumulate enough
+// open IndexedDB connections in one tab and further indexedDB.open() calls
+// start hanging or timing out outright, which is what "the app just stops
+// working after a few entries" actually was — not a data problem, a
+// leaked-connections-per-page-visit problem. Caching one shared, reused
+// connection per user (closed and evicted if the browser itself force-
+// closes it, e.g. from another tab's version-change request) fixes that
+// at the root and, as a side effect, makes every call here cheaper too.
+const dbConnections = new Map<string, Promise<IDBDatabase>>();
+
 function openDb(userId: string): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  const cached = dbConnections.get(userId);
+  if (cached) return cached;
+
+  const promise = new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(dbName(userId), DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -86,9 +137,24 @@ function openDb(userId: string): Promise<IDBDatabase> {
         db.createObjectStore(META_STORE, { keyPath: "id" });
       }
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      // Another tab (or this one, on a future schema bump) asking to
+      // upgrade the database needs every other open connection closed
+      // first — without this, that tab hangs waiting on us forever.
+      db.onversionchange = () => {
+        db.close();
+        dbConnections.delete(userId);
+      };
+      resolve(db);
+    };
+    req.onerror = () => {
+      dbConnections.delete(userId);
+      reject(req.error);
+    };
   });
+  dbConnections.set(userId, promise);
+  return promise;
 }
 
 function tx<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
@@ -100,13 +166,25 @@ function tx<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, run: (s
   });
 }
 
-async function getKey(db: IDBDatabase): Promise<CryptoKey> {
-  const existing = await tx<{ id: string; key: CryptoKey } | undefined>(db, META_STORE, "readonly", (s) => s.get(KEY_RECORD_ID));
-  if (existing) return existing.key;
+// Keyed by db (one per userId, and openDb() itself already caches by
+// userId) rather than userId directly, so switching accounts in the same
+// tab can't ever read a stale key cached under the wrong id.
+const keyCache = new WeakMap<IDBDatabase, Promise<CryptoKey>>();
 
-  const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
-  await tx(db, META_STORE, "readwrite", (s) => s.put({ id: KEY_RECORD_ID, key }));
-  return key;
+function getKey(db: IDBDatabase): Promise<CryptoKey> {
+  const cached = keyCache.get(db);
+  if (cached) return cached;
+
+  const promise = (async () => {
+    const existing = await tx<{ id: string; key: CryptoKey } | undefined>(db, META_STORE, "readonly", (s) => s.get(KEY_RECORD_ID));
+    if (existing) return existing.key;
+
+    const key = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    await tx(db, META_STORE, "readwrite", (s) => s.put({ id: KEY_RECORD_ID, key }));
+    return key;
+  })();
+  keyCache.set(db, promise);
+  return promise;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -138,19 +216,37 @@ async function decryptString(key: CryptoKey, enc: { iv: string; data: string }):
 }
 
 async function decryptEntry(key: CryptoKey, stored: StoredEntry): Promise<JournalFeedEntry> {
-  const [content, photoUrl] = await Promise.all([
+  const [content, photoUrl, thumbFromStore, songUrl, songName] = await Promise.all([
     decryptString(key, stored.encContent),
     stored.encPhoto ? decryptString(key, stored.encPhoto) : Promise.resolve(null),
+    stored.encThumb ? decryptString(key, stored.encThumb) : Promise.resolve(null),
+    stored.encSong ? decryptString(key, stored.encSong) : Promise.resolve(null),
+    stored.encSongName ? decryptString(key, stored.encSongName) : Promise.resolve(null),
   ]);
+  // Legacy entries (written before thumbnails existed) have a photo but no
+  // stored thumbnail yet — fall back to the full photo rather than show
+  // nothing; getFeedData backfills a real thumbnail for these in place.
+  const thumbUrl = thumbFromStore ?? photoUrl;
   return {
     id: stored.id,
     content,
     moods: normalizeMoods(stored.mood),
     bookmarked: stored.bookmarked,
     photoUrl,
+    thumbUrl,
+    songUrl,
+    songName,
     createdAt: stored.createdAt,
     prompt: stored.prompt,
   };
+}
+
+/** Builds the encThumb field for a stored row from a plaintext photo data
+ * URI — null when there's no photo to thumbnail. Shared by every write
+ * path (create/update/migrate/backfill) so they can't drift out of sync. */
+async function encryptThumb(key: CryptoKey, photoUrl: string | null): Promise<{ iv: string; data: string } | null> {
+  if (!photoUrl) return null;
+  return encryptString(key, await makeThumbnail(photoUrl));
 }
 
 async function getAllStored(db: IDBDatabase): Promise<StoredEntry[]> {
@@ -163,13 +259,13 @@ function wordCount(text: string): number {
 }
 
 function computeStats(entries: { createdAt: string; content: string }[]): JournalStats {
-  const days = new Set(entries.map((e) => e.createdAt.slice(0, 10)));
+  const days = new Set(entries.map((e) => localDayKeyFromIso(e.createdAt)));
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
-  if (!days.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
+  if (!days.has(localDayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  while (days.has(cursor.toISOString().slice(0, 10))) {
+  while (days.has(localDayKey(cursor))) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -180,10 +276,51 @@ function computeStats(entries: { createdAt: string; content: string }[]): Journa
 export async function getFeedData(userId: string): Promise<JournalFeedData> {
   const db = await openDb(userId);
   const key = await getKey(db);
-  const stored = await getAllStored(db);
+  const stored = (await getAllStored(db)).filter((e) => e.kind !== "checkIn");
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(stored.map((s) => decryptEntry(key, s)));
+
+  // Backfill a real thumbnail for any legacy entry (written before
+  // thumbnails existed, or migrated from the old server-side journal) that
+  // has a photo but no encThumb yet — one-time per entry, persisted so
+  // every later feed load skips straight to the cheap thumbnail. Doesn't
+  // block the render the user is waiting on.
+  const legacyPhotoOnly = stored.filter((s) => s.encPhoto && !s.encThumb);
+  if (legacyPhotoOnly.length > 0) {
+    void backfillThumbnails(db, key, legacyPhotoOnly);
+  }
+
   return { entries, stats: computeStats(entries) };
+}
+
+async function backfillThumbnails(db: IDBDatabase, key: CryptoKey, rows: StoredEntry[]): Promise<void> {
+  for (const row of rows) {
+    try {
+      const photoUrl = await decryptString(key, row.encPhoto!);
+      row.encThumb = await encryptThumb(key, photoUrl);
+      await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(row));
+    } catch {
+      // Best-effort — worst case this entry's thumbnail is retried next load.
+    }
+  }
+}
+
+export type DayDetail = { date: string; moods: string[]; entries: JournalFeedEntry[] };
+
+/** Everything logged on one specific day — every mood (from journal
+ * entries and standalone check-ins alike, same source the calendar's dot
+ * color already resolves from) plus the actual journal entries written
+ * that day, if any. Powers the mood-patterns calendar's day-click
+ * breakdown. */
+export async function getDayDetail(userId: string, date: string): Promise<DayDetail> {
+  const db = await openDb(userId);
+  const key = await getKey(db);
+  const dayStored = (await getAllStored(db)).filter((e) => localDayKeyFromIso(e.createdAt) === date);
+  const moods = dayStored.flatMap((e) => normalizeMoods(e.mood));
+  const entryStored = dayStored.filter((e) => e.kind !== "checkIn");
+  entryStored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const entries = await Promise.all(entryStored.map((s) => decryptEntry(key, s)));
+  return { date, moods, entries };
 }
 
 export async function getEntryDetail(userId: string, id: string): Promise<JournalEntryDetail | null> {
@@ -191,12 +328,19 @@ export async function getEntryDetail(userId: string, id: string): Promise<Journa
   const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
   if (!stored) return null;
   const key = await getKey(db);
-  return decryptEntry(key, stored);
+  return { ...(await decryptEntry(key, stored)), updatedAt: stored.updatedAt };
 }
 
 export async function createEntry(
   userId: string,
-  input: { content: string; moods: string[]; photoUrl: string | null; prompt: JournalPrompt },
+  input: {
+    content: string;
+    moods: string[];
+    photoUrl: string | null;
+    songUrl: string | null;
+    songName: string | null;
+    prompt: JournalPrompt;
+  },
 ): Promise<void> {
   const db = await openDb(userId);
   const key = await getKey(db);
@@ -205,6 +349,9 @@ export async function createEntry(
     id: crypto.randomUUID(),
     encContent: await encryptString(key, input.content),
     encPhoto: input.photoUrl ? await encryptString(key, input.photoUrl) : null,
+    encThumb: await encryptThumb(key, input.photoUrl),
+    encSong: input.songUrl ? await encryptString(key, input.songUrl) : null,
+    encSongName: input.songName ? await encryptString(key, input.songName) : null,
     mood: input.moods,
     bookmarked: false,
     createdAt: now,
@@ -212,6 +359,65 @@ export async function createEntry(
     prompt: input.prompt,
   };
   await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+  // Entry content itself never leaves the browser, but the fact that a
+  // first entry now exists is exactly what the onboarding checklist's
+  // "write your first journal entry" step needs to know — see
+  // src/lib/onboarding.ts. Fire-and-forget, no-ops after the first entry.
+  markOnboardingJournalStepDone().catch(() => {});
+}
+
+/** Logs a mood on its own, separate from a journal entry — e.g. from the
+ * emotions wheel on My Profile. Stored in the same encrypted store so it
+ * feeds into mood patterns/calendar like any other mood, but tagged so it
+ * never shows up in the journal feed or counts toward streaks/word totals. */
+export async function logMoodCheckIn(userId: string, moods: string[]): Promise<void> {
+  const db = await openDb(userId);
+  const key = await getKey(db);
+  const now = new Date().toISOString();
+  const stored: StoredEntry = {
+    id: crypto.randomUUID(),
+    encContent: await encryptString(key, ""),
+    encPhoto: null,
+    encThumb: null,
+    encSong: null,
+    encSongName: null,
+    mood: moods,
+    bookmarked: false,
+    createdAt: now,
+    updatedAt: now,
+    prompt: null,
+    kind: "checkIn",
+  };
+  await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+}
+
+/** Edits an existing entry's content/moods/photo/song in place — the
+ * original prompt and createdAt stay fixed, only updatedAt moves. */
+export async function updateEntry(
+  userId: string,
+  id: string,
+  input: {
+    content: string;
+    moods: string[];
+    photoUrl: string | null;
+    songUrl: string | null;
+    songName: string | null;
+  },
+): Promise<{ success: boolean }> {
+  const db = await openDb(userId);
+  const stored = await tx<StoredEntry | undefined>(db, ENTRIES_STORE, "readonly", (s) => s.get(id));
+  if (!stored) return { success: false };
+
+  const key = await getKey(db);
+  stored.encContent = await encryptString(key, input.content);
+  stored.encPhoto = input.photoUrl ? await encryptString(key, input.photoUrl) : null;
+  stored.encThumb = await encryptThumb(key, input.photoUrl);
+  stored.encSong = input.songUrl ? await encryptString(key, input.songUrl) : null;
+  stored.encSongName = input.songName ? await encryptString(key, input.songName) : null;
+  stored.mood = input.moods;
+  stored.updatedAt = new Date().toISOString();
+  await tx(db, ENTRIES_STORE, "readwrite", (s) => s.put(stored));
+  return { success: true };
 }
 
 export async function toggleBookmark(userId: string, id: string): Promise<{ success: boolean; bookmarked?: boolean }> {
@@ -233,7 +439,7 @@ export async function deleteEntry(userId: string, id: string): Promise<{ success
 export async function exportEntries(userId: string): Promise<JournalExportData> {
   const db = await openDb(userId);
   const key = await getKey(db);
-  const stored = await getAllStored(db);
+  const stored = (await getAllStored(db)).filter((e) => e.kind !== "checkIn");
   stored.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entries = await Promise.all(
     stored.map(async (s) => ({ ...(await decryptEntry(key, s)), updatedAt: s.updatedAt })),
@@ -242,6 +448,21 @@ export async function exportEntries(userId: string): Promise<JournalExportData> 
 }
 
 export async function clearAllEntries(userId: string): Promise<void> {
+  // deleteDatabase() blocks forever behind any connection this tab still
+  // holds open — and since openDb() now caches one persistent connection
+  // per user instead of opening/closing a fresh one per call, that
+  // connection is guaranteed to still be open here unless it's explicitly
+  // closed first. Without this, the delete below would silently never
+  // finish (onblocked resolving anyway made that failure invisible) and
+  // "delete my account" would leave every journal entry sitting in
+  // IndexedDB despite telling the user it was gone.
+  const cached = dbConnections.get(userId);
+  dbConnections.delete(userId);
+  if (cached) {
+    const db = await cached.catch(() => null);
+    db?.close();
+  }
+
   await new Promise<void>((resolve, reject) => {
     const req = indexedDB.deleteDatabase(dbName(userId));
     req.onsuccess = () => resolve();
@@ -283,6 +504,13 @@ export async function migrateFromServer(
       id: e.id,
       encContent: await encryptString(key, e.content),
       encPhoto: e.photoUrl ? await encryptString(key, e.photoUrl) : null,
+      // Backfilled lazily by getFeedData the first time it loads this
+      // entry (see legacyPhotoOnly there) rather than generated here,
+      // since this loop can be migrating many entries at once and
+      // shouldn't pay a canvas round-trip per photo up front.
+      encThumb: null,
+      encSong: null,
+      encSongName: null,
       mood: e.mood ? [e.mood] : [],
       bookmarked: e.bookmarked,
       createdAt: e.createdAt,
@@ -298,7 +526,7 @@ export async function migrateFromServer(
 
 const HEATMAP_WEEKS = 12;
 
-export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
+export async function getMoodPatterns(userId: string, locale: Locale = "en"): Promise<MoodPatterns> {
   const db = await openDb(userId);
   const stored = await getAllStored(db);
 
@@ -314,7 +542,7 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
   for (const e of inRange) {
     const moods = normalizeMoods(e.mood);
     if (moods.length === 0) continue;
-    const key = e.createdAt.slice(0, 10);
+    const key = localDayKeyFromIso(e.createdAt);
     const existing = moodsByDate.get(key);
     if (existing) existing.push(...moods);
     else moodsByDate.set(key, [...moods]);
@@ -324,7 +552,7 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
 
   const frequency = MOODS.map((m) => ({
     id: m.id,
-    label: m.label,
+    label: locale === "ar" ? m.labelAr : m.label,
     color: m.color,
     count: counts.get(m.id) ?? 0,
     percent: totalWithMood > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalWithMood) * 100) : 0,
@@ -339,10 +567,69 @@ export async function getMoodPatterns(userId: string): Promise<MoodPatterns> {
   const heatmap: MoodPatterns["heatmap"] = [];
   const cursor = new Date(start);
   while (cursor <= today) {
-    const key = cursor.toISOString().slice(0, 10);
+    const key = localDayKey(cursor);
     heatmap.push({ date: key, moods: moodsByDate.get(key) ?? [] });
     cursor.setDate(cursor.getDate() + 1);
   }
 
   return { frequency, topMood, totalWithMood, heatmap };
+}
+
+/** One calendar month's worth of moods — for the calendar view on the
+ * patterns page, navigable by month rather than a fixed rolling window.
+ * `leadingBlanks` is how many empty cells the grid needs before day 1
+ * (0 = the month starts on a Sunday). */
+export async function getMoodCalendarMonth(
+  userId: string,
+  year: number,
+  month: number,
+  locale: Locale = "en",
+): Promise<MoodCalendarMonth> {
+  const db = await openDb(userId);
+  const stored = await getAllStored(db);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingBlanks = new Date(year, month, 1).getDay();
+
+  const moodsByDate = new Map<string, string[]>();
+  const counts = new Map<string, number>();
+  for (const e of stored) {
+    const key = localDayKeyFromIso(e.createdAt);
+    const [y, m] = key.split("-").map(Number);
+    if (y !== year || m !== month + 1) continue;
+    const moods = normalizeMoods(e.mood);
+    if (moods.length === 0) continue;
+    const existing = moodsByDate.get(key);
+    if (existing) existing.push(...moods);
+    else moodsByDate.set(key, [...moods]);
+    for (const mood of moods) counts.set(mood, (counts.get(mood) ?? 0) + 1);
+  }
+  const totalEntries = [...counts.values()].reduce((a, b) => a + b, 0);
+
+  const frequency = MOODS.map((m) => ({
+    id: m.id,
+    label: locale === "ar" ? m.labelAr : m.label,
+    color: m.color,
+    count: counts.get(m.id) ?? 0,
+    percent: totalEntries > 0 ? Math.round(((counts.get(m.id) ?? 0) / totalEntries) * 100) : 0,
+  }))
+    .filter((m) => m.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const days: MoodCalendarDay[] = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    days.push({ date: key, day: d, moods: moodsByDate.get(key) ?? [] });
+  }
+
+  return { year, month, leadingBlanks, days, frequency, totalEntries };
+}
+
+/** Whether this account has ever logged a mood, anywhere in its history —
+ * used to tell "nothing logged this month, try another one" apart from
+ * "no mood data at all yet" on the calendar view. */
+export async function hasAnyMoodEntries(userId: string): Promise<boolean> {
+  const db = await openDb(userId);
+  const stored = await getAllStored(db);
+  return stored.some((e) => normalizeMoods(e.mood).length > 0);
 }

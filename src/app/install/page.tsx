@@ -5,35 +5,37 @@ import { Ribbon, DoodleField, WaveDivider } from "@/components/decor";
 import { Reveal } from "@/components/reveal";
 import InstallCard from "@/components/install-card";
 import InstallPreview from "@/components/install-preview";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "Install the App",
   description: "Add Let It Out to your home screen for one-tap access to counseling and journaling.",
 };
 
-const FOOTNOTE_ITEMS = [
-  { icon: WifiOff, text: "Works offline" },
-  { icon: EyeOff, text: "Private, discreet icon" },
-  { icon: Zap, text: "No app store needed" },
-];
+export default async function InstallPage() {
+  const locale = await getLocale();
+  const t = getDictionary(locale).install;
 
-export default function InstallPage() {
+  const FOOTNOTE_ITEMS = [
+    { icon: WifiOff, text: t.footnoteOffline },
+    { icon: EyeOff, text: t.footnotePrivate },
+    { icon: Zap, text: t.footnoteNoStore },
+  ];
+
   return (
     <>
       <section className="relative overflow-hidden bg-brand-50 pt-6 pb-14 sm:pt-14 sm:pb-20">
         <DoodleField />
         <Container className="relative max-w-lg text-center">
-          <Ribbon>Get the app</Ribbon>
+          <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 font-display text-3xl font-medium leading-[1.1] text-brand-900 sm:text-4xl">
-            Take Let It Out with you.
+            {t.title}
           </h1>
-          <p className="mt-3 text-sm text-ink/60">
-            Add it to your home screen in a few taps — one-tap access to your journal and sessions, no browser
-            bar in the way.
-          </p>
+          <p className="mt-3 text-sm text-ink/60">{t.description}</p>
 
           <div className="mt-8 text-left">
-            <InstallCard />
+            <InstallCard dict={t} />
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-xs text-ink/40">
@@ -52,9 +54,9 @@ export default function InstallPage() {
       <section className="pt-4 pb-16 sm:pb-24">
         <Reveal>
           <Container>
-            <SectionHeading align="center" eyebrow="What you'll get" title="A closer look" />
+            <SectionHeading align="center" eyebrow={t.whatYoullGet} title={t.closerLook} />
             <div className="mt-12">
-              <InstallPreview />
+              <InstallPreview dict={t} />
             </div>
           </Container>
         </Reveal>

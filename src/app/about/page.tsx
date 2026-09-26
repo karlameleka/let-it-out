@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Container, SectionHeading, ButtonLink } from "@/components/ui";
 import { Logo } from "@/components/logo";
 import { Ribbon, WaveDivider, Swash } from "@/components/decor";
 import StoryTeaser from "@/components/story-teaser";
+import LogoMarquee from "@/components/logo-marquee";
 import { Reveal } from "@/components/reveal";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -71,7 +71,7 @@ export default async function AboutPage() {
   return (
     <>
       {/* Mobile only: the "our story" teaser leads the About page instead of
-          appearing on the homepage — see story-teaser.tsx and the desktop
+          appearing on the homepage, see story-teaser.tsx and the desktop
           instance of this component on page.tsx. */}
       <StoryTeaser
         className="sm:hidden"
@@ -106,17 +106,8 @@ export default async function AboutPage() {
             <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-ink/40">
               {t.trustedByLabel}
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-4 sm:gap-x-8">
-              {trustedByLogos.map((logo) => (
-                <Image
-                  key={logo.name}
-                  src={logo.src}
-                  alt={logo.name}
-                  width={logo.width}
-                  height={logo.height}
-                  className="h-6 w-auto object-contain opacity-90 transition hover:opacity-100 sm:h-7"
-                />
-              ))}
+            <div className="mt-6">
+              <LogoMarquee logos={trustedByLogos} />
             </div>
           </Container>
         </Reveal>

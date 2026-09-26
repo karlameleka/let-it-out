@@ -13,7 +13,9 @@ export type CartItem = {
   productVariantId: string;
   productSlug: string;
   title: string;
-  format: "PHYSICAL" | "EBOOK";
+  // Only ever "PHYSICAL" now — ebooks were removed as a purchasable format
+  // (see the 20260917190000_remove_ebook_purchase_option migration).
+  format: "PHYSICAL";
   priceEGP: number;
   coverImageUrl: string | null;
   quantity: number;

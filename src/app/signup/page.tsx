@@ -7,15 +7,18 @@ import SignupForm from "./signup-form";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { isGoogleSignInEnabled } from "@/lib/google-auth";
-import { isSmsOtpEnabled } from "@/lib/sms";
+import { isAppleSignInEnabled } from "@/lib/apple-auth";
+import { getPendingSocialSignup } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Sign Up" };
 
 export default async function SignupPage() {
-  const dict = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
   const t = dict.auth;
   const googleEnabled = isGoogleSignInEnabled();
-  const smsOtpEnabled = isSmsOtpEnabled();
+  const appleEnabled = isAppleSignInEnabled();
+  const pendingSocial = await getPendingSocialSignup();
 
   return (
     <section className="grid md:min-h-[calc(100vh-73px)] md:grid-cols-2">
@@ -32,21 +35,33 @@ export default async function SignupPage() {
         <div className="bg-brand-50 px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 md:bg-transparent md:px-0 md:pt-14 md:pb-0">
           <Container className="mx-auto max-w-sm px-0">
             <Ribbon className="md:hidden">{dict.nav.signUp}</Ribbon>
-            <h1 className="mt-3 font-display text-3xl font-medium text-brand-900 md:mt-0">{t.signupTitle}</h1>
-            <p className="mt-2 text-sm text-ink/60">{t.signupSubtitle}</p>
+            <h1 data-onboarding="signup-heading" className="mt-3 font-display text-3xl font-medium text-brand-900 md:mt-0">
+              {pendingSocial ? t.socialSignupTitle : t.signupTitle}
+            </h1>
+            <p className="mt-2 text-sm text-ink/60">
+              {pendingSocial ? t.socialSignupSubtitle : t.signupSubtitle}
+            </p>
           </Container>
         </div>
         <div className="flex justify-center px-4 pb-10 sm:px-6 sm:pb-16">
           <Container className="mx-auto max-w-sm px-0">
             <div className="mt-6 md:mt-8">
-              <SignupForm dict={dict} googleEnabled={googleEnabled} smsOtpEnabled={smsOtpEnabled} />
+              <SignupForm
+                dict={dict}
+                locale={locale}
+                googleEnabled={googleEnabled}
+                appleEnabled={appleEnabled}
+                pendingSocial={pendingSocial ? { email: pendingSocial.email, name: pendingSocial.name } : null}
+              />
             </div>
-            <p className="mt-6 text-sm text-ink/60">
-              {t.alreadyHaveAccount}{" "}
-              <Link href="/login" className="font-medium text-brand-600 link-grow">
-                {dict.nav.logIn}
-              </Link>
-            </p>
+            {!pendingSocial && (
+              <p className="mt-6 text-sm text-ink/60">
+                {t.alreadyHaveAccount}{" "}
+                <Link href="/login" className="font-medium text-brand-600 link-grow">
+                  {dict.nav.logIn}
+                </Link>
+              </p>
+            )}
           </Container>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createEvent, deleteEvent } from "@/lib/event-actions";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 
 const RSVP_LABELS: Record<string, string> = {
   ATTENDING: "Attending",
@@ -44,7 +45,7 @@ export default async function AdminEventsPage() {
         </p>
         <form action={createEvent} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-2">
-            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="title">Title</label>
+            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="title">Title (English)</label>
             <input
               id="title"
               name="title"
@@ -52,6 +53,17 @@ export default async function AdminEventsPage() {
               placeholder="e.g. Stress Management Workshop"
               className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
             />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-2">
+            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="titleAr">Title (Arabic, optional)</label>
+            <input
+              id="titleAr"
+              name="titleAr"
+              dir="rtl"
+              placeholder="مثال: ورشة إدارة الضغط النفسي"
+              className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            />
+            <p className="mt-1 text-[11px] text-ink/40">Shown to clients on the Arabic site, falls back to the English title if left blank.</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="date">Date</label>
@@ -93,13 +105,24 @@ export default async function AdminEventsPage() {
             <p className="mt-1 text-[11px] text-ink/40">Only shown to clients who RSVP &ldquo;attending&rdquo;.</p>
           </div>
           <div className="sm:col-span-2 lg:col-span-4">
-            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="description">Description (optional)</label>
+            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="description">Description (English, optional)</label>
             <textarea
               id="description"
               name="description"
               rows={2}
               className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
             />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <label className="mb-1 block text-xs font-medium text-ink/60" htmlFor="descriptionAr">Description (Arabic, optional)</label>
+            <textarea
+              id="descriptionAr"
+              name="descriptionAr"
+              dir="rtl"
+              rows={2}
+              className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            />
+            <p className="mt-1 text-[11px] text-ink/40">Falls back to the English description if left blank.</p>
           </div>
           <div className="sm:col-span-2 lg:col-span-4">
             <button
@@ -128,7 +151,14 @@ export default async function AdminEventsPage() {
                 <div>
                   <p className="font-medium text-brand-900">{e.title}</p>
                   <p className="text-xs text-ink/50">
-                    {e.startAt.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {e.startAt.toLocaleString("en-GB", {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: CAIRO_TIME_ZONE,
+                    })}
                     {e.location ? ` · ${e.location}` : ""}
                   </p>
                   {e.description && <p className="mt-1 text-xs text-ink/60">{e.description}</p>}
@@ -168,7 +198,12 @@ export default async function AdminEventsPage() {
                 <div>
                   <p className="font-medium text-brand-900">{e.title}</p>
                   <p className="text-xs text-ink/50">
-                    {e.startAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    {e.startAt.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      timeZone: CAIRO_TIME_ZONE,
+                    })}
                     {e.location ? ` · ${e.location}` : ""}
                   </p>
                 </div>

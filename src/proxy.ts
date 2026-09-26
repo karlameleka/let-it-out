@@ -7,14 +7,19 @@ import { THERAPIST_SESSION_COOKIE, verifyTherapistSessionToken } from "@/lib/the
 // other /therapist route is the gated portal.
 const PUBLIC_THERAPIST_PATHS = ["/therapist/login", "/therapist/forgot-password", "/therapist/reset-password"];
 
-// The marketing site (services + "download the app") lives on its own
-// subdomain, separate from the PWA at the apex domain — so an existing
-// installed/bookmarked letitouteg.org keeps behaving exactly as it always
-// has. Only "/" is served there (rewritten to the /site route below); any
-// other path on this host bounces to the same path on the real app, since
-// the marketing site doesn't duplicate the app's routes.
-const MARKETING_HOSTNAME = "www.letitouteg.org";
-const APP_ORIGIN = "https://letitouteg.org";
+// The marketing site (services + "download the app") lives on the apex
+// domain, separate from the PWA — which is canonically served at
+// www.letitouteg.org (Vercel's Production domain) — so an existing
+// installed/bookmarked www.letitouteg.org keeps behaving exactly as it
+// always has. It's a deliberately small, standalone cluster of pages (not
+// a mirror of the app): the homepage, its own /privacy and /terms, and a
+// short-form feature page per tool (/counseling, /journaling, /workshops)
+// — same path names the real app uses for some of these, but on a
+// different host, so there's no collision. Everything else on this host
+// bounces to the same path on the real app.
+const MARKETING_HOSTNAME = "letitouteg.org";
+const APP_ORIGIN = "https://www.letitouteg.org";
+const MARKETING_PATHS = ["/", "/privacy", "/terms", "/counseling", "/journaling", "/workshops"];
 
 /**
  * Sets a strict, nonce-based Content-Security-Policy on every page request.
@@ -47,6 +52,14 @@ const APP_ORIGIN = "https://letitouteg.org";
  * here, at the edge, before any admin route (page or API) executes, closes
  * that gap regardless of what gets added later.
  *
+ * frame-src/connect-src allow challenges.cloudflare.com for Cloudflare
+ * Turnstile (see turnstile-widget.tsx): Turnstile renders its challenge in
+ * an iframe from that origin and its script makes fetch/XHR calls back to
+ * it, neither of which strict-dynamic covers (that only governs script-src).
+ * The script tag itself needs no separate allowlisting — it's injected by
+ * next/script from within an already-nonced, trusted script, so
+ * strict-dynamic propagates trust to it automatically.
+ *
  * Trusted Types is added as `Content-Security-Policy-Report-Only`, not in
  * the enforced policy above: it's a separate header, so this reports DOM
  * XSS-sink violations (dangerouslySetInnerHTML aside, we have none in our
@@ -60,11 +73,20 @@ export async function proxy(request: NextRequest) {
   const hostname = (request.headers.get("host") ?? "").split(":")[0];
   const isMarketingHost = hostname === MARKETING_HOSTNAME;
 
-  if (isMarketingHost && request.nextUrl.pathname !== "/") {
+  if (isMarketingHost && !MARKETING_PATHS.includes(request.nextUrl.pathname)) {
     return NextResponse.redirect(
       `${APP_ORIGIN}${request.nextUrl.pathname}${request.nextUrl.search}`,
       308,
     );
+  }
+
+  // /site (and its /privacy, /terms pages) only exist as the rewrite
+  // target above — reached directly (e.g. someone guessing the URL on the
+  // app domain), it would render the marketing header/footer nested inside
+  // the app's own full shell instead of standing alone. Bounce it home
+  // rather than show that.
+  if (!isMarketingHost && request.nextUrl.pathname.startsWith("/site")) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (request.nextUrl.pathname.startsWith("/admin")) {
@@ -98,8 +120,8 @@ export async function proxy(request: NextRequest) {
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob:;
     font-src 'self';
-    connect-src 'self';
-    frame-src 'none';
+    connect-src 'self' https://challenges.cloudflare.com;
+    frame-src https://challenges.cloudflare.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
@@ -120,7 +142,10 @@ export async function proxy(request: NextRequest) {
 
   const response = isMarketingHost
     ? NextResponse.rewrite(
-        new URL("/site", request.url),
+        new URL(
+          request.nextUrl.pathname === "/" ? "/site" : `/site${request.nextUrl.pathname}`,
+          request.url,
+        ),
         { request: { headers: requestHeaders } },
       )
     : NextResponse.next({ request: { headers: requestHeaders } });

@@ -23,7 +23,9 @@ export async function toggleResourceComplete(formData: FormData) {
     data: { completedAt: item.completedAt ? null : new Date() },
   });
 
-  revalidatePath("/resources");
+  revalidatePath("/profile");
+  revalidatePath("/profile/reframing");
+  revalidatePath("/profile/thought-record");
   revalidatePath("/therapist/clients/[email]", "page");
 }
 

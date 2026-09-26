@@ -117,7 +117,7 @@ export default async function WorkshopsPage() {
         </Reveal>
       </section>
 
-      <WorkshopNotifySection />
+      <WorkshopNotifySection dict={dict.workshopNotify} />
 
       <Link
         href="#request-quote"

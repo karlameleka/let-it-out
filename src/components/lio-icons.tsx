@@ -9,28 +9,12 @@
  * itself, so recolor via `currentColor` — there's no meaningful
  * "strokeWidth" prop the way lucide icons have one.
  *
- * Used only at sm: and up (desktop/laptop) for the header cart icon and
- * the floating help button — mobile fell back to the original lucide
- * icons (see site-header.tsx / help-button.tsx / bottom-tab-bar.tsx,
- * the latter mobile-only so it's lucide-only, no hand-drawn variant).
+ * Used only at sm: and up (desktop/laptop) for the header cart icon —
+ * mobile falls back to the original lucide icon (see site-header.tsx /
+ * bottom-tab-bar.tsx, the latter mobile-only so it's lucide-only, no
+ * hand-drawn variant). The floating help button is lucide-only at every
+ * size (see help-button.tsx).
  */
-/** Hand-authored (not traced) — matches the traced icons' bold weight for the help button. */
-export function QuestionMarkIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M32 34c-1-16 10-25 23-25 14 0 24 9 24 21 0 12-8 17-16 22-7 4-10 8-10 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="12"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="53" cy="84" r="7" fill="currentColor" />
-    </svg>
-  );
-}
-
 export function JournalIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 558.694729 347.866900" className={className} xmlns="http://www.w3.org/2000/svg">

@@ -2,19 +2,26 @@
 
 import { useState } from "react";
 import { CORE_EMOTIONS, getSecondaryEmotions, type CoreEmotionId } from "@/lib/moods";
+import type { Locale } from "@/lib/i18n/locale";
 
 /** The same core → secondary emotion picker used in the journal app's entry
  * composer — pick a core feeling to reveal its more specific secondary
  * feelings, multi-select throughout. Shared so every mood check-in in the
- * app (journaling, therapist session notes) looks and behaves identically. */
+ * app (journaling, therapist session notes) looks and behaves identically.
+ * `locale` defaults to "en" so the internal therapist dashboard (which
+ * doesn't thread the site locale) always renders in English. */
 export default function MoodPicker({
   moods,
   onChange,
   label = "How are you feeling?",
+  hint = "pick as many as apply",
+  locale = "en",
 }: {
   moods: string[];
   onChange: (moods: string[]) => void;
   label?: string;
+  hint?: string;
+  locale?: Locale;
 }) {
   const [expandedCore, setExpandedCore] = useState<CoreEmotionId | null>(null);
 
@@ -30,7 +37,7 @@ export default function MoodPicker({
   return (
     <div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/40">
-        {label} <span className="font-normal normal-case text-ink/35">pick as many as apply</span>
+        {label} <span className="font-normal normal-case text-ink/35">{hint}</span>
       </p>
       <div className="flex flex-wrap gap-2">
         {CORE_EMOTIONS.map((core) => {
@@ -49,8 +56,8 @@ export default function MoodPicker({
                     : "border-brand-100 bg-white text-ink/70 hover:border-brand-300 active:border-brand-300"
               }`}
             >
-              <span className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ backgroundColor: core.color }} />
-              {core.label}
+              <span className="h-2.5 w-2.5 rounded-full border border-brand-900/10" style={{ backgroundColor: core.color }} />
+              {locale === "ar" ? core.labelAr : core.label}
             </button>
           );
         })}
@@ -63,13 +70,14 @@ export default function MoodPicker({
               key={m.id}
               type="button"
               onClick={() => toggleMood(m.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
                 moods.includes(m.id)
                   ? "border-brand-600 bg-white text-brand-800 shadow-sm"
                   : "border-brand-100 bg-white/60 text-ink/60 hover:border-brand-300 active:border-brand-300"
               }`}
             >
-              {m.label}
+              <span className="h-2 w-2 rounded-full border border-brand-900/10" style={{ backgroundColor: m.color }} />
+              {locale === "ar" ? m.labelAr : m.label}
             </button>
           ))}
         </div>

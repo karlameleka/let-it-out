@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { createSession } from "@/lib/session";
-import { createLead } from "@/lib/leads";
-import { sendWelcomeEmail } from "@/lib/email";
+import { createSession, createPendingSocialSignup } from "@/lib/session";
 import { getGoogleOAuthConfig } from "@/lib/google-auth";
+import { trackEvent } from "@/lib/analytics-events";
 
 const STATE_COOKIE = "lio_google_oauth_state";
 
@@ -65,37 +64,37 @@ export async function GET(request: NextRequest) {
     }
 
     let user = await prisma.user.findUnique({ where: { googleId: profile.sub } });
-    let isNewUser = false;
 
     if (!user) {
       const existingByEmail = await prisma.user.findUnique({ where: { email: profile.email } });
       if (existingByEmail) {
+        // Returning account, just linking Google for the first time — it
+        // already answered the signup questions once, no need to ask again.
         user = await prisma.user.update({
           where: { id: existingByEmail.id },
           data: { googleId: profile.sub },
         });
       } else {
-        user = await prisma.user.create({
-          data: {
-            email: profile.email,
-            name: profile.name ?? profile.email.split("@")[0],
-            googleId: profile.sub,
-          },
+        // Brand-new signup: Google has already verified this person's
+        // identity, but they still haven't answered the same demographic
+        // questions an email signup does. Rather than creating the account
+        // now with none of that, stash the verified identity and send them
+        // to finish the rest of the form on /signup — see
+        // completeSocialSignup() in auth-actions.ts.
+        await createPendingSocialSignup({
+          provider: "google",
+          providerId: profile.sub,
+          email: profile.email,
+          name: profile.name ?? profile.email.split("@")[0],
         });
-        isNewUser = true;
+        const response = NextResponse.redirect(new URL("/signup?social=google", request.url));
+        response.cookies.delete(STATE_COOKIE);
+        return response;
       }
     }
 
-    if (isNewUser) {
-      await createLead({
-        name: user.name,
-        type: "ACCOUNT_SIGNUP",
-        email: user.email,
-        source: "Website",
-        notes: "Signed up via Google.",
-      });
-      const baseUrl = new URL(request.url).origin;
-      await sendWelcomeEmail({ to: user.email, name: user.name, privacyUrl: `${baseUrl}/privacy` });
+    if (user.role !== "ADMIN") {
+      void trackEvent(user.id, "User", "logged_in");
     }
 
     await createSession({ userId: user.id, email: user.email, name: user.name, phone: user.phone, role: user.role });

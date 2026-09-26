@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui";
 import { Ribbon } from "@/components/decor";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -24,232 +26,143 @@ function Section({
   );
 }
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  const locale = await getLocale();
+  const t = getDictionary(locale).privacyPolicy;
+
   return (
     <>
       <section className="bg-brand-50 pt-6 pb-10 sm:pt-14 sm:pb-20">
         <Container>
-          <Ribbon>Your data, protected</Ribbon>
+          <Ribbon>{t.ribbon}</Ribbon>
           <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-[1.1] text-brand-900 sm:text-5xl">
-            Privacy Policy
+            {t.title}
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-ink/70">
-            Your trust matters to us, especially when it comes to something
-            as personal as your mental health. This policy explains, in
-            plain language, what information we collect, why, and how we
-            keep it safe and confidential.
+          <p className="mt-5 max-w-2xl text-lg text-ink/70">{t.description}</p>
+          <p className="mt-3 text-sm text-ink/50">
+            {t.lastUpdatedLabel} {LAST_UPDATED}
           </p>
-          <p className="mt-3 text-sm text-ink/50">Last updated: {LAST_UPDATED}</p>
         </Container>
       </section>
 
       <section className="py-16 sm:py-20">
         <Container className="max-w-3xl">
           <div className="rounded-2xl border-2 border-brand-100 bg-brand-50/60 p-6">
-            <p className="text-sm font-semibold text-brand-800">
-              Our commitment to you
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-ink/70">
-              We know that sharing personal information — especially journal
-              entries or details about what brought you to counseling —
-              takes trust. We do not sell your data, we do not use tracking
-              cookies, and every piece of information you share with us is
-              treated as confidential and handled with the same care a
-              psychologist-led practice applies to any client record.
-            </p>
+            <p className="text-sm font-semibold text-brand-800">{t.commitmentLabel}</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink/70">{t.commitmentBody}</p>
           </div>
 
-          <Section title="1. Who we are">
-            <p>
-              Let It Out (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) is a
-              psychologist-led mental health service founded in Egypt in
-              2021, offering online counseling, guided journals, a
-              journaling app, and corporate/community workshops. This
-              policy applies to everyone who uses our website, books a
-              session, places an order, or uses our journaling app.
-            </p>
+          <Section title={t.s1Title}>
+            <p>{t.s1Body}</p>
           </Section>
 
-          <Section title="2. What information we collect">
-            <p>We only collect what we need to provide our services:</p>
+          <Section title={t.s2Title}>
+            <p>{t.s2Intro}</p>
             <ul className="list-disc space-y-2 pl-5">
               <li>
-                <strong>Account details:</strong> name, email address, and a
-                securely hashed password if you create a journaling account.
+                <strong>{t.s2Item1Label}</strong> {t.s2Item1Text}
               </li>
               <li>
-                <strong>Optional demographics:</strong> age range, gender,
-                country, and how you heard about us. These are never required
-                to sign up or use the app — you can skip them entirely or fill
-                them in later from account settings.
+                <strong>{t.s2Item2Label}</strong> {t.s2Item2Text}
               </li>
               <li>
-                <strong>Booking information:</strong> name, email, phone
-                number, preferred session date/time, and any message you
-                choose to share about what you&apos;d like support with.
+                <strong>{t.s2Item3Label}</strong> {t.s2Item3Text}
               </li>
               <li>
-                <strong>Workshop inquiries:</strong> organization name,
-                contact name, email, phone, and details about the workshop
-                you&apos;re interested in.
+                <strong>{t.s2Item4Label}</strong> {t.s2Item4Text}
               </li>
               <li>
-                <strong>Orders:</strong> name, email, phone number, shipping
-                address, governorate/country, and an optional Google Maps
-                link to help our courier find you. We do not collect card or
-                bank details — payment is Cash on Delivery.
+                <strong>{t.s2Item5Label}</strong> {t.s2Item5Text}
               </li>
               <li>
-                <strong>Journal entries:</strong> the content, mood tags, and
-                any photo you attach in our journaling app. This is the most
-                sensitive information we hold, and it is treated accordingly
-                (see Section 5). You can also turn on an optional password
-                lock for the journal from account settings.
+                <strong>{t.s2Item6Label}</strong> {t.s2Item6Text}
               </li>
               <li>
-                <strong>Contact messages:</strong> anything you send us
-                through our contact form.
+                <strong>{t.s2Item7Label}</strong> {t.s2Item7Text}
               </li>
             </ul>
           </Section>
 
-          <Section title="3. Why we collect it">
+          <Section title={t.s3Title}>
             <ul className="list-disc space-y-2 pl-5">
-              <li>To schedule and confirm counseling sessions and workshops.</li>
-              <li>To process, ship, and confirm journal orders.</li>
-              <li>To respond to questions and requests you send us.</li>
-              <li>To provide and personalize your journaling app experience.</li>
-              <li>To send confirmation emails for bookings, orders, and inquiries.</li>
-              <li>To maintain the security and proper functioning of our services.</li>
-              <li>
-                To understand, in aggregate, who we&apos;re serving so we can
-                improve our services — never to advertise to you individually.
-              </li>
+              <li>{t.s3Item1}</li>
+              <li>{t.s3Item2}</li>
+              <li>{t.s3Item3}</li>
+              <li>{t.s3Item4}</li>
+              <li>{t.s3Item5}</li>
+              <li>{t.s3Item6}</li>
+              <li>{t.s3Item7}</li>
             </ul>
-            <p>
-              We do not use your information for advertising, and we do not
-              build behavioral profiles for marketing purposes.
-            </p>
+            <p>{t.s3Outro}</p>
           </Section>
 
-          <Section title="4. Legal basis for processing">
-            <p>
-              We process personal data in line with the Egyptian Personal
-              Data Protection Law No. 151 of 2020, and — for clients located
-              outside Egypt — we aim to follow the same core principles
-              found in international data protection frameworks such as the
-              GDPR: lawfulness, purpose limitation, data minimization,
-              accuracy, storage limitation, and confidentiality. In most
-              cases, our basis for processing is your explicit consent
-              (given when you use our services) and the need to perform the
-              service you&apos;ve requested (e.g. fulfilling an order or
-              scheduling a session).
-            </p>
+          <Section title={t.s4Title}>
+            <p>{t.s4Body}</p>
           </Section>
 
-          <Section title="5. Confidentiality of counseling and journal content">
-            <p>
-              Anything you share in a counseling session or write in your
-              journal is confidential. Access to journal entries is limited
-              to you and to the technical safeguards required to operate
-              the service — our team does not read your journal entries as
-              a matter of routine.
-            </p>
-            <p>
-              As with any licensed mental health practice, confidentiality
-              has narrow legal and ethical limits: we may need to break
-              confidentiality if there is an imminent risk of serious harm
-              to you or someone else, in cases of suspected abuse of a
-              minor, or where disclosure is required by law. Your counselor
-              will discuss this with you at the start of your work together.
-            </p>
+          <Section title={t.s5Title}>
+            <p>{t.s5P1}</p>
+            <p>{t.s5P2}</p>
           </Section>
 
-          <Section title="6. Who we share data with">
-            <p>
-              We do not sell or rent your personal information. We share
-              data only with the limited service providers necessary to run
-              Let It Out — for example, our email provider (to send you
-              booking and order confirmations) and our hosting provider (to
-              keep the website running securely). These providers are only
-              permitted to use your data to perform the specific service we
-              ask of them.
-            </p>
+          <Section title={t.s6Title}>
+            <p>{t.s6Body}</p>
           </Section>
 
-          <Section title="7. How long we keep your data">
-            <p>
-              We keep booking, order, and inquiry records for as long as
-              needed to provide our services and meet our legal and
-              accounting obligations, and journal entries for as long as
-              your account remains active. You can request deletion of your
-              data at any time (see Section 9).
-            </p>
+          <Section title={t.s7Title}>
+            <p>{t.s7Body}</p>
           </Section>
 
-          <Section title="8. How we protect your data">
+          <Section title={t.s8Title}>
             <ul className="list-disc space-y-2 pl-5">
-              <li>Passwords are stored using industry-standard one-way hashing — we never store your password in plain text.</li>
-              <li>All data is transmitted over encrypted (HTTPS) connections.</li>
-              <li>Access to our database and admin tools is restricted to authorized staff only.</li>
-              <li>We do not use tracking cookies or third-party advertising trackers. Small pieces of information stored on your own device (such as your cart contents, your selected country, or that you&apos;ve already responded to this consent notice) live in your browser&apos;s local storage, stay on your device, and are never used to track you across other websites.</li>
+              <li>{t.s8Item1}</li>
+              <li>{t.s8Item2}</li>
+              <li>{t.s8Item3}</li>
+              <li>{t.s8Item4}</li>
             </ul>
           </Section>
 
-          <Section title="9. Your rights">
-            <p>You have the right to:</p>
+          <Section title={t.s9Title}>
+            <p>{t.s9Intro}</p>
             <ul className="list-disc space-y-2 pl-5">
-              <li>Ask us what personal data we hold about you.</li>
-              <li>Request that we correct inaccurate information.</li>
-              <li>Request that we delete your data, subject to any legal retention requirements.</li>
-              <li>Withdraw consent to future processing at any time.</li>
-              <li>Ask us to export a copy of your data.</li>
+              <li>{t.s9Item1}</li>
+              <li>{t.s9Item2}</li>
+              <li>{t.s9Item3}</li>
+              <li>{t.s9Item4}</li>
+              <li>{t.s9Item5}</li>
             </ul>
             <p>
-              To exercise any of these rights, contact us at{" "}
+              {t.s9OutroPrefix}{" "}
               <a href="mailto:letitoutsupport@gmail.com" className="font-medium text-brand-600 underline">
                 letitoutsupport@gmail.com
               </a>
-              . We will respond within a reasonable time.
+              {t.s9OutroSuffix}
             </p>
           </Section>
 
-          <Section title="10. International visitors">
-            <p>
-              We welcome clients and customers from outside Egypt. Wherever
-              you&apos;re located, we apply the same confidentiality and
-              security standards described in this policy to your data.
-            </p>
+          <Section title={t.s10Title}>
+            <p>{t.s10Body}</p>
           </Section>
 
-          <Section title="11. Children&apos;s privacy">
-            <p>
-              Our journaling app and counseling services are intended for
-              users aged 16 and over. If you are under 16, please use our
-              services together with a parent or guardian.
-            </p>
+          <Section title={t.s11Title}>
+            <p>{t.s11Body}</p>
           </Section>
 
-          <Section title="12. Changes to this policy">
-            <p>
-              We may update this policy from time to time to reflect
-              changes in our practices or for legal reasons. We&apos;ll
-              update the &quot;last updated&quot; date above whenever we do.
-            </p>
+          <Section title={t.s12Title}>
+            <p>{t.s12Body}</p>
           </Section>
 
-          <Section title="13. Contact us">
+          <Section title={t.s13Title}>
             <p>
-              Questions about this policy or how we handle your data?
-              Reach us at{" "}
+              {t.s13Prefix}{" "}
               <a href="mailto:letitoutsupport@gmail.com" className="font-medium text-brand-600 underline">
                 letitoutsupport@gmail.com
               </a>{" "}
-              or through our{" "}
+              {t.s13Middle}{" "}
               <a href="/contact" className="font-medium text-brand-600 underline">
-                contact page
+                {t.contactPageLink}
               </a>
-              .
+              {t.s13Suffix}
             </p>
           </Section>
         </Container>

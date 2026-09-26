@@ -1,29 +1,74 @@
 import Link from "next/link";
-import { Phone, Download, X, EyeOff, Eye } from "lucide-react";
+import { Phone, Download, X, EyeOff, Eye, Brain, NotebookPen } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireCounselor } from "@/lib/therapist-session";
-import { removeToolkitItem, toggleDefaultTool } from "@/lib/therapist-actions";
-import { CLIENT_TOOLS, SESSION_PROMPTS, CRISIS_PROTOCOL } from "@/lib/therapist-toolkit";
+import { removeToolkitItem, toggleDefaultTool, updateSessionPrompts } from "@/lib/therapist-actions";
+import { getOwnCounselorWithBookings, deriveClients } from "@/lib/therapist-data";
+import { CLIENT_TOOLS, SESSION_PROMPTS, CRISIS_PROTOCOL, type PromptCard } from "@/lib/therapist-toolkit";
 import AddToolkitItemForm from "./add-item-form";
+import SendReframingForm from "./send-reframing-form";
+import SendThoughtRecordForm from "./send-thought-record-form";
 import PdfOpenButton from "@/components/pdf-open-button";
+import SessionPromptsEditor from "@/components/session-prompts-editor";
 
 export default async function TherapistToolkitPage() {
   const session = await requireCounselor();
-  const counselor = await prisma.counselor.findUnique({
-    where: { id: session.counselorId },
-    select: { hiddenDefaultTools: true, toolkitItems: { orderBy: { createdAt: "desc" } } },
-  });
+  const [counselor, counselorWithBookings] = await Promise.all([
+    prisma.counselor.findUnique({
+      where: { id: session.counselorId },
+      select: {
+        hiddenDefaultTools: true,
+        toolkitItems: { orderBy: { createdAt: "desc" } },
+        sessionPromptCards: true,
+      },
+    }),
+    getOwnCounselorWithBookings(session.counselorId),
+  ]);
   const hiddenDefaultTools = counselor?.hiddenDefaultTools ?? [];
   const toolkitItems = counselor?.toolkitItems ?? [];
+  const sessionPrompts = (counselor?.sessionPromptCards as PromptCard[] | null) ?? SESSION_PROMPTS;
+  const clients = counselorWithBookings ? deriveClients(counselorWithBookings) : [];
 
   return (
     <div className="space-y-10">
       <div>
         <h2 className="font-display font-semibold text-brand-900">Your toolbox</h2>
         <p className="mt-1 text-sm text-ink/60">
-          The built-in exercises, plus anything you&rsquo;ve added yourself — links or PDFs. Hide what you
+          The built-in exercises, plus anything you&rsquo;ve added yourself, links or PDFs. Hide what you
           don&rsquo;t use, add what you do.
         </p>
+
+        <div className="mt-4 rounded-2xl border-2 border-brand-100 bg-brand-50/40 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-brand-700">
+              <Brain className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-semibold text-brand-900">Cognitive Reframing</p>
+              <p className="mt-1 text-sm text-ink/60">
+                Walks a client through catching, examining, and reframing a stuck thought. Send it to a client and
+                they&rsquo;ll play it right on their own My Profile page.
+              </p>
+              <SendReframingForm clients={clients} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border-2 border-brand-100 bg-brand-50/40 p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-brand-700">
+              <NotebookPen className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-semibold text-brand-900">Thought Record</p>
+              <p className="mt-1 text-sm text-ink/60">
+                A fillable CBT worksheet, in the client&rsquo;s own words, situation, automatic thought, evidence, and a
+                more balanced thought. Send it and they&rsquo;ll fill it out right on their own My Profile page.
+              </p>
+              <SendThoughtRecordForm clients={clients} />
+            </div>
+          </div>
+        </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {CLIENT_TOOLS.map((tool) => {
@@ -101,18 +146,12 @@ export default async function TherapistToolkitPage() {
 
       <div>
         <h2 className="font-display font-semibold text-brand-900">Session prompts</h2>
-        <p className="mt-1 text-sm text-ink/60">Quick starting points — adapt to your own style and this client.</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {SESSION_PROMPTS.map((card) => (
-            <div key={card.title} className="rounded-2xl border border-brand-100 bg-white p-5">
-              <p className="font-display font-semibold text-brand-900">{card.title}</p>
-              <ul className="mt-3 space-y-2">
-                {card.prompts.map((p) => (
-                  <li key={p} className="text-sm text-ink/70">&ldquo;{p}&rdquo;</li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <p className="mt-1 text-sm text-ink/60">
+          Quick starting points, adapt to your own style and this client. Edit freely; this is your own copy,
+          not shared with other counselors.
+        </p>
+        <div className="mt-4">
+          <SessionPromptsEditor initialCards={sessionPrompts} defaultCards={SESSION_PROMPTS} action={updateSessionPrompts} />
         </div>
       </div>
 

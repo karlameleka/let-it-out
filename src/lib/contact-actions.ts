@@ -5,13 +5,18 @@ import { prisma } from "@/lib/db";
 import { sendSupportNotification, sendCustomerConfirmation } from "@/lib/email";
 import { syncLeadToAirtable } from "@/lib/airtable";
 import { createLead } from "@/lib/leads";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionary";
+import { screenSubmission } from "@/lib/anti-spam";
 
-const contactSchema = z.object({
-  name: z.string().trim().min(1, "Please enter your name."),
-  email: z.string().trim().email("Please enter a valid email."),
-  subject: z.string().trim().min(1, "Please enter a subject."),
-  message: z.string().trim().min(5, "Please enter a message."),
-});
+function buildContactSchema(v: Dictionary["validation"], c: Dictionary["contact"]) {
+  return z.object({
+    name: z.string().trim().min(1, v.nameRequired).max(200),
+    email: z.string().trim().email(v.emailInvalid).max(320),
+    subject: z.string().trim().min(1, c.subjectRequired).max(300),
+    message: z.string().trim().min(5, c.messageRequired).max(5000),
+  });
+}
 
 export type ContactFormState = { error?: string; success?: boolean } | undefined;
 
@@ -19,7 +24,13 @@ export async function submitContactMessage(
   _prevState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  const parsed = contactSchema.safeParse({
+  const blocked = await screenSubmission(formData, "contact");
+  if (blocked) return blocked;
+
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const parsed = buildContactSchema(dict.validation, dict.contact).safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
     subject: formData.get("subject"),
@@ -27,7 +38,7 @@ export async function submitContactMessage(
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    return { error: parsed.error.issues[0]?.message ?? dict.validation.invalidInput };
   }
 
   const contact = await prisma.contactMessage.create({ data: parsed.data });
@@ -64,8 +75,12 @@ export async function submitContactMessage(
   await sendCustomerConfirmation({
     to: contact.email,
     name: contact.name,
-    subject: "We've received your message",
-    intro: `Thank you for reaching out about "${contact.subject}". We'll get back to you soon.`,
+    locale,
+    subject: locale === "ar" ? "استلمنا رسالتك" : "We've received your message",
+    intro:
+      locale === "ar"
+        ? `شكرًا لتواصلك بخصوص "${contact.subject}". هنرد عليك قريب.`
+        : `Thank you for reaching out about "${contact.subject}". We'll get back to you soon.`,
   });
 
   return { success: true };

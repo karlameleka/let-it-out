@@ -8,7 +8,9 @@ import { formatSlotTime } from "@/lib/format-slot";
 import { Container, Eyebrow } from "@/components/ui";
 import SessionRow from "./session-row";
 import EventRow from "./event-row";
+import StressCheckInRow from "./stress-checkin-row";
 import MarkAllReadButton from "./mark-all-read-button";
+import SessionsTabSwitcher from "./sessions-tab-switcher";
 
 export const metadata: Metadata = { title: "Upcoming" };
 
@@ -39,7 +41,7 @@ export default async function UpcomingPage() {
 
   const dict = getDictionary(locale);
   const t = dict.upcoming;
-  const { sessions, events } = await getUpcomingPageData(session.email, session.userId);
+  const { sessions, events, reflections, stressCheckIns } = await getUpcomingPageData(session.email, session.userId, locale);
 
   const dateFormatter = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", {
     weekday: "short",
@@ -52,6 +54,10 @@ export default async function UpcomingPage() {
     <Container className="py-10 sm:py-14">
       <Eyebrow>{t.heading}</Eyebrow>
       <h1 className="mt-2 font-display text-3xl font-medium text-brand-900 sm:text-4xl">{t.heading}</h1>
+
+      <div className="mt-5 max-w-sm">
+        <SessionsTabSwitcher active="upcoming" upcomingLabel={t.upcomingTabLabel} pastLabel={t.pastTabLabel} />
+      </div>
 
       <div className="mt-8">
         <h2 className="font-display text-lg font-semibold text-brand-900">{t.sessionsHeading}</h2>
@@ -118,7 +124,26 @@ export default async function UpcomingPage() {
         )}
       </div>
 
-      {(sessions.length > 0 || events.length > 0) && (
+      {stressCheckIns.length > 0 && (
+        <div className="mt-10">
+          <h2 className="font-display text-lg font-semibold text-brand-900">{t.stressCheckInsHeading}</h2>
+          <div className="mt-4 space-y-3">
+            {stressCheckIns.map((s) => (
+              <StressCheckInRow
+                key={s.id}
+                itemId={s.id}
+                title={t.stressCheckInTitle}
+                body={t.stressCheckInBody}
+                cta={t.stressCheckInCta}
+                read={s.read}
+                dict={t}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(sessions.length > 0 || events.length > 0 || reflections.length > 0 || stressCheckIns.length > 0) && (
         <div className="mt-10 flex justify-center border-t border-brand-100 pt-8">
           <MarkAllReadButton label={t.markAllRead} />
         </div>

@@ -1,5 +1,7 @@
 import { getUserCountStats, getDemographics, getFeatureUsage, getTimeSpentByGroup } from "@/lib/analytics";
 import type { BreakdownRow, TimeSpentRow } from "@/lib/analytics";
+import { resetPageViewTracking } from "@/lib/admin-actions";
+import ConfirmSubmitButton from "@/components/confirm-submit-button";
 
 function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
@@ -73,7 +75,7 @@ export default async function AdminAnalyticsPage() {
           { label: "New users (last 30 days)", value: userStats.newLast30 },
           {
             label: "Journal lock enabled",
-            value: userStats.total ? `${Math.round((userStats.withLockEnabled / userStats.total) * 100)}%` : "—",
+            value: userStats.total ? `${Math.round((userStats.withLockEnabled / userStats.total) * 100)}%` : "-",
           },
           { label: "Page views tracked", value: featureUsage.total },
         ].map((c) => (
@@ -86,7 +88,7 @@ export default async function AdminAnalyticsPage() {
 
       <div>
         <h2 className="font-display text-lg font-semibold text-brand-900">Demographics</h2>
-        <p className="mt-1 text-sm text-ink/60">Based on {demographics.total} account{demographics.total === 1 ? "" : "s"} — collected once at signup.</p>
+        <p className="mt-1 text-sm text-ink/60">Based on {demographics.total} account{demographics.total === 1 ? "" : "s"}, collected once at signup.</p>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Panel title="Gender">
             <BarList rows={demographicRows(demographics.gender)} formatValue={(v) => String(v)} emptyLabel="No accounts yet." />
@@ -100,7 +102,7 @@ export default async function AdminAnalyticsPage() {
           <Panel title="How they heard about us">
             <BarList rows={demographicRows(demographics.referral)} formatValue={(v) => String(v)} emptyLabel="No accounts yet." />
           </Panel>
-          <Panel title="What they're interested in" subtitle="Multi-select at signup — percentages are share of users, not mutually exclusive" >
+          <Panel title="What they're interested in" subtitle="Multi-select at signup, percentages are share of users, not mutually exclusive" >
             <BarList rows={demographicRows(demographics.interests)} formatValue={(v) => String(v)} emptyLabel="No accounts yet." />
           </Panel>
         </div>
@@ -109,13 +111,13 @@ export default async function AdminAnalyticsPage() {
       <div>
         <h2 className="font-display text-lg font-semibold text-brand-900">Most / least used features</h2>
         <p className="mt-1 text-sm text-ink/60">
-          Based on pages opened by logged-in users since this tracking shipped — anonymous visits and journal entry
+          Based on pages opened by logged-in users since this tracking shipped, anonymous visits and journal entry
           content are never recorded.
         </p>
         <div className="mt-4 rounded-2xl border border-brand-100 bg-white p-5">
           {featureUsage.features.length === 0 ? (
             <p className="text-sm text-ink/50">
-              No page views recorded yet — this fills in as people use the app going forward.
+              No page views recorded yet, this fills in as people use the app going forward.
             </p>
           ) : (
             <>
@@ -145,7 +147,7 @@ export default async function AdminAnalyticsPage() {
         <h2 className="font-display text-lg font-semibold text-brand-900">Average time spent per group</h2>
         <p className="mt-1 text-sm text-ink/60">
           Average session length in minutes, estimated from pageview timestamps (a new session starts after 30
-          minutes of inactivity){timeSpent.trackedUsers > 0 ? ` — based on ${timeSpent.trackedUsers} tracked user${timeSpent.trackedUsers === 1 ? "" : "s"}.` : "."}
+          minutes of inactivity){timeSpent.trackedUsers > 0 ? `, based on ${timeSpent.trackedUsers} tracked user${timeSpent.trackedUsers === 1 ? "" : "s"}.` : "."}
         </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           <Panel title="By gender">
@@ -158,6 +160,24 @@ export default async function AdminAnalyticsPage() {
             <BarList rows={timeSpentRows(timeSpent.referral)} formatValue={(v) => `${v} min`} emptyLabel="No session data yet." />
           </Panel>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-red-200 bg-red-50/40 p-5">
+        <h2 className="font-display font-semibold text-red-900">Danger zone</h2>
+        <p className="mt-1 text-sm text-red-800/80">
+          Permanently clears every tracked page view ({featureUsage.total.toLocaleString("en-US")} right now) —
+          feature usage, time-spent, and the Overview dashboard&rsquo;s activity heatmap all go back to no data.
+          For a one-time clean slate (e.g. after a period of internal/QA traffic), not something to run
+          routinely. Nothing else — accounts, journals, orders, bookings — is touched.
+        </p>
+        <form action={resetPageViewTracking} className="mt-3">
+          <ConfirmSubmitButton
+            confirmMessage={`Permanently clear all ${featureUsage.total.toLocaleString("en-US")} tracked page views? This can't be undone.`}
+            className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+          >
+            Clear all tracked page views
+          </ConfirmSubmitButton>
+        </form>
       </div>
     </div>
   );

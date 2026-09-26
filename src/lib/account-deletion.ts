@@ -20,6 +20,7 @@ export async function deleteUserAccountCompletely(userId: string, initiatedBy: "
     prisma.journalEntry.deleteMany({ where: { userId } }),
     prisma.pushSubscription.deleteMany({ where: { userId } }),
     prisma.supportChat.deleteMany({ where: { userId } }),
+    prisma.reflectionPrompt.deleteMany({ where: { userId } }),
     prisma.order.updateMany({ where: { userId }, data: { userId: null } }),
     prisma.bookingRequest.updateMany({ where: { userId }, data: { userId: null } }),
     prisma.user.delete({ where: { id: userId } }),

@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { generateSupportChatReply, type SupportChatMessage } from "@/lib/ai-support-chat";
 import { sendSupportNotification } from "@/lib/email";
 import { getBaseUrl } from "@/lib/base-url";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { checkRateLimit } from "@/lib/anti-spam";
+import { captureRow, serializeRow, trashedItemCreateArgs } from "@/lib/trash";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -23,12 +27,22 @@ export async function sendSupportChatMessage(
   chatId: string | null,
   message: string,
 ): Promise<SendSupportChatMessageResult> {
+  const locale = await getLocale();
+  const t = getDictionary(locale).supportChat;
+
   const session = await requireUser().catch(() => null);
-  if (!session) return { error: "Please log in again." };
+  if (!session) return { error: t.pleaseLogInAgain };
 
   const trimmed = message.trim();
-  if (!trimmed) return { error: "Please type a message." };
-  if (trimmed.length > MAX_MESSAGE_LENGTH) return { error: "That message is too long." };
+  if (!trimmed) return { error: t.pleaseTypeMessage };
+  if (trimmed.length > MAX_MESSAGE_LENGTH) return { error: t.messageTooLong };
+
+  // Every message costs a real Gemini API call against a shared quota (20/day
+  // on the current free tier — see ai-support-chat.ts) — keyed per-user
+  // (not IP) since this is already behind login, so this can't be used to
+  // exhaust that quota for everyone else in one account's burst.
+  const rateLimitOk = await checkRateLimit("support-chat", session.userId, { windowMs: 60 * 60 * 1000, max: 20 });
+  if (!rateLimitOk) return { error: t.somethingWrongReply };
 
   const existing = chatId
     ? await prisma.supportChat.findFirst({ where: { id: chatId, userId: session.userId } })
@@ -38,7 +52,7 @@ export async function sendSupportChatMessage(
   const userMessage: SupportChatMessage = { role: "user", content: trimmed, at: new Date().toISOString() };
   const historyForModel = [...priorMessages, userMessage].map((m) => ({ role: m.role, content: m.content }));
 
-  const { reply, status } = await generateSupportChatReply(historyForModel);
+  const { reply, status } = await generateSupportChatReply(historyForModel, locale);
   const assistantMessage: SupportChatMessage = { role: "assistant", content: reply, at: new Date().toISOString() };
   const messages = [...priorMessages, userMessage, assistantMessage];
 
@@ -164,17 +178,50 @@ export async function reopenSupportChat(formData: FormData) {
  * first), so a conversation still needing a reply can't be discarded by
  * accident. */
 export async function deleteSupportChat(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const chatId = String(formData.get("chatId") ?? "");
-  const chat = await prisma.supportChat.findUnique({ where: { id: chatId }, select: { status: true } });
+  const chat = await prisma.supportChat.findUnique({ where: { id: chatId }, include: { user: { select: { email: true } } } });
   if (chat?.status !== "RESOLVED") return;
-  await prisma.supportChat.delete({ where: { id: chatId } });
+  const snapshot = await captureRow("SupportChat", chatId);
+  if (!snapshot) return;
+
+  await prisma.$transaction([
+    prisma.trashedItem.create({
+      data: trashedItemCreateArgs({
+        modelName: "SupportChat",
+        originalId: chatId,
+        summary: `Support chat with ${chat.user.email}`,
+        data: snapshot,
+        actor: admin,
+      }),
+    }),
+    prisma.supportChat.delete({ where: { id: chatId } }),
+  ]);
   revalidatePath("/admin/support");
 }
 
 /** Bulk cleanup — clears every resolved chat's transcript at once. */
 export async function deleteAllResolvedSupportChats() {
-  await requireAdmin();
-  await prisma.supportChat.deleteMany({ where: { status: "RESOLVED" } });
+  const admin = await requireAdmin();
+  const chats = await prisma.supportChat.findMany({
+    where: { status: "RESOLVED" },
+    include: { user: { select: { email: true } } },
+  });
+
+  await prisma.$transaction([
+    ...chats.map((c) => {
+      const { user, ...chatRow } = c;
+      return prisma.trashedItem.create({
+        data: trashedItemCreateArgs({
+          modelName: "SupportChat",
+          originalId: c.id,
+          summary: `Support chat with ${user.email}`,
+          data: serializeRow(chatRow),
+          actor: admin,
+        }),
+      });
+    }),
+    prisma.supportChat.deleteMany({ where: { id: { in: chats.map((c) => c.id) } } }),
+  ]);
   revalidatePath("/admin/support");
 }

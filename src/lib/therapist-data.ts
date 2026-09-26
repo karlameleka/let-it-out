@@ -1,14 +1,25 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { CAIRO_TIME_ZONE, addDaysToDateStr, todayInTimeZone } from "@/lib/timezone";
 
 export async function getOwnCounselorWithBookings(counselorId: string) {
-  return prisma.counselor.findUnique({
-    where: { id: counselorId },
-    include: {
-      sessionBookings: { orderBy: { createdAt: "desc" } },
-      bookingRequests: { orderBy: { createdAt: "desc" } },
-    },
-  });
+  // manualClients is fetched separately, as its own top-level query, not a
+  // nested `include` — the field-encryption extension (see
+  // prisma-field-encryption-extension.ts) only decrypts the model a query
+  // is issued directly against; a relation pulled in via `include` would
+  // come back with referralSource still ciphertext.
+  const [counselor, manualClients] = await Promise.all([
+    prisma.counselor.findUnique({
+      where: { id: counselorId },
+      include: {
+        sessionBookings: { orderBy: { createdAt: "desc" } },
+        bookingRequests: { orderBy: { createdAt: "desc" } },
+      },
+    }),
+    prisma.manualClient.findMany({ where: { counselorId }, orderBy: { createdAt: "desc" } }),
+  ]);
+  if (!counselor) return null;
+  return { ...counselor, manualClients };
 }
 
 export type TherapistCounselorWithBookings = NonNullable<
@@ -16,9 +27,11 @@ export type TherapistCounselorWithBookings = NonNullable<
 >;
 
 // Narrower than TherapistCounselorWithBookings — deriveClients/deriveAppointments
-// only ever touch these two fields, so anything with just this shape (e.g. a
+// only ever touch these fields, so anything with just this shape (e.g. a
 // single client's filtered bookings) can reuse them without a full Counselor.
-type BookingsSource = Pick<TherapistCounselorWithBookings, "sessionBookings" | "bookingRequests">;
+type BookingsSource = Pick<TherapistCounselorWithBookings, "sessionBookings" | "bookingRequests"> & {
+  manualClients?: TherapistCounselorWithBookings["manualClients"];
+};
 
 export type TherapistClient = {
   name: string;
@@ -26,14 +39,32 @@ export type TherapistClient = {
   phone: string;
   lastContact: Date;
   totalBookings: number;
+  /** Free text, "how did this client hear about us" — set only by a
+   * manually-added ManualClient row; null for anyone who has only ever
+   * come in through a booking. */
+  referralSource: string | null;
 };
 
-/** One row per distinct client email, merged across both the paid
- * pre-booking flow and the manual booking-request flow — the same shape
- * as the admin counselor-detail "Clients" list, scoped here to a single
- * counselor's own records. */
+/** One row per distinct client email, merged across the paid pre-booking
+ * flow, the manual booking-request flow, and any hand-added ManualClient
+ * records (someone referred in person who hasn't booked yet) — the same
+ * shape as the admin counselor-detail "Clients" list, scoped here to a
+ * single counselor's own records. A ManualClient row is seeded first so a
+ * client with zero bookings still shows up; if bookings exist too, they
+ * take over name/phone/lastContact (freshest wins) but referralSource
+ * carries through either way. */
 export function deriveClients(counselor: BookingsSource): TherapistClient[] {
   const byEmail = new Map<string, TherapistClient>();
+  for (const m of counselor.manualClients ?? []) {
+    byEmail.set(m.clientEmail, {
+      name: m.name,
+      email: m.clientEmail,
+      phone: m.phone ?? "",
+      lastContact: m.createdAt,
+      totalBookings: 0,
+      referralSource: m.referralSource,
+    });
+  }
   for (const row of [...counselor.sessionBookings, ...counselor.bookingRequests]) {
     const existing = byEmail.get(row.email);
     if (existing) {
@@ -50,6 +81,7 @@ export function deriveClients(counselor: BookingsSource): TherapistClient[] {
         phone: row.phone,
         lastContact: row.createdAt,
         totalBookings: 1,
+        referralSource: null,
       });
     }
   }
@@ -105,16 +137,16 @@ export function deriveAppointments(counselor: BookingsSource): TherapistAppointm
   return [...paid, ...requests].sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** "Today" on the booking calendar's own clock (Cairo) — not the server's,
+ * since Vercel runs in UTC and Cairo is 2-3 hours ahead of it. */
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInTimeZone(CAIRO_TIME_ZONE);
 }
 
 /** Tomorrow's date as "YYYY-MM-DD" — used by the session-reminders cron to
  * find bookings happening the day after it runs. */
 export function tomorrowISO(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
+  return addDaysToDateStr(todayISO(), 1);
 }
 
 export type IntakeAnswerEntry = { section: string; label: string; value: string };
@@ -125,14 +157,35 @@ export type IntakeAnswerEntry = { section: string; label: string; value: string 
  * private session notes for them (most recent first). Nothing here is
  * shared across counselors — every query is scoped by counselorId. */
 export async function getClientProfile(counselorId: string, clientEmail: string) {
-  const [sessionBookings, bookingRequests, intakeSubmissions, notes] = await Promise.all([
+  const [sessionBookings, bookingRequests, intakeSubmissions, notes, medications, manualClient] = await Promise.all([
     prisma.sessionBooking.findMany({ where: { counselorId, email: clientEmail }, orderBy: { createdAt: "desc" } }),
     prisma.bookingRequest.findMany({ where: { counselorId, email: clientEmail }, orderBy: { createdAt: "desc" } }),
     prisma.intakeSubmission.findMany({ where: { counselorId, clientEmail }, orderBy: { submittedAt: "desc" } }),
     prisma.clientNote.findMany({ where: { counselorId, clientEmail }, orderBy: [{ sessionDate: "desc" }, { createdAt: "desc" }] }),
+    // Unlike notes (private to the counselor who wrote them), medications
+    // are shared across every counselor treating this client — not scoped
+    // to counselorId — since knowing what a client is prescribed matters
+    // for their safety regardless of who prescribed it.
+    prisma.medication.findMany({
+      where: { clientEmail },
+      include: { counselor: { select: { name: true } } },
+      orderBy: [{ active: "desc" }, { createdAt: "desc" }],
+    }),
+    // A manually-added client (see ManualClient/addManualClient) has none
+    // of the rows above until they actually book — without this, this
+    // function would return null and 404 for a client who was hand-added
+    // but hasn't come in for a session yet.
+    prisma.manualClient.findUnique({ where: { counselorId_clientEmail: { counselorId, clientEmail } } }),
   ]);
 
-  if (sessionBookings.length === 0 && bookingRequests.length === 0 && intakeSubmissions.length === 0 && notes.length === 0) {
+  if (
+    sessionBookings.length === 0 &&
+    bookingRequests.length === 0 &&
+    intakeSubmissions.length === 0 &&
+    notes.length === 0 &&
+    medications.length === 0 &&
+    !manualClient
+  ) {
     return null;
   }
 
@@ -140,12 +193,20 @@ export async function getClientProfile(counselorId: string, clientEmail: string)
   const latest = allRows.reduce((a, b) => (b.createdAt > a.createdAt ? b : a), allRows[0]);
 
   return {
-    name: latest?.name ?? intakeSubmissions[0]?.clientName ?? notes[0]?.clientName ?? clientEmail,
+    name:
+      latest?.name ??
+      manualClient?.name ??
+      intakeSubmissions[0]?.clientName ??
+      notes[0]?.clientName ??
+      medications[0]?.clientName ??
+      clientEmail,
     email: clientEmail,
-    phone: latest?.phone ?? null,
+    phone: latest?.phone ?? manualClient?.phone ?? null,
+    referralSource: manualClient?.referralSource ?? null,
     appointments: deriveAppointments({ sessionBookings, bookingRequests }),
     intakeSubmissions,
     notes,
+    medications,
   };
 }
 

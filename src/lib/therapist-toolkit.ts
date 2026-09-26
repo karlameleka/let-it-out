@@ -1,10 +1,17 @@
 // Static, curated content for the therapist portal's "Toolkit" page and the
 // condensed sidebar shown on a client's profile — reference material and
 // quick links a therapist might reach for during or around a session. The
-// 4 CLIENT_TOOLS entries below are real site features (not admin-editable),
+// CLIENT_TOOLS entries below are real site features (not admin-editable),
 // but a therapist can personally hide any of them via Counselor.hiddenDefaultTools
 // (keyed by `key`) — they can also add their own links/PDFs on top, stored
 // as ToolkitItem rows (see therapist-actions.ts).
+//
+// Cognitive Reframing and Thought Record aren't here — they're not plain
+// links a therapist can hand a client. Each is featured separately on the
+// Toolkit page with its own "Send to client" action, which assigns it as
+// an AssignedResourceKind of REFRAMING_TOOL/THOUGHT_RECORD — opened as its
+// own page on the client's My Profile rather than a link. See the toolkit
+// page and MyToolsItem.
 
 export type ClientTool = {
   /** Stable id — used as the entry in Counselor.hiddenDefaultTools. Never
@@ -26,12 +33,6 @@ export const CLIENT_TOOLS: ClientTool[] = [
     href: "/resources/breathing",
   },
   {
-    key: "cognitive-reframing",
-    title: "Cognitive Reframing",
-    description: "Walks through catching, examining, and reframing a stuck thought.",
-    href: "/resources/cognitive-reframing",
-  },
-  {
     key: "grounding",
     title: "5-4-3-2-1 Grounding",
     description: "A short sensory grounding exercise for acute anxiety or dissociation.",
@@ -40,7 +41,7 @@ export const CLIENT_TOOLS: ClientTool[] = [
   {
     key: "next-step",
     title: "Tiny Next Step",
-    description: "Behavioral activation — shrinks an overwhelming task to one tiny step.",
+    description: "Behavioral activation, shrinks an overwhelming task to one tiny step.",
     href: "/resources/cbt-exercises/next-step",
   },
 ];
@@ -94,10 +95,10 @@ export const CRISIS_PROTOCOL = {
   hotline: "16328",
   hotlineLabel: "Egyptian National Crisis Hotline",
   steps: [
-    "Stay present — don't rush to end the call/session.",
+    "Stay present, don't rush to end the call/session.",
     "Ask directly: \"Are you thinking about harming yourself?\" Direct questions don't plant the idea.",
     "Assess immediacy: do they have a plan, means, and timeline?",
-    "If there's immediate danger, help them contact emergency services or the hotline above — offer to stay on the line while they do.",
+    "If there's immediate danger, help them contact emergency services or the hotline above, offer to stay on the line while they do.",
     "Document what was discussed and follow up according to your own clinical protocol.",
   ],
 };

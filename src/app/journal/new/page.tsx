@@ -4,40 +4,78 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getNextPrompt } from "@/lib/prompts";
 import { getJournalLockEnabled } from "@/lib/journal-lock";
+import { MOODS } from "@/lib/moods";
 import { Container, Eyebrow } from "@/components/ui";
 import { Swash } from "@/components/decor";
 import JournalLockGate from "@/components/journal-lock-gate";
 import NewEntryClient from "./new-entry-client";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export const metadata: Metadata = { title: "New Entry" };
 
-export default async function NewJournalEntryPage() {
+const VALID_MOOD_IDS = new Set(MOODS.map((m) => m.id));
+
+export default async function NewJournalEntryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string; moods?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [prompt, lockEnabled] = await Promise.all([
+  const { mode: modeParam, moods: moodsParam } = await searchParams;
+  // Only from the mood wheel's own "Journal about it" link so far, but
+  // it's still a plain query string — validate rather than trust it.
+  const initialMode = modeParam === "free" ? "free" : undefined;
+  const initialMoods = moodsParam
+    ?.split(",")
+    .map((m) => m.trim())
+    .filter((m) => VALID_MOOD_IDS.has(m));
+
+  const [rawPrompt, lockEnabled, locale] = await Promise.all([
     getNextPrompt(user.userId),
     getJournalLockEnabled(user.userId),
+    getLocale(),
   ]);
+  const dict = getDictionary(locale);
+  const t = dict.entryForm;
+
+  const prompt = rawPrompt
+    ? {
+        id: rawPrompt.id,
+        category: locale === "ar" && rawPrompt.categoryAr ? rawPrompt.categoryAr : rawPrompt.category,
+        text: locale === "ar" && rawPrompt.textAr ? rawPrompt.textAr : rawPrompt.text,
+      }
+    : null;
 
   return (
-    <JournalLockGate enabled={lockEnabled}>
+    <JournalLockGate enabled={lockEnabled} dict={dict.journalLock}>
       <Container className="max-w-2xl py-16 sm:py-20">
         <Link href="/journal" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 link-grow">
-          &larr; Back to journal
+          <span className="inline-block rtl:-scale-x-100">&larr;</span> {t.backToJournal}
         </Link>
         <div className="mt-4">
-          <Eyebrow>New entry</Eyebrow>
+          <Eyebrow>{t.newEntryEyebrow}</Eyebrow>
         </div>
         <h1 className="mt-3 font-display text-3xl font-medium text-brand-900">
-          What&apos;s on your{" "}
+          {t.titlePrefix}{" "}
           <span className="mark-swash italic text-brand-700">
-            mind<Swash />
+            {t.titleHighlight}
+            <Swash />
           </span>
-          ?
+          {t.titleSuffix}
         </h1>
         <div className="mt-8">
-          <NewEntryClient userId={user.userId} initialPrompt={prompt} />
+          <NewEntryClient
+            userId={user.userId}
+            initialPrompt={prompt}
+            initialMode={initialMode}
+            initialMoods={initialMoods}
+            dict={t}
+            moodPickerDict={dict.moodPicker}
+            locale={locale}
+          />
         </div>
       </Container>
     </JournalLockGate>

@@ -6,12 +6,16 @@ import { formatEGP } from "@/lib/format";
 import {
   updateCounselorDetails,
   updateCounselorProfileFromAdmin,
+  updateCounselorFormsPermission,
+  updateCounselorFilterAssignments,
   deleteCounselorClient,
   sendTherapistPortalSetupLink,
   sendTherapistLoginLink,
   revokeTherapistPortalAccess,
 } from "@/lib/admin-actions";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
+import AddManualClientForm from "./add-manual-client-form";
 
 const AVAILABILITY_OPTIONS = [
   { value: "AVAILABLE", label: "Available" },
@@ -31,28 +35,52 @@ export default async function AdminCounselorDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const counselor = await prisma.counselor.findUnique({
-    where: { id },
-    include: {
-      sessionBookings: { orderBy: { createdAt: "desc" } },
-      bookingRequests: { orderBy: { createdAt: "desc" } },
-    },
-  });
+  // manualClients is fetched separately, as its own top-level query, not a
+  // nested `include` — the field-encryption extension (see
+  // prisma-field-encryption-extension.ts) only decrypts the model a query
+  // is issued directly against; a relation pulled in via `include` would
+  // come back with referralSource still ciphertext.
+  const [counselor, filters, manualClients] = await Promise.all([
+    prisma.counselor.findUnique({
+      where: { id },
+      include: {
+        sessionBookings: { orderBy: { createdAt: "desc" } },
+        bookingRequests: { orderBy: { createdAt: "desc" } },
+        filters: { select: { filterId: true } },
+      },
+    }),
+    prisma.counselorFilter.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.manualClient.findMany({ where: { counselorId: id }, orderBy: { createdAt: "desc" } }),
+  ]);
   if (!counselor) notFound();
+  const assignedFilterIds = new Set(counselor.filters.map((f) => f.filterId));
 
   const sessionCounts = countByStatus(counselor.sessionBookings);
   const requestCounts = countByStatus(counselor.bookingRequests);
 
-  const clientsByEmail = new Map<string, { name: string; email: string; phone: string; lastContact: Date }>();
+  type AdminClientRow = { name: string; email: string; phone: string; lastContact: Date; referralSource: string | null };
+  const clientsByEmail = new Map<string, AdminClientRow>();
+  // Seeded from ManualClient first so a hand-added client with no bookings
+  // yet still shows up (see ManualClient/addManualClientAdmin) — booking
+  // rows below take over name/phone/lastContact if more recent, same merge
+  // order as deriveClients() in therapist-data.ts.
+  for (const m of manualClients) {
+    clientsByEmail.set(m.clientEmail, {
+      name: m.name,
+      email: m.clientEmail,
+      phone: m.phone ?? "",
+      lastContact: m.createdAt,
+      referralSource: m.referralSource,
+    });
+  }
   for (const row of [...counselor.sessionBookings, ...counselor.bookingRequests]) {
     const existing = clientsByEmail.get(row.email);
-    if (!existing || row.createdAt > existing.lastContact) {
-      clientsByEmail.set(row.email, {
-        name: row.name,
-        email: row.email,
-        phone: row.phone,
-        lastContact: row.createdAt,
-      });
+    if (!existing) {
+      clientsByEmail.set(row.email, { name: row.name, email: row.email, phone: row.phone, lastContact: row.createdAt, referralSource: null });
+    } else if (row.createdAt > existing.lastContact) {
+      existing.name = row.name;
+      existing.phone = row.phone;
+      existing.lastContact = row.createdAt;
     }
   }
   const clients = [...clientsByEmail.values()].sort(
@@ -149,6 +177,48 @@ export default async function AdminCounselorDetailPage({
       </div>
 
       <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display font-semibold text-brand-900">Counseling filters</h2>
+          <Link href="/admin/counseling-filters" className="text-xs font-medium text-brand-600 underline">
+            Add or remove filters
+          </Link>
+        </div>
+        <p className="mt-1 text-sm text-ink/60">
+          Which filter chips on /counseling this counselor matches. Manage the list of available filters from
+          the link above.
+        </p>
+        {filters.length === 0 ? (
+          <p className="mt-4 text-sm text-ink/50">
+            No filters defined yet, <Link href="/admin/counseling-filters" className="font-medium text-brand-600 underline">add one</Link>.
+          </p>
+        ) : (
+          <form action={updateCounselorFilterAssignments} className="mt-4">
+            <input type="hidden" name="counselorId" value={counselor.id} />
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {filters.map((f) => (
+                <label key={f.id} className="flex items-center gap-2 text-sm font-medium text-ink/80">
+                  <input
+                    type="checkbox"
+                    name="filterIds"
+                    value={f.id}
+                    defaultChecked={assignedFilterIds.has(f.id)}
+                    className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+                  />
+                  {f.label}
+                </label>
+              ))}
+            </div>
+            <button
+              type="submit"
+              className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              Save
+            </button>
+          </form>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
         <h2 className="font-display font-semibold text-brand-900">Therapist portal access</h2>
         <p className="mt-1 text-sm text-ink/60">
           Lets {counselor.name.split(" ")[0]} log in at /therapist to manage their own clients, calendar,
@@ -162,7 +232,10 @@ export default async function AdminCounselorDetailPage({
             <span className="font-medium text-ink/50">Not set up</span>
           )}
           {counselor.lastLoginAt && (
-            <span className="text-ink/50"> · Last login {counselor.lastLoginAt.toLocaleString("en-GB")}</span>
+            <span className="text-ink/50">
+              {" "}
+              · Last login {counselor.lastLoginAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
+            </span>
           )}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -184,7 +257,7 @@ export default async function AdminCounselorDetailPage({
               <input type="hidden" name="counselorId" value={counselor.id} />
               <button
                 type="submit"
-                title="One-click login, valid 30 minutes — doesn't change their password"
+                title="One-click login, valid 30 minutes, doesn't change their password"
                 className="rounded-lg border border-brand-200 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
               >
                 Send login link
@@ -203,6 +276,52 @@ export default async function AdminCounselorDetailPage({
             </form>
           )}
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-brand-100 bg-white p-5">
+        <h2 className="font-display font-semibold text-brand-900">Permissions</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Extra access beyond {counselor.name.split(" ")[0]}&rsquo;s own clients and profile.
+        </p>
+        <form action={updateCounselorFormsPermission} className="mt-4">
+          <input type="hidden" name="counselorId" value={counselor.id} />
+          <label className="flex items-center gap-2 text-sm font-medium text-ink/80">
+            <input
+              type="checkbox"
+              name="canEditFormsConfig"
+              defaultChecked={counselor.canEditFormsConfig}
+              className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            Can edit the sitewide intake form &amp; reflection sheet
+          </label>
+          <p className="mt-1 text-xs text-ink/50">
+            Adds &ldquo;Intake form&rdquo; and &ldquo;Reflection sheet&rdquo; tabs to their therapist portal. These
+            are shared, sitewide question sets used for every counselor&rsquo;s clients, not a per-counselor copy,
+            changes they save apply everywhere, same as when an admin edits them here.
+          </p>
+
+          <label className="mt-4 flex items-center gap-2 text-sm font-medium text-ink/80">
+            <input
+              type="checkbox"
+              name="canPrescribeMedication"
+              defaultChecked={counselor.canPrescribeMedication}
+              className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-400"
+            />
+            Can add medications for clients
+          </label>
+          <p className="mt-1 text-xs text-ink/50">
+            Adds a &ldquo;Medications&rdquo; section to every client&rsquo;s profile in their therapist portal,
+            where they can add or discontinue a medication. Reserve this for psychiatrists — every counselor
+            treating a shared client can see the list either way, but only counselors with this on can change it.
+          </p>
+
+          <button
+            type="submit"
+            className="mt-3 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            Save
+          </button>
+        </form>
       </div>
 
       <div className="rounded-2xl border border-brand-100 bg-white p-5">
@@ -291,19 +410,25 @@ export default async function AdminCounselorDetailPage({
       </div>
 
       <div>
-        <h2 className="font-display font-semibold text-brand-900">
-          Clients <span className="text-sm font-normal text-ink/40">({clients.length})</span>
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display font-semibold text-brand-900">
+            Clients <span className="text-sm font-normal text-ink/40">({clients.length})</span>
+          </h2>
+        </div>
+        <div className="mt-3">
+          <AddManualClientForm counselorId={counselor.id} />
+        </div>
         {clients.length === 0 ? (
-          <p className="mt-2 text-sm text-ink/60">No clients yet.</p>
+          <p className="mt-4 text-sm text-ink/60">No clients yet.</p>
         ) : (
-          <div className="mt-3 overflow-hidden rounded-2xl border border-brand-100 bg-white">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-brand-100 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-brand-50 text-xs font-semibold uppercase tracking-wide text-brand-700">
                 <tr>
                   <th className="px-5 py-3">Name</th>
                   <th className="px-5 py-3">Email</th>
                   <th className="px-5 py-3">Phone</th>
+                  <th className="px-5 py-3">Referral source</th>
                   <th className="px-5 py-3">Last contact</th>
                   <th className="px-5 py-3"></th>
                 </tr>
@@ -314,7 +439,8 @@ export default async function AdminCounselorDetailPage({
                     <td className="px-5 py-3">{c.name}</td>
                     <td className="px-5 py-3 text-ink/70">{c.email}</td>
                     <td className="px-5 py-3 text-ink/70">{c.phone}</td>
-                    <td className="px-5 py-3 text-ink/60">{c.lastContact.toLocaleString("en-GB")}</td>
+                    <td className="px-5 py-3 text-ink/60">{c.referralSource || "—"}</td>
+                    <td className="px-5 py-3 text-ink/60">{c.lastContact.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}</td>
                     <td className="px-5 py-3 text-right">
                       <form action={deleteCounselorClient}>
                         <input type="hidden" name="counselorId" value={counselor.id} />

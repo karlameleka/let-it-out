@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendCustomerConfirmation } from "@/lib/email";
 import { formatEGP } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics-events";
 
 /**
  * Field order Paymob uses to build the HMAC digest for the "TRANSACTION"
@@ -107,13 +108,18 @@ export async function POST(req: NextRequest) {
         where: { id: referenceId },
         data: { status: "CONFIRMED", paymentRef: transactionId },
       });
+      void trackEvent(existingOrder.userId, "Order", "confirmed", { totalEGP: existingOrder.totalEGP });
 
+      const isAr = existingOrder.locale === "ar";
       await sendCustomerConfirmation({
         to: existingOrder.guestEmail,
         name: existingOrder.guestName,
-        subject: "Payment received — your order is confirmed",
-        intro: `Thanks! We've received your payment of ${formatEGP(existingOrder.totalEGP)} and your order is confirmed.`,
-        lines: [{ label: "Order #", value: existingOrder.id.slice(-8).toUpperCase() }],
+        locale: existingOrder.locale as "en" | "ar",
+        subject: isAr ? "تم استلام الدفع — طلبك مؤكد" : "Payment received — your order is confirmed",
+        intro: isAr
+          ? `شكرًا! استلمنا دفعتك بقيمة ${formatEGP(existingOrder.totalEGP)} وتم تأكيد طلبك.`
+          : `Thanks! We've received your payment of ${formatEGP(existingOrder.totalEGP)} and your order is confirmed.`,
+        lines: [{ label: isAr ? "رقم الطلب" : "Order #", value: existingOrder.id.slice(-8).toUpperCase() }],
       });
     } else {
       await prisma.order.update({
@@ -140,13 +146,20 @@ export async function POST(req: NextRequest) {
         where: { id: referenceId },
         data: { status: "CONFIRMED", paymentRef: transactionId },
       });
+      void prisma.user
+        .findUnique({ where: { email: existingSessionBooking.email }, select: { id: true } })
+        .then((matchedUser) => trackEvent(matchedUser?.id ?? null, "SessionBooking", "confirmed"));
 
+      const isAr = existingSessionBooking.locale === "ar";
       await sendCustomerConfirmation({
         to: existingSessionBooking.email,
         name: existingSessionBooking.name,
-        subject: "Payment received — pick your session time",
-        intro: `Thanks! We've received your payment of ${formatEGP(existingSessionBooking.priceEGP - existingSessionBooking.discountEGP)} for a session with ${existingSessionBooking.counselor.name}. Head back to pick your exact time.`,
-        lines: [{ label: "Counselor", value: existingSessionBooking.counselor.name }],
+        locale: existingSessionBooking.locale as "en" | "ar",
+        subject: isAr ? "تم استلام الدفع — اختر ميعاد جلستك" : "Payment received — pick your session time",
+        intro: isAr
+          ? `شكرًا! استلمنا دفعتك بقيمة ${formatEGP(existingSessionBooking.priceEGP - existingSessionBooking.discountEGP)} لجلسة مع ${existingSessionBooking.counselor.name}. ارجع تاني لاختيار ميعادك بالظبط.`
+          : `Thanks! We've received your payment of ${formatEGP(existingSessionBooking.priceEGP - existingSessionBooking.discountEGP)} for a session with ${existingSessionBooking.counselor.name}. Head back to pick your exact time.`,
+        lines: [{ label: isAr ? "المعالج" : "Counselor", value: existingSessionBooking.counselor.name }],
       });
     } else {
       await prisma.sessionBooking.update({

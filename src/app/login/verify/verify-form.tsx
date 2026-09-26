@@ -3,15 +3,16 @@
 import { useActionState } from "react";
 import { verifyTwoFactorAction } from "@/lib/auth-actions";
 import { Button } from "@/components/ui";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
-export default function VerifyTwoFactorForm() {
+export default function VerifyTwoFactorForm({ dict }: { dict: Dictionary["auth"] }) {
   const [state, formAction, pending] = useActionState(verifyTwoFactorAction, undefined);
 
   return (
     <form action={formAction} className="space-y-4">
       <div>
         <label htmlFor="code" className="mb-1 block text-sm font-medium text-ink/80">
-          Code
+          {dict.code}
         </label>
         <input
           id="code"
@@ -24,7 +25,7 @@ export default function VerifyTwoFactorForm() {
       </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Verifying…" : "Verify"}
+        {pending ? dict.verifying : dict.verify}
       </Button>
     </form>
   );

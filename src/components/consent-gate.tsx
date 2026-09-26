@@ -15,8 +15,8 @@ export default function ConsentGate({ onAccept }: { onAccept: () => void }) {
         </div>
         <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
           <p className="text-sm leading-relaxed text-ink/75">
-            Whatever you share with us — in a counseling session, a journal
-            entry, or a form on this site — is treated as confidential. We
+            Whatever you share with us, in a counseling session, a journal
+            entry, or a form on this site, is treated as confidential. We
             do not sell your data, and we do not use tracking cookies. The
             only things we save to your device (in local browser storage,
             never a tracking cookie) are simple preferences like your cart

@@ -8,6 +8,7 @@ import {
 import type { SupportChatMessage } from "@/lib/ai-support-chat";
 import ConfirmSubmitButton from "@/components/confirm-submit-button";
 import { SUPPORT_EMAIL } from "@/lib/email";
+import { CAIRO_TIME_ZONE } from "@/lib/timezone";
 import { Star } from "lucide-react";
 
 function gmailComposeUrl(toEmail: string) {
@@ -52,7 +53,7 @@ export default async function AdminSupportPage() {
           <h2 className="font-display font-semibold text-brand-900">Live chat</h2>
           <p className="mt-1 text-sm text-ink/60">
             Clients&rsquo; &ldquo;Having technical issues? Live Chat&rdquo; conversations from Account settings. The
-            bot only handles app/technical issues — anything psychological gets redirected, never answered.
+            bot only handles app/technical issues, anything psychological gets redirected, never answered.
           </p>
           {flaggedCount > 0 && (
             <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
@@ -88,7 +89,8 @@ export default async function AdminSupportPage() {
                   {chat.user.name} <span className="font-normal text-ink/50">· {chat.user.email}</span>
                 </p>
                 <p className="mt-0.5 text-xs text-ink/40">
-                  {chat.user.accountCode} · Updated {chat.updatedAt.toLocaleString("en-GB")}
+                  {chat.user.accountCode} · Updated{" "}
+                  {chat.updatedAt.toLocaleString("en-GB", { timeZone: CAIRO_TIME_ZONE })}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
