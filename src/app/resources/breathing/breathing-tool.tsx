@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef, type CSSProperties } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { Play, RotateCcw, Sparkles, Square } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui";
 import {
@@ -18,71 +18,16 @@ import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const STORAGE_KEY = "lio_breathing_count";
 
-// A simplified, rounded lung silhouette — two mirrored lobes off a central
-// trachea/bronchi — drawn to sit comfortably alongside the app's other
-// hand-drawn line-art (see Swash in components/decor.tsx) rather than a
-// literal anatomical icon.
-const LUNGS_LEFT_LOBE =
-  "M36 40C24 36 14 44 12 58C10 72 16 84 26 90C32 93 40 90 42 78C44 66 42 52 40 44C39 42 37 41 36 40Z";
-const LUNGS_RIGHT_LOBE =
-  "M64 40C76 36 86 44 88 58C90 72 84 84 74 90C68 93 60 90 58 78C56 66 58 52 60 44C61 42 63 41 64 40Z";
-
-function LungsIcon({
-  className,
-  style,
-}: {
-  className?: string;
-  style?: CSSProperties;
-}) {
-  return (
-    <svg
-      viewBox="0 0 100 100"
-      fill="none"
-      className={className}
-      style={style}
-      aria-hidden="true"
-    >
-      <path
-        d={LUNGS_LEFT_LOBE}
-        className="fill-brand-100"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d={LUNGS_RIGHT_LOBE}
-        className="fill-brand-100"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M50 6V26"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M50 26C50 26 40 30 36 40"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M50 26C50 26 60 30 64 40"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 /** Small shape preview shown next to each pattern's name in the setup
     picker, so the visual difference is recognizable before starting. */
 function ShapeSwatch({ shape }: { shape: BreathingShape }) {
-  if (shape === "lungs")
-    return <LungsIcon className="h-3.5 w-3.5 shrink-0 text-brand-600" />;
+  if (shape === "triangle")
+    return (
+      <span
+        aria-hidden
+        className="inline-block h-0 w-0 shrink-0 border-x-[7px] border-b-[12px] border-x-transparent border-b-brand-500"
+      />
+    );
   const rounding = shape === "circle" ? "rounded-full" : "rounded-[3px]";
   return (
     <span
@@ -108,8 +53,26 @@ const BOX_CORNERS: { x: number; y: number }[] = [
   { x: 100, y: 100 },
 ];
 
-function cornerAfterPhase(phaseIndex: number): number {
-  return (phaseIndex + 1) % BOX_CORNERS.length;
+// Same dot-tracing mechanic as the box, on a 3-point shape instead of a
+// 4-point one — one edge per 4-7-8 phase: up the left side to the apex on
+// Inhale, down the right side on Hold, across the bottom back to start on
+// Exhale.
+const TRIANGLE_CORNERS: { x: number; y: number }[] = [
+  { x: 0, y: 100 },
+  { x: 50, y: 0 },
+  { x: 100, y: 100 },
+];
+
+const SHAPE_CORNERS: Partial<Record<BreathingShape, { x: number; y: number }[]>> = {
+  square: BOX_CORNERS,
+  triangle: TRIANGLE_CORNERS,
+};
+
+// Generic over however many corners the active pattern's shape has —
+// works out to the same "one edge per phase" cycle for both the square
+// (4 phases/corners) and the triangle (3 phases/corners).
+function cornerAfterPhase(phaseIndex: number, totalPhases: number): number {
+  return (phaseIndex + 1) % totalPhases;
 }
 
 type Stage = "setup" | "active" | "done";
@@ -187,7 +150,7 @@ function reducer(state: State, action: Action): State {
         ? {
             ...state,
             shapeScale: scaleForPhase(state.pattern.phases[0].label, 1),
-            dotCorner: cornerAfterPhase(0),
+            dotCorner: cornerAfterPhase(0, state.pattern.phases.length),
           }
         : state;
     case "RESET":
@@ -233,7 +196,7 @@ function reducer(state: State, action: Action): State {
             state.pattern.phases[nextIndex].label,
             state.shapeScale,
           ),
-          dotCorner: cornerAfterPhase(nextIndex),
+          dotCorner: cornerAfterPhase(nextIndex, state.pattern.phases.length),
         };
       }
       return {
@@ -244,7 +207,7 @@ function reducer(state: State, action: Action): State {
           state.pattern.phases[nextIndex].label,
           state.shapeScale,
         ),
-        dotCorner: cornerAfterPhase(nextIndex),
+        dotCorner: cornerAfterPhase(nextIndex, state.pattern.phases.length),
       };
     }
     default:
@@ -324,7 +287,7 @@ export default function BreathingTool({
   }, [state.stage]);
 
   const currentPhase = state.pattern.phases[state.phaseIndex];
-  const dot = BOX_CORNERS[state.dotCorner];
+  const dot = (SHAPE_CORNERS[state.pattern.shape] ?? BOX_CORNERS)[state.dotCorner];
   // During Hold phases the glow should keep whatever level the preceding
   // Inhale/Exhale left it at, exactly like shapeScale itself.
   const glowStrength = state.shapeScale > 1.1 ? 0.85 : 0.2;
@@ -433,24 +396,33 @@ export default function BreathingTool({
                 </div>
               )}
 
-              {state.pattern.shape === "lungs" && (
-                <>
-                  <div
+              {state.pattern.shape === "triangle" && (
+                <div className="absolute inset-6">
+                  <svg
+                    viewBox="0 0 100 100"
+                    className="absolute inset-0 h-full w-full text-brand-300"
+                    aria-hidden="true"
+                  >
+                    <polygon
+                      points="0,100 50,0 100,100"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span
                     aria-hidden
-                    className="absolute h-36 w-36 rounded-full bg-brand-200 blur-2xl transition-opacity ease-in-out"
+                    className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-600 ring-4 ring-brand-50"
                     style={{
-                      opacity: glowStrength,
+                      left: `${dot.x}%`,
+                      top: `${dot.y}%`,
+                      transitionProperty: "left, top",
+                      transitionTimingFunction: "linear",
                       transitionDuration: `${currentPhase.seconds}s`,
                     }}
                   />
-                  <LungsIcon
-                    className="relative h-28 w-28 text-brand-600 transition-transform ease-in-out"
-                    style={{
-                      transform: `scale(${state.shapeScale})`,
-                      transitionDuration: `${currentPhase.seconds}s`,
-                    }}
-                  />
-                </>
+                </div>
               )}
 
               {state.pattern.shape === "circle" && (
