@@ -9,6 +9,7 @@ import { getUpcomingPageData, getPastItems, hasConfirmedSession } from "@/lib/up
 import { getArticles, localizeArticle } from "@/lib/content/articles";
 import { getMyAssignedResources } from "@/lib/client-resources";
 import { getMyOrders } from "@/lib/my-orders";
+import { getMyStressCheckInStatus } from "@/lib/stress-checkin-actions";
 import { formatSlotTime } from "@/lib/format-slot";
 import { formatEGP } from "@/lib/format";
 import { Container, Eyebrow, Button, ButtonLink } from "@/components/ui";
@@ -26,7 +27,7 @@ export default async function ProfilePage() {
   const dict = getDictionary(locale);
   const t = dict.profile;
 
-  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications, myTools, canUseInBetweenSessions, orders] =
+  const [{ sessions: upcomingSessions }, { sessions: pastSessions }, rawArticles, medications, myTools, canUseInBetweenSessions, orders, stressStatus] =
     await Promise.all([
       // excludeDismissed: false — dismissing a notification on /upcoming
       // is about hiding it from the notification feed, not about whether
@@ -44,6 +45,7 @@ export default async function ProfilePage() {
       getMyAssignedResources(user.email),
       hasConfirmedSession(user.email),
       getMyOrders(user.userId),
+      getMyStressCheckInStatus(),
     ]);
   const articles = rawArticles.map((a) => localizeArticle(a, locale));
 
@@ -71,6 +73,15 @@ export default async function ProfilePage() {
     return time ? `${base} · ${formatSlotTime(time, locale)}` : base;
   }
 
+  const monthFormatter = new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { month: "short" });
+  const LEVEL_FILL_PERCENT: Record<string, number> = { LOW: 34, MODERATE: 67, HIGH: 100 };
+  const LEVEL_BAR_CLASS: Record<string, string> = { LOW: "bg-brand-300", MODERATE: "bg-brand-500", HIGH: "bg-brand-800" };
+  const nextStressCheckInLabel = stressStatus?.nextAvailableAt
+    ? new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-GB", { day: "numeric", month: "long" }).format(
+        new Date(stressStatus.nextAvailableAt),
+      )
+    : null;
+
   return (
     <Container className="max-w-2xl pt-6 pb-10 sm:pt-14 sm:pb-20">
       <Eyebrow>{t.title}</Eyebrow>
@@ -78,6 +89,53 @@ export default async function ProfilePage() {
       <p className="mt-2 text-sm text-ink/60">{t.signedInAs} {user.email}</p>
 
       <ProfileClient userId={user.userId} locale={locale} articles={articles} dict={t} />
+
+      {stressStatus && (
+        <div className="mt-6 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
+          <h2 className="font-display font-semibold text-brand-900">{t.myProgressTitle}</h2>
+          <p className="mt-1 text-sm text-ink/60">{t.myProgressSubtitle}</p>
+
+          <div className="mt-6 flex items-end gap-4">
+            <div className="flex h-36 flex-1 items-end justify-between gap-2">
+              {stressStatus.monthly.map((m, i) => (
+                <div key={i} className="flex h-full flex-1 flex-col items-center gap-2">
+                  <div className="relative h-full w-full overflow-hidden rounded-full bg-brand-50">
+                    {m.level && (
+                      <div
+                        className={`absolute bottom-0 w-full rounded-full ${LEVEL_BAR_CLASS[m.level]}`}
+                        style={{ height: `${LEVEL_FILL_PERCENT[m.level]}%` }}
+                      />
+                    )}
+                  </div>
+                  <span className="text-xs text-ink/40">{monthFormatter.format(new Date(m.year, m.month, 1))}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex h-36 flex-col justify-between pb-5 text-right text-[11px] text-ink/40">
+              <span>{t.myProgressHigh}</span>
+              <span>{t.myProgressModerate}</span>
+              <span>{t.myProgressLow}</span>
+            </div>
+          </div>
+
+          {stressStatus.canCheckIn ? (
+            <ButtonLink href="/profile/stress-checkin" variant="outline" className="mt-6 w-full">
+              {t.myProgressCheckInNow}
+            </ButtonLink>
+          ) : (
+            <>
+              <Button disabled variant="outline" className="mt-6 w-full">
+                {t.myProgressNoCheckInDue}
+              </Button>
+              {nextStressCheckInLabel && (
+                <p className="mt-2 text-center text-xs text-ink/40">
+                  {t.myProgressNextCheckInOn.replace("{date}", nextStressCheckInLabel)}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <div id="my-tools" className="mt-6 scroll-mt-24 rounded-2xl border-2 border-brand-100 bg-white p-6 sm:p-8">
         <MyToolsViewedTracker hasUnviewed={myTools.some((item) => !item.viewedAt)} />

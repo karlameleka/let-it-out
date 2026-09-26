@@ -62,6 +62,13 @@ export type UpcomingReflection = {
   read: boolean;
 };
 
+export type UpcomingStressCheckIn = {
+  /** Composite bell/read-tracking key ("stress-checkin-<StressCheckInPrompt.id>"). */
+  id: string;
+  createdAt: string;
+  read: boolean;
+};
+
 function sessionCanCancel(status: string, date: string, time: string | null): boolean {
   if (status === "CANCELLED" || status === "COMPLETED") return false;
   if (status === "CONFIRMED") return !pastCancelWindow(date, time);
@@ -155,6 +162,15 @@ async function getUpcomingReflections(userId: string): Promise<UpcomingReflectio
   return prompts.map((p) => ({ id: `reflection-${p.id}`, createdAt: p.createdAt.toISOString(), read: false }));
 }
 
+async function getUpcomingStressCheckIns(userId: string): Promise<UpcomingStressCheckIn[]> {
+  const prompts = await prisma.stressCheckInPrompt.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, createdAt: true },
+  });
+  return prompts.map((p) => ({ id: `stress-checkin-${p.id}`, createdAt: p.createdAt.toISOString(), read: false }));
+}
+
 /** Full data for the /upcoming page: every upcoming counseling
  * session/request for this client (whatever its status), every upcoming
  * broadcast Event with this client's own RSVP, if any, and every pending
@@ -173,13 +189,19 @@ export async function getUpcomingPageData(
   options?: { excludeDismissed?: boolean },
 ) {
   const excludeDismissed = options?.excludeDismissed ?? true;
-  const [sessions, events, reflections] = await Promise.all([
+  const [sessions, events, reflections, stressCheckIns] = await Promise.all([
     getUpcomingSessions(email),
     getUpcomingEvents(userId, locale),
     getUpcomingReflections(userId),
+    getUpcomingStressCheckIns(userId),
   ]);
 
-  const allIds = [...sessions.map((s) => s.id), ...events.map((e) => e.id), ...reflections.map((r) => r.id)];
+  const allIds = [
+    ...sessions.map((s) => s.id),
+    ...events.map((e) => e.id),
+    ...reflections.map((r) => r.id),
+    ...stressCheckIns.map((s) => s.id),
+  ];
   const reads = allIds.length
     ? await prisma.notificationRead.findMany({
         where: { userId, itemId: { in: allIds } },
@@ -194,17 +216,19 @@ export async function getUpcomingPageData(
     sessions: sessions.filter((s) => keep(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
     events: events.filter((e) => keep(e.id)).map((e) => ({ ...e, read: readIds.has(e.id) })),
     reflections: reflections.filter((r) => keep(r.id)).map((r) => ({ ...r, read: readIds.has(r.id) })),
+    stressCheckIns: stressCheckIns.filter((s) => keep(s.id)).map((s) => ({ ...s, read: readIds.has(s.id) })),
   };
 }
 
 /** Unread total — everything on /upcoming this client hasn't opened yet —
  * used to drive the header bell badge and the installed-app icon badge. */
 export async function getUpcomingCount(email: string, userId: string): Promise<number> {
-  const { sessions, events, reflections } = await getUpcomingPageData(email, userId);
+  const { sessions, events, reflections, stressCheckIns } = await getUpcomingPageData(email, userId);
   return (
     sessions.filter((s) => !s.read).length +
     events.filter((e) => !e.read).length +
-    reflections.filter((r) => !r.read).length
+    reflections.filter((r) => !r.read).length +
+    stressCheckIns.filter((s) => !s.read).length
   );
 }
 
