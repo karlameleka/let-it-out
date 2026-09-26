@@ -22,7 +22,7 @@ export const CORE_EMOTIONS: { id: CoreEmotionId; label: string; labelAr: string;
   // A muted, deliberately achromatic gray — every other core here has its
   // own hue, so "nothing in particular" reads correctly at a glance
   // instead of looking like a missing/uncategorized color.
-  { id: "numb", label: "Numb / Neutral", labelAr: "مخدر / محايد", color: "#9297A0" },
+  { id: "numb", label: "Numb", labelAr: "مخدر", color: "#9297A0" },
 ];
 
 /** More specific feelings revealed when a core emotion is picked — a small

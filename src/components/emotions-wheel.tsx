@@ -61,6 +61,7 @@ function UprightLabel({
   labelR,
   polar,
   fontSize,
+  textColor,
 }: {
   text: string;
   color: string;
@@ -69,6 +70,10 @@ function UprightLabel({
   labelR: number;
   polar: ReturnType<typeof makePolar>;
   fontSize: number;
+  /** Overrides the automatic luminance-based color pick below — for a
+   * wedge whose label should always read a specific way regardless of
+   * how light/dark its own fill happens to be. */
+  textColor?: string;
 }) {
   const mid = (startDeg + endDeg) / 2;
   const pt = polar(labelR, mid);
@@ -78,7 +83,7 @@ function UprightLabel({
       y={pt.y}
       textAnchor="middle"
       dominantBaseline="middle"
-      fill={labelColorFor(color)}
+      fill={textColor ?? labelColorFor(color)}
       style={{ fontSize }}
       className="pointer-events-none select-none font-semibold"
     >
@@ -187,6 +192,11 @@ function CoreSelectorWheel({
             labelR={(R0 + R1) / 2}
             polar={polar}
             fontSize={22}
+            // "Numb"'s wedge (#9297A0) is light enough that the automatic
+            // luminance pick above lands on dark text, unlike every other
+            // core here — forced white instead of also darkening the
+            // wedge itself, which wasn't asked for.
+            textColor={core.id === "numb" ? "#ffffff" : undefined}
           />
         );
       })}

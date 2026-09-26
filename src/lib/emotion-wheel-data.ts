@@ -191,8 +191,8 @@ export const EMOTION_WHEEL: [WheelCore, WheelCore, WheelCore, WheelCore, WheelCo
   },
   {
     id: "numb",
-    label: "Numb / Neutral",
-    labelAr: "مخدر / محايد",
+    label: "Numb",
+    labelAr: "مخدر",
     colorCore: "#9297A0",
     colorSecondary: "#B4B8BF",
     colorTertiary: "#D4D6DA",
