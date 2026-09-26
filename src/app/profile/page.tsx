@@ -99,7 +99,13 @@ export default async function ProfilePage() {
             <div className="flex h-36 flex-1 items-end justify-between gap-2">
               {stressStatus.monthly.map((m, i) => (
                 <div key={i} className="flex h-full flex-1 flex-col items-center gap-2">
-                  <div className="relative h-full w-full overflow-hidden rounded-full bg-brand-50">
+                  {/* Capped at max-w-10 regardless of how wide its flex-1
+                      column gets — without this, the same "flex-1 w-full"
+                      track that reads fine on a narrow mobile viewport
+                      stretches to fill a much wider desktop card, and
+                      rounded-full on something that wide turns each bar
+                      into a fat, blobby capsule instead of a slim column. */}
+                  <div className="relative h-full w-full max-w-10 overflow-hidden rounded-full bg-brand-50">
                     {m.level && (
                       <div
                         className={`absolute bottom-0 w-full rounded-full ${LEVEL_BAR_CLASS[m.level]}`}
